@@ -1,9 +1,3 @@
-using LinearAlgebra
-using MetaGraphs
-using LightGraphs
-using GraphPlot
-using CSV
-
 @testset "Simplest possible system of two spins" begin
     #
     # ----------------- Ising model ------------------
@@ -44,7 +38,6 @@ using CSV
     fg = factor_graph(
         ig,
         Dict(1 => 2, 2 => 2),
-        energy = energy,
         spectrum = full_spectrum,
         cluster_assignment_rule = Dict(1 => 1, 2 => 2), # treat it as a grid with 1 spin cells
     )

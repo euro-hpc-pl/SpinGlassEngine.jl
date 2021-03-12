@@ -22,7 +22,6 @@
     fg = factor_graph(
         ig,
         Dict(1 => 4, 2 => 2),
-        energy = energy,
         spectrum = full_spectrum,
         cluster_assignment_rule = Dict(1 => 1, 2 => 1, 3 => 2, 4 => 2)
     )

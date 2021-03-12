@@ -1,5 +1,5 @@
 export PEPSNetwork, contract_network
-export MPO, MPS, generate_boundary
+export generate_boundary, peps_indices
 
 const DEFAULT_CONTROL_PARAMS = Dict(
     "bond_dim" => typemax(Int),
@@ -90,16 +90,16 @@ function peps_tensor(::Type{T}, peps::PEPSNetwork, i::Int, j::Int) where {T <: N
 end
 peps_tensor(peps::PEPSNetwork, i::Int, j::Int) = peps_tensor(Float64, peps, i, j)
 
-function PEPSRow(::Type{T}, peps::PEPSNetwork, i::Int) where {T <: Number}
+function SpinGlassTensors.PEPSRow(::Type{T}, peps::PEPSNetwork, i::Int) where {T <: Number}
     ψ = PEPSRow(T, peps.j_max)
     for j ∈ 1:peps.j_max
         ψ[j] = peps_tensor(T, peps, i, j)
     end
     ψ
 end
-PEPSRow(peps::PEPSNetwork, i::Int) = PEPSRow(Float64, peps, i)
+SpinGlassTensors.PEPSRow(peps::PEPSNetwork, i::Int) = PEPSRow(Float64, peps, i)
 
-function MPO(::Type{T},
+function SpinGlassTensors.MPO(::Type{T},
     peps::PEPSNetwork,
     i::Int,
     config::Dict{Int, Int} = Dict{Int, Int}()
@@ -120,7 +120,7 @@ function MPO(::Type{T},
     W
 end
 
-MPO(peps::PEPSNetwork,
+SpinGlassTensors.MPO(peps::PEPSNetwork,
     i::Int,
     config::Dict{Int, Int} = Dict{Int, Int}()
     ) = MPO(Float64, peps, i, config)
@@ -131,7 +131,7 @@ function compress(ψ::AbstractMPS, peps::PEPSNetwork)
     compress(ψ, Dcut, peps.args["var_tol"], peps.args["sweeps"])
 end
 
-@memoize function MPS(
+@memoize function SpinGlassTensors.MPS(
     peps::PEPSNetwork,
     i::Int,
     cfg::Dict{Int, Int} = Dict{Int, Int}(),

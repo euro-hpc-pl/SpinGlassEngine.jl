@@ -37,7 +37,6 @@ ig = ising_graph(instance)
 
 fg = factor_graph(
     ig,
-    energy=energy,
     spectrum=full_spectrum,
     cluster_assignment_rule=super_square_lattice((m, n, t))
 )

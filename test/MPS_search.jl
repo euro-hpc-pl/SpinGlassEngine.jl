@@ -1,6 +1,4 @@
 using MetaGraphs
-using LightGraphs
-using GraphPlot
 
 # This a semi-finished cleaning of this file
 

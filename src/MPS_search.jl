@@ -1,6 +1,5 @@
 export MPSControl
 export solve, solve_new
-export MPS2
 
 struct MPSControl
     max_bond::Int
@@ -222,7 +221,7 @@ function _apply_layer_of_gates(ig::MetaGraph, ρ::AbstractMPS, control::MPSContr
     ρ
 end
 
-function MPS(ig::MetaGraph, control::MPSControl)
+function SpinGlassTensors.MPS(ig::MetaGraph, control::MPSControl)
 
     Dcut = control.max_bond
     tol = control.var_ϵ
@@ -241,7 +240,7 @@ function MPS(ig::MetaGraph, control::MPSControl)
     ρ
 end
 
-function MPS(ig::MetaGraph, control::MPSControl, type::Symbol)
+function SpinGlassTensors.MPS(ig::MetaGraph, control::MPSControl, type::Symbol)
     L = nv(ig)
     Dcut = control.max_bond
     tol = control.var_ϵ
@@ -284,5 +283,10 @@ function MPS(ig::MetaGraph, control::MPSControl, type::Symbol)
         end
     end
     ρ
-
 end
+
+function HadamardMPS(::Type{T}, rank::Union{Vector, NTuple}) where {T <: Number}
+    vec = [ fill(one(T), r) ./ sqrt(T(r)) for r ∈ rank ]
+    MPS(vec)
+end
+HadamardMPS(rank::Union{Vector, NTuple}) = HadamardMPS(Float64, rank)

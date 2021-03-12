@@ -1,8 +1,3 @@
-using MetaGraphs
-using LightGraphs
-using GraphPlot
-using CSV
-
 @testset "Pathological instance" begin
     m = 3
     n = 4
@@ -75,7 +70,6 @@ using CSV
 
     fg = factor_graph(
         ig,
-        energy=energy,
         spectrum=full_spectrum,
         cluster_assignment_rule=super_square_lattice((m, n, t))
     )

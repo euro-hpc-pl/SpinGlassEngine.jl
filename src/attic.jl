@@ -1,4 +1,4 @@
-ρ needs to be ∈ the right canonical form
+# ρ needs to be ∈ the right canonical form
 function solve(ψ::AbstractMPS, keep::Int)
     @assert keep > 0 "Number of states has to be > 0"
     T = eltype(ψ)

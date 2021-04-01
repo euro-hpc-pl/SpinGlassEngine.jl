@@ -20,7 +20,7 @@ Memoize = "0.4"
 MetaGraphs = "0.6"
 SpinGlassNetworks = "0.1"
 SpinGlassTensors = "0.1"
-TensorCast = "0.3"
+TensorCast = "0.3, 0.4"
 TensorOperations = "3.0.1"
 julia = "1.5"
 

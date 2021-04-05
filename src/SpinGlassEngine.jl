@@ -7,6 +7,8 @@ using Memoize
 using LinearAlgebra
 using LightGraphs
 
+using DocStringExtensions
+
 SpinGlassNetworks.local_basis(ψ::AbstractMPS, i::Int) = SpinGlassNetworks.local_basis(physical_dim(ψ, i))
 
 function LinearAlgebra.dot(ψ::AbstractMPS, state::Union{Vector, NTuple})

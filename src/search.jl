@@ -4,6 +4,11 @@ export Solution
 
 abstract type AbstractGibbsNetwork end
 
+"""
+$(TYPEDSIGNATURES)
+
+Stores results from branch-and-bound search.
+"""
 struct Solution
     energies::Vector{Float64}
     states::Vector{Vector{Int}}
@@ -68,6 +73,24 @@ function _branch_and_bound(
 end
 
 #TODO: incorporate "going back" move to improve alghoritm
+"""
+$(TYPEDSIGNATURES)
+
+Searches for the low-energy spectrum on a quasi-2d graph.
+
+# Details
+Merges matching configurations during branch-and-bound search. 
+Probabilities are kept as log2.
+Results are stored as Solution structure.
+# Args:
+    * network - graph
+    * cut - number of configurations
+# Results:
+    * sampled energies
+    * states
+    * probabilities
+    * largest_discarded_probability - log2 of the largest probability discarded during the search
+"""
 function low_energy_spectrum(
     network::AbstractGibbsNetwork,
     cut::Int

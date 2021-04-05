@@ -1,6 +1,11 @@
 export MPSControl
 export solve, solve_new
 
+"""
+$(TYPEDSIGNATURES)
+
+Stores control parameters.
+"""
 struct MPSControl
     max_bond::Int
     var_ϵ::Number
@@ -68,6 +73,16 @@ _make_LL_new(ψ::AbstractMPS, b::Int, k::Int, d::Int) = zeros(eltype(ψ), b, k, 
 
 
 # ψ needs to be ∈ the right canonical form
+
+"""
+$(TYPEDSIGNATURES)
+    
+Searches for the low-energy spectrum on a quasi-1d graph.
+
+# Details
+Merges matching configurations during branch-and-bound search. 
+Probabilities are kept as log2.
+"""
 function solve(ψ::AbstractMPS, keep::Int)
     @assert keep > 0 "Number of states has to be > 0"
     T = eltype(ψ)
@@ -221,6 +236,11 @@ function _apply_layer_of_gates(ig::MetaGraph, ρ::AbstractMPS, control::MPSContr
     ρ
 end
 
+"""
+$(TYPEDSIGNATURES)
+    
+Matrix Product States (MPS).
+"""
 function SpinGlassTensors.MPS(ig::MetaGraph, control::MPSControl)
 
     Dcut = control.max_bond
@@ -240,6 +260,11 @@ function SpinGlassTensors.MPS(ig::MetaGraph, control::MPSControl)
     ρ
 end
 
+"""
+$(TYPEDSIGNATURES)
+    
+Matrix Product States (MPS). 
+"""
 function SpinGlassTensors.MPS(ig::MetaGraph, control::MPSControl, type::Symbol)
     L = nv(ig)
     Dcut = control.max_bond

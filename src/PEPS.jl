@@ -1,6 +1,15 @@
 export PEPSNetwork, contract_network
 export generate_boundary, peps_indices
 
+"""
+$(TYPEDSIGNATURES)
+
+Stores control parameters.
+    * bond-dim: bond dimension
+    * var_tol: condition for overlap convergence of one sweep
+    * sweeps (Int): maximal number of sweeps during variational compression
+    * β: inverse temperature
+"""
 const DEFAULT_CONTROL_PARAMS = Dict(
     "bond_dim" => typemax(Int),
     "var_tol" => 1E-8,
@@ -19,6 +28,11 @@ struct PEPSNetwork <: AbstractGibbsNetwork
     β::Number # TODO: get rid of this
     args::Dict{String, Number}
 
+    """
+    $(TYPEDSIGNATURES)
+    
+    Creates PEPS network 
+    """
     function PEPSNetwork(
         m::Int,
         n::Int,
@@ -51,6 +65,14 @@ function _get_projector(fg::MetaDiGraph, v::Int, w::Int)
     end
 end
 
+"""
+$(TYPEDSIGNATURES)
+    
+Creates tensors for 
+```math
+\\exp{-\β H}
+```
+"""
 @memoize function generate_tensor(network::PEPSNetwork, v::Int)
     # TODO: does this require full network, or can we pass only fg?
     loc_exp = exp.(-network.β .* get_prop(network.fg, v, :loc_en))
@@ -66,6 +88,14 @@ end
     reshape(A, dim..., :)
 end
 
+"""
+$(TYPEDSIGNATURES)
+    
+Creates tensors for 
+```math
+\\exp{-\β H}
+```
+"""
 @memoize function generate_tensor(network::PEPSNetwork, v::Int, w::Int)
     fg = network.fg
     if has_edge(fg, w, v)
@@ -78,6 +108,14 @@ end
     exp.(-network.β .* (en .- minimum(en)))
 end
 
+"""
+$(TYPEDSIGNATURES)
+    
+Creates peps tensors for 
+```math
+\\exp{-\β H}
+```
+"""
 function peps_tensor(::Type{T}, peps::PEPSNetwork, i::Int, j::Int) where {T <: Number}
     # generate tensors from projectors
     A = generate_tensor(peps, peps.map[i, j])
@@ -90,6 +128,11 @@ function peps_tensor(::Type{T}, peps::PEPSNetwork, i::Int, j::Int) where {T <: N
 end
 peps_tensor(peps::PEPSNetwork, i::Int, j::Int) = peps_tensor(Float64, peps, i, j)
 
+"""
+$(TYPEDSIGNATURES)
+    
+Creates row of PEPS tensors.
+"""
 function SpinGlassTensors.PEPSRow(::Type{T}, peps::PEPSNetwork, i::Int) where {T <: Number}
     ψ = PEPSRow(T, peps.j_max)
     for j ∈ 1:peps.j_max
@@ -99,6 +142,11 @@ function SpinGlassTensors.PEPSRow(::Type{T}, peps::PEPSNetwork, i::Int) where {T
 end
 SpinGlassTensors.PEPSRow(peps::PEPSNetwork, i::Int) = PEPSRow(Float64, peps, i)
 
+"""
+$(TYPEDSIGNATURES)
+    
+Matrix Product Operator
+"""
 function SpinGlassTensors.MPO(::Type{T},
     peps::PEPSNetwork,
     i::Int,
@@ -120,17 +168,37 @@ function SpinGlassTensors.MPO(::Type{T},
     W
 end
 
+"""
+$(TYPEDSIGNATURES)
+    
+Matrix Product Operator
+"""
 SpinGlassTensors.MPO(peps::PEPSNetwork,
     i::Int,
     config::Dict{Int, Int} = Dict{Int, Int}()
     ) = MPO(Float64, peps, i, config)
 
+"""
+$(TYPEDSIGNATURES)
+    
+Compresses MPS variationally. Uses arguments from PEPS. 
+# Args:
+    * ψ (AbstractMPS): MPS.
+    * peps(PEPSNetwork): PEPS
+# Returns:
+    compressed MPS.
+"""
 function compress(ψ::AbstractMPS, peps::PEPSNetwork)
     Dcut = peps.args["bond_dim"]
     if bond_dimension(ψ) < Dcut return ψ end
     compress(ψ, Dcut, peps.args["var_tol"], peps.args["sweeps"])
 end
 
+"""
+$(TYPEDSIGNATURES)
+    
+Matrix Product State
+"""
 @memoize function SpinGlassTensors.MPS(
     peps::PEPSNetwork,
     i::Int,
@@ -142,6 +210,11 @@ end
     compress(W * ψ, peps)
 end
 
+""" 
+$(TYPEDSIGNATURES)
+    
+Contracts PEPS network.
+"""
 function contract_network(
     peps::PEPSNetwork,
     config::Dict{Int, Int} = Dict{Int, Int}(),
@@ -154,6 +227,11 @@ end
     ceil(Int, k / peps.j_max), (k - 1) % peps.j_max + 1
 end
 
+""" 
+$(TYPEDSIGNATURES)
+    
+Creates boundary matrix product state.
+"""
 function generate_boundary(fg::MetaDiGraph, v::Int, w::Int, state::Int)
     if v ∉ vertices(fg) return 1 end
     loc_dim = length(get_prop(fg, v, :loc_en))
@@ -161,6 +239,11 @@ function generate_boundary(fg::MetaDiGraph, v::Int, w::Int, state::Int)
     findfirst(x -> x > 0, pv[state, :])
 end
 
+""" 
+$(TYPEDSIGNATURES)
+    
+Creates boundary matrix product state.
+"""
 function generate_boundary(peps::PEPSNetwork, v::Vector{Int}, w::NTuple{2, Int})
     i, j = w
     ∂v = zeros(Int, peps.j_max + 1)
@@ -206,6 +289,11 @@ function _normalize_probability(prob::Vector{T}) where {T <: Number}
     prob / sum(prob)
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+Calculates conditional probability
+"""
 function conditional_probability(
     peps::PEPSNetwork,
     v::Vector{Int},
@@ -228,6 +316,17 @@ function conditional_probability(
     _normalize_probability(prob)
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+Add energy of nearest neighbors of local state.
+#Args:
+    * fg - factor graph
+    * u,v - coordinates of nearest neighbors
+    * σ - local state
+#Returns:
+    vector of energies
+"""
 function bond_energy(fg::MetaDiGraph, u::Int, v::Int, σ::Int)
     if has_edge(fg, u, v)
         pu, en, pv = get_prop.(Ref(fg), u, v, (:pl, :en, :pr))
@@ -241,6 +340,11 @@ function bond_energy(fg::MetaDiGraph, u::Int, v::Int, σ::Int)
     vec(energies)
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+Updates energy of partial configuration during the search.
+"""
 function update_energy(
     network::AbstractGibbsNetwork,
     σ::Vector{Int},
@@ -256,6 +360,11 @@ function update_energy(
 end
 
 #TODO: translate this into rotations and reflections
+"""
+$(TYPEDSIGNATURES)
+
+Translate lattice indices into PEPS indices.
+"""
 function peps_indices(m::Int, n::Int, origin::Symbol=:NW)
     @assert origin ∈ (:NW, :WN, :NE, :EN, :SE, :ES, :SW, :WS)
 

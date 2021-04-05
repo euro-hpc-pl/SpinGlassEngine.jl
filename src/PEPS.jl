@@ -70,7 +70,7 @@ $(TYPEDSIGNATURES)
     
 Creates tensors for 
 ```math
-\\exp{-\β H}
+\\exp{-\\beta H}
 ```
 """
 @memoize function generate_tensor(network::PEPSNetwork, v::Int)
@@ -93,7 +93,7 @@ $(TYPEDSIGNATURES)
     
 Creates tensors for 
 ```math
-\\exp{-\β H}
+\\exp{-\\beta H}
 ```
 """
 @memoize function generate_tensor(network::PEPSNetwork, v::Int, w::Int)
@@ -113,7 +113,7 @@ $(TYPEDSIGNATURES)
     
 Creates peps tensors for 
 ```math
-\\exp{-\β H}
+\\exp{-\\beta H}
 ```
 """
 function peps_tensor(::Type{T}, peps::PEPSNetwork, i::Int, j::Int) where {T <: Number}

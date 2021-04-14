@@ -2,7 +2,7 @@ export AbstractGibbsNetwork
 export low_energy_spectrum
 export Solution
 
-abstract type AbstractGibbsNetwork end
+# abstract type AbstractGibbsNetwork end
 
 struct Solution
     energies::Vector{Float64}
@@ -27,9 +27,9 @@ function _bound(probabilities::Vector{Float64}, cut::Int)
     k = length(probabilities)
     second_phase = false
 
-    if k > cut + 1 
+    if k > cut + 1
         k = cut + 1
-        second_phase = true 
+        second_phase = true
     end
 
     idx = partialsortperm(probabilities, 1:k, rev=true)
@@ -44,17 +44,18 @@ end
 function _branch_and_bound(
     sol::Solution,
     network::AbstractGibbsNetwork,
-    node::Int,
+    node::NTuple{2, Int},
     cut::Int,
+    β::Real
     )
 
     # branch
     pdo, eng, cfg = Float64[], Float64[], Vector{Int}[]
 
-    k = get_prop(network.fg, node, :loc_dim)
+    k = length(local_energy(network, node))
 
     for (p, σ, e) ∈ zip(sol.probabilities, sol.states, sol.energies)
-        pdo = [pdo; p .* conditional_probability(network, σ)]
+        pdo = [pdo; p .* conditional_probability(network, σ, β)]
         eng = [eng; e .+ update_energy(network, σ)]
         cfg = _branch_state(cfg, σ, collect(1:k))
      end
@@ -70,17 +71,18 @@ end
 #TODO: incorporate "going back" move to improve alghoritm
 function low_energy_spectrum(
     network::AbstractGibbsNetwork,
-    cut::Int
+    cut::Int,
+    β::Real
 )
     sol = Solution([0.], [[]], [1.], -Inf)
 
-    perm = zeros(Int, nv(network.fg)) # TODO: to be removed
+    perm = zeros(Int, nv(network.factor_graph)) # TODO: to be removed
 
     #TODO: this should be replaced with the iteration over fg that is consistent with the order network
-    for i ∈ 1:network.i_max, j ∈ 1:network.j_max
-        v_fg = network.map[i, j]
-        perm[v_fg] = j + network.j_max * (i - 1)
-        sol = _branch_and_bound(sol, network, v_fg, cut)
+    for i ∈ 1:network.nrows, j ∈ 1:network.ncols
+        v_fg = network.factor_graph.reverse_label_map[network.vertex_map((i, j))]
+        perm[v_fg] = j + network.ncols * (i - 1)
+        sol = _branch_and_bound(sol, network, (i, j), cut, β)
     end
     K = partialsortperm(sol.energies, 1:length(sol.energies), rev=false)
 

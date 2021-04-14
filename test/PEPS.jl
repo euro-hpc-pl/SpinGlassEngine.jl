@@ -25,7 +25,7 @@ m = 3
 n = 4
 t = 3
 
-β = 1
+β = 1.0
 
 L = m * n * t
 T = Float64
@@ -43,13 +43,14 @@ fg = factor_graph(
 
 x, y = m, n
 
-for origin ∈ (:NW, :SW, :WS, :WN, :NE, :EN, :SE, :ES)
-    peps = PEPSNetwork(x, y, fg, β, origin)
+for transform ∈ [rotation.([0, 90, 180, 270])..., reflection.([:x, :y, :diag, :antydiag])...]
+    peps = PEPSNetwork(x, y, fg, transform)
 
     ψ = IdentityMPS()
-    for i ∈ peps.i_max:-1:1
-        ψ = MPO(T, peps, i) * ψ
-        @test MPS(peps, i) ≈ ψ
+
+    for i ∈ peps.nrows:-1:1
+        ψ = MPO(T, peps, i, β) * ψ
+        @test MPS(peps, i, β) ≈ ψ
     end
 end
 

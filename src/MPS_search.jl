@@ -73,7 +73,7 @@ function solve(ψ::AbstractMPS, keep::Int)
     states', lprob, lpCut
 end
 
-function _apply_bias!(ψ::AbstractMPS, ig::MetaGraph, dβ::Number, i::Int)
+function _apply_bias!(ψ::AbstractMPS, ig::LabelledGraph, dβ::Number, i::Int)
     M = ψ[i]
     d = size(M, 2)
 
@@ -84,7 +84,7 @@ function _apply_bias!(ψ::AbstractMPS, ig::MetaGraph, dβ::Number, i::Int)
     ψ[i] = M
 end
 
-function _apply_exponent!(ψ::AbstractMPS, ig::MetaGraph, dβ::Number, i::Int, j::Int, last::Int)
+function _apply_exponent!(ψ::AbstractMPS, ig::LabelledGraph, dβ::Number, i::Int, j::Int, last::Int)
     M = ψ[j]
     D = typeof(M).name.wrapper(I(physical_dim(ψ, i)))
 
@@ -133,7 +133,7 @@ end
 
 _holes(l::Int, nbrs::Vector) = setdiff(l+1 : last(nbrs), nbrs)
 
-function _apply_layer_of_gates(ig::MetaGraph, ρ::AbstractMPS, control::MPSControl, dβ::Number)
+function _apply_layer_of_gates(ig::LabelledGraph, ρ::AbstractMPS, control::MPSControl, dβ::Number)
     L = nv(ig)
     Dcut = control.max_bond
     tol = control.var_ϵ
@@ -168,7 +168,7 @@ function _apply_layer_of_gates(ig::MetaGraph, ρ::AbstractMPS, control::MPSContr
     ρ
 end
 
-function SpinGlassTensors.MPS(ig::MetaGraph, control::MPSControl)
+function SpinGlassTensors.MPS(ig::LabelledGraph, control::MPSControl)
 
     Dcut = control.max_bond
     tol = control.var_ϵ
@@ -187,7 +187,7 @@ function SpinGlassTensors.MPS(ig::MetaGraph, control::MPSControl)
     ρ
 end
 
-function SpinGlassTensors.MPS(ig::MetaGraph, control::MPSControl, type::Symbol)
+function SpinGlassTensors.MPS(ig::LabelledGraph, control::MPSControl, type::Symbol)
     L = nv(ig)
     Dcut = control.max_bond
     tol = control.var_ϵ

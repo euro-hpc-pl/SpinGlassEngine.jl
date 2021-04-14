@@ -58,11 +58,11 @@
         21 => 5, 22 => 5,
         )
 
-    # control_params = Dict(
-    #     "bond_dim" => typemax(Int),
-    #     "var_tol" => 1E-8,
-    #     "sweeps" => 4.
-    # )
+    control_params = Dict(
+        "bond_dim" => typemax(Int),
+        "var_tol" => 1E-8,
+        "sweeps" => 4.
+    )
 
     instance = "$(@__DIR__)/instances/pathological/test_$(m)_$(n)_$(t).txt"
 
@@ -74,13 +74,13 @@
         cluster_assignment_rule=super_square_lattice((m, n, t))
     )
 
-    for transform ∈ [rotation.([0, 90, 180, 270])..., reflection.([:x, :y, :diag, :antydiag])...]
-        peps = PEPSNetwork(m, n, fg, transform)
+   for origin ∈ (:NW, :SW, :WS, :WN, :NE, :EN, :SE, :ES)
+        peps = PEPSNetwork(m, n, fg, β, origin, control_params)
 
         # solve the problem using B & B
-        sol = low_energy_spectrum(peps, num_states, β)
+        sol = low_energy_spectrum(peps, num_states)
 
-        @testset "has correct spectrum given the transformation $(transform)" begin
+        @testset "has correct spectrum given the origin at $(origin)" begin
             @test sol.energies ≈ exact_energies
              for (i, σ) ∈ enumerate(sol.states)
                  @test σ ∈ exact_states[deg[i]]

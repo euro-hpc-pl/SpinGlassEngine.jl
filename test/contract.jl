@@ -3,19 +3,19 @@ using LabelledGraphs
 using MetaGraphs
 
 
-@testset "peps_contract correctly collapse the peps network" begin
+@testset "PEPSNetwork is correctly contracted" begin
 
     #      Grid
     #     A1    |    A2
     #           |
     #   1 -- 2 -|- 3
 
-    D = Dict((1, 2) => -0.9049,
-             (2, 3) =>  0.2838,
-
-             (3, 3) => -0.7928,
-             (2, 2) =>  0.1208,
-             (1, 1) => -0.3342
+    D = Dict(
+        (1, 2) => -0.9049,
+        (2, 3) =>  0.2838,
+        (3, 3) => -0.7928,
+        (2, 2) =>  0.1208,
+        (1, 1) => -0.3342
     )
 
     m, n = 1, 2
@@ -42,7 +42,6 @@ using MetaGraphs
             for transform ∈ all_lattice_transformations
         ]
 
-        # they all should be the same
         @test all(x -> x ≈ first(Z), Z)
 
         # the exact Gibbs state

@@ -1,4 +1,4 @@
-export LatticeTransformation, rotation, reflection
+export LatticeTransformation, rotation, reflection, all_lattice_transformations
 
 
 struct LatticeTransformation
@@ -82,3 +82,8 @@ function vertex_map(vert_permutation::NTuple{4, Int}, nrows, ncols)
 end
 
 vertex_map(trans::LatticeTransformation, m::Int, n::Int) = vertex_map(trans.permutation, m, n)
+
+const all_lattice_transformations = (
+    rotation.([0, 90, 180, 270])...,
+    reflection.([:x, :y, :diag, :antydiag])...
+)

@@ -98,7 +98,7 @@ end
 end
 
 
-for transform ∈ (rotation.([0, 90, 180, 270])..., reflection.([:x, :y, :diag, :antydiag])...)
+for transform ∈ all_lattice_transformations
 @testset "$(transform) of square lattice is a bijection" begin
     op = vertex_map(transform, 3, 3)
     all_points = [(i, j) for i ∈ 1:3, j ∈ 1:3]

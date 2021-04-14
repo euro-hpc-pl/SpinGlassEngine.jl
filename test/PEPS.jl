@@ -43,7 +43,7 @@ fg = factor_graph(
 
 x, y = m, n
 
-for transform ∈ [rotation.([0, 90, 180, 270])..., reflection.([:x, :y, :diag, :antydiag])...]
+for transform ∈ all_lattice_transformations
     peps = PEPSNetwork(x, y, fg, transform)
 
     ψ = IdentityMPS()

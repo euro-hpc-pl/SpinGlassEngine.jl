@@ -74,7 +74,7 @@
         cluster_assignment_rule=super_square_lattice((m, n, t))
     )
 
-    for transform ∈ [rotation.([0, 90, 180, 270])..., reflection.([:x, :y, :diag, :antydiag])...]
+    for transform ∈ all_lattice_transformations
         peps = PEPSNetwork(m, n, fg, transform)
 
         # solve the problem using B & B

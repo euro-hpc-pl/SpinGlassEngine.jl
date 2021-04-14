@@ -66,7 +66,7 @@ using MetaGraphs
         @test p1 ≈ p2 ≈ I
     end
 
-    for transform ∈ [rotation.([0, 90, 180, 270])..., reflection.([:x, :y, :diag, :antydiag])...]
+    for transform ∈ all_lattice_transformations
         peps = PEPSNetwork(m, n, fg, transform)
         cluster_to_spin = Dict((1, 1) => 1, (1, 2) => 2)
         #cluster_to_spin = Dict((1, 1) => 1,(1, 2) => 2)

@@ -37,12 +37,10 @@ using MetaGraphs
     for i ∈ 1:4, j ∈ 1:2
         cfg = Dict((1, 1) => i, (1, 2) => j)
 
-        Z = []
-        for transform ∈ [rotation.([0, 90, 180, 270])..., reflection.([:x, :y, :diag, :antydiag])...]
-            peps = PEPSNetwork(m, n, fg, transform)
-            p = contract_network(peps, β, cfg)
-            push!(Z, p)
-        end
+        Z = [
+            contract_network(PEPSNetwork(m, n, fg, transform), β, cfg)
+            for transform ∈ all_lattice_transformations
+        ]
 
         # they all should be the same
         @test all(x -> x ≈ first(Z), Z)

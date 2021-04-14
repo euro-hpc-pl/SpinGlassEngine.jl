@@ -3,25 +3,33 @@ export LatticeTransformation, rotation, reflection
 
 struct LatticeTransformation
     permutation::NTuple{4, Int}
+    flips_dimensions::Bool
 end
 
 Base.:(∘)(op1::LatticeTransformation, op2::LatticeTransformation) =
-    LatticeTransformation(op1.permutation[collect(op2.permutation)])
+    LatticeTransformation(
+        op1.permutation[collect(op2.permutation)],
+        op1.flips_dimensions ⊻ op2.flips_dimensions
+    )
 
 
 function reflection(axis::Symbol)
     if axis == :x
         perm = (4, 3, 2, 1)
+        flips = false
     elseif axis == :y
         perm = (2, 1, 4, 3)
+        flips = false
     elseif axis == :diag
         perm = (1, 4, 3, 2)
+        flips = true
     elseif axis == :antydiag
         perm = (3, 2, 1, 4)
+        flips = true
     else
         throw(ArgumentError("Unknown reflection axis: $(axis)"))
     end
-    LatticeTransformation(perm)
+    LatticeTransformation(perm, flips)
 end
 
 
@@ -31,9 +39,9 @@ function rotation(θ::Int)
     end
     θ = θ % 360
     if θ == 0
-        LatticeTransformation((1, 2, 3, 4))
+        LatticeTransformation((1, 2, 3, 4), false)
     elseif θ == 90
-        LatticeTransformation((4, 1, 2, 3))
+        LatticeTransformation((4, 1, 2, 3), true)
     else
         rotation(θ - 90) ∘ rotation(90)
     end
@@ -50,28 +58,27 @@ function check_bounds(m, n)
 end
 
 
-function vertex_map(vert_permutation::NTuple{4, Int}, m, n)
-    checker = check_bounds(m, n)
+function vertex_map(vert_permutation::NTuple{4, Int}, nrows, ncols)
     if vert_permutation == (1, 2, 3, 4) #
         f = (i, j) -> (i, j)
     elseif vert_permutation == (4, 1, 2, 3) # 90 deg rotation
-        f = (i, j) -> (j, m - i + 1)
+        f = (i, j) -> (nrows - j + 1, i)
     elseif vert_permutation == (3, 4, 1, 2) # 180 deg rotation
-        f = (i, j) -> (m - i + 1, n - j + 1)
+        f = (i, j) -> (nrows - i + 1, ncols - j + 1)
     elseif vert_permutation == (2, 3, 4, 1) # 270 deg rotation
-        f = (i, j) -> (n - j + 1, i)
+        f = (i, j) -> (j, ncols - i + 1)
     elseif vert_permutation == (2, 1, 4, 3) # :y reflection
-        f = (i, j) -> (i, n - j + 1)
+        f = (i, j) -> (i, ncols - j + 1)
     elseif vert_permutation == (4, 3, 2, 1) # :x reflection
-        f = (i, j) -> (m - i + 1, j)
+        f = (i, j) -> (nrows - i + 1, j)
     elseif vert_permutation == (1, 4, 3, 2) # :diag reflection
         f = (i, j) -> (j, i)
     elseif vert_permutation == (3, 2, 1, 4) # :antydiag reflection
-        f = (i, j) -> (n -j + 1, m - i + 1)
+        f = (i, j) -> (nrows -j + 1, ncols - i + 1)
     else
         ArgumentError("$(vert_permutation) does not define square isometry.")
     end
-    (tuple) -> checker(tuple[1], tuple[2]) && f(tuple[1], tuple[2])
+    (tuple) -> f(tuple[1], tuple[2])
 end
 
 vertex_map(trans::LatticeTransformation, m::Int, n::Int) = vertex_map(trans.permutation, m, n)

@@ -9,10 +9,63 @@ struct MPSControl
     dβ::Number
 end
 
+_make_left_env(ψ::AbstractMPS, k::Int) = ones(eltype(ψ), 1, 1, k)
+_make_left_env_new(ψ::AbstractMPS, k::Int) = ones(eltype(ψ), 1, k)
+_make_LL(ψ::AbstractMPS, b::Int, k::Int, d::Int) = zeros(eltype(ψ), b, b, k, d)
+_make_LL_new(ψ::AbstractMPS, b::Int, k::Int, d::Int) = zeros(eltype(ψ), b, k, d)
 
-_make_left_env(ψ::AbstractMPS, k::Int) = ones(eltype(ψ), 1, k)
+# ρ needs to be ∈ the right canonical form
+# function solve(ψ::AbstractMPS, keep::Int)
+#     @assert keep > 0 "Number of states has to be > 0"
+#     T = eltype(ψ)
 
-_make_LL(ψ::AbstractMPS, b::Int, k::Int, d::Int) = zeros(eltype(ψ), b, k, d)
+#     keep_extra = keep
+#     pCut = prob = 0.
+#     k = 1
+
+#     if keep < prod(rank(ψ))
+#         keep_extra += 1
+#     end
+
+#     states = fill([], 1, k)
+#     left_env = _make_left_env(ψ, k)
+
+#     for (i, M) ∈ enumerate(ψ)
+#         _, d, b = size(M)
+
+#         pdo = zeros(T, k, d)
+#         LL = _make_LL(ψ, b, k, d)
+#         config = zeros(Int, i, k, d)
+
+#         for j ∈ 1:k
+#             L = left_env[:, :, j]
+
+#             for σ ∈ local_basis(d)
+#                 m = idx(σ)
+#                 LL[:, :, j, m] = M[:, m, :]' * (L * M[:, m, :])
+#                 pdo[j, m] = tr(LL[:, :, j, m])
+#                 config[:, j, m] = vcat(states[:, j]..., σ)
+#             end
+#         end
+
+#         perm = collect(1: k * d)
+#         k = min(k * d, keep_extra)
+
+#         if k >= keep_extra
+#             partialsortperm!(perm, vec(pdo), 1:k, rev=true)
+#             prob = vec(pdo)[perm]
+#             pCut < last(prob) ? pCut = last(prob) : ()
+#         end
+
+#         @cast A[α, β, (l, d)] |= LL[α, β, l, d]
+#         left_env = A[:, :, perm]
+
+#         @cast B[α, (l, d)] |= config[α, l, d]
+#         states = B[:, perm]
+#     end
+#     states[:, 1:keep], prob[1:keep], pCut
+# end
+
 
 # ψ needs to be ∈ the right canonical form
 function solve(ψ::AbstractMPS, keep::Int)
@@ -30,14 +83,14 @@ function solve(ψ::AbstractMPS, keep::Int)
 
     lprob = zeros(T, k)
     states = fill([], 1, k)
-    left_env = _make_left_env(ψ, k)
+    left_env = _make_left_env_new(ψ, k)
 
     for (i, M) ∈ enumerate(ψ)
         _, d, b = size(M)
 
         pdo = ones(T, k, d)
         lpdo = zeros(T, k, d)
-        LL = _make_LL(ψ, b, k, d)
+        LL = _make_LL_new(ψ, b, k, d)
         config = zeros(Int, i, k, d)
 
         for j ∈ 1:k
@@ -73,7 +126,7 @@ function solve(ψ::AbstractMPS, keep::Int)
     states', lprob, lpCut
 end
 
-function _apply_bias!(ψ::AbstractMPS, ig::LabelledGraph, dβ::Number, i::Int)
+function _apply_bias!(ψ::AbstractMPS, ig::MetaGraph, dβ::Number, i::Int)
     M = ψ[i]
     d = size(M, 2)
 
@@ -84,7 +137,7 @@ function _apply_bias!(ψ::AbstractMPS, ig::LabelledGraph, dβ::Number, i::Int)
     ψ[i] = M
 end
 
-function _apply_exponent!(ψ::AbstractMPS, ig::LabelledGraph, dβ::Number, i::Int, j::Int, last::Int)
+function _apply_exponent!(ψ::AbstractMPS, ig::MetaGraph, dβ::Number, i::Int, j::Int, last::Int)
     M = ψ[j]
     D = typeof(M).name.wrapper(I(physical_dim(ψ, i)))
 
@@ -133,7 +186,7 @@ end
 
 _holes(l::Int, nbrs::Vector) = setdiff(l+1 : last(nbrs), nbrs)
 
-function _apply_layer_of_gates(ig::LabelledGraph, ρ::AbstractMPS, control::MPSControl, dβ::Number)
+function _apply_layer_of_gates(ig::MetaGraph, ρ::AbstractMPS, control::MPSControl, dβ::Number)
     L = nv(ig)
     Dcut = control.max_bond
     tol = control.var_ϵ
@@ -168,7 +221,7 @@ function _apply_layer_of_gates(ig::LabelledGraph, ρ::AbstractMPS, control::MPSC
     ρ
 end
 
-function SpinGlassTensors.MPS(ig::LabelledGraph, control::MPSControl)
+function SpinGlassTensors.MPS(ig::MetaGraph, control::MPSControl)
 
     Dcut = control.max_bond
     tol = control.var_ϵ
@@ -187,7 +240,7 @@ function SpinGlassTensors.MPS(ig::LabelledGraph, control::MPSControl)
     ρ
 end
 
-function SpinGlassTensors.MPS(ig::LabelledGraph, control::MPSControl, type::Symbol)
+function SpinGlassTensors.MPS(ig::MetaGraph, control::MPSControl, type::Symbol)
     L = nv(ig)
     Dcut = control.max_bond
     tol = control.var_ϵ

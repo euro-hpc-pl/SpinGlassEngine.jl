@@ -1,5 +1,3 @@
-using MetaGraphs
-
 @testset "Simplest possible system of two spins" begin
     #
     # ----------------- Ising model ------------------
@@ -39,12 +37,10 @@ using MetaGraphs
     # construct factor graph with no approx
     fg = factor_graph(
         ig,
-        Dict((1, 1) => 2, (1, 2) => 2),
+        Dict(1 => 2, 2 => 2),
         spectrum = full_spectrum,
-        cluster_assignment_rule = Dict(1 => (1, 1), 2 => (1, 2)), # treat it as a grid with 1 spin cells
+        cluster_assignment_rule = Dict(1 => 1, 2 => 2), # treat it as a grid with 1 spin cells
     )
-
-
 
     # set parameters to contract exactely
     control_params = Dict(
@@ -58,7 +54,7 @@ using MetaGraphs
     ϱ = gibbs_tensor(ig, β)
 
     # split on the bond
-    p1, e, p2 = get_prop.(Ref(fg), Ref((1, 1)), Ref((1, 2)), (:pl, :en, :pr))
+    p1, e, p2 = get_prop.(Ref(fg), 1, 2, (:pl, :en, :pr))
 
     @testset "has correct energy on the bond" begin
         en = [ J12 * σ * η for σ ∈ [-1, 1], η ∈ [-1, 1]]
@@ -66,18 +62,16 @@ using MetaGraphs
         @test p1 ≈ p2 ≈ I
     end
 
-    for transform ∈ [rotation.([0, 90, 180, 270])..., reflection.([:x, :y, :diag, :antydiag])...]
-        peps = PEPSNetwork(m, n, fg, transform)
-        cluster_to_spin = Dict((1, 1) => 1, (1, 2) => 2)
-        #cluster_to_spin = Dict((1, 1) => 1,(1, 2) => 2)
+    for origin ∈ (:NW, :SW, :WS, :WN, :NE, :EN, :SE, :ES)
+        peps = PEPSNetwork(m, n, fg, β, origin, control_params)
 
-        @testset "has properly built PEPS tensors given transformation $(transform)" begin
+        @testset "has properly built PEPS tensors given origin at $(origin)" begin
 
             # horizontal alignment - 1 row, 2 columns
-            if peps.nrows == 1 && peps.ncols == 2
-                @test !transform.flips_dimensions
+            if peps.i_max == 1 && peps.j_max == 2
+                @test origin ∈ (:NW, :SW, :SE, :NE)
 
-                l, k = cluster_to_spin[peps.vertex_map((1, 1))], cluster_to_spin[peps.vertex_map((1, 2))]
+                l, k = peps.map[1, 1], peps.map[1, 2]
 
                 v1 = [exp(-β * D[l, l] * σ) for σ ∈ [-1, 1]]
                 v2 = [exp(-β * D[k, k] * σ) for σ ∈ [-1, 1]]
@@ -89,14 +83,14 @@ using MetaGraphs
                 @reduce ρ[σ, η] := sum(l) A[1, 1, l, 1, σ] * B[l, 1, 1, 1, η]
                 if l == 2 ρ = ρ' end
 
-                R = PEPSRow(peps, 1, β)
+                R = PEPSRow(peps, 1)
                 @test [R[1], R[2]] ≈ [A, B]
 
             # vertical alignment - 1 column, 2 rows
-            elseif peps.nrows == 2 && peps.ncols == 1
-                @test transform.flips_dimensions
-                l, k = cluster_to_spin[peps.vertex_map((1, 1))], cluster_to_spin[peps.vertex_map((2, 1))]
-                # l, k = peps.map[1, 1], peps.map[2, 1]
+            elseif peps.i_max == 2 && peps.j_max == 1
+                @test origin ∈ (:WN, :WS, :ES, :EN)
+
+                l, k = peps.map[1, 1], peps.map[2, 1]
 
                 v1 = [exp(-β * D[l, l] * σ) for σ ∈ [-1, 1]]
                 v2 = [exp(-β * D[k, k] * σ) for σ ∈ [-1, 1]]
@@ -108,8 +102,8 @@ using MetaGraphs
                 @reduce ρ[σ, η] := sum(u) A[1, 1, 1, u, σ] * B[1, u, 1, 1, η]
                 if l == 2 ρ = ρ' end
 
-                @test PEPSRow(peps, 1, β)[1] ≈ A
-                @test PEPSRow(peps, 2, β)[1] ≈ B
+                @test PEPSRow(peps, 1)[1] ≈ A
+                @test PEPSRow(peps, 2)[1] ≈ B
             end
 
             @testset "which produces correct Gibbs state" begin
@@ -118,12 +112,12 @@ using MetaGraphs
         end
 
         # solve the problem using B & B
-        sol = low_energy_spectrum(peps, num_states, β)
+        sol = low_energy_spectrum(peps, num_states)
 
-        @testset "has correct spectrum given transformation $(transform)" begin
+        @testset "has correct spectrum given the origin at $(origin)" begin
              for (σ, η) ∈ zip(exact_spectrum.states, sol.states)
-                 for i ∈ 1:peps.nrows, j ∈ 1:peps.ncols
-                    v = j + peps.ncols * (i - 1)
+                 for i ∈ 1:peps.i_max, j ∈ 1:peps.j_max
+                    v = j + peps.j_max * (i - 1)
                      # 1 --> -1 and 2 --> 1
                      @test (η[v] == 1 ? -1 : 1) == σ[v]
                 end

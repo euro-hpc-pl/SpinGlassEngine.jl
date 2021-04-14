@@ -45,8 +45,7 @@ push!(my_tests,
       "PEPS.jl",
       "contract.jl",
       "search.jl",
-      "search_2.jl",
-      "network_operations.jl"
+      "search_2.jl"
 )
 
 for my_test in my_tests

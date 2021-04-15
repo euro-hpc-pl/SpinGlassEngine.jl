@@ -7,7 +7,9 @@ export
     projectors,
     local_energy,
     interaction_energy,
-    build_tensor
+    build_tensor,
+    generate_boundary_states,
+    local_state_for_node
 
 
 # S: type of the vertex of network
@@ -31,6 +33,9 @@ vertex_map(network::AbstractGibbsNetwork{S, T}) where {S, T} = network.vertex_ma
 
 projectors(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T} = not_implmented("projectors")
 
+boundary_at_splitting_node(network::AbstractGibbsNetwork{S, T}, node::S) where {S, T} = not_implmented("boundary_at_splitting_node")
+
+node_index(network::AbstractGibbsNetwork{S, T}, node::S) where {S, T} = not_implmented("node_index")
 
 function projector(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
     fg = factor_graph(network)
@@ -88,6 +93,37 @@ end
     en = interaction_energy(network, v, w)
     exp.(-β .* (en .- minimum(en)))
 end
+
+
+function generate_boundary_state(network::AbstractGibbsNetwork{S, T}, v::S, w::S, state::Int) where {S, T}
+    if v ∉ vertices(network.network_graph) return 1 end
+    loc_dim = length(local_energy(network, v))
+    pv = projector(network, v, w)
+    findfirst(x -> x > 0, pv[state, :])
+end
+
+
+function generate_boundary_states(
+    network::AbstractGibbsNetwork,
+    σ::Vector{Int},
+    node::S
+) where {S, T}
+    [
+        generate_boundary_state(network, v, w, local_state_for_node(network, σ, v))
+        for (v, w) ∈ boundary_at_splitting_node(network, node)
+    ]
+end
+
+
+function local_state_for_node(
+    network::AbstractGibbsNetwork{S, T},
+    σ::Vector{Int},
+    w::S
+) where {S, T}
+    k = node_index(network, w)
+    0 < k <= length(σ) ? σ[k] : 1
+end
+
 
 function is_compatible(factor_graph, network_graph, vertex_map)
     all(

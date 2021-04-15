@@ -89,8 +89,9 @@ using MetaGraphs
                 @reduce ρ[σ, η] := sum(l) A[1, 1, l, 1, σ] * B[l, 1, 1, 1, η]
                 if l == 2 ρ = ρ' end
 
-                R = PEPSRow(peps, 1, β)
-                @test [R[1], R[2]] ≈ [A, B]
+                #R = PEPSRow(peps, 1, β)
+                expected = [peps_tensor(peps, 1, 1, β), peps_tensor(peps, 1, 2, β)]
+                @test expected ≈ [A, B]
 
             # vertical alignment - 1 column, 2 rows
             elseif peps.nrows == 2 && peps.ncols == 1
@@ -108,8 +109,8 @@ using MetaGraphs
                 @reduce ρ[σ, η] := sum(u) A[1, 1, 1, u, σ] * B[1, u, 1, 1, η]
                 if l == 2 ρ = ρ' end
 
-                @test PEPSRow(peps, 1, β)[1] ≈ A
-                @test PEPSRow(peps, 2, β)[1] ≈ B
+                @test peps_tensor(peps, 1, 1, β) ≈ A
+                @test peps_tensor(peps, 2, 1, β) ≈ B
             end
 
             @testset "which produces correct Gibbs state" begin

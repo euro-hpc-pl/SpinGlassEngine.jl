@@ -66,7 +66,7 @@ using MetaGraphs
     end
 
     for transform ∈ all_lattice_transformations
-        peps = PEPSNetwork(m, n, fg, transform)
+        peps = PEPSNetwork(m, n, fg, transform, β=β)
         cluster_to_spin = Dict((1, 1) => 1, (1, 2) => 2)
         #cluster_to_spin = Dict((1, 1) => 1,(1, 2) => 2)
 
@@ -88,8 +88,7 @@ using MetaGraphs
                 @reduce ρ[σ, η] := sum(l) A[1, 1, l, 1, σ] * B[l, 1, 1, 1, η]
                 if l == 2 ρ = ρ' end
 
-                #R = PEPSRow(peps, 1, β)
-                expected = [peps_tensor(peps, 1, 1, β), peps_tensor(peps, 1, 2, β)]
+                expected = [peps_tensor(peps, 1, 1), peps_tensor(peps, 1, 2)]
                 @test expected ≈ [A, B]
 
             # vertical alignment - 1 column, 2 rows
@@ -108,8 +107,8 @@ using MetaGraphs
                 @reduce ρ[σ, η] := sum(u) A[1, 1, 1, u, σ] * B[1, u, 1, 1, η]
                 if l == 2 ρ = ρ' end
 
-                @test peps_tensor(peps, 1, 1, β) ≈ A
-                @test peps_tensor(peps, 2, 1, β) ≈ B
+                @test peps_tensor(peps, 1, 1) ≈ A
+                @test peps_tensor(peps, 2, 1) ≈ B
             end
 
             @testset "which produces correct Gibbs state" begin
@@ -118,7 +117,7 @@ using MetaGraphs
         end
 
         # solve the problem using B & B
-        sol = low_energy_spectrum(peps, num_states, β)
+        sol = low_energy_spectrum(peps, num_states)
 
         @testset "has correct spectrum given transformation $(transform)" begin
              for (σ, η) ∈ zip(exact_spectrum.states, sol.states)

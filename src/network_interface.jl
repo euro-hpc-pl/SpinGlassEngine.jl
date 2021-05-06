@@ -42,7 +42,7 @@ iteration_order(network::AbstractGibbsNetwork{S, T}) where {S, T} = not_implemen
 
 update_energy(network::AbstractGibbsNetwork{S, T}, σ::Vector{Int}) where {S, T} = not_implmented("update_energy")
 
-conditional_probability(network::AbstractGibbsNetwork{S, T}, v::Vector{Int}, β::Real) where {S, T} = not_implemented("conditional_probability")
+conditional_probability(network::AbstractGibbsNetwork{S, T}, v::Vector{Int}) where {S, T} = not_implemented("conditional_probability")
 
 
 function projector(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
@@ -86,9 +86,9 @@ function interaction_energy(network::AbstractGibbsNetwork{S, T}, v::S, w::S) whe
 end
 
 
-@memoize function build_tensor(network::AbstractGibbsNetwork{S, T}, v::S, β::Real) where {S, T}
+@memoize function build_tensor(network::AbstractGibbsNetwork{S, T}, v::S) where {S, T}
     # TODO: does this require full network, or can we pass only fg?
-    loc_exp = exp.(-β .* local_energy(network, v))
+    loc_exp = exp.(-network.β .* local_energy(network, v))
 
     projs = projectors(network, v)
     dim = zeros(Int, length(projs))
@@ -102,9 +102,9 @@ end
 end
 
 
-@memoize function build_tensor(network::AbstractGibbsNetwork{S, T}, v::S, w::S, β::Real) where {S, T}
+@memoize function build_tensor(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
     en = interaction_energy(network, v, w)
-    exp.(-β .* (en .- minimum(en)))
+    exp.(-network.β .* (en .- minimum(en)))
 end
 
 

@@ -23,13 +23,13 @@ fg = factor_graph(
 x, y = m, n
 
 for transform ∈ all_lattice_transformations
-    peps = PEPSNetwork(x, y, fg, transform)
+    peps = PEPSNetwork(x, y, fg, transform, β=β)
 
     ψ = IdentityMPS()
 
     for i ∈ peps.nrows:-1:1
-        ψ = MPO(T, peps, i, β) * ψ
-        @test MPS(peps, i, β) ≈ ψ
+        ψ = MPO(T, peps, i) * ψ
+        @test MPS(peps, i) ≈ ψ
     end
 end
 

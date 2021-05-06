@@ -38,7 +38,7 @@ using MetaGraphs
         cfg = Dict((1, 1) => i, (1, 2) => j)
 
         Z = [
-            contract_network(PEPSNetwork(m, n, fg, transform), β, cfg)
+            contract_network(PEPSNetwork(m, n, fg, transform, β=1), cfg)
             for transform ∈ all_lattice_transformations
         ]
 

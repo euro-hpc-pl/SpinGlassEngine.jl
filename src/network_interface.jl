@@ -9,7 +9,8 @@ export
     interaction_energy,
     build_tensor,
     generate_boundary_states,
-    local_state_for_node
+    local_state_for_node,
+    iteration_order
 
 
 # S: type of the vertex of network
@@ -37,6 +38,13 @@ boundary_at_splitting_node(network::AbstractGibbsNetwork{S, T}, node::S) where {
 
 node_index(network::AbstractGibbsNetwork{S, T}, node::S) where {S, T} = not_implmented("node_index")
 
+iteration_order(network::AbstractGibbsNetwork{S, T}) where {S, T} = not_implemented("iteration_order")
+
+update_energy(network::AbstractGibbsNetwork{S, T}, σ::Vector{Int}) where {S, T} = not_implmented("update_energy")
+
+conditional_probability(network::AbstractGibbsNetwork{S, T}, v::Vector{Int}, β::Real) = not_implemented("conditional_probability")
+
+
 function projector(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
     fg = factor_graph(network)
     vmap = vertex_map(network)
@@ -52,13 +60,16 @@ function projector(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
     end
 end
 
+
 function spectrum(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T}
     get_prop(factor_graph(network), vertex_map(network)(vertex), :spectrum)
 end
 
+
 function local_energy(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T}
     spectrum(network, vertex).energies
 end
+
 
 function interaction_energy(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
     fg = factor_graph(network)
@@ -74,6 +85,7 @@ function interaction_energy(network::AbstractGibbsNetwork{S, T}, v::S, w::S) whe
     en
 end
 
+
 @memoize function build_tensor(network::AbstractGibbsNetwork{S, T}, v::S, β::Real) where {S, T}
     # TODO: does this require full network, or can we pass only fg?
     loc_exp = exp.(-β .* local_energy(network, v))
@@ -88,6 +100,7 @@ end
     end
     reshape(A, dim..., :)
 end
+
 
 @memoize function build_tensor(network::AbstractGibbsNetwork{S, T}, v::S, w::S, β::Real) where {S, T}
     en = interaction_energy(network, v, w)
@@ -125,7 +138,7 @@ function local_state_for_node(
 end
 
 
-function is_compatible(factor_graph, network_graph, vertex_map)
+function is_compatible(factor_graph, network_graph)
     all(
         has_edge(network_graph, src(edge), dst(edge))
         for edge ∈ edges(factor_graph)

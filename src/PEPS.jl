@@ -1,5 +1,5 @@
 export PEPSNetwork, contract_network
-export generate_boundary, peps_tensor
+export generate_boundary, peps_tensor, node_from_index
 
 
 const DEFAULT_CONTROL_PARAMS = Dict(
@@ -29,7 +29,7 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         vmap = vertex_map(transformation, m, n)
         ng = peps_lattice(m, n)
         nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
-        if !is_compatible(factor_graph, ng, vmap)
+        if !is_compatible(factor_graph, ng)
             throw(ArgumentError("Factor graph not compatible with given network."))
         end
         new(factor_graph, ng, vmap, m, n, nrows, ncols)
@@ -113,6 +113,7 @@ end
     compress(W * ψ, peps, bond_dim=bond_dim, var_tol=var_tol, sweeps=sweeps)
 end
 
+
 function contract_network(
     peps::PEPSNetwork,
     β::Real,
@@ -125,6 +126,16 @@ end
 
 node_index(peps::PEPSNetwork, node::NTuple{2, Int}) = peps.ncols * (node[1] - 1) + node[2]
 
+# Below is needed because we are counting fom 1 ¯\_(ツ)_/¯
+# Therefore, when computing column from index, we can't just use remainder,
+# we need to wrap to m if k % m is zero.
+_mod_wo_zero(k, m) = k % m == 0 ? m : k % m
+
+node_from_index(peps::PEPSNetwork, index::Int) =
+    ((index-1) ÷ peps.ncols + 1, _mod_wo_zero(index, peps.ncols))
+
+
+iteration_order(peps::PEPSNetwork) = [(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols]
 
 @inline function get_coordinates(peps::PEPSNetwork, k::Int)
     ceil(Int, k / peps.ncols), (k - 1) % peps.ncols + 1
@@ -181,7 +192,7 @@ function bond_energy(network, u::NTuple{2, Int}, v::NTuple{2, Int}, σ::Int)
     vec(energies)
 end
 
-function update_energy(network::AbstractGibbsNetwork, σ::Vector{Int})
+function update_energy(network::PEPSNetwork, σ::Vector{Int})
     i, j = get_coordinates(network, length(σ)+1)
     bond_energy(network, (i, j), (i, j-1), local_state_for_node(network, σ, (i, j-1))) +
     bond_energy(network, (i, j), (i-1, j), local_state_for_node(network, σ, (i-1, j))) +

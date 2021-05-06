@@ -42,7 +42,7 @@ iteration_order(network::AbstractGibbsNetwork{S, T}) where {S, T} = not_implemen
 
 update_energy(network::AbstractGibbsNetwork{S, T}, σ::Vector{Int}) where {S, T} = not_implmented("update_energy")
 
-conditional_probability(network::AbstractGibbsNetwork{S, T}, v::Vector{Int}, β::Real) = not_implemented("conditional_probability")
+conditional_probability(network::AbstractGibbsNetwork{S, T}, v::Vector{Int}, β::Real) where {S, T} = not_implemented("conditional_probability")
 
 
 function projector(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}

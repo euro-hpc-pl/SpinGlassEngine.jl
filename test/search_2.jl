@@ -75,10 +75,10 @@
     )
 
     for transform ∈ all_lattice_transformations
-        peps = PEPSNetwork(m, n, fg, transform)
+        peps = PEPSNetwork(m, n, fg, transform, β=β)
 
         # solve the problem using B & B
-        sol = low_energy_spectrum(peps, num_states, β)
+        sol = low_energy_spectrum(peps, num_states)
 
         @testset "has correct spectrum given the transformation $(transform)" begin
             @test sol.energies ≈ exact_energies

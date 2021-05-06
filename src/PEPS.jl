@@ -24,15 +24,29 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     n::Int
     nrows::Int
     ncols::Int
+    β::Real
+    bond_dim::Int
+    var_tol::Real
+    sweeps::Int
 
-    function PEPSNetwork(m::Int, n::Int, factor_graph, transformation::LatticeTransformation)
+
+    function PEPSNetwork(
+        m::Int,
+        n::Int,
+        factor_graph,
+        transformation::LatticeTransformation;
+        β::Real,
+        bond_dim::Int=typemax(Int),
+        var_tol::Real=1E-8,
+        sweeps::Int=4
+    )
         vmap = vertex_map(transformation, m, n)
         ng = peps_lattice(m, n)
         nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
         if !is_compatible(factor_graph, ng)
             throw(ArgumentError("Factor graph not compatible with given network."))
         end
-        new(factor_graph, ng, vmap, m, n, nrows, ncols)
+        new(factor_graph, ng, vmap, m, n, nrows, ncols, β, bond_dim, var_tol, sweeps)
     end
 end
 
@@ -44,30 +58,29 @@ function projectors(network::PEPSNetwork, vertex::NTuple{2, Int})
 end
 
 
-function peps_tensor(::Type{T}, peps::PEPSNetwork, i::Int, j::Int, β::Real) where {T <: Number}
+function peps_tensor(::Type{T}, peps::PEPSNetwork, i::Int, j::Int) where {T <: Number}
     # generate tensors from projectors
-    A = build_tensor(peps, (i, j), β)
+    A = build_tensor(peps, (i, j))
 
     # include energy
-    h = build_tensor(peps, (i, j-1), (i, j), β)
-    v = build_tensor(peps, (i-1, j), (i, j), β)
+    h = build_tensor(peps, (i, j-1), (i, j))
+    v = build_tensor(peps, (i-1, j), (i, j))
     @tensor B[l, u, r, d, σ] := h[l, l̃] * v[u, ũ] * A[l̃, ũ, r, d, σ]
     B
 end
 
-peps_tensor(peps::PEPSNetwork, i::Int, j::Int, β::Real) = peps_tensor(Float64, peps, i, j, β)
+peps_tensor(peps::PEPSNetwork, i::Int, j::Int) = peps_tensor(Float64, peps, i, j)
 
 
 function SpinGlassTensors.MPO(::Type{T},
     peps::PEPSNetwork,
     i::Int,
-    β::Real,
     states_indices::Dict{NTuple{2, Int}, Int} = Dict{NTuple{2, Int}, Int}()
 ) where {T <: Number}
     W = MPO(T, peps.ncols)
 
     for j ∈ 1:peps.ncols
-        A = peps_tensor(T, peps, i, j, β)
+        A = peps_tensor(T, peps, i, j)
         v = get(states_indices, peps.vertex_map((i, j)), nothing)
         if v !== nothing
             @cast B[l, u, r, d] |= A[l, u, r, d, $(v)]
@@ -80,46 +93,39 @@ function SpinGlassTensors.MPO(::Type{T},
 end
 
 
-SpinGlassTensors.MPO(peps::PEPSNetwork,
+SpinGlassTensors.MPO(
+    peps::PEPSNetwork,
     i::Int,
-    β::Real,
     states_indices::Dict{NTuple{2, Int}, Int} = Dict{NTuple{2, Int}, Int}()
-) = MPO(Float64, peps, i, β, states_indices)
+) = MPO(Float64, peps, i, states_indices)
+
 
 function compress(
     ψ::AbstractMPS,
     peps::PEPSNetwork;
-    bond_dim=typemax(Int),
-    var_tol=1E-8,
-    sweeps=4
 )
-    if bond_dimension(ψ) < bond_dim return ψ end
-    compress(ψ, bond_dim, var_tol, sweeps)
+    if bond_dimension(ψ) < peps.bond_dim return ψ end
+    compress(ψ, peps.bond_dim, peps.var_tol, peps.sweeps)
 end
 
 
 @memoize function SpinGlassTensors.MPS(
     peps::PEPSNetwork,
     i::Int,
-    β::Real,
-    states_indices::Dict{NTuple{2, Int}, Int} = Dict{NTuple{2, Int}, Int}();
-    bond_dim=typemax(Int),
-    var_tol=1E-8,
-    sweeps=4
+    states_indices::Dict{NTuple{2, Int}, Int} = Dict{NTuple{2, Int}, Int}()
 )
     if i > peps.nrows return IdentityMPS() end
-    W = MPO(peps, i, β, states_indices)
-    ψ = MPS(peps, i+1, β, states_indices)
-    compress(W * ψ, peps, bond_dim=bond_dim, var_tol=var_tol, sweeps=sweeps)
+    W = MPO(peps, i, states_indices)
+    ψ = MPS(peps, i+1, states_indices)
+    compress(W * ψ, peps)
 end
 
 
 function contract_network(
     peps::PEPSNetwork,
-    β::Real,
-    states_indices::Dict{NTuple{2, Int}, Int} = Dict{NTuple{2, Int}, Int}(),
+    states_indices::Dict{NTuple{2, Int}, Int} = Dict{NTuple{2, Int}, Int}()
 )
-    ψ = MPS(peps, 1, β, states_indices)
+    ψ = MPS(peps, 1, states_indices)
     prod(dropindices(ψ))[]
 end
 
@@ -131,15 +137,12 @@ node_index(peps::PEPSNetwork, node::NTuple{2, Int}) = peps.ncols * (node[1] - 1)
 # we need to wrap to m if k % m is zero.
 _mod_wo_zero(k, m) = k % m == 0 ? m : k % m
 
+
 node_from_index(peps::PEPSNetwork, index::Int) =
     ((index-1) ÷ peps.ncols + 1, _mod_wo_zero(index, peps.ncols))
 
 
 iteration_order(peps::PEPSNetwork) = [(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols]
-
-@inline function get_coordinates(peps::PEPSNetwork, k::Int)
-    ceil(Int, k / peps.ncols), (k - 1) % peps.ncols + 1
-end
 
 
 function boundary_at_splitting_node(peps::PEPSNetwork, node::NTuple{2, Int})
@@ -159,16 +162,17 @@ function _normalize_probability(prob::Vector{T}) where {T <: Number}
 end
 
 
-function conditional_probability(peps::PEPSNetwork, v::Vector{Int}, β::Real)
-    i, j = get_coordinates(peps, length(v)+1)
+function conditional_probability(peps::PEPSNetwork, v::Vector{Int},
+)
+    i, j = node_from_index(peps, length(v)+1)
     ∂v = generate_boundary_states(peps, v, (i, j))
 
-    W = MPO(peps, i, β)
-    ψ = MPS(peps, i+1, β)
+    W = MPO(peps, i)
+    ψ = MPS(peps, i+1)
 
     L = left_env(ψ, ∂v[1:j-1])
     R = right_env(ψ, W, ∂v[j+2:peps.ncols+1])
-    A = peps_tensor(peps, i, j, β)
+    A = peps_tensor(peps, i, j)
 
     l, u = ∂v[j:j+1]
     M = ψ[j]
@@ -193,7 +197,7 @@ function bond_energy(network, u::NTuple{2, Int}, v::NTuple{2, Int}, σ::Int)
 end
 
 function update_energy(network::PEPSNetwork, σ::Vector{Int})
-    i, j = get_coordinates(network, length(σ)+1)
+    i, j = node_from_index(network, length(σ)+1)
     bond_energy(network, (i, j), (i, j-1), local_state_for_node(network, σ, (i, j-1))) +
     bond_energy(network, (i, j), (i-1, j), local_state_for_node(network, σ, (i-1, j))) +
     local_energy(network, (i, j))

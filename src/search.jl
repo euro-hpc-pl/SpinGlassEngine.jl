@@ -20,7 +20,7 @@ function branch_state(network, σ)
 end
 
 
-function branch_solution(partial_sol::Solution, network::AbstractGibbsNetwork, β::Real)
+function branch_solution(partial_sol::Solution, network::AbstractGibbsNetwork)
     Solution(
         vcat(
             [
@@ -31,7 +31,7 @@ function branch_solution(partial_sol::Solution, network::AbstractGibbsNetwork, �
         ),
         vcat(branch_state.(Ref(network), partial_sol.states)...),
         vcat(
-            partial_sol.probabilities .* conditional_probability.(Ref(network), partial_sol.states, β)
+            partial_sol.probabilities .* conditional_probability.(Ref(network), partial_sol.states)
             ...
         ),
         partial_sol.largest_discarded_probability
@@ -63,11 +63,11 @@ end
 
 
 #TODO: incorporate "going back" move to improve alghoritm
-function low_energy_spectrum(network::AbstractGibbsNetwork, max_states::Int, β::Real)
+function low_energy_spectrum(network::AbstractGibbsNetwork, max_states::Int)
     sol = empty_solution()
 
     for _ ∈ 1:nv(network_graph(network))
-        sol = bound_solution(branch_solution(sol, network, β), max_states)
+        sol = bound_solution(branch_solution(sol, network), max_states)
     end
 
     # Translate variable order (from network to factor graph)

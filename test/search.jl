@@ -1,5 +1,6 @@
 using MetaGraphs
 
+
 @testset "Simplest possible system of two spins" begin
     #
     # ----------------- Ising model ------------------
@@ -43,8 +44,6 @@ using MetaGraphs
         spectrum = full_spectrum,
         cluster_assignment_rule = Dict(1 => (1, 1), 2 => (1, 2)), # treat it as a grid with 1 spin cells
     )
-
-
 
     # set parameters to contract exactely
     control_params = Dict(
@@ -129,6 +128,7 @@ using MetaGraphs
                      @test (η[v] == 1 ? -1 : 1) == σ[v]
                 end
              end
+
              @test sol.energies ≈ exact_spectrum.energies
              @test sol.largest_discarded_probability === -Inf
         end

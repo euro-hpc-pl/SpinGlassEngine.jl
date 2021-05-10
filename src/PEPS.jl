@@ -58,18 +58,20 @@ function projectors(network::PEPSNetwork, vertex::NTuple{2, Int})
 end
 
 
-function peps_tensor(::Type{T}, peps::PEPSNetwork, i::Int, j::Int) where {T <: Number}
+@memoize Dict function peps_tensor(peps::PEPSNetwork, i::Int, j::Int) where {T <: Number}
+    println("Computing peps_tensor for $(i), $(j)")
     # generate tensors from projectors
     A = build_tensor(peps, (i, j))
 
     # include energy
     h = build_tensor(peps, (i, j-1), (i, j))
     v = build_tensor(peps, (i-1, j), (i, j))
-    @tensor B[l, u, r, d, σ] := h[l, l̃] * v[u, ũ] * A[l̃, ũ, r, d, σ]
+    println("Starting @tensor")
+    @time @tensor B[l, u, r, d, σ] := h[l, l̃] * v[u, ũ] * A[l̃, ũ, r, d, σ]
     B
 end
 
-peps_tensor(peps::PEPSNetwork, i::Int, j::Int) = peps_tensor(Float64, peps, i, j)
+#@memoize Dict peps_tensor(peps::PEPSNetwork, i::Int, j::Int) = peps_tensor(Float64, peps, i, j)
 
 
 function SpinGlassTensors.MPO(::Type{T},
@@ -80,7 +82,7 @@ function SpinGlassTensors.MPO(::Type{T},
     W = MPO(T, peps.ncols)
 
     for j ∈ 1:peps.ncols
-        A = peps_tensor(T, peps, i, j)
+        A = peps_tensor(peps, i, j)
         v = get(states_indices, peps.vertex_map((i, j)), nothing)
         if v !== nothing
             @cast B[l, u, r, d] |= A[l, u, r, d, $(v)]
@@ -105,11 +107,11 @@ function compress(
     peps::PEPSNetwork;
 )
     if bond_dimension(ψ) < peps.bond_dim return ψ end
-    compress(ψ, peps.bond_dim, peps.var_tol, peps.sweeps)
+    SpinGlassTensors.compress(ψ, peps.bond_dim, peps.var_tol, peps.sweeps)
 end
 
 
-@memoize function SpinGlassTensors.MPS(
+@memoize Dict function SpinGlassTensors.MPS(
     peps::PEPSNetwork,
     i::Int,
     states_indices::Dict{NTuple{2, Int}, Int} = Dict{NTuple{2, Int}, Int}()

@@ -85,9 +85,11 @@ function SpinGlassTensors.MPO(::Type{T},
         A = peps_tensor(peps, i, j)
         v = get(states_indices, peps.vertex_map((i, j)), nothing)
         if v !== nothing
-            @cast B[l, u, r, d] |= A[l, u, r, d, $(v)]
+       #     @cast B[l, u, r, d] |= A[l, u, r, d, $(v)]
+             B = A[:, :, :, :, v]
         else
-            @reduce B[l, u, r, d] |= sum(σ) A[l, u, r, d, σ]
+            B = dropdims(sum(A, dims=5), dims=5)
+            #@reduce B[l, u, r, d] |= sum(σ) A[l, u, r, d, σ]
         end
         W[j] = B
     end
@@ -166,22 +168,25 @@ end
 
 function conditional_probability(peps::PEPSNetwork, v::Vector{Int},
 )
-    i, j = node_from_index(peps, length(v)+1)
-    ∂v = generate_boundary_states(peps, v, (i, j))
 
-    W = MPO(peps, i)
-    ψ = MPS(peps, i+1)
+    @time i, j = node_from_index(peps, length(v)+1)
+    @time ∂v = generate_boundary_states(peps, v, (i, j))
 
-    L = left_env(ψ, ∂v[1:j-1])
-    R = right_env(ψ, W, ∂v[j+2:peps.ncols+1])
-    A = peps_tensor(peps, i, j)
+    @time W = MPO(peps, i)
+    @time ψ = MPS(peps, i+1)
 
-    l, u = ∂v[j:j+1]
-    M = ψ[j]
-    Ã = A[l, u, :, :, :]
-    @tensor prob[σ] := L[x] * M[x, d, y] *
+    @time L = left_env(ψ, ∂v[1:j-1])
+    @time R = right_env(ψ, W, ∂v[j+2:peps.ncols+1])
+    @time A = peps_tensor(peps, i, j)
+
+    @time l, u = ∂v[j:j+1]
+    @time M = ψ[j]
+    @time Ã = A[l, u, :, :, :]
+    @time @tensor prob[σ] := L[x] * M[x, d, y] *
                        Ã[r, d, σ] * R[y, r] order = (x, d, r, y)
-    _normalize_probability(prob)
+
+
+    @time _normalize_probability(prob)
 end
 
 function bond_energy(network, u::NTuple{2, Int}, v::NTuple{2, Int}, σ::Int)

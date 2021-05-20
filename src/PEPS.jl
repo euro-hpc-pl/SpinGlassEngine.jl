@@ -59,15 +59,15 @@ end
 
 
 @memoize Dict function peps_tensor(peps::PEPSNetwork, i::Int, j::Int) where {T <: Number}
-    println("Computing peps_tensor for $(i), $(j)")
+    # println("Computing peps_tensor for $(i), $(j)")
     # generate tensors from projectors
     A = build_tensor(peps, (i, j))
 
     # include energy
     h = build_tensor(peps, (i, j-1), (i, j))
     v = build_tensor(peps, (i-1, j), (i, j))
-    println("Starting @tensor")
-    @time @tensor B[l, u, r, d, σ] := h[l, l̃] * v[u, ũ] * A[l̃, ũ, r, d, σ]
+    # println("Starting @tensor")
+    @tensor B[l, u, r, d, σ] := h[l, l̃] * v[u, ũ] * A[l̃, ũ, r, d, σ]
     B
 end
 
@@ -97,7 +97,7 @@ function SpinGlassTensors.MPO(::Type{T},
 end
 
 
-SpinGlassTensors.MPO(
+@memoize Dict SpinGlassTensors.MPO(
     peps::PEPSNetwork,
     i::Int,
     states_indices::Dict{NTuple{2, Int}, Int} = Dict{NTuple{2, Int}, Int}()
@@ -169,24 +169,24 @@ end
 function conditional_probability(peps::PEPSNetwork, v::Vector{Int},
 )
 
-    @time i, j = node_from_index(peps, length(v)+1)
-    @time ∂v = generate_boundary_states(peps, v, (i, j))
+    i, j = node_from_index(peps, length(v)+1)
+    ∂v = generate_boundary_states(peps, v, (i, j))
 
-    @time W = MPO(peps, i)
-    @time ψ = MPS(peps, i+1)
+    W = MPO(peps, i)
+    ψ = MPS(peps, i+1)
 
-    @time L = left_env(ψ, ∂v[1:j-1])
-    @time R = right_env(ψ, W, ∂v[j+2:peps.ncols+1])
-    @time A = peps_tensor(peps, i, j)
+    L = left_env(ψ, ∂v[1:j-1])
+    R = right_env(ψ, W, ∂v[j+2:peps.ncols+1])
+    A = peps_tensor(peps, i, j)
 
-    @time l, u = ∂v[j:j+1]
-    @time M = ψ[j]
-    @time Ã = A[l, u, :, :, :]
-    @time @tensor prob[σ] := L[x] * M[x, d, y] *
+    l, u = ∂v[j:j+1]
+    M = ψ[j]
+    Ã = A[l, u, :, :, :]
+    @tensor prob[σ] := L[x] * M[x, d, y] *
                        Ã[r, d, σ] * R[y, r] order = (x, d, r, y)
 
 
-    @time _normalize_probability(prob)
+    _normalize_probability(prob)
 end
 
 function bond_energy(network, u::NTuple{2, Int}, v::NTuple{2, Int}, σ::Int)

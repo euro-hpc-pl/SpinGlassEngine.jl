@@ -22,15 +22,15 @@ end
 
 function branch_solution(partial_sol::Solution, network::AbstractGibbsNetwork)
 
-    if length(partial_sol.states[1]) > 6
-        println("Separator 1")
-        conditional_probability(network, partial_sol.states[1])
-        println("Separator 2")
-        conditional_probability(network, partial_sol.states[1])
-        println(length(memoize_cache(peps_tensor)))
+    # if length(partial_sol.states[1]) > 6
+    #     println("Separator 1")
+    #     conditional_probability(network, partial_sol.states[1])
+    #     println("Separator 2")
+    #     conditional_probability(network, partial_sol.states[1])
+    #     println(length(memoize_cache(peps_tensor)))
 
-        exit(42)
-    end
+    #     exit(42)
+    # end
     Solution(
         vcat(
             [

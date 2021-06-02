@@ -1,16 +1,21 @@
-@testset "peps_contract correctly collapse the peps network" begin
+using LightGraphs
+using LabelledGraphs
+using MetaGraphs
+
+
+@testset "PEPSNetwork is correctly contracted" begin
 
     #      Grid
     #     A1    |    A2
     #           |
     #   1 -- 2 -|- 3
 
-    D = Dict((1, 2) => -0.9049,
-             (2, 3) =>  0.2838,
-
-             (3, 3) => -0.7928,
-             (2, 2) =>  0.1208,
-             (1, 1) => -0.3342
+    D = Dict(
+        (1, 2) => -0.9049,
+        (2, 3) =>  0.2838,
+        (3, 3) => -0.7928,
+        (2, 2) =>  0.1208,
+        (1, 1) => -0.3342
     )
 
     m, n = 1, 2
@@ -21,25 +26,22 @@
 
     fg = factor_graph(
         ig,
-        Dict(1 => 4, 2 => 2),
+        Dict((1, 1) => 4, (1, 2) => 2),
         spectrum = full_spectrum,
-        cluster_assignment_rule = Dict(1 => 1, 2 => 1, 3 => 2, 4 => 2)
+        cluster_assignment_rule = Dict(1 => (1, 1), 2 => (1, 1), 3 => (1, 2), 4 => (1, 2))
     )
 
-    e, p = get_prop(fg, 1, 2, :en), get_prop(fg, 1, 2, :pr)
+    e, p = get_prop(fg, (1, 1), (1, 2), :en), get_prop(fg, (1, 1), (1, 2), :pr)
     ϕ = exp(β * minimum(e * p))
 
     for i ∈ 1:4, j ∈ 1:2
-        cfg = Dict(1 => i, 2 => j)
+        cfg = Dict((1, 1) => i, (1, 2) => j)
 
-        Z = []
-        for origin ∈ (:NW, :SW, :WS, :WN)
-            peps = PEPSNetwork(m, n, fg, β, origin)
-            p = contract_network(peps, cfg)
-            push!(Z, p)
-        end
+        Z = [
+            contract_network(PEPSNetwork(m, n, fg, transform, β=1), cfg)
+            for transform ∈ all_lattice_transformations
+        ]
 
-        # they all should be the same
         @test all(x -> x ≈ first(Z), Z)
 
         # the exact Gibbs state
@@ -48,6 +50,6 @@
         ϱ = reshape(ρ, (4, 2)) * ϕ
 
         # probabilities should agree
-        @test first(Z) ≈ ϱ[cfg[1], cfg[2]]
+        @test first(Z) ≈ ϱ[cfg[(1, 1)], cfg[(1, 2)]]
     end
 end

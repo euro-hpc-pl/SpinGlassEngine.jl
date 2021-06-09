@@ -175,6 +175,7 @@ function conditional_probability(peps::PEPSNetwork, v::Vector{Int},
     W = MPO(peps, i)
     ψ = MPS(peps, i+1)
 
+    @show ∂v
     L = left_env(ψ, ∂v[1:j-1])
     R = right_env(ψ, W, ∂v[j+2:peps.ncols+1])
     A = peps_tensor(peps, i, j)

@@ -12,8 +12,7 @@ struct Solution
 end
 
 
-empty_solution() = Solution([0.], [[]], [1.], [1], -Inf)
-
+empty_solution() = Solution([0.], [[]], [1.], -Inf)
 
 function branch_state(network, σ)
     node = node_from_index(network, length(σ) + 1)
@@ -23,18 +22,6 @@ end
 
 
 function branch_solution(partial_sol::Solution, network::AbstractGibbsNetwork)
-
-    # if length(partial_sol.states[1]) > 6
-    #     println("Separator 1")
-    #     conditional_probability(network, partial_sol.states[1])
-    #     println("Separator 2")
-    #     conditional_probability(network, partial_sol.states[1])
-    #     println(length(memoize_cache(peps_tensor)))
-
-    #     exit(42)
-    # end
-    node = node_from_index(network, length(partial_sol.states[1])+1)
-    local_dim = length(local_energy(network, node))
 
     Solution(
         vcat(

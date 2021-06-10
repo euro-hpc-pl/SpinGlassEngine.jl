@@ -56,10 +56,12 @@ end
 
 function merge_branches(energy_atol::Float64)
     function _merge(network, partial_sol::Solution)
-        node = node_from_index(network, length(partial_sol.states[1]))
+        node = node_from_index(network, length(partial_sol.states[1])+1)
         #boundaries = generate_boundary_states(network, partial_sol.states, node)
-        @show partial_sol.states
-        boundaries = [generate_boundary_states(network, s, node) for s ∈ partial_sol.states]
+        boundaries = hcat(
+            generate_boundary_states(network, partial_sol.states, node)...
+        )
+
         _unique_boundaries, indices = SpinGlassNetworks.unique_dims(boundaries, 1)
 
         sorting_idx = sortperm(indices)
@@ -76,9 +78,9 @@ function merge_branches(energy_atol::Float64)
         new_probs = []
         new_degeneracy = []
 
-        while start <= length(boundaries)
+        while start <= size(boundaries, 1)
             stop = start
-            while stop + 1 <= length(boundaries) && sorted_indices[start] == sorted_indices[stop+1]
+            while stop + 1 <= size(boundaries, 1) && sorted_indices[start] == sorted_indices[stop+1]
                 stop = stop + 1
             end
 

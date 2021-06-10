@@ -108,12 +108,14 @@ end
 end
 
 
+ones_like(x::Number) = one(typeof(x))
+ones_like(x::Array) = ones(eltype(x), size(x))
+
+
 function generate_boundary_state(network::AbstractGibbsNetwork{S, T}, v::S, w::S, state) where {S, T}
-    if v ∉ vertices(network.network_graph) return 1 end
+    if v ∉ vertices(network.network_graph) return ones_like(state) end
     loc_dim = length(local_energy(network, v))
     pv = projector(network, v, w)
-    a = [findfirst(x -> x > 0, pv[i, :]) for i ∈ 1:size(pv)[1]]
-    @show state
     [findfirst(x -> x > 0, pv[i, :]) for i ∈ 1:size(pv)[1]][state]
 end
 

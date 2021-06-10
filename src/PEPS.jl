@@ -15,6 +15,16 @@ function peps_lattice(m, n)
     LabelledGraph(labels, grid((m, n)))
 end
 
+@memoize Dict function _right_env(peps, i::Int, ∂v::Vector{Int})
+    W = MPO(peps, i)
+    ψ = MPS(peps, i+1)
+    right_env(ψ, W, ∂v)
+end
+
+@memoize Dict function _left_env(peps, i::Int, ∂v::Vector{Int})
+    ψ = MPS(peps, i+1)
+    left_env(ψ, ∂v)
+end
 
 struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     factor_graph::LabelledGraph{T, NTuple{2, Int}} where T
@@ -59,14 +69,12 @@ end
 
 
 @memoize Dict function peps_tensor(peps::PEPSNetwork, i::Int, j::Int) where {T <: Number}
-    # println("Computing peps_tensor for $(i), $(j)")
     # generate tensors from projectors
     A = build_tensor(peps, (i, j))
 
     # include energy
     h = build_tensor(peps, (i, j-1), (i, j))
     v = build_tensor(peps, (i-1, j), (i, j))
-    # println("Starting @tensor")
     @tensor B[l, u, r, d, σ] := h[l, l̃] * v[u, ũ] * A[l̃, ũ, r, d, σ]
     B
 end
@@ -175,8 +183,8 @@ function conditional_probability(peps::PEPSNetwork, v::Vector{Int},
     W = MPO(peps, i)
     ψ = MPS(peps, i+1)
 
-    L = left_env(ψ, ∂v[1:j-1])
-    R = right_env(ψ, W, ∂v[j+2:peps.ncols+1])
+    L = _left_env(peps, i, ∂v[1:j-1])
+    R = _right_env(peps, i, ∂v[j+2:peps.ncols+1])
     A = peps_tensor(peps, i, j)
 
     l, u = ∂v[j:j+1]

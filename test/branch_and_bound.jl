@@ -2,6 +2,7 @@ const example_solution_short = Solution(
     [-1.5, -1.2, -1.3],
     [[1, 2], [0, 1], [3, 4]],
     [0.25, 0.1, 0.2],
+    [1, 1, 1],
     0.666
 )
 
@@ -9,6 +10,7 @@ const example_degenerate_solution = Solution(
     [-1.5, -1.2, -1.5, -1.6, -1.1],
     [[1, 2, 3], [1, 3, 1], [3, 4, 1], [1, 4, 2], [4, 2, 1]],
     [0.23, 0.1, 0.23, 0.25, 0.05],
+    [1, 1, 1, 1, 1],
     0.22
 )
 
@@ -18,6 +20,7 @@ const example_degenerate_solution = Solution(
     @test length(bounded.energies) == 2
     @test length(bounded.states) == 2
     @test length(bounded.probabilities) == 2
+    @test length(bounded.degeneracy) == 2
 
 end
 
@@ -26,9 +29,10 @@ end
     @test bounded.energies == [-1.5, -1.3, -1.2]
     @test bounded.probabilities == [0.25, 0.2, 0.1]
     @test bounded.states == [[1, 2], [3, 4], [0, 1]]
+    @test bounded.degeneracy == [1, 1, 1]
 end
 
-@testset "Bounding solution at clips at correct probability" begin
+@testset "Bounding solution clips at correct probability" begin
     @testset "when max_states=$(max_states)" for (max_states, expected_prob) ∈ [(1, 0.23), (2, 0.23), (3, 0.22)]
         bounded = bound_solution(example_degenerate_solution, max_states)
         @test bounded.largest_discarded_probability == expected_prob

@@ -12,7 +12,7 @@ struct Solution
 end
 
 
-empty_solution() = Solution([0.], [[]], [1.], -Inf)
+empty_solution() = Solution([0.], [[]], [1.], [1], -Inf)
 
 function branch_state(network, σ)
     node = node_from_index(network, length(σ) + 1)
@@ -22,7 +22,7 @@ end
 
 
 function branch_solution(partial_sol::Solution, network::AbstractGibbsNetwork)
-
+    local_dim = length(local_energy(network, node_from_index(network, length(partial_sol.states[1])+1)))
     Solution(
         vcat(
             [
@@ -41,8 +41,8 @@ function branch_solution(partial_sol::Solution, network::AbstractGibbsNetwork)
     )
 end
 
-function merge_branches(energy_atol::Float64)
-    function _merge(network, partial_sol::Solution)
+function merge_branches(network, energy_atol::Float64)
+    function _merge(partial_sol::Solution)
         node = node_from_index(network, length(partial_sol.states[1])+1)
         #boundaries = generate_boundary_states(network, partial_sol.states, node)
         boundaries = hcat(
@@ -82,21 +82,16 @@ function merge_branches(energy_atol::Float64)
         end
 
         Solution(new_energies, new_states, new_probs, new_degeneracy, partial_sol.largest_discarded_probability)
-    # 1. Znajdź boundary dla każdego solution
-    # 2. Pogrupuj solution po boundary
-    # 3. Iteruj po grupach:
-    #    3a) w każdej grupie wybierz stan o najmniejszej energii
-    #    3b) wybierz stany o tej samej energii i zsumuj ich degenerację -> to jest nowa degeneracja
     end
     _merge
 end
 
-function no_merge(partial_sol)
+function no_merge(partial_sol::Solution)
     partial_sol
 end
 
-function bound_solution(network, partial_sol::Solution, max_states::Int, merge_strategy=no_merge)
-    partial_sol = merge_strategy(network, partial_sol)
+function bound_solution(partial_sol::Solution, max_states::Int, merge_strategy=no_merge)
+    partial_sol = merge_strategy(partial_sol)
     if length(partial_sol.probabilities) <= max_states
         probs = vcat(partial_sol.probabilities, -Inf)
         k = length(probs)
@@ -125,7 +120,7 @@ function low_energy_spectrum(network::AbstractGibbsNetwork, max_states::Int, mer
     sol = empty_solution()
 
     for _ ∈ 1:nv(network_graph(network))
-        sol = bound_solution(network, branch_solution(sol, network), max_states, merge_strategy)
+        sol = bound_solution(branch_solution(sol, network), max_states, merge_strategy)
     end
 
     # Translate variable order (from network to factor graph)

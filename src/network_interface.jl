@@ -35,6 +35,8 @@ vertex_map(network::AbstractGibbsNetwork{S, T}) where {S, T} = network.vertex_ma
 
 projectors(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T} = not_implmented("projectors")
 
+projectors_with_fusing(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T} = not_implmented("projectors")
+
 boundary_at_splitting_node(network::AbstractGibbsNetwork{S, T}, node::S) where {S, T} = not_implmented("boundary_at_splitting_node")
 
 node_index(network::AbstractGibbsNetwork{S, T}, node::S) where {S, T} = not_implmented("node_index")
@@ -116,11 +118,11 @@ function fuse_projectors(projectors)
 end
 
 
+# This has to be unified with build_tensor
 @memoize function build_tensor_with_fusing(network::AbstractGibbsNetwork{S, T}, v::S) where {S, T}
-    # TODO: does this require full network, or can we pass only fg?
     loc_exp = exp.(-network.β .* local_energy(network, v))
 
-    projs = projectors_with_fusing(network, v)
+    projs = projectors_with_fusing(network, v) # only difference in comparison to build_tensor
     dim = zeros(Int, length(projs))
     @cast A[_, i] := loc_exp[i]
 

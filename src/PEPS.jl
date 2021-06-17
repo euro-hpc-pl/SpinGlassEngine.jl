@@ -17,7 +17,7 @@ end
 
 @memoize Dict function _right_env(peps, i::Int, ∂v::Vector{Int})
     W = MPO(peps, i)
-    ψ = MPS(peps, i+1)    
+    ψ = MPS(peps, i+1)
     right_env(ψ, W, ∂v)
 end
 

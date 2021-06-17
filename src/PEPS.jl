@@ -67,8 +67,7 @@ function projectors(network::PEPSNetwork, vertex::NTuple{2, Int})
     projector.(Ref(network), Ref(vertex), neighbours)
 end
 
-
-function projectors_diag(network::PEPSNetwork, vertex::NTuple{2, Int})
+function projectors_with_fusing(network::PEPSNetwork, vertex::NTuple{2, Int})
     i, j = vertex
     projs_left = projector.(Ref(network), Ref(vertex), ((i, j-1), (i-1, j-1)))
     pt, pb = projector.(Ref(network), Ref(vertex), ((i-1, j), (i, j)))

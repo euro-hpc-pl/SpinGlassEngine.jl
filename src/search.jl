@@ -1,5 +1,5 @@
 export AbstractGibbsNetwork
-export low_energy_spectrum, branch_state, bound_solution
+export low_energy_spectrum, branch_state, bound_solution, merge_branches
 export Solution
 using Memoize
 
@@ -7,11 +7,12 @@ struct Solution
     energies::Vector{Float64}
     states::Vector{Vector{Int}}
     probabilities::Vector{Float64}
+    degeneracy::Vector{Int}
     largest_discarded_probability::Float64
 end
 
 
-empty_solution() = Solution([0.], [[]], [1.], -Inf)
+empty_solution() = Solution([0.], [[]], [1.], [1], -Inf)
 
 function branch_state(network, σ)
     node = node_from_index(network, length(σ) + 1)
@@ -21,7 +22,7 @@ end
 
 
 function branch_solution(partial_sol::Solution, network::AbstractGibbsNetwork)
-
+    local_dim = length(local_energy(network, node_from_index(network, length(partial_sol.states[1])+1)))
     Solution(
         vcat(
             [
@@ -35,12 +36,62 @@ function branch_solution(partial_sol::Solution, network::AbstractGibbsNetwork)
             partial_sol.probabilities .* conditional_probability.(Ref(network), partial_sol.states)
             ...
         ),
+        repeat(partial_sol.degeneracy, inner=local_dim),
         partial_sol.largest_discarded_probability
     )
 end
 
+function merge_branches(network, energy_atol::Float64)
+    function _merge(partial_sol::Solution)
+        node = node_from_index(network, length(partial_sol.states[1])+1)
+        #boundaries = generate_boundary_states(network, partial_sol.states, node)
+        boundaries = hcat(
+            generate_boundary_states(network, partial_sol.states, node)...
+        )
 
-function bound_solution(partial_sol::Solution, max_states::Int)
+        _unique_boundaries, indices = SpinGlassNetworks.unique_dims(boundaries, 1)
+
+        sorting_idx = sortperm(indices)
+        sorted_indices = indices[sorting_idx]
+
+        start = 1
+        energies = partial_sol.energies[sorting_idx]
+        states = partial_sol.states[sorting_idx]
+        probs = partial_sol.probabilities[sorting_idx]
+        degeneracy = partial_sol.degeneracy[sorting_idx]
+
+        new_energies = []
+        new_states = []
+        new_probs = []
+        new_degeneracy = []
+
+        while start <= size(boundaries, 1)
+            stop = start
+            while stop + 1 <= size(boundaries, 1) && sorted_indices[start] == sorted_indices[stop+1]
+                stop = stop + 1
+            end
+
+            best_idx = argmin(energies[start:stop]) # Use view if it works
+
+            push!(new_energies, energies[start-1+best_idx])
+            push!(new_states, states[start-1+best_idx])
+            push!(new_probs, probs[start-1+best_idx])
+            push!(new_degeneracy, degeneracy[start-1+best_idx])
+
+            start = stop + 1
+        end
+
+        Solution(new_energies, new_states, new_probs, new_degeneracy, partial_sol.largest_discarded_probability)
+    end
+    _merge
+end
+
+function no_merge(partial_sol::Solution)
+    partial_sol
+end
+
+function bound_solution(partial_sol::Solution, max_states::Int, merge_strategy=no_merge)
+    partial_sol = merge_strategy(partial_sol)
     if length(partial_sol.probabilities) <= max_states
         probs = vcat(partial_sol.probabilities, -Inf)
         k = length(probs)
@@ -58,17 +109,18 @@ function bound_solution(partial_sol::Solution, max_states::Int)
         partial_sol.energies[indices],
         partial_sol.states[indices],
         partial_sol.probabilities[indices],
+        partial_sol.degeneracy[indices],
         new_max_discarded_prob
     )
 end
 
 
 #TODO: incorporate "going back" move to improve alghoritm
-function low_energy_spectrum(network::AbstractGibbsNetwork, max_states::Int)
+function low_energy_spectrum(network::AbstractGibbsNetwork, max_states::Int, merge_strategy=no_merge)
     sol = empty_solution()
 
     for _ ∈ 1:nv(network_graph(network))
-        sol = bound_solution(branch_solution(sol, network), max_states)
+        sol = bound_solution(branch_solution(sol, network), max_states, merge_strategy)
     end
 
     # Translate variable order (from network to factor graph)
@@ -84,6 +136,7 @@ function low_energy_spectrum(network::AbstractGibbsNetwork, max_states::Int)
         sol.energies[outer_perm],
         [σ[inner_perm] for σ ∈ sol.states[outer_perm]],
         sol.probabilities[outer_perm],
+        sol.degeneracy[outer_perm],
         sol.largest_discarded_probability
     )
 end

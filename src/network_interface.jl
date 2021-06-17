@@ -108,11 +108,15 @@ end
 end
 
 
-function generate_boundary_state(network::AbstractGibbsNetwork{S, T}, v::S, w::S, state::Int) where {S, T}
-    if v ∉ vertices(network.network_graph) return 1 end
+ones_like(x::Number) = one(typeof(x))
+ones_like(x::Array) = ones(eltype(x), size(x))
+
+
+function generate_boundary_state(network::AbstractGibbsNetwork{S, T}, v::S, w::S, state) where {S, T}
+    if v ∉ vertices(network.network_graph) return ones_like(state) end
     loc_dim = length(local_energy(network, v))
     pv = projector(network, v, w)
-    findfirst(x -> x > 0, pv[state, :])
+    [findfirst(x -> x > 0, pv[i, :]) for i ∈ 1:size(pv)[1]][state]
 end
 
 
@@ -123,6 +127,18 @@ function generate_boundary_states(
 ) where {S, T}
     [
         generate_boundary_state(network, v, w, local_state_for_node(network, σ, v))
+        for (v, w) ∈ boundary_at_splitting_node(network, node)
+    ]
+end
+
+
+function generate_boundary_states(
+    network::AbstractGibbsNetwork,
+    σ::Vector{Vector{Int}},
+    node::S
+) where {S, T}
+    [
+        generate_boundary_state(network, v, w, local_state_for_node.(Ref(network), σ, Ref(v)))
         for (v, w) ∈ boundary_at_splitting_node(network, node)
     ]
 end

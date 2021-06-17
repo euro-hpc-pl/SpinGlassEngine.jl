@@ -5,13 +5,13 @@ export
     network_graph,
     vertex_map,
     projectors,
+    fuse_projectors,
     local_energy,
     interaction_energy,
     build_tensor,
     generate_boundary_states,
     local_state_for_node,
-    iteration_order,
-    fuse_projectors
+    iteration_order
 
 
 # S: type of the vertex of network
@@ -102,17 +102,16 @@ end
     reshape(A, dim..., :)
 end
 
-
 function fuse_projectors(projectors::Vector{Array{Float64, 2}})
     stacked = hcat(projectors)
     fused, E = rank_reveal(stacked, :PE)
 
-    i_start = 1
+    i₀ = 1
     transitions = []
-    for p in projectors
-        i_finish = i_start + size(p, 2) - 1
-        push!(transitions, E[:, i_start:i_finish])
-        i_start = i_finish + 1
+    for proj ∈ projectors
+        iₑ = i₀ + size(proj, 2) - 1
+        push!(transitions, E[:, i₀:iₑ])
+        i₀ = iₑ + 1
     end
     fused, transitions
 end
@@ -122,7 +121,7 @@ end
     # TODO: does this require full network, or can we pass only fg?
     loc_exp = exp.(-network.β .* local_energy(network, v))
 
-    projs = projectors_diag(network, v)
+    projs = projectors_with_fusing(network, v)
     dim = zeros(Int, length(projs))
     @cast A[_, i] := loc_exp[i]
 

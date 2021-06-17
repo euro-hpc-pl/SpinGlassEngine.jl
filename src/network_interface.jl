@@ -102,15 +102,14 @@ end
     reshape(A, dim..., :)
 end
 
-function fuse_projectors(projectors::Vector{Array{Float64, 2}})
-    stacked = hcat(projectors)
-    fused, E = rank_reveal(stacked, :PE)
+function fuse_projectors(projectors)
+    fused, energy = rank_reveal(hcat(projectors), :PE)
 
     i₀ = 1
     transitions = []
     for proj ∈ projectors
         iₑ = i₀ + size(proj, 2) - 1
-        push!(transitions, E[:, i₀:iₑ])
+        push!(transitions, energy[:, i₀:iₑ])
         i₀ = iₑ + 1
     end
     fused, transitions

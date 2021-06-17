@@ -116,7 +116,7 @@ function fuse_projectors(projectors)
 end
 
 
-@memoize function build_tensor(network::AbstractGibbsNetwork{S, T}, v::S) where {S, T}
+@memoize function build_tensor_with_fusing(network::AbstractGibbsNetwork{S, T}, v::S) where {S, T}
     # TODO: does this require full network, or can we pass only fg?
     loc_exp = exp.(-network.β .* local_energy(network, v))
 

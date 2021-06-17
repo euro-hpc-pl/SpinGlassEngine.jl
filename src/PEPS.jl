@@ -68,6 +68,17 @@ function projectors(network::PEPSNetwork, vertex::NTuple{2, Int})
 end
 
 
+function projectors_diag(network::PEPSNetwork, vertex::NTuple{2, Int})
+    i, j = vertex
+    projs_left = projector.(Ref(network), Ref(vertex), ((i, j-1), (i-1, j-1)))
+    pt, pb = projector.(Ref(network), Ref(vertex), ((i-1, j), (i, j)))
+    projs_right = projector.(Ref(network), Ref(vertex), ((i, j+1), (i+1, j+1)))
+    pl, trl = fuse_projectors(projs_left...)
+    pr, trr = fuse_projectors(projs_right...)
+    (pl, pb, pr, pt)
+end
+
+
 @memoize Dict function peps_tensor(peps::PEPSNetwork, i::Int, j::Int) where {T <: Number}
     # generate tensors from projectors
     A = build_tensor(peps, (i, j))
@@ -103,6 +114,8 @@ function SpinGlassTensors.MPO(::Type{T},
     end
     W
 end
+
+#to be updated to include Pegasus
 
 
 @memoize Dict SpinGlassTensors.MPO(

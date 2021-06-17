@@ -10,7 +10,8 @@ export
     build_tensor,
     generate_boundary_states,
     local_state_for_node,
-    iteration_order
+    iteration_order,
+    fuse_projectors
 
 
 # S: type of the vertex of network
@@ -91,6 +92,37 @@ end
     loc_exp = exp.(-network.β .* local_energy(network, v))
 
     projs = projectors(network, v)
+    dim = zeros(Int, length(projs))
+    @cast A[_, i] := loc_exp[i]
+
+    for (j, pv) ∈ enumerate(projs)
+        @cast A[(c, γ), σ] |= A[c, σ] * pv[σ, γ]
+        dim[j] = size(pv, 2)
+    end
+    reshape(A, dim..., :)
+end
+
+
+function fuse_projectors(projectors::Vector{Array{Float64, 2}})
+    stacked = hcat(projectors)
+    fused, E = rank_reveal(stacked, :PE)
+
+    i_start = 1
+    transitions = []
+    for p in projectors
+        i_finish = i_start + size(p, 2) - 1
+        push!(transitions, E[:, i_start:i_finish])
+        i_start = i_finish + 1
+    end
+    fused, transitions
+end
+
+
+@memoize function build_tensor(network::AbstractGibbsNetwork{S, T}, v::S) where {S, T}
+    # TODO: does this require full network, or can we pass only fg?
+    loc_exp = exp.(-network.β .* local_energy(network, v))
+
+    projs = projectors_diag(network, v)
     dim = zeros(Int, length(projs))
     @cast A[_, i] := loc_exp[i]
 

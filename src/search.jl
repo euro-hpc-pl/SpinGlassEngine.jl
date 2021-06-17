@@ -41,6 +41,8 @@ function branch_solution(partial_sol::Solution, network::AbstractGibbsNetwork)
     )
 end
 
+# TODO: convert probabilities to logarithms
+
 function merge_branches(network, energy_atol::Float64)
     function _merge(partial_sol::Solution)
         node = node_from_index(network, length(partial_sol.states[1])+1)

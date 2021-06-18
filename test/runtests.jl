@@ -4,6 +4,7 @@ using SpinGlassNetworks, SpinGlassTensors
 using LightGraphs
 using LinearAlgebra
 using TensorCast
+using MetaGraphs
 
 disable_logging(LogLevel(1))
 
@@ -41,13 +42,14 @@ end
 my_tests = []
 
 push!(my_tests,
-      "MPS_search.jl",
-      "PEPS.jl",
-      "contract.jl",
-      "search.jl",
-      "search_2.jl",
-      "network_operations.jl",
-      "branch_and_bound.jl"
+      #"MPS_search.jl",
+      #"PEPS.jl",
+      #"contract.jl",
+      #"search.jl",
+      #"search_2.jl",
+      #"network_operations.jl",
+      #"branch_and_bound.jl",
+      "pegasus.jl"
 )
 
 for my_test in my_tests

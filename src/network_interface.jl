@@ -105,7 +105,7 @@ end
 end
 
 function fuse_projectors(projectors)
-    fused, energy = rank_reveal(hcat(projectors), :PE)
+    fused, energy = rank_reveal(hcat(projectors...), :PE)
 
     i₀ = 1
     transitions = []

@@ -49,7 +49,7 @@ push!(my_tests,
       #"search_2.jl",
       #"network_operations.jl",
       #"branch_and_bound.jl",
-      "pegasus.jl"
+      "network_interface.jl"
 )
 
 for my_test in my_tests

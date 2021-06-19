@@ -70,10 +70,6 @@ end
 
 function projectors_with_fusing(network::PEPSNetwork, vertex::NTuple{2, Int})
     i, j = vertex
-    #println(i,j)
-    #projs_left = projector.(Ref(network), Ref(vertex), ((i, j-1), (i-1, j)))
-    #pt, pb = projector.(Ref(network), Ref(vertex), ((i-1, j), (i, j)))
-    #projs_right = projector.(Ref(network), Ref(vertex), ((i, j+1), (i+1, j)))
     projs_left = projector.(Ref(network), Ref(vertex), ((i, j-1), (i-1, j-1)))
     pt, pb = projector.(Ref(network), Ref(vertex), ((i-1, j), (i, j)))
     projs_right = projector.(Ref(network), Ref(vertex), ((i, j+1), (i+1, j+1)))

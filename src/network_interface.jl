@@ -9,6 +9,7 @@ export
     local_energy,
     interaction_energy,
     build_tensor,
+    build_tensor_with_fusing,
     generate_boundary_states,
     local_state_for_node,
     iteration_order
@@ -105,7 +106,7 @@ end
 end
 
 function fuse_projectors(projectors)
-    fused, energy = rank_reveal(hcat(projectors), :PE)
+    fused, energy = rank_reveal(hcat(projectors...), :PE)
 
     i₀ = 1
     transitions = []

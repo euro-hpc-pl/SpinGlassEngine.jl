@@ -40,6 +40,7 @@ function check_projectors_with_fusing(instance_path, nrows, ncols; β, sweeps, b
     )
     for v in vertices(fg)
         projectors_with_fusing(network, v)
+        build_tensor_with_fusing(network, v)
     end
 end
 

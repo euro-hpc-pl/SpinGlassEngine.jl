@@ -1,10 +1,15 @@
 @testset "fuse_projectors correctly fuses projectors - simple case" begin
     projectors = ([1 1; 0 1], [1 0; 1 1])
-    fused_expected, energy = rank_reveal(hcat(projectors...), :PE)
-    @test fused_expected * energy == hcat(projectors[1], projectors[2])
+    expected_fused = [1 0; 0 1]
+    expected_transitions = [[1 1; 0 1], [1 0; 1 1]]
+    f, energy = rank_reveal(hcat(projectors...), :PE)
+    @test f * energy == hcat(projectors[1], projectors[2])
     fused, transitions = fuse_projectors(projectors)
     @test hcat(transitions...) == energy
+    @test expected_fused == fused
+    @test expected_transitions == values(transitions)
 end
+
 
 @testset "projectors_with_fusing correctly fuses tensors for a given network" begin
     # Model's parameters

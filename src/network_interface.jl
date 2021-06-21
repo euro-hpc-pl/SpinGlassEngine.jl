@@ -122,7 +122,7 @@ end
 # This has to be unified with build_tensor
 @memoize function build_tensor_with_fusing(network::AbstractGibbsNetwork{S, T}, v::S) where {S, T}
     loc_exp = exp.(-network.β .* local_energy(network, v))
-
+    
     projs = projectors_with_fusing(network, v) # only difference in comparison to build_tensor
     dim = zeros(Int, length(projs))
     @cast A[_, i] := loc_exp[i]

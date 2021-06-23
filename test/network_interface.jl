@@ -64,7 +64,7 @@ end
         "sweeps" => 4.
     )
 
-    transforms = (LatticeTransformation((1, 2, 3, 4), true), LatticeTransformation((4, 3, 2, 1), true))
+    transforms = (rotation(0), reflection(:x))
     A = []
     expected_values1 = [1.6487212707001282, 0.0, 0.0, 0.6065306597126334]
     expected_values2 = [2.117000016612675 0.0; 0.0 0.4723665527410147]
@@ -85,6 +85,6 @@ end
 
     @test values(A[2]) ≈ values(A[4])
     for i in size(expected_values2)[1]
-        @test values(A[1][i]) ≈ expected_values1[i]
+        @test values(A[2][i]) ≈ expected_values2[i]
     end
 end

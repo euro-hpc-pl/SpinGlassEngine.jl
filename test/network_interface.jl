@@ -75,7 +75,8 @@ end
             # for first vertex (1,1) we have exp(-[-0.5 0.5]) = [1.6487 0.6065]
             # for second vertex (1,2) we have exp(-[-0.75 0.75]) = [2.117 0.4723]
             # contract it with fused projectors 
-            push!(A, build_tensor_with_fusing(peps, v))
+            tensor, _ , _ = build_tensor_with_fusing(peps, v)
+            push!(A, tensor)
         end
     end
     @test values(A[1]) ≈ values(A[3])

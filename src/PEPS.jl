@@ -1,7 +1,7 @@
 export PEPSNetwork, contract_network
 export generate_boundary, peps_tensor, node_from_index
 export projectors_with_fusing
-
+export MPO_with_fusing
 
 const DEFAULT_CONTROL_PARAMS = Dict(
     "bond_dim" => typemax(Int),

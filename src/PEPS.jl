@@ -1,7 +1,5 @@
 export PEPSNetwork, contract_network
 export generate_boundary, peps_tensor, node_from_index
-export projectors_with_fusing
-export MPO_with_fusing
 
 const DEFAULT_CONTROL_PARAMS = Dict(
     "bond_dim" => typemax(Int),
@@ -68,18 +66,6 @@ function projectors(network::PEPSNetwork, vertex::NTuple{2, Int})
     projector.(Ref(network), Ref(vertex), neighbours)
 end
 
-function projectors_with_fusing(network::PEPSNetwork, vertex::NTuple{2, Int})
-    i, j = vertex
-    projs_left = projector.(Ref(network), Ref(vertex), ((i, j-1), (i-1, j-1)))
-    pt, pb = projector.(Ref(network), Ref(vertex), ((i-1, j), (i, j)))
-    projs_right = projector.(Ref(network), Ref(vertex), ((i, j+1), (i+1, j+1)))
-    # trl, trr ?
-    pl, trl = fuse_projectors(projs_left)
-    pr, trr = fuse_projectors(projs_right)
-
-    (pl, pb, pr, pt), trl, trr
-end
-
 
 @memoize Dict function peps_tensor(peps::PEPSNetwork, i::Int, j::Int) where {T <: Number}
     # generate tensors from projectors
@@ -93,7 +79,6 @@ end
 end
 
 #@memoize Dict peps_tensor(peps::PEPSNetwork, i::Int, j::Int) = peps_tensor(Float64, peps, i, j)
-
 
 function SpinGlassTensors.MPO(::Type{T},
     peps::PEPSNetwork,
@@ -113,48 +98,6 @@ function SpinGlassTensors.MPO(::Type{T},
             #@reduce B[l, u, r, d] |= sum(σ) A[l, u, r, d, σ]
         end
         W[j] = B
-    end
-    W
-end
-
-#to be updated to include Pegasus
-
-function MPO_with_fusing(::Type{T},
-    peps::PEPSNetwork,
-    i::Int,
-    states_indices::Dict{NTuple{2, Int}, Int} = Dict{NTuple{2, Int}, Int}()
-) where {T <: Number}
-    W = MPO(T, 2 * peps.ncols - 1)
-
-    for j ∈ 1:peps.ncols
-
-        # from peps_tensor
-        A, trl, trlu, trr, trrd  = build_tensor_with_fusing(peps, (i, j))
-
-        v = get(states_indices, peps.vertex_map((i, j)), nothing)
-        if v !== nothing
-       #     @cast B[l, u, r, d] |= A[l, u, r, d, $(v)]
-            BB = A[:, :, :, :, v]
-        else
-            BB = dropdims(sum(A, dims=5), dims=5)
-            #@reduce B[l, u, r, d] |= sum(σ) A[l, u, r, d, σ]
-        end
-        # include energy
-        v = build_tensor(peps, (i-1, j), (i, j))
-
-        @tensor B[l, u, r, d] := v[u, ũ] * BB[l, ũ, r, d]
-
-        W[2*j-1] = B
-        
-        if j > 1
-            h = build_tensor(peps, (i, j-1), (i, j))
-            NW = build_tensor(peps, (i-1, j-1), (i, j))
-
-            @cast C[l, u, r, d] := reduce(x, y, ũ) h[y, x] * trl[l, x] * trlu[l, ũ] * trr_old[r, y] * trrd_old[r, d] * NW[u, ũ]
-            W[2*j-2] = C
-        end
-        trr_old = trr  
-        trrd_old = trrd 
     end
     W
 end

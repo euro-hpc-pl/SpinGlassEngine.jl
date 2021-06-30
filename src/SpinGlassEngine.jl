@@ -25,5 +25,7 @@ include("network_interface.jl")
 include("MPS_search.jl")
 include("search.jl")
 include("PEPS.jl")
+include("PEPS2.jl")
+include("network_interface2.jl")
 
 end # module

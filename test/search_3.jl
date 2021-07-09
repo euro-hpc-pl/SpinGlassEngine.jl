@@ -71,15 +71,20 @@
         "var_tol" => 1E-8,
         "sweeps" => 4.
     )
+
+    ϱ = gibbs_tensor(ig, β)
     
     for transform ∈ all_lattice_transformations
         peps = PegasusNetwork(m, n, fg, transform, β=β)
     
-        ψ = IdentityMPS()
+        #ψ = IdentityMPS()
     
         for i ∈ peps.nrows:-1:1
-            ψ = MPO_with_fusing(T, peps, i) * ψ
-            @test MPS(peps, i) ≈ ψ
+            Z = MPO_with_fusing(T, peps, i)
+            ψ = MPO_with_fusing(T, peps, i, Dict((1, 1) => 1, (1, 2) => 1, (1, 3) => 1, (2, 1) => 1, (2, 2) => 1, (2, 3) => 1))
+
+            #ψ = MPO_with_fusing(T, peps, i) #* ψ
+            #@test MPS(peps, i) ≈ ψ
         end
     end
 end

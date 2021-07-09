@@ -60,14 +60,23 @@
         "sweeps" => 4.
     )
     
+    ϱ = gibbs_tensor(ig, β)
+    println("Gibbs tensor ", ϱ)
     for transform ∈ all_lattice_transformations
         peps = PegasusNetwork(m, n, fg, transform, β=β)
-    
-        ψ = IdentityMPS()
+        
+        #ψ = IdentityMPS()
     
         for i ∈ peps.nrows:-1:1
-            ψ = MPO_with_fusing(T, peps, i) * ψ
-            @test MPS(peps, i) ≈ ψ
+            Z = MPO_with_fusing(T, peps, i)
+            println("i ", i)
+            println("partition function ", Z)
+            a = MPO_with_fusing(T, peps, i, Dict((1, 1) => 1, (1, 2) => 1, (2, 1) => 1, (2, 2) => 1))
+            println("a ", a)
+            display(a)
+            #println("prob ", a/partition_function)
+        #    ψ = MPO_with_fusing(T, peps, i) * ψ
+        #    @test MPS(peps, i) ≈ ψ
         end
     end
 end

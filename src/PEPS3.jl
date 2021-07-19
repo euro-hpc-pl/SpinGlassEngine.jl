@@ -1,19 +1,20 @@
-export PegasusNetwork
-export pegasus_lattice
+export NNNNetwork
+export nnn_lattice
 export projectors_with_fusing
 export MPO_with_fusing
 
-function pegasus_lattice(m, n)
+function nnn_lattice(m, n)
     labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
     lg = LabelledGraph(labels, grid((m, n)))
     for i in 1:m-1, j in 1:n-1
         add_edge!(lg, (i, j), (i+1, j+1))
+        add_edge!(lg, (i+1, j), (i, j+1))
     end
     lg
 end
 
 
-struct PegasusNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
+struct NNNNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     factor_graph::LabelledGraph{T, NTuple{2, Int}} where T
     network_graph::LabelledGraph{S, NTuple{2, Int}} where S
     vertex_map::Function
@@ -27,7 +28,7 @@ struct PegasusNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     sweeps::Int
 
 
-    function PegasusNetwork(
+    function NNNNetwork(
         m::Int,
         n::Int,
         factor_graph,
@@ -38,7 +39,7 @@ struct PegasusNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         sweeps::Int=4
     )
         vmap = vertex_map(transformation, m, n)
-        ng = pegasus_lattice(m, n)
+        ng = nnn_lattice(m, n)
         nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
         if !is_compatible(factor_graph, ng)
             throw(ArgumentError("Factor graph not compatible with given network."))
@@ -48,16 +49,17 @@ struct PegasusNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
 end
 
 
-function projectors_with_fusing(network::PegasusNetwork, vertex::NTuple{2, Int})
+function projectors_with_fusing(network::NNNNetwork, vertex::NTuple{2, Int})
     i, j = vertex
-    projs_left = projector.(Ref(network), Ref(vertex), ((i, j-1), (i-1, j-1)))
+    projs_left = projector.(Ref(network), Ref(vertex), ((i+1, j-1), (i, j-1), (i-1, j-1)))
     pt, pb = projector.(Ref(network), Ref(vertex), ((i-1, j), (i+1, j)))
-    projs_right = projector.(Ref(network), Ref(vertex), ((i, j+1), (i+1, j+1)))
-    # trl, trr ?
-    pl, trl = fuse_projectors(projs_left)
-    pr, trr = fuse_projectors(projs_right)
+    projs_right = projector.(Ref(network), Ref(vertex), ((i+1, j+1), (i, j+1), (i-1, j+1)))
 
-    (pl, pt, pr, pb), trl, trr
+    # trl, trr ?
+    pl, tl_blt = fuse_projectors(projs_left)
+    pr, tr_brt = fuse_projectors(projs_right)
+
+    (pl, pt, pr, pb), tl_blt, tr_brt
 end
 
 
@@ -66,17 +68,18 @@ end
 #to be updated to include Pegasus
 
 function MPO_with_fusing(::Type{T},
-    peps::PegasusNetwork,
+    peps::NNNNetwork,
     i::Int,
     states_indices::Dict{NTuple{2, Int}, Int} = Dict{NTuple{2, Int}, Int}()
 ) where {T <: Number}
     W = MPO(T, 2 * peps.ncols - 1)
-    trr_old = 0
-    trrd_old = 0
+    p_rr_old = 0
+    p_rt_old = 0
+    p_rb_old = 0
 
     for j ∈ 1:peps.ncols
         # from peps_tensor
-        A, (trl, trlu), (trr, trrd)  = build_tensor_with_fusing(peps, (i, j))
+        A, (p_lb, p_ll, p_lt), (p_rb, p_rr, p_rt)  = build_tensor_with_fusing(peps, (i, j))
 
         v = get(states_indices, peps.vertex_map((i, j)), nothing)
         if v !== nothing
@@ -95,34 +98,37 @@ function MPO_with_fusing(::Type{T},
         if j > 1
             h = build_tensor(peps, (i, j-1), (i, j))
             NW = build_tensor(peps, (i-1, j-1), (i, j))
+            NE = build_tensor(peps, (i-1, j), (i, j-1))
 
             #@cast C[l, u, r, d] := reduce(x, y, ũ) h[y, x] * trl[l, x] * trlu[l, ũ] * trr_old[r, y] * trrd_old[r, d] * NW[u, ũ]
-            
-            @tensor C1[l, r] := h[y, x] * trl[l, x] *  trr_old[r, y]      
-            @tensor C2[l, u] :=  trlu[l, ũ] * NW[u, ũ]
-            @cast C[r, u, l, d] |= C1[l, r] * C2[l, u] * trrd_old[r, d] 
-
+            @tensor C1[l, r] := p_rr_old[l, x] * h[x, y] * p_ll[r, y]    
+            @tensor C2[l, u] :=  p_rt_old[l, ũ] * NE[ũ, u]
+            @tensor C3[r, uu] :=  p_lt[r, ũ] * NW[uu, ũ]
+            @cast C[l, (uu, u), r, (dd, d)] |= C1[l, r] * C2[l, u] * p_lb[r, d] * C3[r, uu] * p_rb_old[l, dd]
             W[2*j-2] = C
         end
-        trr_old = trr  
-        trrd_old = trrd 
+        p_rb_old = p_rb 
+        p_rt_old = p_rt
+        p_rr_old = p_rr
     end
     W
 end
 
 
-function boundary_at_splitting_node(peps::PegasusNetwork, node::NTuple{2, Int})
+function boundary_at_splitting_node(peps::NNNNetwork, node::NTuple{2, Int})
     i, j = node
     [
         [((i, k), (i+1, k)) for k ∈ 1:j-1]...,
         ((i, j-1), (i, j)),
-        [((i-1, k), (i, k)) for k ∈ j:peps.ncols]...
+        [((i-1, k), (i, k)) for k ∈ j:peps.ncols]...,
+        [((i-1, k), (i, k)) for k ∈ 1:j-1]...,
+        [((i, k), (i+1, k)) for k ∈ j:peps.ncols]...
     ]
 end
 
 
 function generate_boundary_states_with_fusing(
-    network::PegasusNetwork,
+    network::NNNNetwork,
     σ::Vector{Int},
     node::S 
 ) where {S, T}

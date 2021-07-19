@@ -51,7 +51,8 @@ push!(my_tests,
       #"branch_and_bound.jl",
       #"network_interface.jl",
       "search_3.jl",
-      #"search_4.jl"
+      "search_4.jl",
+      "search_5.jl"
 )
 
 for my_test in my_tests

@@ -124,27 +124,29 @@ end
 
 node_index_with_fusing(peps::PegasusNetwork, node::NTuple{2, Int}) = peps.ncols * (node[1] - 1) + node[2]
 
-_mod_wo_zero(k, m) = k % m == 0 ? m : k % m
+_mod_wo_zero_with_fusing(k, m) = k % m == 0 ? m : k % m
 
 
 node_from_index(peps::PegasusNetwork, index::Int) =
-    ((index-1) ÷ peps.ncols + 1, _mod_wo_zero(index, peps.ncols))
+    ((index-1) ÷ peps.ncols + 1, _mod_wo_zero_with_fusing(index, peps.ncols))
 
 
-function boundary_at_splitting_node(peps::PegasusNetwork, node::NTuple{2, Int})
-    i, j = node
-    [
+
+    function boundary_at_splitting_node(peps::PegasusNetwork, node::NTuple{2, Int})
+        i, j = node
         [
-            [((i, k), (i+1, k)), ((i, k), (i+1, k+1))] for k ∈ 1:j-2
-        ]...,
-        [
-            ((i, j-1), (i+1, j-1)),  ((i, j-1), (i, j)) # TODO: second element responsible for fusion
-        ]...,
-        [
-            [((i-1, k-1), (i, k)), ((i-1, k), (i, k))] for k ∈ j:peps.ncols
-        ]...
-    ]
-end
+            [
+                [((i, k), (i+1, k)), ((i, k), (i+1, k+1))] for k ∈ 1:j-2
+            ]...,
+            [
+                ((i, j-1), (i+1, j-1)),  ((i, j-1), (i, j)) # TODO: second element responsible for fusion
+            ]...,
+            [
+                [((i-1, k-1), (i, k)), ((i-1, k), (i, k))] for k ∈ j:peps.ncols
+            ]...
+        ]
+
+    end
 
 
 @memoize Dict function MPS_with_fusing(
@@ -187,18 +189,6 @@ function conditional_probability(peps::PegasusNetwork, v::Vector{Int},
     
         _normalize_probability(prob)
     end
-
-
-function generate_boundary_states_with_fusing(
-    network::PegasusNetwork,
-    σ::Vector{Int},
-    node::S 
-) where {S, T}
-    [
-        generate_boundary_state_with_fusing_with_fusing(network, v, w, local_state_for_node(network, σ, v))
-        for (v, w) ∈ boundary_at_splitting_node(network, node)
-    ]
-end
 
 
 function update_energy(network::PegasusNetwork, σ::Vector{Int})

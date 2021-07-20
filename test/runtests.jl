@@ -50,9 +50,10 @@ push!(my_tests,
       #"network_operations.jl",
       #"branch_and_bound.jl",
       #"network_interface.jl",
-      "search_3.jl",
-      "search_4.jl",
-      "search_5.jl"
+      #"search_3.jl",
+      #"search_4.jl",
+      #"search_5.jl",
+      "pdo.jl"
 )
 
 for my_test in my_tests

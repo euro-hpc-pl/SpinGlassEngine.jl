@@ -1,6 +1,6 @@
 using LabelledGraphs
 
-export fuse_projectors, build_tensor_with_fusing
+export fuse_projectors, build_tensor_with_fusing, generate_boundary_states_with_fusing
 
 
 function fuse_projectors(projectors)
@@ -30,4 +30,45 @@ end
         dim[j] = size(pv, 2)
     end
     reshape(A, dim..., :), trl, trr 
+end
+
+
+function generate_boundary_state_with_fusing(network::PegasusNetwork, v::S, w::S, state) where {S, T}
+    if v ∉ vertices(network.network_graph) return ones_like(state) end
+    loc_dim = length(local_energy(network, v))
+    pv = projector(network, v, w)
+    [findfirst(x -> x > 0, pv[i, :]) for i ∈ 1:size(pv)[1]][state]
+end
+
+
+function generate_boundary_states_with_fusing(
+    network::PegasusNetwork,
+    σ::Vector{Int},
+    node::S
+) where {S, T}
+    [
+        generate_boundary_state_with_fusing(network, v, w, local_state_for_node(network, σ, v))
+        for (v, w) ∈ boundary_at_splitting_node(network, node)
+    ]
+end
+
+
+function generate_boundary_states_with_fusing(
+    network::PegasusNetwork,
+    σ::Vector{Vector{Int}},
+    node::S
+) where {S, T}
+    [
+        generate_boundary_state_with_fusing(network, v, w, local_state_for_node.(Ref(network), σ, Ref(v)))
+        for (v, w) ∈ boundary_at_splitting_node(network, node)
+    ]
+end
+
+function local_state_for_node(
+    network::PegasusNetwork,
+    σ::Vector{Int},
+    w::S
+) where {S, T}
+    k = node_index_with_fusing(network, w)
+    0 < k <= length(σ) ? σ[k] : 1
 end

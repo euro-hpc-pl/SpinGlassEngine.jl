@@ -122,6 +122,12 @@ function MPO_with_fusing(::Type{T},
     W
 end
 
+@memoize Dict MPO_with_fusing(
+    peps::PegasusNetwork,
+    i::Int,
+    states_indices::Dict{NTuple{2, Int}, Int} = Dict{NTuple{2, Int}, Int}()
+) = MPO_with_fusing(Float64, peps, i, states_indices)
+
 node_index_with_fusing(peps::PegasusNetwork, node::NTuple{2, Int}) = peps.ncols * (node[1] - 1) + node[2]
 
 _mod_wo_zero_with_fusing(k, m) = k % m == 0 ? m : k % m
@@ -134,20 +140,27 @@ node_from_index(peps::PegasusNetwork, index::Int) =
 function boundary_at_splitting_node(peps::PegasusNetwork, node::NTuple{2, Int})
     i, j = node
     vcat([
-        [
-            [((i, k), (i+1, k)), ((i, k), (i+1, k+1))] for k ∈ 1:j-2
-        ]...,
+            [
+                [((i, k), (i+1, k)), ((i, k), (i+1, k+1))] for k ∈ 1:j-2
+            ]...,
 
-        [
-            ((i, j-1), (i+1, j-1)), ((i, j-1), (i, j)) # TODO: second element responsible for fusion
-        ]...,
-        [
-            [((i-1, k-1), (i, k)), ((i-1, k), (i, k))] for k ∈ j:peps.ncols
+            [
+                ((i, j-1), (i+1, j-1)), ((i, j-1), (i, j)) # TODO: second element responsible for fusion
+            ]...,
+            [
+                [((i-1, k-1), (i, k)), ((i-1, k), (i, k))] for k ∈ j:peps.ncols
+            ]...
         ]...
-    ]...
-    )
+     )
 end
 
+function compress(
+    ψ::AbstractMPS,
+    peps::PegasusNetwork;
+)
+    if bond_dimension(ψ) < peps.bond_dim return ψ end
+    SpinGlassTensors.compress(ψ, peps.bond_dim, peps.var_tol, peps.sweeps)
+end
 
 @memoize Dict function MPS_with_fusing(
     peps::PegasusNetwork,

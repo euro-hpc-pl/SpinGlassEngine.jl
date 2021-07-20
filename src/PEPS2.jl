@@ -131,22 +131,22 @@ node_from_index(peps::PegasusNetwork, index::Int) =
     ((index-1) ÷ peps.ncols + 1, _mod_wo_zero_with_fusing(index, peps.ncols))
 
 
-
-    function boundary_at_splitting_node(peps::PegasusNetwork, node::NTuple{2, Int})
-        i, j = node
+function boundary_at_splitting_node(peps::PegasusNetwork, node::NTuple{2, Int})
+    i, j = node
+    vcat([
         [
-            [
-                [((i, k), (i+1, k)), ((i, k), (i+1, k+1))] for k ∈ 1:j-2
-            ]...,
-            [
-                ((i, j-1), (i+1, j-1)),  ((i, j-1), (i, j)) # TODO: second element responsible for fusion
-            ]...,
-            [
-                [((i-1, k-1), (i, k)), ((i-1, k), (i, k))] for k ∈ j:peps.ncols
-            ]...
-        ]
+            [((i, k), (i+1, k)), ((i, k), (i+1, k+1))] for k ∈ 1:j-2
+        ]...,
 
-    end
+        [
+            ((i, j-1), (i+1, j-1)), ((i, j-1), (i, j)) # TODO: second element responsible for fusion
+        ]...,
+        [
+            [((i-1, k-1), (i, k)), ((i-1, k), (i, k))] for k ∈ j:peps.ncols
+        ]...
+    ]...
+    )
+end
 
 
 @memoize Dict function MPS_with_fusing(

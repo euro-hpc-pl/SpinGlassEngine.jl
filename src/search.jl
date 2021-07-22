@@ -1,6 +1,7 @@
 export AbstractGibbsNetwork
 export low_energy_spectrum, branch_state, bound_solution, merge_branches
 export Solution
+export empty_solution #only for testing
 using Memoize
 
 struct Solution

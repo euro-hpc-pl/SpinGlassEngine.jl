@@ -13,15 +13,15 @@
     # -------------------------------------------------
 
     # Model's parameters
-    J12 = 1.0
-    J14 = 0.3
-    J15 = 0.9
-    J23 = 0.2
-    J25 = 0.3
-    J26 = 0.1
-    J36 = 0.7
-    J45 = 0.5
-    J56 = 1.0
+    J12 = -1.0
+    J14 = -0.3
+    J15 = -0.9
+    J23 = -0.2
+    J25 = -0.3
+    J26 = -0.1
+    J36 = -0.7
+    J45 = -0.5
+    J56 = -1.0
     h1 = 0.1
     h2 = 0.0
     h3 = 0.2
@@ -51,7 +51,7 @@
     m, n = 2, 3
     L = 6
     β = 1.
-    num_states = 4
+    num_states = 10
     T = Float64
 
     # read in pure Ising
@@ -72,10 +72,17 @@
         "sweeps" => 4.
     )
 
-    for transform ∈ all_lattice_transformations
+    sol = empty_solution()
+
+    for transform ∈ rotation.([0])
         peps = PegasusNetwork(m, n, fg, transform, β=β)
 
         # solve the problem using B & B
-        sol = low_energy_spectrum(peps, num_states)
+        #sol = low_energy_spectrum(peps, num_states)
+        prob = conditional_probability(peps, sol.states[1])
+        #println(sol.energies)
+        #println(sol.states)
+        #println(sol.probabilities)
+        println(prob)
     end
 end

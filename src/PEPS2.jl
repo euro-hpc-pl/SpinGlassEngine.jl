@@ -1,6 +1,6 @@
 export PegasusNetwork
 export pegasus_lattice
-export projectors_with_fusing, node_index_with_fusing
+export projectors_with_fusing, node_index_with_fusing, compress
 export MPO_with_fusing, boundary_at_splitting_node, MPS_with_fusing, conditional_probability, node_from_index, update_energy
 
 function pegasus_lattice(m, n)
@@ -140,28 +140,29 @@ node_index_with_fusing(peps::PegasusNetwork, node::NTuple{2, Int}) = peps.ncols 
 
 _mod_wo_zero_with_fusing(k, m) = k % m == 0 ? m : k % m
 
+iteration_order(peps::PegasusNetwork) = [(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols]
 
 node_from_index(peps::PegasusNetwork, index::Int) =
     ((index-1) ÷ peps.ncols + 1, _mod_wo_zero_with_fusing(index, peps.ncols))
 
 
 
-    function boundary_at_splitting_node(peps::PegasusNetwork, node::NTuple{2, Int})
-        i, j = node
-        vcat([
-            [
-                [((i, k), (i+1, k)), ((i, k), (i+1, k+1))] for k ∈ 1:j-2
-            ]...,
-            [
-                ((i, j-1), (i+1, j-1)),  ((i, j-1), (i, j)) # TODO: second element responsible for fusion
-            ]...,
-            [
-                [((i-1, k-1), (i, k)), ((i-1, k), (i, k))] for k ∈ j:peps.ncols
-            ]...
+function boundary_at_splitting_node(peps::PegasusNetwork, node::NTuple{2, Int})
+    i, j = node
+    vcat([
+        [
+            [((i, k), (i+1, k)), ((i, k), (i+1, k+1))] for k ∈ 1:j-2
+        ]...,
+        [
+            ((i, j-1), (i+1, j-1)),  ((i, j-1), (i, j)) # TODO: second element responsible for fusion
+        ]...,
+        [
+            [((i-1, k-1), (i, k)), ((i-1, k), (i, k))] for k ∈ j:peps.ncols
         ]...
-        )
+    ]...
+    )
 
-    end
+end
 
 
 @memoize Dict function MPS_with_fusing(
@@ -181,7 +182,7 @@ function conditional_probability(peps::PegasusNetwork, v::Vector{Int},
     
         i, j = node_from_index(peps, length(v)+1)
         ∂v = generate_boundary_states_with_fusing(peps, v, (i, j))
-    
+        println(∂v)
         W = MPO_with_fusing(peps, i)
         ψ = MPS_with_fusing(peps, i+1)
 
@@ -190,6 +191,7 @@ function conditional_probability(peps::PegasusNetwork, v::Vector{Int},
         A, _, _ = build_tensor_with_fusing(peps, (i, j))
 
         if j > 1
+            #println(∂v)
             X = W[2*j-2]
 
             l, d, u = ∂v[2*j-2:2*j]
@@ -202,6 +204,7 @@ function conditional_probability(peps::PegasusNetwork, v::Vector{Int},
             @tensor prob[σ] := L[x] * Xt[k, y] * MX[x, y, z] * M[z, l, m] *
                                 Ã[k, n, l, σ] * R[m, n] order = (x, y, z, k, l, m, n)
         else
+            #println(∂v)
             d, u = ∂v[1:2]
             M = ψ[2*j-1]
 
@@ -211,7 +214,6 @@ function conditional_probability(peps::PegasusNetwork, v::Vector{Int},
 
         end
     
-    
         _normalize_probability(prob)
     end
 
@@ -220,5 +222,6 @@ function update_energy(network::PegasusNetwork, σ::Vector{Int})
     i, j = node_from_index(network, length(σ)+1)
     bond_energy(network, (i, j), (i, j-1), local_state_for_node(network, σ, (i, j-1))) +
     bond_energy(network, (i, j), (i-1, j), local_state_for_node(network, σ, (i-1, j))) +
+    bond_energy(network, (i, j), (i-1, j-1), local_state_for_node(network, σ, (i-1, j-1))) +
     local_energy(network, (i, j))
 end

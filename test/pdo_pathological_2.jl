@@ -6,8 +6,7 @@
     β = 1.
 
     L = n * m * t
-    num_states = 22
-
+    num_states = 10
 
 
     # control_params = Dict(
@@ -16,7 +15,7 @@
     #     "sweeps" => 4.
     # )
 
-    instance = "$(@__DIR__)/instances/pathological/test_$(m)_$(n)_ddd.txt"
+    instance = "$(@__DIR__)/instances/pathological/test_$(m)_$(n)_d_NW.txt"
 
     ig = ising_graph(instance)
 
@@ -32,9 +31,11 @@
                                     31 => (3, 3), 32 => (3, 3), 33 => (3, 3), 34 => (3, 4), 35 => (3, 4), 36 => (3, 4)), 
     )
 
-    for transform ∈ rotation.([0, 180])
+    for transform ∈ rotation.([0])
         peps = PegasusNetwork(m, n, fg, transform, β=β)
-
+        sol = low_energy_spectrum(peps, num_states)
+        println(sol.energies)
+        println(sol.states)
         # solve the problem using B & B
         # sol = low_energy_spectrum(peps, num_states)
     end

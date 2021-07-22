@@ -28,5 +28,6 @@ include("PEPS.jl")
 include("PEPS2.jl")
 include("PEPS3.jl")
 include("network_interface2.jl")
+include("network_interface3.jl")
 
 end # module

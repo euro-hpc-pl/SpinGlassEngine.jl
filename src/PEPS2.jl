@@ -109,9 +109,9 @@ function MPO_with_fusing(::Type{T},
             #@reduce B[l, u, r, d] |= sum(σ) A[l, u, r, d, σ]
         end
         # include energy
-        v = build_tensor(peps, (i-1, j), (i, j))
+        v = build_tensor(peps, (i-1, j), (i, j)) ###
 
-        @tensor B[l, u, r, d] := v[u, ũ] * BB[l, ũ, r, d]
+        @tensor B[l, u, r, d] := v[u, ũ] * BB[l, ũ, r, d] ####
 
         W[2*j] = B
         
@@ -224,8 +224,8 @@ function conditional_probability(peps::PegasusNetwork, v::Vector{Int},
         @tensor prob[σ] := L[x] * Xt[k, y] * MX[x, y, z] * M[z, l, m] *
                             Ã[k, n, l, σ] * R[m, n] order = (x, y, z, k, l, m, n)
     
-        #_normalize_probability(prob)
-        prob
+        _normalize_probability(prob)
+        #prob
     end
 
 

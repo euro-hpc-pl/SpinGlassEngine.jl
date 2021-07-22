@@ -184,22 +184,32 @@ function conditional_probability(peps::PegasusNetwork, v::Vector{Int},
     
         W = MPO_with_fusing(peps, i)
         ψ = MPS_with_fusing(peps, i+1)
-    
+
         L = _left_env(peps, i, ∂v[1:2*j-3])
         R = _right_env(peps, i, ∂v[2*j+1:peps.ncols*2])
         A, _, _ = build_tensor_with_fusing(peps, (i, j))
 
-        X = W[2*j-2]
-    
-        l, d, u = ∂v[2*j-2:2*j]
-        MX = ψ[2*j-2]
-        M = ψ[2*j-1]
+        if j > 1
+            X = W[2*j-2]
 
-        Ã = A[:, u, :, :, :]
-        Xt = X[l, d, :, :]
+            l, d, u = ∂v[2*j-2:2*j]
+            MX = ψ[2*j-2]
+            M = ψ[2*j-1]
 
-        @tensor prob[σ] := L[x] * Xt[k, y] * MX[x, y, z] * M[z, l, m] *
-                           Ã[k, n, l, σ] * R[m, n] order = (x, y, z, k, l, m, n)
+            Ã = A[:, u, :, :, :]
+            Xt = X[l, d, :, :]
+        
+            @tensor prob[σ] := L[x] * Xt[k, y] * MX[x, y, z] * M[z, l, m] *
+                                Ã[k, n, l, σ] * R[m, n] order = (x, y, z, k, l, m, n)
+        else
+            d, u = ∂v[1:2]
+            M = ψ[2*j-1]
+
+            Ã = A[d, u, :, :, :]
+        
+            @tensor prob[σ] := L[x] * M[x, l, m] * Ã[n, l, σ] * R[m, n] #order = (x, l, m, n)
+
+        end
     
     
         _normalize_probability(prob)

@@ -128,6 +128,14 @@ end
     states_indices::Dict{NTuple{2, Int}, Int} = Dict{NTuple{2, Int}, Int}()
 ) = MPO_with_fusing(Float64, peps, i, states_indices)
 
+function compress(
+    ψ::AbstractMPS,
+    peps::PegasusNetwork;
+)
+    if bond_dimension(ψ) < peps.bond_dim return ψ end
+    SpinGlassTensors.compress(ψ, peps.bond_dim, peps.var_tol, peps.sweeps)
+end
+
 node_index_with_fusing(peps::PegasusNetwork, node::NTuple{2, Int}) = peps.ncols * (node[1] - 1) + node[2]
 
 _mod_wo_zero_with_fusing(k, m) = k % m == 0 ? m : k % m

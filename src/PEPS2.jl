@@ -68,6 +68,17 @@ function projectors_with_fusing(network::PegasusNetwork, vertex::NTuple{2, Int})
     # trl, trr ?
     pl, trl = fuse_projectors(projs_left)
     pr, trr = fuse_projectors(projs_right)
+    println("-------------------")
+    println("i, j", i, j)
+    println("projs_left", projs_left)
+    println("projs_right", projs_right)
+    println("pl", pl)
+    println("pt", pt)
+    println("pr", pr)
+    println("pb", pb)
+    println("trl", trl)
+    println("trr", trr)
+    println("-------------------")
 
     (pl, pt, pr, pb), trl, trr
 end
@@ -82,9 +93,9 @@ function MPO_with_fusing(::Type{T},
     i::Int,
     states_indices::Dict{NTuple{2, Int}, Int} = Dict{NTuple{2, Int}, Int}()
 ) where {T <: Number}
-    W = MPO(T, 2 * peps.ncols - 1)
-    trr_old = 0
-    trrd_old = 0
+    W = MPO(T, 2 * peps.ncols)
+    trr_old = ones(1,1)
+    trrd_old = ones(1,1)
 
     for j ∈ 1:peps.ncols
         # from peps_tensor
@@ -102,20 +113,19 @@ function MPO_with_fusing(::Type{T},
 
         @tensor B[l, u, r, d] := v[u, ũ] * BB[l, ũ, r, d]
 
-        W[2*j-1] = B
+        W[2*j] = B
         
-        if j > 1
-            h = build_tensor(peps, (i, j-1), (i, j))
-            NW = build_tensor(peps, (i-1, j-1), (i, j))
+        h = build_tensor(peps, (i, j-1), (i, j))
+        NW = build_tensor(peps, (i-1, j-1), (i, j))
 
-            #@cast C[l, u, r, d] := reduce(x, y, ũ) h[y, x] * trl[l, x] * trlu[l, ũ] * trr_old[r, y] * trrd_old[r, d] * NW[u, ũ]
+        #@cast C[l, u, r, d] := reduce(x, y, ũ) h[y, x] * trl[l, x] * trlu[l, ũ] * trr_old[r, y] * trrd_old[r, d] * NW[u, ũ]
             
-            @tensor C1[l, r] := h[y, x] * trl[l, x] *  trr_old[r, y]      
-            @tensor C2[l, u] :=  trlu[l, ũ] * NW[u, ũ]
-            @cast C[r, u, l, d] |= C1[l, r] * C2[l, u] * trrd_old[r, d] 
+        @tensor C1[l, r] := h[y, x] * trl[l, x] *  trr_old[r, y]      
+        @tensor C2[l, u] :=  trlu[l, ũ] * NW[u, ũ]
+        @cast C[r, u, l, d] |= C1[l, r] * C2[l, u] * trrd_old[r, d] 
 
-            W[2*j-2] = C
-        end
+        W[2*j-1] = C
+
         trr_old = trr  
         trrd_old = trrd 
     end
@@ -151,10 +161,10 @@ function boundary_at_splitting_node(peps::PegasusNetwork, node::NTuple{2, Int})
     i, j = node
     vcat([
         [
-            [((i, k), (i+1, k)), ((i, k), (i+1, k+1))] for k ∈ 1:j-2
+            [((i, k-1), (i+1, k)), ((i, k), (i+1, k))] for k ∈ 1:j-1
         ]...,
         [
-            ((i, j-1), (i+1, j-1)),  ((i, j-1), (i, j)) # TODO: second element responsible for fusion
+            ((i, j-1), (i, j)) # TODO: second element responsible for fusion
         ]...,
         [
             [((i-1, k-1), (i, k)), ((i-1, k), (i, k))] for k ∈ j:peps.ncols
@@ -186,35 +196,36 @@ function conditional_probability(peps::PegasusNetwork, v::Vector{Int},
         W = MPO_with_fusing(peps, i)
         ψ = MPS_with_fusing(peps, i+1)
 
-        L = _left_env(peps, i, ∂v[1:2*j-3])
-        R = _right_env(peps, i, ∂v[2*j+1:peps.ncols*2])
+        L = _left_env(peps, i, ∂v[1:2*j-2])
+        R = _right_env(peps, i, ∂v[2*j+2:peps.ncols*2+1])
         A, _, _ = build_tensor_with_fusing(peps, (i, j))
+        println(A)
+        println("size A", size(A))
+        println("---------")
+        #println(∂v)
+        X = W[2*j-1]
 
-        if j > 1
-            #println(∂v)
-            X = W[2*j-2]
+        l, d, u = ∂v[2*j-1:2*j+1]
+        MX = ψ[2*j-1]
+        M = ψ[2*j]
 
-            l, d, u = ∂v[2*j-2:2*j]
-            MX = ψ[2*j-2]
-            M = ψ[2*j-1]
+        Ã = A[:, u, :, :, :]
+        println(Ã)
+        println("---------")
 
-            Ã = A[:, u, :, :, :]
-            Xt = X[l, d, :, :]
+        Xt = X[l, d, :, :]
+        println("L", L)
+        println("X", X)
+        println("MX", MX)
+        println("M", M)
+        println("R", R)
+
         
-            @tensor prob[σ] := L[x] * Xt[k, y] * MX[x, y, z] * M[z, l, m] *
-                                Ã[k, n, l, σ] * R[m, n] order = (x, y, z, k, l, m, n)
-        else
-            #println(∂v)
-            d, u = ∂v[1:2]
-            M = ψ[2*j-1]
-
-            Ã = A[d, u, :, :, :]
-        
-            @tensor prob[σ] := L[x] * M[x, l, m] * Ã[n, l, σ] * R[m, n] #order = (x, l, m, n)
-
-        end
+        @tensor prob[σ] := L[x] * Xt[k, y] * MX[x, y, z] * M[z, l, m] *
+                            Ã[k, n, l, σ] * R[m, n] order = (x, y, z, k, l, m, n)
     
-        _normalize_probability(prob)
+        #_normalize_probability(prob)
+        prob
     end
 
 

@@ -79,7 +79,7 @@
 
         # solve the problem using B & B
         #sol = low_energy_spectrum(peps, num_states)
-        prob = conditional_probability(peps, sol.states[1])
+        prob = conditional_probability(peps, [2])#sol.states[1])
         #println(sol.energies)
         #println(sol.states)
         #println(sol.probabilities)

@@ -68,17 +68,6 @@ function projectors_with_fusing(network::PegasusNetwork, vertex::NTuple{2, Int})
     # trl, trr ?
     pl, trl = fuse_projectors(projs_left)
     pr, trr = fuse_projectors(projs_right)
-    println("-------------------")
-    println("i, j", i, j)
-    println("projs_left", projs_left)
-    println("projs_right", projs_right)
-    println("pl", pl)
-    println("pt", pt)
-    println("pr", pr)
-    println("pb", pb)
-    println("trl", trl)
-    println("trr", trr)
-    println("-------------------")
 
     (pl, pt, pr, pb), trl, trr
 end
@@ -199,40 +188,31 @@ function conditional_probability(peps::PegasusNetwork, v::Vector{Int},
     
         i, j = node_from_index(peps, length(v)+1)
         ∂v = generate_boundary_states_with_fusing(peps, v, (i, j))
-        println(∂v)
         W = MPO_with_fusing(peps, i)
         ψ = MPS_with_fusing(peps, i+1)
 
         L = _left_env(peps, i, ∂v[1:2*j-2])
         R = _right_env(peps, i, ∂v[2*j+2:peps.ncols*2+1])
         A, _, _ = build_tensor_with_fusing(peps, (i, j))
-        println(A)
-        println("size A", size(A))
-        println("---------")
-        #println(∂v)
+        v = build_tensor(peps, (i-1, j), (i, j)) ###
+        
         X = W[2*j-1]
 
         l, d, u = ∂v[2*j-1:2*j+1]
         MX = ψ[2*j-1]
         M = ψ[2*j]
 
-        Ã = A[:, u, :, :, :]
-        println(Ã)
-        println("---------")
+        vt = v[u, :]
+        @tensor Ã[l, r, d, σ] := A[l, x, r, d, σ] * vt[x]
+        #@tensor Ã[l, u, r, d] := vt[u, ũ] * A[l, ũ, r, d]
 
         Xt = X[l, d, :, :]
-        println("L", L)
-        println("X", X)
-        println("MX", MX)
-        println("M", M)
-        println("R", R)
 
         
         @tensor prob[σ] := L[x] * Xt[k, y] * MX[x, y, z] * M[z, l, m] *
                             Ã[k, n, l, σ] * R[m, n] order = (x, y, z, k, l, m, n)
     
         _normalize_probability(prob)
-        #prob
     end
 
 

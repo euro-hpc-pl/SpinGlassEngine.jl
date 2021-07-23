@@ -1,6 +1,6 @@
 using LabelledGraphs
 
-export fuse_projectors, build_tensor_with_fusing, generate_boundary_states_with_fusing
+export fuse_projectors, build_tensor_with_fusing, generate_boundary_states_with_fusing, generate_boundary_state_with_fusing_2
 
 
 function fuse_projectors(projectors)
@@ -36,12 +36,20 @@ end
     reshape(A, dim..., :), trl, trr 
 end
 
-
 function generate_boundary_state_with_fusing(network::PegasusNetwork, v::S, w::S, state) where {S, T}
     if v ∉ vertices(network.network_graph) return ones_like(state) end
     loc_dim = length(local_energy(network, v))
     pv = projector(network, v, w)
     [findfirst(x -> x > 0, pv[i, :]) for i ∈ 1:size(pv)[1]][state]
+end
+
+function generate_boundary_state_with_fusing_2(network::PegasusNetwork, v::S, w::S, k::S, state) where {S, T}
+    if v ∉ vertices(network.network_graph) return ones_like(state) end
+    loc_dim = length(local_energy(network, v))
+    pv = projector(network, v, w)
+    pk = projector(network, v, k)
+    P, _ = fuse_projectors([pv, pk])
+    [findfirst(x -> x > 0, P[i, :]) for i ∈ 1:size(P)[1]][state]
 end
 
 
@@ -50,10 +58,21 @@ function generate_boundary_states_with_fusing(
     σ::Vector{Int},
     node::S
 ) where {S, T}
-    [
-        generate_boundary_state_with_fusing(network, v, w, local_state_for_node(network, σ, v))
-        for (v, w) ∈ boundary_at_splitting_node(network, node)
-    ]
+B = []
+for x ∈ boundary_at_splitting_node(network, node)
+    if length(x) == 2
+        v, w = x
+        push(B, generate_boundary_state_with_fusing(network, v, w, local_state_for_node(network, σ, v)))
+    elseif length(x) == 3
+        v, w, k = x
+        push(B, generate_boundary_state_with_fusing_2(network, v, w, k, local_state_for_node(network, σ, v)))
+    end
+end
+B
+    #[
+        #generate_boundary_state_with_fusing(network, v, w, local_state_for_node(network, σ, v))
+        #for (v, w) ∈ boundary_at_splitting_node(network, node)
+    #]
 end
 
 
@@ -62,11 +81,47 @@ function generate_boundary_states_with_fusing(
     σ::Vector{Vector{Int}},
     node::S
 ) where {S, T}
-    [
-        generate_boundary_state_with_fusing(network, v, w, local_state_for_node.(Ref(network), σ, Ref(v)))
-        for (v, w) ∈ boundary_at_splitting_node(network, node)
-    ]
+B = []
+for x ∈ boundary_at_splitting_node(network, node)
+    if length(x) == 2
+        v, w = x
+        push(B, generate_boundary_state_with_fusing(network, v, w, local_state_for_node.(Ref(network), σ, Ref(v))))
+    elseif length(x) == 3
+        v, w, k = x
+        push(B, generate_boundary_state_with_fusing_2(network, v, w, k, local_state_for_node.(Ref(network), σ, Ref(v))))
+    end
 end
+B
+    #[
+        #generate_boundary_state_with_fusing(network, v, w, local_state_for_node(network, σ, v))
+        #for (v, w) ∈ boundary_at_splitting_node(network, node)
+    #]
+end
+
+
+
+#function generate_boundary_states_with_fusing(
+#    network::PegasusNetwork,
+#    σ::Vector{Int},
+#    node::S
+#) where {S, T}
+#    [
+#        generate_boundary_state_with_fusing(network, v, w, local_state_for_node(network, σ, v))
+#        for (v, w) ∈ boundary_at_splitting_node(network, node)
+#    ]
+#end
+
+
+#function generate_boundary_states_with_fusing(
+#    network::PegasusNetwork,
+#    σ::Vector{Vector{Int}},
+#    node::S
+#) where {S, T}
+#    [
+#        generate_boundary_state_with_fusing(network, v, w, local_state_for_node.(Ref(network), σ, Ref(v)))
+#        for (v, w) ∈ boundary_at_splitting_node(network, node)
+#    ]
+#end
 
 function local_state_for_node(
     network::PegasusNetwork,

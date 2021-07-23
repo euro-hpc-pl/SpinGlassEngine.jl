@@ -36,6 +36,7 @@
         sol = low_energy_spectrum(peps, num_states)
         println(sol.energies)
         println(sol.states)
+        println(sol.probabilities)
         # solve the problem using B & B
         # sol = low_energy_spectrum(peps, num_states)
     end

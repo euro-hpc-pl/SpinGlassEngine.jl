@@ -24,6 +24,7 @@ end
     projs, trl, trr = projectors_with_fusing(network, v) # only difference in comparison to build_tensor
     dim = zeros(Int, length(projs))
     @cast A[_, i] := loc_exp[i]
+
     #v = build_tensor(peps, (i-1, j), (i, j)) ###
     #@tensor A[l, u, r, d] := v[u, ũ] * A[l, ũ, r, d] ###
 
@@ -31,13 +32,7 @@ end
         @cast A[(c, γ), σ] |= A[c, σ] * pv[σ, γ]
         dim[j] = size(pv, 2)
     end
-    println("----------")
-    println("v ", v)
-    println("projs ", projs)
-    println("loc_exp ", loc_exp)
-    println("dim ", dim)
-    println("A ", A)
-    println("----------")
+
     reshape(A, dim..., :), trl, trr 
 end
 

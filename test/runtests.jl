@@ -53,8 +53,8 @@ push!(my_tests,
       #"search_3.jl",
       #"search_4.jl",
       #"search_5.jl",
-      #"pdo.jl",
-      "pdo_2.jl",
+      "pdo.jl",
+      #"pdo_2.jl",
       #"pdo_pathological.jl",
       #"pdo_pathological_2.jl"
 )

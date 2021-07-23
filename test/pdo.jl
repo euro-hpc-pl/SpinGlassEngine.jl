@@ -51,7 +51,7 @@
     m, n = 2, 3
     L = 6
     β = 1.
-    num_states = 10
+    num_states = 20
     T = Float64
 
     # read in pure Ising
@@ -78,11 +78,11 @@
         peps = PegasusNetwork(m, n, fg, transform, β=β)
 
         # solve the problem using B & B
-        #sol = low_energy_spectrum(peps, num_states)
-        prob = conditional_probability(peps, [2])#sol.states[1])
-        #println(sol.energies)
-        #println(sol.states)
-        #println(sol.probabilities)
-        println(prob)
+        sol = low_energy_spectrum(peps, num_states)
+        #prob = conditional_probability(peps, [1,1,1,1])#sol.states[1])
+        println(sol.energies)
+        println(sol.states)
+        println(sol.probabilities)
+        #println(prob)
     end
 end

@@ -1,7 +1,7 @@
 export NNNNetwork
 export nnn_lattice
-export projectors_with_fusing
-export MPO_with_fusing
+export projectors_with_fusing, node_index_with_fusing, compress
+export MPO_with_fusing, boundary_at_splitting_node, MPS_with_fusing, conditional_probability, node_from_index, update_energy
 
 function nnn_lattice(m, n)
     labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
@@ -46,6 +46,18 @@ struct NNNNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         end
         new(factor_graph, ng, vmap, m, n, nrows, ncols, β, bond_dim, var_tol, sweeps)
     end
+end
+
+
+@memoize Dict function _right_env(peps::NNNNetwork, i::Int, ∂v::Vector{Int})
+    W = MPO_with_fusing(peps, i)
+    ψ = MPS_with_fusing(peps, i+1)
+    right_env(ψ, W, ∂v)
+end
+
+@memoize Dict function _left_env(peps::NNNNetwork, i::Int, ∂v::Vector{Int})
+    ψ = MPS_with_fusing(peps, i+1)
+    left_env(ψ, ∂v)
 end
 
 
@@ -115,6 +127,30 @@ function MPO_with_fusing(::Type{T},
 end
 
 
+@memoize Dict MPO_with_fusing(
+    peps::NNNNetwork,
+    i::Int,
+    states_indices::Dict{NTuple{2, Int}, Int} = Dict{NTuple{2, Int}, Int}()
+) = MPO_with_fusing(Float64, peps, i, states_indices)
+
+
+function compress(
+    ψ::AbstractMPS,
+    peps::NNNNetwork;
+)
+    if bond_dimension(ψ) < peps.bond_dim return ψ end
+    SpinGlassTensors.compress(ψ, peps.bond_dim, peps.var_tol, peps.sweeps)
+end
+
+node_index_with_fusing(peps::NNNNetwork, node::NTuple{2, Int}) = peps.ncols * (node[1] - 1) + node[2]
+
+_mod_wo_zero_with_fusing(k, m) = k % m == 0 ? m : k % m
+
+iteration_order(peps::NNNNetwork) = [(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols]
+
+node_from_index(peps::NNNNetwork, index::Int) =
+    ((index-1) ÷ peps.ncols + 1, _mod_wo_zero_with_fusing(index, peps.ncols))
+
 function boundary_at_splitting_node(peps::NNNNetwork, node::NTuple{2, Int})
     i, j = node
     [
@@ -127,13 +163,56 @@ function boundary_at_splitting_node(peps::NNNNetwork, node::NTuple{2, Int})
 end
 
 
-function generate_boundary_states_with_fusing(
-    network::NNNNetwork,
-    σ::Vector{Int},
-    node::S 
-) where {S, T}
-    [
-        generate_boundary_state_with_fusing(network, v, w, local_state_for_node(network, σ, v))
-        for (v, w) ∈ boundary_at_splitting_node(network, node)
-    ]
+@memoize Dict function MPS_with_fusing(
+    peps::NNNNetwork,
+    i::Int,
+    states_indices::Dict{NTuple{2, Int}, Int} = Dict{NTuple{2, Int}, Int}()
+)
+    if i > peps.nrows return IdentityMPS() end
+    W = MPO_with_fusing(peps, i, states_indices)
+    ψ = MPS_with_fusing(peps, i+1, states_indices)
+    compress(W * ψ, peps)
+end
+
+
+
+function conditional_probability(peps::NNNNetwork, v::Vector{Int},
+    )
+    
+        i, j = node_from_index(peps, length(v)+1)
+        ∂v = generate_boundary_states_with_fusing(peps, v, (i, j))
+        println(∂v)
+        W = MPO_with_fusing(peps, i)
+        ψ = MPS_with_fusing(peps, i+1)
+
+        L = _left_env(peps, i, ∂v[1:2*j-2])
+        R = _right_env(peps, i, ∂v[2*j+2:peps.ncols*2+1])
+        A, _, _ = build_tensor_with_fusing(peps, (i, j))
+
+        X = W[2*j-1]
+
+        l, d, u = ∂v[2*j-1:2*j+1]
+        MX = ψ[2*j-1]
+        M = ψ[2*j]
+
+        Ã = A[:, u, :, :, :]
+
+        Xt = X[l, d, :, :]
+
+        
+        @tensor prob[σ] := L[x] * Xt[k, y] * MX[x, y, z] * M[z, l, m] *
+                            Ã[k, n, l, σ] * R[m, n] order = (x, y, z, k, l, m, n)
+    
+        _normalize_probability(prob)
+        #prob
+    end
+
+
+function update_energy(network::NNNNetwork, σ::Vector{Int})
+    i, j = node_from_index(network, length(σ)+1)
+    bond_energy(network, (i, j), (i, j-1), local_state_for_node(network, σ, (i, j-1))) +
+    bond_energy(network, (i, j), (i-1, j), local_state_for_node(network, σ, (i-1, j))) +
+    bond_energy(network, (i, j), (i-1, j-1), local_state_for_node(network, σ, (i-1, j-1))) +
+    #bond_energy(network, (i, j-1), (i-1, j), local_state_for_node(network, σ, (i-1, j))) +
+    local_energy(network, (i, j))
 end

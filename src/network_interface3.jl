@@ -42,7 +42,7 @@ end
 end
 
 
-function generate_boundary_state_with_fusing(network::PegasusNetwork, v::S, w::S, state) where {S, T}
+function generate_boundary_state_with_fusing(network::NNNNetwork, v::S, w::S, state) where {S, T}
     if v ∉ vertices(network.network_graph) return ones_like(state) end
     loc_dim = length(local_energy(network, v))
     pv = projector(network, v, w)
@@ -51,7 +51,7 @@ end
 
 
 function generate_boundary_states_with_fusing(
-    network::PegasusNetwork,
+    network::NNNNetwork,
     σ::Vector{Int},
     node::S
 ) where {S, T}
@@ -63,7 +63,7 @@ end
 
 
 function generate_boundary_states_with_fusing(
-    network::PegasusNetwork,
+    network::NNNNetwork,
     σ::Vector{Vector{Int}},
     node::S
 ) where {S, T}
@@ -74,7 +74,7 @@ function generate_boundary_states_with_fusing(
 end
 
 function local_state_for_node(
-    network::PegasusNetwork,
+    network::NNNNetwork,
     σ::Vector{Int},
     w::S
 ) where {S, T}

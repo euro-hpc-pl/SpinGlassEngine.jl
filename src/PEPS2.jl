@@ -153,7 +153,7 @@ function boundary_at_splitting_node(peps::PegasusNetwork, node::NTuple{2, Int})
             [((i, k-1), (i+1, k)), ((i, k), (i+1, k))] for k ∈ 1:j-1
         ]...,
         [
-            ((i, j-1), (i, j)) # TODO: second element responsible for fusion
+            ((i, j-1), (i, j), (i+1, j)) # TODO: second element responsible for fusion
         ]...,
         [
             [((i-1, k-1), (i, k)), ((i-1, k), (i, k))] for k ∈ j:peps.ncols

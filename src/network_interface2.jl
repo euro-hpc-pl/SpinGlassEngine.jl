@@ -58,16 +58,17 @@ function generate_boundary_states_with_fusing(
     σ::Vector{Int},
     node::S
 ) where {S, T}
-B = []
+B = Vector{Int}[]
 for x ∈ boundary_at_splitting_node(network, node)
     if length(x) == 2
         v, w = x
-        push(B, generate_boundary_state_with_fusing(network, v, w, local_state_for_node(network, σ, v)))
+        push!(B, generate_boundary_state_with_fusing(network, v, w, local_state_for_node(network, σ, v)))
     elseif length(x) == 3
         v, w, k = x
-        push(B, generate_boundary_state_with_fusing_2(network, v, w, k, local_state_for_node(network, σ, v)))
+        push!(B, generate_boundary_state_with_fusing_2(network, v, w, k, local_state_for_node(network, σ, v)))
     end
 end
+println("B1 ", B)
 B
     #[
         #generate_boundary_state_with_fusing(network, v, w, local_state_for_node(network, σ, v))
@@ -81,7 +82,7 @@ function generate_boundary_states_with_fusing(
     σ::Vector{Vector{Int}},
     node::S
 ) where {S, T}
-B = []
+B = Vector{Int}[]
 for x ∈ boundary_at_splitting_node(network, node)
     if length(x) == 2
         v, w = x
@@ -91,6 +92,7 @@ for x ∈ boundary_at_splitting_node(network, node)
         push(B, generate_boundary_state_with_fusing_2(network, v, w, k, local_state_for_node.(Ref(network), σ, Ref(v))))
     end
 end
+println(B)
 B
     #[
         #generate_boundary_state_with_fusing(network, v, w, local_state_for_node(network, σ, v))

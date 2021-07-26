@@ -153,13 +153,19 @@ node_from_index(peps::NNNNetwork, index::Int) =
 
 function boundary_at_splitting_node(peps::NNNNetwork, node::NTuple{2, Int})
     i, j = node
-    [
-        [((i, k), (i+1, k)) for k ∈ 1:j-1]...,
-        ((i, j-1), (i, j)),
-        [((i-1, k), (i, k)) for k ∈ j:peps.ncols]...,
-        [((i-1, k), (i, k)) for k ∈ 1:j-1]...,
-        [((i, k), (i+1, k)) for k ∈ j:peps.ncols]...
-    ]
+    vcat([
+        [
+            [((i, k-1), (i+1, k)), ((i, k), (i+1, k))] for k ∈ 1:j-1
+        ]...,
+        [
+            ((i, j-1), (i, j), (i+1, j)) # TODO: second element responsible for fusion
+        ]...,
+        [
+            [((i-1, k-1), (i, k)), ((i-1, k), (i, k))] for k ∈ j:peps.ncols
+        ]...
+    ]...
+    )
+    
 end
 
 
@@ -175,27 +181,28 @@ end
 end
 
 
-
 function conditional_probability(peps::NNNNetwork, v::Vector{Int},
     )
     
         i, j = node_from_index(peps, length(v)+1)
         ∂v = generate_boundary_states_with_fusing(peps, v, (i, j))
-        println(∂v)
         W = MPO_with_fusing(peps, i)
         ψ = MPS_with_fusing(peps, i+1)
 
         L = _left_env(peps, i, ∂v[1:2*j-2])
         R = _right_env(peps, i, ∂v[2*j+2:peps.ncols*2+1])
         A, _, _ = build_tensor_with_fusing(peps, (i, j))
-
+        v = build_tensor(peps, (i-1, j), (i, j)) 
+        
         X = W[2*j-1]
 
         l, d, u = ∂v[2*j-1:2*j+1]
         MX = ψ[2*j-1]
         M = ψ[2*j]
 
-        Ã = A[:, u, :, :, :]
+        vt = v[u, :]
+        @tensor Ã[l, r, d, σ] := A[l, x, r, d, σ] * vt[x]
+        #@tensor Ã[l, u, r, d] := vt[u, ũ] * A[l, ũ, r, d]
 
         Xt = X[l, d, :, :]
 
@@ -204,8 +211,39 @@ function conditional_probability(peps::NNNNetwork, v::Vector{Int},
                             Ã[k, n, l, σ] * R[m, n] order = (x, y, z, k, l, m, n)
     
         _normalize_probability(prob)
-        #prob
     end
+###
+
+#function conditional_probability(peps::NNNNetwork, v::Vector{Int},
+#    )
+#    
+#        i, j = node_from_index(peps, length(v)+1)
+#        ∂v = generate_boundary_states_with_fusing(peps, v, (i, j))
+#        println(∂v)
+#        W = MPO_with_fusing(peps, i)
+#        ψ = MPS_with_fusing(peps, i+1)
+
+#        L = _left_env(peps, i, ∂v[1:2*j-2])
+#        R = _right_env(peps, i, ∂v[2*j+2:peps.ncols*2+1])
+#        A, _, _ = build_tensor_with_fusing(peps, (i, j))
+
+#        X = W[2*j-1]
+
+#        l, d, u = ∂v[2*j-1:2*j+1]
+#        MX = ψ[2*j-1]
+#        M = ψ[2*j]
+
+#        Ã = A[:, u, :, :, :]
+
+#        Xt = X[l, d, :, :]
+
+        
+#        @tensor prob[σ] := L[x] * Xt[k, y] * MX[x, y, z] * M[z, l, m] *
+#                            Ã[k, n, l, σ] * R[m, n] order = (x, y, z, k, l, m, n)
+    
+#        _normalize_probability(prob)
+        #prob
+#    end
 
 
 function update_energy(network::NNNNetwork, σ::Vector{Int})

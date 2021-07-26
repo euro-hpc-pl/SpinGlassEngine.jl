@@ -187,7 +187,7 @@ function conditional_probability(peps::PegasusNetwork, v::Vector{Int},
         L = _left_env(peps, i, ∂v[1:2*j-2])
         R = _right_env(peps, i, ∂v[2*j+2:peps.ncols*2+1])
         A, _, _ = build_tensor_with_fusing(peps, (i, j))
-        v = build_tensor(peps, (i-1, j), (i, j)) ###
+        v = build_tensor(peps, (i-1, j), (i, j)) 
         
         X = W[2*j-1]
 

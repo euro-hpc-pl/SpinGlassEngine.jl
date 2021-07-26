@@ -35,7 +35,9 @@ export fuse_projectors, build_tensor_with_fusing, generate_boundary_states_with_
 #end
 
 
-function generate_boundary_state_with_fusing(network::NNNNetwork, v::S, w::S, state) where {S, T}
+function generate_boundary_state_with_fusing(network::NNNNetwork, v::S, w::S, σ::Vector{Int}) where {S, T}
+    v_lin = node_index_with_fusing(network, v)
+    state =  0 < v_lin <= length(σ) ? σ[v_lin] : 1
     if v ∉ vertices(network.network_graph) return ones_like(state) end
     loc_dim = length(local_energy(network, v))
     pv = projector(network, v, w)
@@ -63,8 +65,7 @@ function generate_boundary_state_with_fusing(network::NNNNetwork, v::S, w::S, k:
     ind_v = [findfirst(x -> x > 0, pv[i, :]) for i ∈ 1:size(pv)[1]][state_v]
     pk = projector(network, k, l)
     ind_k = [findfirst(x -> x > 0, pk[i, :]) for i ∈ 1:size(pk)[1]][state_k]
-    println(ind_v * size(pk, 2) + ind_k)
-    ind_v * size(pk, 2) + ind_k
+    (ind_k - 1) * size(pv, 2) + ind_v
 end
 
 

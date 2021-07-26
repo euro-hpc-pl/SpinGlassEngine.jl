@@ -6,7 +6,7 @@
     β = 1.
 
     L = n * m * t
-    num_states = 10
+    num_states = 20
 
 
     # control_params = Dict(
@@ -39,7 +39,5 @@
         println(sol.energies)
         println(sol.states)
         println(sol.probabilities)
-        # solve the problem using B & B
-        # sol = low_energy_spectrum(peps, num_states)
     end
 end

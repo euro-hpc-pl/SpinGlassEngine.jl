@@ -42,21 +42,15 @@ end
 my_tests = []
 
 push!(my_tests,
-      #"MPS_search.jl",
-      #"PEPS.jl",
-      #"contract.jl",
-      #"search.jl",
-      #"search_2.jl",
-      #"network_operations.jl",
-      #"branch_and_bound.jl",
-      #"network_interface.jl",
-      #"search_3.jl",
-      #"search_4.jl",
-      #"search_5.jl",
-      #"pdo.jl",
-      #"pdo_2.jl",
-      #"pdo_pathological.jl",
-      "pdo_pathological_2.jl"
+      "MPS_search.jl",
+      "PEPS.jl",
+      "contract.jl",
+      "network_operations.jl",
+      "branch_and_bound.jl",
+      "network_interface.jl",
+      "search_basic.jl",
+      "search_chimera.jl",
+      "search_pegasus.jl",
 )
 
 for my_test in my_tests

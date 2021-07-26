@@ -9,7 +9,7 @@ const DEFAULT_CONTROL_PARAMS = Dict(
 )
 
 
-function peps_lattice(m, n)
+function peps_lattice(m::Int, n::Int)
     labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
     LabelledGraph(labels, grid((m, n)))
 end
@@ -148,7 +148,6 @@ _mod_wo_zero(k, m) = k % m == 0 ? m : k % m
 
 node_from_index(peps::AbstractGibbsNetwork, index::Int) =
     ((index-1) ÷ peps.ncols + 1, _mod_wo_zero(index, peps.ncols))
-
 
 
 function boundary_at_splitting_node(peps::PEPSNetwork, node::NTuple{2, Int})

@@ -2,7 +2,7 @@ using LabelledGraphs
 
 export fuse_projectors, build_tensor, generate_boundary_states
 
-function fuse_projectors(projectors)
+function fuse_projectors(projectors) #::NTuple{N, Matrix{T}}) where {N, T}
     fused, energy = rank_reveal(hcat(projectors...), :PE)
     i₀ = 1
     transitions = []
@@ -17,7 +17,7 @@ end
 @memoize function build_tensor(network::FusedNetwork, v::S) where S
     loc_exp = exp.(-network.β .* local_energy(network, v))
 
-    #(pl, pt, pr, pb), trl, trr
+    # (pl, pt, pr, pb), trl, trr
     projs, trl, trr = projectors_with_fusing(network, v) 
     dim = zeros(Int, length(projs))
     @cast A[_, i] := loc_exp[i]
@@ -35,9 +35,7 @@ function generate_boundary_state(
     w::S, 
     σ::Vector{Int}
 ) where S
-
-    v_lin = node_index(network, v)
-    state =  0 < v_lin <= length(σ) ? σ[v_lin] : 1
+    state = local_state_for_node(network, σ, v)
     if v ∉ vertices(network.network_graph) return ones_like(state) end
     pv = projector(network, v, w)
     [findfirst(x -> x > 0, pv[i, :]) for i ∈ 1:size(pv)[1]][state]
@@ -49,11 +47,8 @@ function generate_boundary_state(
     w::S, 
     k::S, 
     σ::Vector{Int}
-) where {S, T}
-
-# jagyfgiuerhugfwh
-    v_lin = node_index(network, v)
-    state =  0 < v_lin <= length(σ) ? σ[v_lin] : 1
+) where S
+    state = local_state_for_node(network, σ, v)
     if v ∉ vertices(network.network_graph) return ones_like(state) end
 
     pv = projector(network, v, w)

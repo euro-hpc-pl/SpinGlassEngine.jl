@@ -1,7 +1,6 @@
 export FusedNetwork
-export cross_lattice
-export projectors_with_fusing, node_index, compress
-export MPO, boundary_at_splitting_node, MPS, conditional_probability, node_from_index, update_energy
+export projectors_with_fusing, boundary_at_splitting_node
+export conditional_probability, update_energy
 
 function cross_lattice(m::Int, n::Int)
     labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
@@ -76,7 +75,7 @@ function SpinGlassTensors.MPO(::Type{T},
 
     for j ∈ 1:peps.ncols
         # from peps_tensor
-        A, (p_lb, p_ll, p_lt), (p_rb, p_rr, p_rt)  = build_tensor(peps, (i, j))
+        A, (p_lb, p_ll, p_lt), (p_rb, p_rr, p_rt) = build_tensor(peps, (i, j))
 
         v = get(states_indices, peps.vertex_map((i, j)), nothing)
         if v !== nothing
@@ -97,7 +96,8 @@ function SpinGlassTensors.MPO(::Type{T},
         @tensor C1[l, r] := p_rr_old[l, x] * h[x, y] * p_ll[r, y]    
         @tensor C2[l, u] :=  p_rt_old[l, ũ] * NE[ũ, u]
         @tensor C3[r, uu] :=  p_lt[r, ũ] * NW[uu, ũ]
-        @cast C[l, (uu, u), r, (dd, d)] |= C1[l, r] * C2[l, u] * p_lb[r, d] * C3[r, uu] * p_rb_old[l, dd]
+        @cast C[l, (uu, u), r, (dd, d)] |= C1[l, r] * C2[l, u] * p_lb[r, d] * 
+                                           C3[r, uu] * p_rb_old[l, dd]
         W[2*j-1] = C
 
         p_rb_old = p_rb 

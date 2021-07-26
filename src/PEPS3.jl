@@ -84,10 +84,10 @@ function MPO_with_fusing(::Type{T},
     i::Int,
     states_indices::Dict{NTuple{2, Int}, Int} = Dict{NTuple{2, Int}, Int}()
 ) where {T <: Number}
-    W = MPO(T, 2 * peps.ncols - 1)
-    p_rr_old = 0
-    p_rt_old = 0
-    p_rb_old = 0
+    W = MPO(T, 2 * peps.ncols)
+    p_rr_old = ones(1,1)
+    p_rt_old = ones(1,1)
+    p_rb_old = ones(1,1)
 
     for j ∈ 1:peps.ncols
         # from peps_tensor
@@ -105,20 +105,18 @@ function MPO_with_fusing(::Type{T},
 
         @tensor B[l, u, r, d] := v[u, ũ] * BB[l, ũ, r, d]
 
-        W[2*j-1] = B
+        W[2*j] = B
         
-        if j > 1
-            h = build_tensor(peps, (i, j-1), (i, j))
-            NW = build_tensor(peps, (i-1, j-1), (i, j))
-            NE = build_tensor(peps, (i-1, j), (i, j-1))
+        h = build_tensor(peps, (i, j-1), (i, j))
+        NW = build_tensor(peps, (i-1, j-1), (i, j))
+        NE = build_tensor(peps, (i-1, j), (i, j-1))
 
-            #@cast C[l, u, r, d] := reduce(x, y, ũ) h[y, x] * trl[l, x] * trlu[l, ũ] * trr_old[r, y] * trrd_old[r, d] * NW[u, ũ]
-            @tensor C1[l, r] := p_rr_old[l, x] * h[x, y] * p_ll[r, y]    
-            @tensor C2[l, u] :=  p_rt_old[l, ũ] * NE[ũ, u]
-            @tensor C3[r, uu] :=  p_lt[r, ũ] * NW[uu, ũ]
-            @cast C[l, (uu, u), r, (dd, d)] |= C1[l, r] * C2[l, u] * p_lb[r, d] * C3[r, uu] * p_rb_old[l, dd]
-            W[2*j-2] = C
-        end
+        #@cast C[l, u, r, d] := reduce(x, y, ũ) h[y, x] * trl[l, x] * trlu[l, ũ] * trr_old[r, y] * trrd_old[r, d] * NW[u, ũ]
+        @tensor C1[l, r] := p_rr_old[l, x] * h[x, y] * p_ll[r, y]    
+        @tensor C2[l, u] :=  p_rt_old[l, ũ] * NE[ũ, u]
+        @tensor C3[r, uu] :=  p_lt[r, ũ] * NW[uu, ũ]
+        @cast C[l, (uu, u), r, (dd, d)] |= C1[l, r] * C2[l, u] * p_lb[r, d] * C3[r, uu] * p_rb_old[l, dd]
+        W[2*j-1] = C
         p_rb_old = p_rb 
         p_rt_old = p_rt
         p_rr_old = p_rr
@@ -144,7 +142,7 @@ end
 
 node_index_with_fusing(peps::NNNNetwork, node::NTuple{2, Int}) = peps.ncols * (node[1] - 1) + node[2]
 
-_mod_wo_zero_with_fusing(k, m) = k % m == 0 ? m : k % m
+#_mod_wo_zero_with_fusing(k, m) = k % m == 0 ? m : k % m
 
 iteration_order(peps::NNNNetwork) = [(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols]
 
@@ -155,12 +153,14 @@ function boundary_at_splitting_node(peps::NNNNetwork, node::NTuple{2, Int})
     i, j = node
     vcat([
         [
+            #[((i, k-1), (i+1, k), (i, k), (i+1, k-1)), ((i, k), (i+1, k))] for k ∈ 1:j-1
             [((i, k-1), (i+1, k)), ((i, k), (i+1, k))] for k ∈ 1:j-1
         ]...,
         [
             ((i, j-1), (i, j), (i+1, j)) # TODO: second element responsible for fusion
         ]...,
         [
+            #[((i-1, k-1), (i, k), (i-1, k), (i, k-1)), ((i-1, k), (i, k))] for k ∈ j:peps.ncols
             [((i-1, k-1), (i, k)), ((i-1, k), (i, k))] for k ∈ j:peps.ncols
         ]...
     ]...
@@ -185,7 +185,7 @@ function conditional_probability(peps::NNNNetwork, v::Vector{Int},
     )
     
         i, j = node_from_index(peps, length(v)+1)
-        ∂v = generate_boundary_states_with_fusing(peps, v, (i, j))
+        ∂v = generate_boundary_states_with_fusing(peps, v, (i,j))
         W = MPO_with_fusing(peps, i)
         ψ = MPS_with_fusing(peps, i+1)
 
@@ -251,6 +251,6 @@ function update_energy(network::NNNNetwork, σ::Vector{Int})
     bond_energy(network, (i, j), (i, j-1), local_state_for_node(network, σ, (i, j-1))) +
     bond_energy(network, (i, j), (i-1, j), local_state_for_node(network, σ, (i-1, j))) +
     bond_energy(network, (i, j), (i-1, j-1), local_state_for_node(network, σ, (i-1, j-1))) +
-    #bond_energy(network, (i, j-1), (i-1, j), local_state_for_node(network, σ, (i-1, j))) +
+    bond_energy(network, (i, j), (i-1, j+1), local_state_for_node(network, σ, (i-1, j+1))) +
     local_energy(network, (i, j))
 end

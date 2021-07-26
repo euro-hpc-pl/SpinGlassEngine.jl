@@ -163,13 +163,6 @@ function boundary_at_splitting_node(peps::PegasusNetwork, node::NTuple{2, Int})
 
 end
 
-function compress(
-    ψ::AbstractMPS,
-    peps::PegasusNetwork;
-)
-    if bond_dimension(ψ) < peps.bond_dim return ψ end
-    SpinGlassTensors.compress(ψ, peps.bond_dim, peps.var_tol, peps.sweeps)
-end
 
 @memoize Dict function MPS_with_fusing(
     peps::PegasusNetwork,

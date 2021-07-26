@@ -33,6 +33,8 @@
 
     for transform ∈ rotation.([0])
         peps = PegasusNetwork(m, n, fg, transform, β=β)
+        #peps = NNNNetwork(m, n, fg, transform, β=β)
+
         sol = low_energy_spectrum(peps, num_states)
         println(sol.energies)
         println(sol.states)

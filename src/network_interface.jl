@@ -32,20 +32,15 @@ network_graph(network::AbstractGibbsNetwork{S, T}) where {S, T} = network.networ
 
 vertex_map(network::AbstractGibbsNetwork{S, T}) where {S, T} = network.vertex_map
 
-projectors(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T} = not_implmented("projectors")
-
-projectors_with_fusing(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T} = not_implmented("projectors")
-
 boundary_at_splitting_node(network::AbstractGibbsNetwork{S, T}, node::S) where {S, T} = not_implmented("boundary_at_splitting_node")
 
 node_index(network::AbstractGibbsNetwork{S, T}, node::S) where {S, T} = not_implmented("node_index")
-
-iteration_order(network::AbstractGibbsNetwork{S, T}) where {S, T} = not_implemented("iteration_order")
 
 update_energy(network::AbstractGibbsNetwork{S, T}, σ::Vector{Int}) where {S, T} = not_implmented("update_energy")
 
 conditional_probability(network::AbstractGibbsNetwork{S, T}, v::Vector{Int}) where {S, T} = not_implemented("conditional_probability")
 
+iteration_order(peps::AbstractGibbsNetwork) = [(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols]
 
 function projector(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
     fg = factor_graph(network)
@@ -89,7 +84,6 @@ end
 
 
 @memoize function build_tensor(network::AbstractGibbsNetwork{S, T}, v::S) where {S, T}
-    # TODO: does this require full network, or can we pass only fg?
     loc_exp = exp.(-network.β .* local_energy(network, v))
 
     projs = projectors(network, v)
@@ -114,37 +108,41 @@ ones_like(x::Number) = one(typeof(x))
 ones_like(x::Array) = ones(eltype(x), size(x))
 
 
-function generate_boundary_state(network::AbstractGibbsNetwork{S, T}, v::S, w::S, state) where {S, T}
+function generate_boundary_state(
+    network::AbstractGibbsNetwork{S, T}, 
+    v::S, 
+    w::S,
+    σ::Vector{Int}
+) where {S, T}
+    state = local_state_for_node(network, σ, v)
     if v ∉ vertices(network.network_graph) return ones_like(state) end
-    loc_dim = length(local_energy(network, v))
     pv = projector(network, v, w)
     [findfirst(x -> x > 0, pv[i, :]) for i ∈ 1:size(pv)[1]][state]
 end
 
 
 function generate_boundary_states(
-    network::AbstractGibbsNetwork,
+    network::AbstractGibbsNetwork{S, T},
     σ::Vector{Int},
     node::S
 ) where {S, T}
     [
-        generate_boundary_state(network, v, w, local_state_for_node(network, σ, v))
-        for (v, w) ∈ boundary_at_splitting_node(network, node)
+        generate_boundary_state(network, x..., σ)
+        for x ∈ boundary_at_splitting_node(network, node)
     ]
 end
 
 
 function generate_boundary_states(
-    network::AbstractGibbsNetwork,
+    network::AbstractGibbsNetwork{S, T},
     σ::Vector{Vector{Int}},
     node::S
 ) where {S, T}
     [
-        generate_boundary_state(network, v, w, local_state_for_node.(Ref(network), σ, Ref(v)))
-        for (v, w) ∈ boundary_at_splitting_node(network, node)
+        generate_boundary_state.(Ref(network), Ref(x)..., σ)
+        for x ∈ boundary_at_splitting_node(network, node)
     ]
 end
-
 
 function local_state_for_node(
     network::AbstractGibbsNetwork{S, T},

@@ -14,13 +14,13 @@ function peps_lattice(m, n)
     LabelledGraph(labels, grid((m, n)))
 end
 
-@memoize Dict function _right_env(peps, i::Int, ∂v::Vector{Int})
+@memoize Dict function _right_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int})
     W = MPO(peps, i)
     ψ = MPS(peps, i+1)
     right_env(ψ, W, ∂v)
 end
 
-@memoize Dict function _left_env(peps, i::Int, ∂v::Vector{Int})
+@memoize Dict function _left_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int})
     ψ = MPS(peps, i+1)
     left_env(ψ, ∂v)
 end
@@ -60,7 +60,7 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
 end
 
 
-function projectors(network::PEPSNetwork, vertex::NTuple{2, Int})
+function projectors(network::AbstractGibbsNetwork, vertex::NTuple{2, Int})
     i, j = vertex
     neighbours = ((i, j-1), (i-1, j), (i, j+1), (i+1, j))
     projector.(Ref(network), Ref(vertex), neighbours)
@@ -91,11 +91,9 @@ function SpinGlassTensors.MPO(::Type{T},
         A = peps_tensor(peps, i, j)
         v = get(states_indices, peps.vertex_map((i, j)), nothing)
         if v !== nothing
-       #     @cast B[l, u, r, d] |= A[l, u, r, d, $(v)]
              B = A[:, :, :, :, v]
         else
             B = dropdims(sum(A, dims=5), dims=5)
-            #@reduce B[l, u, r, d] |= sum(σ) A[l, u, r, d, σ]
         end
         W[j] = B
     end
@@ -112,7 +110,7 @@ end
 
 function compress(
     ψ::AbstractMPS,
-    peps::PEPSNetwork;
+    peps::AbstractGibbsNetwork;
 )
     if bond_dimension(ψ) < peps.bond_dim return ψ end
     SpinGlassTensors.compress(ψ, peps.bond_dim, peps.var_tol, peps.sweeps)
@@ -120,7 +118,7 @@ end
 
 
 @memoize Dict function SpinGlassTensors.MPS(
-    peps::PEPSNetwork,
+    peps::AbstractGibbsNetwork,
     i::Int,
     states_indices::Dict{NTuple{2, Int}, Int} = Dict{NTuple{2, Int}, Int}()
 )
@@ -132,7 +130,7 @@ end
 
 
 function contract_network(
-    peps::PEPSNetwork,
+    peps::AbstractGibbsNetwork,
     states_indices::Dict{NTuple{2, Int}, Int} = Dict{NTuple{2, Int}, Int}()
 )
     ψ = MPS(peps, 1, states_indices)
@@ -140,7 +138,7 @@ function contract_network(
 end
 
 
-node_index(peps::PEPSNetwork, node::NTuple{2, Int}) = peps.ncols * (node[1] - 1) + node[2]
+node_index(peps::AbstractGibbsNetwork, node::NTuple{2, Int}) = peps.ncols * (node[1] - 1) + node[2]
 
 # Below is needed because we are counting fom 1 ¯\_(ツ)_/¯
 # Therefore, when computing column from index, we can't just use remainder,
@@ -148,11 +146,9 @@ node_index(peps::PEPSNetwork, node::NTuple{2, Int}) = peps.ncols * (node[1] - 1)
 _mod_wo_zero(k, m) = k % m == 0 ? m : k % m
 
 
-node_from_index(peps::PEPSNetwork, index::Int) =
+node_from_index(peps::AbstractGibbsNetwork, index::Int) =
     ((index-1) ÷ peps.ncols + 1, _mod_wo_zero(index, peps.ncols))
 
-
-iteration_order(peps::PEPSNetwork) = [(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols]
 
 
 function boundary_at_splitting_node(peps::PEPSNetwork, node::NTuple{2, Int})
@@ -167,14 +163,11 @@ end
 
 function _normalize_probability(prob::Vector{T}) where {T <: Number}
     # exceptions (negative pdo, etc)
-    # will be added here later
     prob / sum(prob)
 end
 
 
-function conditional_probability(peps::PEPSNetwork, v::Vector{Int},
-)
-
+function conditional_probability(peps::PEPSNetwork, v::Vector{Int})
     i, j = node_from_index(peps, length(v)+1)
     ∂v = generate_boundary_states(peps, v, (i, j))
 
@@ -195,7 +188,13 @@ function conditional_probability(peps::PEPSNetwork, v::Vector{Int},
     _normalize_probability(prob)
 end
 
-function bond_energy(network, u::NTuple{2, Int}, v::NTuple{2, Int}, σ::Int)
+
+function bond_energy(
+    network::AbstractGibbsNetwork, 
+    u::NTuple{2, Int}, 
+    v::NTuple{2, Int}, 
+    σ::Int
+)
     fg_u, fg_v = network.vertex_map(u), network.vertex_map(v)
     if has_edge(network.factor_graph, fg_u, fg_v)
         pu, en, pv = get_prop.(Ref(network.factor_graph), Ref(fg_u), Ref(fg_v), (:pl, :en, :pr))
@@ -208,6 +207,7 @@ function bond_energy(network, u::NTuple{2, Int}, v::NTuple{2, Int}, σ::Int)
     end
     vec(energies)
 end
+
 
 function update_energy(network::PEPSNetwork, σ::Vector{Int})
     i, j = node_from_index(network, length(σ)+1)

@@ -16,7 +16,7 @@
     β = 1.
 
     L = n * m * t
-    states_to_keep = 20
+    states_to_keep = 100
 
     control_params = Dict(
          "bond_dim" => typemax(Int),

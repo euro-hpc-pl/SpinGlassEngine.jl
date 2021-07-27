@@ -29,8 +29,8 @@ max_states = 8
 control = MPSControl(D, var_ϵ, sweeps, β, dβ)
 Gψ = MPS(ig, control)
 
-states, _ = solve(Gψ, max_states)
-
+states, lprob, _ = solve(Gψ, max_states)
+println(lprob)
 println(size(states))
 energie = [energy(states[i, :], ig) for i ∈ 1:size(states, 1)]
 #energie = [energy(σ, ig) for σ ∈ eachrow(states)] # This should work!

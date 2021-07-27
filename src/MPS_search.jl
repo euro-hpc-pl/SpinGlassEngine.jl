@@ -70,7 +70,8 @@ function solve(ψ::AbstractMPS, keep::Int)
         @cast B[β, (l, d)] |= config[β, l, d]
         states = B[:, perm]
     end
-    states', lprob, lpCut
+
+    states'[1:keep, :], lprob[1:keep], lpCut
 end
 
 function _apply_bias!(ψ::AbstractMPS, ig::LabelledGraph, dβ::Number, i::Int)

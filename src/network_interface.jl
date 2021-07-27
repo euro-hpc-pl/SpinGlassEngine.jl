@@ -83,20 +83,36 @@ function interaction_energy(network::AbstractGibbsNetwork{S, T}, v::S, w::S) whe
 end
 
 
-@memoize function build_tensor(network::AbstractGibbsNetwork{S, T}, v::S) where {S, T}
+#@memoize function build_tensor(network::AbstractGibbsNetwork{S, T}, v::S) where {S, T}
+#    loc_exp = exp.(-network.β .* local_energy(network, v))
+
+#    projs = projectors(network, v)
+#    dim = zeros(Int, length(projs))
+#    @cast A[_, i] := loc_exp[i]
+
+#    for (j, pv) ∈ enumerate(projs)
+#        @cast A[(c, γ), σ] |= A[c, σ] * pv[σ, γ]
+#        dim[j] = size(pv, 2)
+#    end
+#    reshape(A, dim..., :)
+#end
+
+
+@memoize function build_tensor(
+    network::AbstractGibbsNetwork{S, T}, 
+    projectors,
+    v::S
+) where {S, T}
     loc_exp = exp.(-network.β .* local_energy(network, v))
+    dim = zeros(Int, length(projectors))
 
-    projs = projectors(network, v)
-    dim = zeros(Int, length(projs))
     @cast A[_, i] := loc_exp[i]
-
-    for (j, pv) ∈ enumerate(projs)
+    for (j, pv) ∈ enumerate(projectors)
         @cast A[(c, γ), σ] |= A[c, σ] * pv[σ, γ]
         dim[j] = size(pv, 2)
     end
     reshape(A, dim..., :)
 end
-
 
 @memoize function build_tensor(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
     en = interaction_energy(network, v, w)
@@ -105,6 +121,7 @@ end
 
 
 ones_like(x::Number) = one(typeof(x))
+
 ones_like(x::Array) = ones(eltype(x), size(x))
 
 
@@ -143,6 +160,7 @@ function generate_boundary_states(
         for x ∈ boundary_at_splitting_node(network, node)
     ]
 end
+
 
 function local_state_for_node(
     network::AbstractGibbsNetwork{S, T},

@@ -60,7 +60,13 @@ function projectors_with_fusing(network::FusedNetwork, vertex::NTuple{2, Int})
     (pl, pt, pr, pb), tl_blt, tr_brt
 end
 
-#@memoize Dict peps_tensor(peps::PEPSNetwork, i::Int, j::Int) = peps_tensor(Float64, peps, i, j)
+
+@memoize Dict function peps_tensor(peps::FusedNetwork, i::Int, j::Int) 
+    # generate tensors from projectors 
+    w = (i, j)
+    projs, trl, trr = projectors_with_fusing(peps, w)
+    build_tensor(peps, projs, w), trl, trr
+end
 
 function SpinGlassTensors.MPO(::Type{T},
     peps::FusedNetwork,
@@ -75,7 +81,7 @@ function SpinGlassTensors.MPO(::Type{T},
 
     for j ∈ 1:peps.ncols
         # from peps_tensor
-        A, (p_lb, p_ll, p_lt), (p_rb, p_rr, p_rt) = build_tensor(peps, (i, j))
+        A, (p_lb, p_ll, p_lt), (p_rb, p_rr, p_rt) = peps_tensor(peps, i, j)
 
         v = get(states_indices, peps.vertex_map((i, j)), nothing)
         if v !== nothing
@@ -83,12 +89,12 @@ function SpinGlassTensors.MPO(::Type{T},
         else
             BB = dropdims(sum(A, dims=5), dims=5)
         end
-
+      
         # include energy
         v = build_tensor(peps, (i-1, j), (i, j))
         @tensor B[l, u, r, d] := v[u, ũ] * BB[l, ũ, r, d]
         W[2*j] = B
-        
+
         h = build_tensor(peps, (i, j-1), (i, j))
         NW = build_tensor(peps, (i-1, j-1), (i, j))
         NE = build_tensor(peps, (i-1, j), (i, j-1))
@@ -140,7 +146,7 @@ function conditional_probability(peps::FusedNetwork, v::Vector{Int})
 
     L = _left_env(peps, i, ∂v[1:2*j-2])
     R = _right_env(peps, i, ∂v[2*j+2:peps.ncols*2+1])
-    A, _, _ = build_tensor(peps, (i, j))
+    A, _, _ = peps_tensor(peps, i, j)
     v = build_tensor(peps, (i-1, j), (i, j)) 
         
     X = W[2*j-1]

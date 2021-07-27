@@ -67,7 +67,7 @@ function projectors(network::AbstractGibbsNetwork, vertex::NTuple{2, Int})
 end
 
 
-@memoize Dict function peps_tensor(peps::PEPSNetwork, i::Int, j::Int) where {T <: Number}
+@memoize Dict function peps_tensor(peps::PEPSNetwork, i::Int, j::Int) 
     # generate tensors from projectors 
     w = (i, j)
     A = build_tensor(peps, projectors(peps, w), w)

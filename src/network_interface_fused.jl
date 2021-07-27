@@ -2,6 +2,7 @@ using LabelledGraphs
 
 export fuse_projectors, build_tensor, generate_boundary_states
 
+
 function fuse_projectors(projectors) #::NTuple{N, Matrix{T}}) where {N, T}
     fused, energy = rank_reveal(hcat(projectors...), :PE)
     i₀ = 1
@@ -14,20 +15,6 @@ function fuse_projectors(projectors) #::NTuple{N, Matrix{T}}) where {N, T}
     fused, transitions
 end
 
-@memoize function build_tensor(network::FusedNetwork, v::S) where S
-    loc_exp = exp.(-network.β .* local_energy(network, v))
-
-    # (pl, pt, pr, pb), trl, trr
-    projs, trl, trr = projectors_with_fusing(network, v) 
-    dim = zeros(Int, length(projs))
-    @cast A[_, i] := loc_exp[i]
-
-    for (j, pv) ∈ enumerate(projs)
-        @cast A[(c, γ), σ] |= A[c, σ] * pv[σ, γ]
-        dim[j] = size(pv, 2)
-    end
-    reshape(A, dim..., :), trl, trr 
-end
 
 function generate_boundary_state(
     network::FusedNetwork,
@@ -40,6 +27,7 @@ function generate_boundary_state(
     pv = projector(network, v, w)
     [findfirst(x -> x > 0, pv[i, :]) for i ∈ 1:size(pv)[1]][state]
 end
+
 
 function generate_boundary_state(
     network::FusedNetwork, 
@@ -57,6 +45,7 @@ function generate_boundary_state(
     P, _ = fuse_projectors([pv, pk])
     [findfirst(x -> x > 0, P[i, :]) for i ∈ 1:size(P)[1]][state]
 end
+
 
 function generate_boundary_state(
     network::FusedNetwork, 

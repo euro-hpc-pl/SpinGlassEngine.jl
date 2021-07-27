@@ -1,4 +1,4 @@
-@testset "Pathological instance with one diagonal" begin
+@testset "Pathological instance" begin
     m = 3
     n = 4
     t = 3

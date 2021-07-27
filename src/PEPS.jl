@@ -68,12 +68,13 @@ end
 
 
 @memoize Dict function peps_tensor(peps::PEPSNetwork, i::Int, j::Int) where {T <: Number}
-    # generate tensors from projectors
-    A = build_tensor(peps, (i, j))
+    # generate tensors from projectors 
+    w = (i, j)
+    A = build_tensor(peps, projectors(peps, w), w)
  
     # include energy
-    h = build_tensor(peps, (i, j-1), (i, j))
-    v = build_tensor(peps, (i-1, j), (i, j))
+    h = build_tensor(peps, (i, j-1), w)
+    v = build_tensor(peps, (i-1, j), w)
     @tensor B[l, u, r, d, σ] := h[l, l̃] * v[u, ũ] * A[l̃, ũ, r, d, σ]
     B
 end

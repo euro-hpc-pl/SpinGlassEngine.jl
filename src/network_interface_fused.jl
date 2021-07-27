@@ -1,6 +1,9 @@
 using LabelledGraphs
 
-export fuse_projectors, build_tensor, generate_boundary_states
+export 
+    fuse_projectors, 
+    build_tensor, 
+    generate_boundary_states
 
 
 function fuse_projectors(projectors) #::NTuple{N, Matrix{T}}) where {N, T}

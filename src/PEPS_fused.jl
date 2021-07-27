@@ -1,6 +1,9 @@
-export FusedNetwork
-export projectors_with_fusing, boundary_at_splitting_node
-export conditional_probability, update_energy
+export 
+    FusedNetwork, 
+    projectors_with_fusing, 
+    boundary_at_splitting_node,
+    conditional_probability,
+    update_energy
 
 function cross_lattice(m::Int, n::Int)
     labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
@@ -65,7 +68,12 @@ end
     # generate tensors from projectors 
     w = (i, j)
     projs, trl, trr = projectors_with_fusing(peps, w)
-    build_tensor(peps, projs, w), trl, trr
+    A = build_tensor(peps, projs, w) 
+    
+    # include energy
+    v = build_tensor(peps, (i-1, j), w)
+    @tensor B[l, u, r, d, σ] := v[u, ũ] * A[l, ũ, r, d, σ]
+    B, trl, trr
 end
 
 function SpinGlassTensors.MPO(::Type{T},
@@ -85,16 +93,11 @@ function SpinGlassTensors.MPO(::Type{T},
 
         v = get(states_indices, peps.vertex_map((i, j)), nothing)
         if v !== nothing
-            BB = A[:, :, :, :, v]
+            W[2*j] = A[:, :, :, :, v]
         else
-            BB = dropdims(sum(A, dims=5), dims=5)
+            W[2*j] = dropdims(sum(A, dims=5), dims=5)
         end
       
-        # include energy
-        v = build_tensor(peps, (i-1, j), (i, j))
-        @tensor B[l, u, r, d] := v[u, ũ] * BB[l, ũ, r, d]
-        W[2*j] = B
-
         h = build_tensor(peps, (i, j-1), (i, j))
         NW = build_tensor(peps, (i-1, j-1), (i, j))
         NE = build_tensor(peps, (i-1, j), (i, j-1))
@@ -155,13 +158,11 @@ function conditional_probability(peps::FusedNetwork, v::Vector{Int})
     MX = ψ[2*j-1]
     M = ψ[2*j]
 
-    vt = v[u, :]
-    @tensor Ã[l, r, d, σ] := A[l, x, r, d, σ] * vt[x]
-
+    Ã = A[:, u, :, :, :]
     Xt = X[l, d, :, :]
         
     @tensor prob[σ] := L[x] * Xt[k, y] * MX[x, y, z] * M[z, l, m] *
-                        Ã[k, n, l, σ] * R[m, n] order = (x, y, z, k, l, m, n)
+                       Ã[k, n, l, σ] * R[m, n] order = (x, y, z, k, l, m, n)
     
     _normalize_probability(prob)
 end

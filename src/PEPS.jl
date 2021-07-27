@@ -4,7 +4,8 @@ export
     generate_boundary, 
     peps_tensor, 
     node_from_index, 
-    drop_physical_index
+    drop_physical_index,
+    initialize_MPS
 
 
 const DEFAULT_CONTROL_PARAMS = Dict(
@@ -176,12 +177,14 @@ function _normalize_probability(prob::Vector{T}) where {T <: Number}
 end
 
 
-function conditional_probability(peps::PEPSNetwork, v::Vector{Int})
+function initialize_MPS(peps::AbstractGibbsNetwork{S, T}, v::Vector{Int}) where {S, T}
     i, j = node_from_index(peps, length(v)+1)
-    ∂v = generate_boundary_states(peps, v, (i, j))
+    (i, j), MPO(peps, i), MPS(peps, i+1), generate_boundary_states(peps, v, (i, j))
+end
 
-    W = MPO(peps, i)
-    ψ = MPS(peps, i+1)
+
+function conditional_probability(peps::PEPSNetwork, v::Vector{Int})
+    (i, j), _, ψ, ∂v = initialize_MPS(peps, v)
 
     L = _left_env(peps, i, ∂v[1:j-1])
     R = _right_env(peps, i, ∂v[j+2:peps.ncols+1])

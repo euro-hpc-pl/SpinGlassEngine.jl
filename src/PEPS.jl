@@ -151,9 +151,6 @@ end
 
 node_index(peps::AbstractGibbsNetwork, node::NTuple{2, Int}) = peps.ncols * (node[1] - 1) + node[2]
 
-# Below is needed because we are counting fom 1 ¯\_(ツ)_/¯
-# Therefore, when computing column from index, we can't just use remainder,
-# we need to wrap to m if k % m is zero.
 _mod_wo_zero(k, m) = k % m == 0 ? m : k % m
 
 

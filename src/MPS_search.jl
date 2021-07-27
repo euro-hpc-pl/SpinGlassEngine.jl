@@ -1,5 +1,5 @@
 export MPSControl
-export solve, solve_new
+export solve
 
 struct MPSControl
     max_bond::Int

@@ -88,23 +88,18 @@ function SpinGlassTensors.MPO(::Type{T},
     p_rb_old = ones(1, 1)
 
     for j ∈ 1:peps.ncols
-        # from peps_tensor
         A, (p_lb, p_ll, p_lt), (p_rb, p_rr, p_rt) = peps_tensor(peps, i, j)
 
         v = get(states_indices, peps.vertex_map((i, j)), nothing)
-        if v !== nothing
-            W[2*j] = A[:, :, :, :, v]
-        else
-            W[2*j] = dropdims(sum(A, dims=5), dims=5)
-        end
-      
+        W[2*j] = drop_physical_index(A, v)
+   
         h = build_tensor(peps, (i, j-1), (i, j))
         NW = build_tensor(peps, (i-1, j-1), (i, j))
         NE = build_tensor(peps, (i-1, j), (i, j-1))
 
         @tensor C1[l, r] := p_rr_old[l, x] * h[x, y] * p_ll[r, y]    
-        @tensor C2[l, u] :=  p_rt_old[l, ũ] * NE[ũ, u]
-        @tensor C3[r, uu] :=  p_lt[r, ũ] * NW[uu, ũ]
+        @tensor C2[l, u] := p_rt_old[l, ũ] * NE[ũ, u]
+        @tensor C3[r, uu] := p_lt[r, ũ] * NW[uu, ũ]
         @cast C[l, (uu, u), r, (dd, d)] |= C1[l, r] * C2[l, u] * p_lb[r, d] * 
                                            C3[r, uu] * p_rb_old[l, dd]
         W[2*j-1] = C

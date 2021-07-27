@@ -1,5 +1,11 @@
-export PEPSNetwork, contract_network
-export generate_boundary, peps_tensor, node_from_index
+export 
+    PEPSNetwork, 
+    contract_network,
+    generate_boundary, 
+    peps_tensor, 
+    node_from_index, 
+    drop_physical_index
+
 
 const DEFAULT_CONTROL_PARAMS = Dict(
     "bond_dim" => typemax(Int),
@@ -81,6 +87,14 @@ end
 
 #@memoize Dict peps_tensor(peps::PEPSNetwork, i::Int, j::Int) = peps_tensor(Float64, peps, i, j)
 
+function drop_physical_index(A, v::Union{Int, Nothing})
+    if v !== nothing
+        A[:, :, :, :, v]
+    else
+        dropdims(sum(A, dims=5), dims=5)
+    end
+end 
+
 function SpinGlassTensors.MPO(::Type{T},
     peps::PEPSNetwork,
     i::Int,
@@ -89,14 +103,9 @@ function SpinGlassTensors.MPO(::Type{T},
     W = MPO(T, peps.ncols)
 
     for j ∈ 1:peps.ncols
-        A = peps_tensor(peps, i, j)
         v = get(states_indices, peps.vertex_map((i, j)), nothing)
-        if v !== nothing
-             B = A[:, :, :, :, v]
-        else
-            B = dropdims(sum(A, dims=5), dims=5)
-        end
-        W[j] = B
+        A = peps_tensor(peps, i, j)
+        W[j] = drop_physical_index(A, v)    
     end
     W
 end

@@ -76,6 +76,7 @@ end
     B, trl, trr
 end
 
+
 function SpinGlassTensors.MPO(::Type{T},
     peps::FusedNetwork,
     i::Int,
@@ -125,9 +126,7 @@ function boundary_at_splitting_node(peps::FusedNetwork, node::NTuple{2, Int})
         [
             [((i, k-1), (i+1, k), (i, k), (i+1, k-1)), ((i, k), (i+1, k))] for k ∈ 1:j-1
         ]...,
-        [
-            ((i, j-1), (i, j), (i+1, j)) 
-        ]...,
+        ((i, j-1), (i, j), (i+1, j)), 
         [
             [((i-1, k-1), (i, k), (i-1, k), (i, k-1)), ((i-1, k), (i, k))] for k ∈ j:peps.ncols
         ]...
@@ -136,23 +135,15 @@ end
 
 
 function conditional_probability(peps::FusedNetwork, v::Vector{Int})   
-    i, j = node_from_index(peps, length(v)+1)
-    ∂v = generate_boundary_states(peps, v, (i, j))
-
-    W = MPO(peps, i)
-    ψ = MPS(peps, i+1)
+    (i, j), W, ψ, ∂v = initialize_MPS(peps, v)
 
     L = _left_env(peps, i, ∂v[1:2*j-2])
     R = _right_env(peps, i, ∂v[2*j+2:peps.ncols*2+1])
-    A, _, _ = peps_tensor(peps, i, j)
-    v = build_tensor(peps, (i-1, j), (i, j)) 
+    A, _ = peps_tensor(peps, i, j)
         
-    X = W[2*j-1]
+    X, MX, M = W[2*j-1], ψ[2*j-1], ψ[2*j]
 
     l, d, u = ∂v[2*j-1:2*j+1]
-    MX = ψ[2*j-1]
-    M = ψ[2*j]
-
     Ã = A[:, u, :, :, :]
     Xt = X[l, d, :, :]
         

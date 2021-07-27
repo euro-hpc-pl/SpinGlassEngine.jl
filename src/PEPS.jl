@@ -192,10 +192,9 @@ function conditional_probability(peps::PEPSNetwork, v::Vector{Int})
 
     l, u = ∂v[j:j+1]
     M = ψ[j]
-    Ã = A[l, u, :, :, :]
+    Ã = @view A[l, u, :, :, :]
     @tensor prob[σ] := L[x] * M[x, d, y] *
                        Ã[r, d, σ] * R[y, r] order = (x, d, r, y)
-
 
     _normalize_probability(prob)
 end

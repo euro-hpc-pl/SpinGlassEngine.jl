@@ -42,6 +42,7 @@ conditional_probability(network::AbstractGibbsNetwork{S, T}, v::Vector{Int}) whe
 
 iteration_order(peps::AbstractGibbsNetwork) = [(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols]
 
+
 function projector(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
     fg = factor_graph(network)
     vmap = vertex_map(network)
@@ -82,6 +83,7 @@ function interaction_energy(network::AbstractGibbsNetwork{S, T}, v::S, w::S) whe
     en
 end
 
+
 @memoize function build_tensor(
     network::AbstractGibbsNetwork{S, T}, 
     projectors,
@@ -97,6 +99,7 @@ end
     end
     reshape(A, dim..., :)
 end
+
 
 @memoize function build_tensor(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
     en = interaction_energy(network, v, w)

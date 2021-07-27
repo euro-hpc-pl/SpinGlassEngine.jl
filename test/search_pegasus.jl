@@ -1,4 +1,4 @@
-@testset "Pathological instance" begin
+@testset "Pathological Pegasus instance works" begin
     m = 3
     n = 4
     t = 3

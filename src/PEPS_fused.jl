@@ -5,6 +5,7 @@ export
     conditional_probability,
     update_energy
 
+    
 function cross_lattice(m::Int, n::Int)
     labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
     lg = LabelledGraph(labels, grid((m, n)))
@@ -84,9 +85,7 @@ function SpinGlassTensors.MPO(::Type{T},
 ) where {T <: Number}
 
     W = MPO(T, 2 * peps.ncols)
-    p_rr_old = ones(1, 1)
-    p_rt_old = ones(1, 1)
-    p_rb_old = ones(1, 1)
+    p_rr_old, p_rt_old, p_rb_old  = ones(1, 1), ones(1, 1), ones(1, 1)
 
     for j ∈ 1:peps.ncols
         A, (p_lb, p_ll, p_lt), (p_rb, p_rr, p_rt) = peps_tensor(peps, i, j)
@@ -94,20 +93,19 @@ function SpinGlassTensors.MPO(::Type{T},
         v = get(states_indices, peps.vertex_map((i, j)), nothing)
         W[2*j] = drop_physical_index(A, v)
    
-        h = build_tensor(peps, (i, j-1), (i, j))
+        Nh = build_tensor(peps, (i, j-1), (i, j))
         NW = build_tensor(peps, (i-1, j-1), (i, j))
         NE = build_tensor(peps, (i-1, j), (i, j-1))
 
-        @tensor C1[l, r] := p_rr_old[l, x] * h[x, y] * p_ll[r, y]    
-        @tensor C2[l, u] := p_rt_old[l, ũ] * NE[ũ, u]
-        @tensor C3[r, uu] := p_lt[r, ũ] * NW[uu, ũ]
-        @cast C[l, (uu, u), r, (dd, d)] |= C1[l, r] * C2[l, u] * p_lb[r, d] * 
-                                           C3[r, uu] * p_rb_old[l, dd]
-        W[2*j-1] = C
+        @tensor B1[l, r] := p_rr_old[l, x] * Nh[x, y] * p_ll[r, y]    
+        @tensor B2[l, u] := p_rt_old[l, ũ] * NE[ũ, u]
+        @tensor B3[r, u] := p_lt[r, ũ] * NW[u, ũ]
 
-        p_rb_old = p_rb 
-        p_rt_old = p_rt
-        p_rr_old = p_rr
+        @cast B[l, (ũ, u), r, (d̃, d)] |= B1[l, r] * B2[l, u] * p_lb[r, d] * 
+                                         B3[r, ũ] * p_rb_old[l, d̃]
+        W[2*j-1] = B
+
+        p_rb_old, p_rt_old, p_rr_old = p_rb, p_rt, p_rr 
     end
     W
 end
@@ -144,8 +142,8 @@ function conditional_probability(peps::FusedNetwork, v::Vector{Int})
     X, MX, M = W[2*j-1], ψ[2*j-1], ψ[2*j]
 
     l, d, u = ∂v[2*j-1:2*j+1]
-    Ã = A[:, u, :, :, :]
-    Xt = X[l, d, :, :]
+    Ã = @view A[:, u, :, :, :]
+    Xt = @view X[l, d, :, :]
         
     @tensor prob[σ] := L[x] * Xt[k, y] * MX[x, y, z] * M[z, l, m] *
                        Ã[k, n, l, σ] * R[m, n] order = (x, y, z, k, l, m, n)

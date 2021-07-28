@@ -59,6 +59,15 @@ function projector(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
 end
 
 
+function projector(network::AbstractGibbsNetwork{S, T}, v, w) where {S, T}
+    p = []
+    for ww in w
+        push!(p, projector(network, v, ww))
+    end
+    proj, _ = fuse_projectors(p)
+    proj
+end
+
 function spectrum(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T}
     get_prop(factor_graph(network), vertex_map(network)(vertex), :spectrum)
 end

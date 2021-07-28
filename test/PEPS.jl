@@ -9,7 +9,7 @@ t = 3
 L = m * n * t
 T = Float64
 
-instance = "$(@__DIR__)/instances/pathological/test_$(m)_$(n)_$(t).txt"
+instance = "$(@__DIR__)/instances/pathological/chim_$(m)_$(n)_$(t).txt"
 
 ig = ising_graph(instance)
 

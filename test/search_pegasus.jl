@@ -16,7 +16,7 @@
     β = 1.
 
     L = n * m * t
-    states_to_keep = 100
+    states_to_keep = 20
 
     control_params = Dict(
          "bond_dim" => typemax(Int),
@@ -36,7 +36,7 @@
 
     for transform ∈ rotation.([0])
         peps = FusedNetwork(m, n, fg, transform, β=β)
-        sol = low_energy_spectrum(peps, states_to_keep)
+        sol = low_energy_spectrum(peps, states_to_keep)#, merge_branches(peps, 1.0))
 
         #@test sol.energies[1:num_states] ≈ expected_energies
 

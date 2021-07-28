@@ -64,7 +64,7 @@
     #     "sweeps" => 4.
     # )
 
-    instance = "$(@__DIR__)/instances/pathological/test_$(m)_$(n)_$(t).txt"
+    instance = "$(@__DIR__)/instances/pathological/chim_$(m)_$(n)_$(t).txt"
 
     ig = ising_graph(instance)
 
@@ -78,7 +78,7 @@
         peps = PEPSNetwork(m, n, fg, transform, β=β)
 
         # solve the problem using B & B
-        sol = low_energy_spectrum(peps, num_states)
+        sol = low_energy_spectrum(peps, num_states)#, merge_branches(peps, 1.0))
 
         @testset "has correct spectrum given the transformation $(transform)" begin
             @test sol.energies ≈ exact_energies

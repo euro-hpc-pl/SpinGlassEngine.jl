@@ -67,7 +67,7 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
 end
 
 
-function projectors(network::AbstractGibbsNetwork, vertex::NTuple{2, Int})
+function projectors(network::PEPSNetwork, vertex::NTuple{2, Int})
     i, j = vertex
     neighbours = ((i, j-1), (i-1, j), (i, j+1), (i+1, j))
     projector.(Ref(network), Ref(vertex), neighbours)

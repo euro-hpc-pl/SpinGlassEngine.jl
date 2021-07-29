@@ -53,7 +53,11 @@ function projector(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
     elseif has_edge(fg, fg_v, fg_w)
         get_prop(fg, fg_v, fg_w, :pl)
     else
-        loc_dim = length(local_energy(network, v))
+        if v in vertices(fg)
+            loc_dim = length(local_energy(network, v))
+        else
+            loc_dim = 1
+        end
         ones(loc_dim, 1)
     end
 end

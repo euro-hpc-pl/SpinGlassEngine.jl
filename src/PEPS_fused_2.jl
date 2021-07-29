@@ -164,8 +164,10 @@ function conditional_probability(peps::FusedNetwork, v::Vector{Int})
     X, MX, M = W[2*j-1], ψ[2*j-1], ψ[2*j]
 
     l, d, u = ∂v[2*j-1:2*j+1]
+    
+    ev = build_tensor(peps, (i-1, j), (i, j)) 
+    vt = ev[u, :]
 
-    vt = v[u, :]
     @tensor Ã[l, r, d, σ] := A[l, x, r, d, σ] * vt[x]
     #Ã = @view A[:, u, :, :, :]
     Xt = @view X[l, d, :, :]

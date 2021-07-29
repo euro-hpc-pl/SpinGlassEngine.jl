@@ -121,6 +121,8 @@ end
 
     @cast A[_, i] := loc_exp[i]
     for (j, pv) ∈ enumerate(projectors)
+        println(size(A, 2), "  ", size(pv, 1))
+
         @cast A[(c, γ), σ] |= A[c, σ] * pv[σ, γ]
         dim[j] = size(pv, 2)
     end

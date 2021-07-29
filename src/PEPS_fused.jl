@@ -1,10 +1,10 @@
 export 
     FusedNetwork, 
     projectors_with_fusing, 
-    projectors, 
     boundary_at_splitting_node,
     conditional_probability,
-    update_energy
+    update_energy,
+    projectors
 
     
 function cross_lattice(m::Int, n::Int)
@@ -77,7 +77,6 @@ function projectors(network::FusedNetwork, vertex::NTuple{2, Int})
     projector.(Ref(network), Ref(vertex), neighbours)
 end
 
-
 @memoize Dict function peps_tensor(peps::FusedNetwork, i::Int, j::Int) 
     # generate tensors from projectors 
     w = (i, j)
@@ -98,27 +97,37 @@ function SpinGlassTensors.MPO(::Type{T},
 ) where {T <: Number}
 
     W = MPO(T, 2 * peps.ncols)
-    p_rr_old, p_rt_old, p_rb_old  = ones(1, 1), ones(1, 1), ones(1, 1)
+    #p_rr_old, p_rt_old, p_rb_old  = ones(1, 1), ones(1, 1), ones(1, 1)
 
     for j ∈ 1:peps.ncols
-        A, (p_lb, p_ll, p_lt), (p_rb, p_rr, p_rt) = peps_tensor(peps, i, j)
+        neighbours1 = ((i+1, j), (i, j), (i-1, j))
+        prl = projector.(Ref(peps), Ref((i, j-1)), neighbours1)
+        _, (p_lb, p_l, p_lt) = fuse_projectors(prl)
 
-        v = get(states_indices, peps.vertex_map((i, j)), nothing)
-        W[2*j] = drop_physical_index(A, v)
-   
+        neighbours2 = ((i+1, j-1), (i, j-1), (i-1, j-1))
+        prr = projector.(Ref(peps), Ref((i, j)), neighbours2)
+        _, (p_rb, p_r, p_rt) = fuse_projectors(prr)
+
         Nh = build_tensor(peps, (i, j-1), (i, j))
         NW = build_tensor(peps, (i-1, j-1), (i, j))
         NE = build_tensor(peps, (i-1, j), (i, j-1))
 
-        @tensor B1[l, r] := p_rr_old[l, x] * Nh[x, y] * p_ll[r, y]    
-        @tensor B2[l, u] := p_rt_old[l, ũ] * NE[ũ, u]
-        @tensor B3[r, u] := p_lt[r, ũ] * NW[u, ũ]
+        @tensor B1[l, r] := p_l[l, x] * Nh[x, y] * p_r[r, y]    
+        @tensor B2[l, u] := p_lt[l, ũ] * NE[ũ, u]
+        @tensor B3[r, u] := p_rt[r, ũ] * NW[u, ũ]
 
-        @cast B[l, (ũ, u), r, (d̃, d)] |= B1[l, r] * B2[l, u] * p_lb[r, d] * 
-                                         B3[r, ũ] * p_rb_old[l, d̃]
+        @cast B[l, (ũ, u), r, (d̃, d)] |= B1[l, r] * B2[l, u] * p_rb[r, d] * 
+                                         B3[r, ũ] * p_lb[l, d̃]
         W[2*j-1] = B
+        
+        A = build_tensor(peps, projectors(peps, (i, j)), (i, j))
 
-        p_rb_old, p_rt_old, p_rr_old = p_rb, p_rt, p_rr 
+        idx = get(states_indices, peps.vertex_map((i, j)), nothing)
+        B = drop_physical_index(A, idx)
+    
+        v = build_tensor(peps, (i-1, j), (i, j))
+        @tensor C[l, u, r, d] := v[u, ũ] * B[l, ũ, r, d] 
+        W[2*j] = C   
     end
     W
 end
@@ -150,12 +159,17 @@ function conditional_probability(peps::FusedNetwork, v::Vector{Int})
 
     L = _left_env(peps, i, ∂v[1:2*j-2])
     R = _right_env(peps, i, ∂v[2*j+2:peps.ncols*2+1])
-    A, _ = peps_tensor(peps, i, j)
+    A = build_tensor(peps, projectors(peps, (i, j)), (i, j))
         
     X, MX, M = W[2*j-1], ψ[2*j-1], ψ[2*j]
 
     l, d, u = ∂v[2*j-1:2*j+1]
-    Ã = @view A[:, u, :, :, :]
+    
+    ev = build_tensor(peps, (i-1, j), (i, j)) 
+    vt = ev[u, :]
+
+    @tensor Ã[l, r, d, σ] := A[l, x, r, d, σ] * vt[x]
+    #Ã = @view A[:, u, :, :, :]
     Xt = @view X[l, d, :, :]
         
     @tensor prob[σ] := L[x] * Xt[k, y] * MX[x, y, z] * M[z, l, m] *

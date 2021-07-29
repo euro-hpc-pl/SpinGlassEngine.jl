@@ -49,9 +49,9 @@ push!(my_tests,
       #"branch_and_bound.jl",
       #"network_interface.jl",
       #"search_basic.jl",
-      #"search_chimera.jl",
+      "search_chimera.jl",
       #"MPS_engine.jl",
-      "search_pegasus.jl",
+      #"search_pegasus.jl",
 )
 
 for my_test in my_tests

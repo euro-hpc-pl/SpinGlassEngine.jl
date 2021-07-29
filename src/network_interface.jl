@@ -60,16 +60,13 @@ end
 
 
 function projector(network::AbstractGibbsNetwork{S, T}, v, w) where {S, T}
-    p = []
-    for ww ∈ w
-        push!(p, projector(network, v, ww))
-    end
-    proj, _ = fuse_projectors(p)
-    proj
+    proj = []
+    for ww ∈ w push!(proj, projector(network, v, ww)) end
+    first(fuse_projectors(proj))
 end
 
 
-function fuse_projectors(projectors) #::NTuple{N, Matrix{T}}) where {N, T}
+function fuse_projectors(projectors) 
     fused, energy = rank_reveal(hcat(projectors...), :PE)
     i₀ = 1
     transitions = []
@@ -117,6 +114,7 @@ end
 
     @cast A[_, i] := loc_exp[i]
     for (j, pv) ∈ enumerate(projectors)
+        println(size(A, 2), "<-->", size(pv, 1))
         @cast A[(c, γ), σ] |= A[c, σ] * pv[σ, γ]
         dim[j] = size(pv, 2)
     end

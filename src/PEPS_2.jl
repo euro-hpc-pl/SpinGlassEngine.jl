@@ -23,15 +23,18 @@ end
 
 
 @memoize Dict function _right_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int}) 
-    M = MPO(peps, i, :up) * MPO(peps, i)
+    M = MPO(peps, i, :up) 
+    W = MPO(peps, i)
     ψ = MPS(peps, i+1)
-    right_env(ψ, M, ∂v)
+    right_env(ψ, M * W, ∂v)
 end
+
 
 @memoize Dict function _left_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int})
     ψ = MPS(peps, i+1)
     left_env(ψ, ∂v)
 end
+
 
 struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     factor_graph::LabelledGraph{T, NTuple{2, Int}} where T

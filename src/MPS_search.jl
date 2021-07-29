@@ -1,3 +1,5 @@
+using LabelledGraphs
+
 export MPSControl
 export solve
 

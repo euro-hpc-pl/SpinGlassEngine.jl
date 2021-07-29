@@ -161,17 +161,10 @@ function generate_boundary_state(
     σ::Vector{Int}
 ) where {S, T}
 
-    #state_v = local_state_for_node(network, σ, v)
-    #if v ∉ vertices(network.network_graph) return ones_like(state_v) end
-
-    #state_k = local_state_for_node(network, σ, k)
     pv = projector(network, v, w)
 
     ind_v = generate_boundary_state(network, v, w, σ)
     ind_k = generate_boundary_state(network, k, l, σ)
-
-    #ind_v = [findfirst(x -> x > 0, pv[i, :]) for i ∈ 1:size(pv)[1]][state_v]
-    #ind_k = [findfirst(x -> x > 0, pk[i, :]) for i ∈ 1:size(pk)[1]][state_k]
 
     (ind_k - 1) * size(pv, 2) + ind_v
 end

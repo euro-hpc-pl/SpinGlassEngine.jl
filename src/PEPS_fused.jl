@@ -155,6 +155,12 @@ function boundary_at_splitting_node(peps::FusedNetwork, node::NTuple{2, Int})
     )
 end
 
+# to be removed
+function initialize_MPS(peps::AbstractGibbsNetwork{S, T}, v::Vector{Int}) where {S, T}
+    i, j = node_from_index(peps, length(v)+1)
+    (i, j), MPO(peps, i), MPS(peps, i+1), generate_boundary_states(peps, v, (i, j))
+end
+
 
 function conditional_probability(peps::FusedNetwork, v::Vector{Int})   
     (i, j), W, ψ, ∂v = initialize_MPS(peps, v)

@@ -53,11 +53,7 @@ function projector(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
     elseif has_edge(fg, fg_v, fg_w)
         get_prop(fg, fg_v, fg_w, :pl)
     else
-        if v in vertices(fg)
-            loc_dim = length(local_energy(network, v))
-        else
-            loc_dim = 1
-        end
+        loc_dim = v ∈ vertices(fg) ? length(local_energy(network, v)) : 1
         ones(loc_dim, 1)
     end
 end
@@ -65,7 +61,7 @@ end
 
 function projector(network::AbstractGibbsNetwork{S, T}, v, w) where {S, T}
     p = []
-    for ww in w
+    for ww ∈ w
         push!(p, projector(network, v, ww))
     end
     proj, _ = fuse_projectors(p)
@@ -121,8 +117,6 @@ end
 
     @cast A[_, i] := loc_exp[i]
     for (j, pv) ∈ enumerate(projectors)
-        println(size(A, 2), "  ", size(pv, 1))
-
         @cast A[(c, γ), σ] |= A[c, σ] * pv[σ, γ]
         dim[j] = size(pv, 2)
     end

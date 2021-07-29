@@ -3,7 +3,8 @@ export
     projectors_with_fusing, 
     boundary_at_splitting_node,
     conditional_probability,
-    update_energy
+    update_energy,
+    projectors
 
     
 function cross_lattice(m::Int, n::Int)
@@ -65,6 +66,17 @@ function projectors_with_fusing(network::FusedNetwork, vertex::NTuple{2, Int})
 end
 
 
+function projectors(network::FusedNetwork, vertex::NTuple{2, Int})
+    i, j = vertex
+    neighbours = (
+                ((i+1, j-1), (i, j-1), (i-1, j-1)), 
+                (i-1, j),
+                ((i+1, j+1), (i, j+1), (i-1, j+1)),
+                (i+1, j)
+                )
+    projector.(Ref(network), Ref(vertex), neighbours)
+end
+
 @memoize Dict function peps_tensor(peps::FusedNetwork, i::Int, j::Int) 
     # generate tensors from projectors 
     w = (i, j)
@@ -108,7 +120,7 @@ function SpinGlassTensors.MPO(::Type{T},
                                          B3[r, ũ] * p_lb[l, d̃]
         W[2*j-1] = B
         
-        A = build_tensor(peps, (i, j))
+        A = build_tensor(peps, projectors(peps, (i, j)), (i, j))
 
         idx = get(states_indices, peps.vertex_map((i, j)), nothing)
         B = drop_physical_index(A, idx)
@@ -147,7 +159,7 @@ function conditional_probability(peps::FusedNetwork, v::Vector{Int})
 
     L = _left_env(peps, i, ∂v[1:2*j-2])
     R = _right_env(peps, i, ∂v[2*j+2:peps.ncols*2+1])
-    A, _ = peps_tensor(peps, i, j)
+    A = build_tensor(peps, projectors(peps, (i, j)), (i, j))
         
     X, MX, M = W[2*j-1], ψ[2*j-1], ψ[2*j]
 

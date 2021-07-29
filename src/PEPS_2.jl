@@ -23,8 +23,9 @@ end
 
 @memoize Dict function _right_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int})
     W = MPO(peps, i)
+    M = MPO(peps, i, :up)
     ψ = MPS(peps, i+1)
-    right_env(ψ, W, ∂v)
+    right_env(ψ, M*W, ∂v)
 end
 
 @memoize Dict function _left_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int})
@@ -202,7 +203,10 @@ end
 
 
 function conditional_probability(peps::PEPSNetwork, w::Vector{Int})
-    (i, j), _, ψ, ∂v = initialize_MPS(peps, w)
+    i, j = node_from_index(peps, length(w)+1)
+    println("i, j ", i,j)
+    ψ = MPS(peps, i+1)
+    ∂v = generate_boundary_states(peps, w, (i, j))
 
     L = _left_env(peps, i, ∂v[1:j-1])
     R = _right_env(peps, i, ∂v[j+2:peps.ncols+1])

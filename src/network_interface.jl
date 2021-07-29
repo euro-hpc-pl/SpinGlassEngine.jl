@@ -10,8 +10,8 @@ export
     build_tensor,
     generate_boundary_states,
     local_state_for_node,
-    iteration_order
-
+    iteration_order,
+    fuse_projectors
 
 # S: type of the vertex of network
 # T: type of the vertex of underlying factor graph
@@ -72,6 +72,20 @@ function projector(network::AbstractGibbsNetwork{S, T}, v, w) where {S, T}
     proj
 end
 
+
+function fuse_projectors(projectors) #::NTuple{N, Matrix{T}}) where {N, T}
+    fused, energy = rank_reveal(hcat(projectors...), :PE)
+    i₀ = 1
+    transitions = []
+    for proj ∈ projectors
+        iₑ = i₀ + size(proj, 2) - 1
+        push!(transitions, energy[:, i₀:iₑ])
+        i₀ = iₑ + 1
+    end
+    fused, transitions
+end
+
+
 function spectrum(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T}
     get_prop(factor_graph(network), vertex_map(network)(vertex), :spectrum)
 end
@@ -128,13 +142,38 @@ ones_like(x::Array) = ones(eltype(x), size(x))
 function generate_boundary_state(
     network::AbstractGibbsNetwork{S, T}, 
     v::S, 
-    w::S,
+    w,
     σ::Vector{Int}
 ) where {S, T}
     state = local_state_for_node(network, σ, v)
     if v ∉ vertices(network.network_graph) return ones_like(state) end
     pv = projector(network, v, w)
     [findfirst(x -> x > 0, pv[i, :]) for i ∈ 1:size(pv)[1]][state]
+end
+
+
+function generate_boundary_state(
+    network::AbstractGibbsNetwork{S, T}, 
+    v::S, 
+    w, 
+    k::S, 
+    l, 
+    σ::Vector{Int}
+) where {S, T}
+
+    #state_v = local_state_for_node(network, σ, v)
+    #if v ∉ vertices(network.network_graph) return ones_like(state_v) end
+
+    #state_k = local_state_for_node(network, σ, k)
+    pv = projector(network, v, w)
+
+    ind_v = generate_boundary_state(network, v, w, σ)
+    ind_k = generate_boundary_state(network, k, l, σ)
+
+    #ind_v = [findfirst(x -> x > 0, pv[i, :]) for i ∈ 1:size(pv)[1]][state_v]
+    #ind_k = [findfirst(x -> x > 0, pk[i, :]) for i ∈ 1:size(pk)[1]][state_k]
+
+    (ind_k - 1) * size(pv, 2) + ind_v
 end
 
 

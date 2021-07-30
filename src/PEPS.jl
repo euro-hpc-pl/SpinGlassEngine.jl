@@ -2,10 +2,10 @@ export
     PEPSNetwork, 
     contract_network,
     generate_boundary, 
-    peps_tensor, 
     node_from_index, 
     drop_physical_index,
-    initialize_MPS
+    initialize_MPS,
+    conditional_probability
 
 
 const DEFAULT_CONTROL_PARAMS = Dict(
@@ -21,16 +21,20 @@ function peps_lattice(m::Int, n::Int)
     LabelledGraph(labels, grid((m, n)))
 end
 
-@memoize Dict function _right_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int})
+
+@memoize Dict function _right_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int}) 
+    M = MPO(peps, i, :up) 
     W = MPO(peps, i)
     ψ = MPS(peps, i+1)
-    right_env(ψ, W, ∂v)
+    right_env(ψ, M * W, ∂v)
 end
+
 
 @memoize Dict function _left_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int})
     ψ = MPS(peps, i+1)
     left_env(ψ, ∂v)
 end
+
 
 struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     factor_graph::LabelledGraph{T, NTuple{2, Int}} where T
@@ -73,40 +77,40 @@ function projectors(network::PEPSNetwork, vertex::NTuple{2, Int})
     projector.(Ref(network), Ref(vertex), neighbours)
 end
 
-
-@memoize Dict function peps_tensor(peps::PEPSNetwork, i::Int, j::Int) 
-    # generate tensors from projectors 
-    w = (i, j)
-    A = build_tensor(peps, projectors(peps, w), w)
- 
-    # include energy
-    h = build_tensor(peps, (i, j-1), w)
-    v = build_tensor(peps, (i-1, j), w)
-    @tensor B[l, u, r, d, σ] := h[l, l̃] * v[u, ũ] * A[l̃, ũ, r, d, σ]
-    B
-end
-
-#@memoize Dict peps_tensor(peps::PEPSNetwork, i::Int, j::Int) = peps_tensor(Float64, peps, i, j)
-
-function drop_physical_index(A, v::Union{Int, Nothing})
-    if v !== nothing
-        A[:, :, :, :, v]
-    else
-        dropdims(sum(A, dims=5), dims=5)
-    end
-end 
-
 function SpinGlassTensors.MPO(::Type{T},
     peps::PEPSNetwork,
-    i::Int,
-    states_indices::Dict{NTuple{2, Int}, Int} = Dict{NTuple{2, Int}, Int}()
+    i::Int
 ) where {T <: Number}
     W = MPO(T, peps.ncols)
 
     for j ∈ 1:peps.ncols
-        v = get(states_indices, peps.vertex_map((i, j)), nothing)
-        A = peps_tensor(peps, i, j)
-        W[j] = drop_physical_index(A, v)    
+        A = build_tensor(peps, (i, j))
+        Ã = dropdims(sum(A, dims=5), dims=5)
+        h = build_tensor(peps, (i, j-1), (i, j))
+        @tensor B[l, u, r, d] := h[l, l̃] * Ã[l̃, u, r, d]
+        W[j] = B
+    end
+    W
+end
+
+@memoize Dict SpinGlassTensors.MPO(
+    peps::PEPSNetwork,
+    i::Int
+) = MPO(Float64, peps, i)
+
+
+function SpinGlassTensors.MPO(::Type{T},
+    peps::PEPSNetwork,
+    i::Int,
+    pos::Symbol
+) where {T <: Number}
+    W = MPO(T, peps.ncols)
+    di = pos == :up ? 1 : 0
+
+    for j ∈ 1:peps.ncols
+        v = build_tensor(peps, (i-di, j), (i-di+1, j))
+        @cast A[_, u, _, d] := v[u, d]
+        W[j] = A
     end
     W
 end
@@ -115,8 +119,8 @@ end
 @memoize Dict SpinGlassTensors.MPO(
     peps::PEPSNetwork,
     i::Int,
-    states_indices::Dict{NTuple{2, Int}, Int} = Dict{NTuple{2, Int}, Int}()
-) = MPO(Float64, peps, i, states_indices)
+    pos::Symbol
+) = MPO(Float64, peps, i, pos)
 
 
 function compress(
@@ -128,26 +132,15 @@ function compress(
 end
 
 
-@memoize Dict function SpinGlassTensors.MPS(
-    peps::AbstractGibbsNetwork,
-    i::Int,
-    states_indices::Dict{NTuple{2, Int}, Int} = Dict{NTuple{2, Int}, Int}()
-)
+@memoize Dict function SpinGlassTensors.MPS(peps::AbstractGibbsNetwork, i::Int)
     if i > peps.nrows return IdentityMPS() end
-    W = MPO(peps, i, states_indices)
-    ψ = MPS(peps, i+1, states_indices)
-    compress(W * ψ, peps)
+    M = MPO(peps, i, :up) * MPO(peps, i) 
+    ψ = MPS(peps, i+1)
+    compress(M * ψ, peps)
 end
 
 
-function contract_network(
-    peps::AbstractGibbsNetwork,
-    states_indices::Dict{NTuple{2, Int}, Int} = Dict{NTuple{2, Int}, Int}()
-)
-    ψ = MPS(peps, 1, states_indices)
-    prod(dropindices(ψ))[]
-end
-
+contract_network(peps::AbstractGibbsNetwork) = prod(dropindices(MPS(peps, 1)))[]
 
 node_index(peps::AbstractGibbsNetwork, node::NTuple{2, Int}) = peps.ncols * (node[1] - 1) + node[2]
 
@@ -174,24 +167,28 @@ function _normalize_probability(prob::Vector{T}) where {T <: Number}
 end
 
 
-function initialize_MPS(peps::AbstractGibbsNetwork{S, T}, v::Vector{Int}) where {S, T}
-    i, j = node_from_index(peps, length(v)+1)
-    (i, j), MPO(peps, i), MPS(peps, i+1), generate_boundary_states(peps, v, (i, j))
-end
-
-
-function conditional_probability(peps::PEPSNetwork, v::Vector{Int})
-    (i, j), _, ψ, ∂v = initialize_MPS(peps, v)
+function conditional_probability(peps::PEPSNetwork, w::Vector{Int})
+    i, j = node_from_index(peps, length(w)+1)
+    ∂v = generate_boundary_states(peps, w, (i, j))
 
     L = _left_env(peps, i, ∂v[1:j-1])
     R = _right_env(peps, i, ∂v[j+2:peps.ncols+1])
-    A = peps_tensor(peps, i, j)
+
+    h = build_tensor(peps, (i, j-1), (i, j))
+    v = build_tensor(peps, (i-1, j), (i, j))
 
     l, u = ∂v[j:j+1]
+
+    h̃ = @view h[l, :]
+    ṽ = @view v[u, :]
+    A = build_tensor(peps, (i, j))
+
+    @tensor B[r, d, σ] := h̃[l] * ṽ[u] * A[l, u, r, d, σ]
+
+    ψ = MPS(peps, i+1)
     M = ψ[j]
-    Ã = @view A[l, u, :, :, :]
     @tensor prob[σ] := L[x] * M[x, d, y] *
-                       Ã[r, d, σ] * R[y, r] order = (x, d, r, y)
+                       B[r, d, σ] * R[y, r] order = (x, d, r, y)
 
     _normalize_probability(prob)
 end

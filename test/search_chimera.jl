@@ -75,7 +75,6 @@
     )
 
     for transform ∈ all_lattice_transformations
-    #for transform ∈ rotation.([270])
         peps = PEPSNetwork(m, n, fg, transform, β=β)
 
         # solve the problem using B & B

@@ -84,10 +84,9 @@ function SpinGlassTensors.MPO(::Type{T},
     W = MPO(T, peps.ncols)
 
     for j ∈ 1:peps.ncols
-        w = (i, j)
-        A = build_tensor(peps, projectors(peps, w), w)
+        A = build_tensor(peps, (i, j))
         Ã = dropdims(sum(A, dims=5), dims=5)
-        h = build_tensor(peps, (i, j-1), w)
+        h = build_tensor(peps, (i, j-1), (i, j))
         @tensor B[l, u, r, d] := h[l, l̃] * Ã[l̃, u, r, d]
         W[j] = B
     end
@@ -182,7 +181,7 @@ function conditional_probability(peps::PEPSNetwork, w::Vector{Int})
 
     h̃ = @view h[l, :]
     ṽ = @view v[u, :]
-    A = build_tensor(peps, projectors(peps, (i, j)), (i, j))
+    A = build_tensor(peps, (i, j))
 
     @tensor B[r, d, σ] := h̃[l] * ṽ[u] * A[l, u, r, d, σ]
 

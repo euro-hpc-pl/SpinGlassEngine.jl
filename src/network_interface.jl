@@ -43,7 +43,11 @@ conditional_probability(network::AbstractGibbsNetwork{S, T}, v::Vector{Int}) whe
 iteration_order(peps::AbstractGibbsNetwork) = [(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols]
 
 
-function projector(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
+function projector(
+    network::AbstractGibbsNetwork{S, T}, 
+    v::S, 
+    w::S
+) where {S, T}
     fg = factor_graph(network)
     vmap = vertex_map(network)
     fg_v, fg_w = vmap(v), vmap(w)
@@ -53,15 +57,27 @@ function projector(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
     elseif has_edge(fg, fg_v, fg_w)
         get_prop(fg, fg_v, fg_w, :pl)
     else
-        loc_dim = v ∈ vertices(fg) ? length(local_energy(network, v)) : 1
+        if v ∈ vertices(fg)
+            loc_dim = length(local_energy(network, v))
+        else
+            println(vertices(fg))
+            println("NOT in: ",  v)
+            loc_dim = 1
+        end
         ones(loc_dim, 1)
+        #loc_dim = v ∈ vertices(fg) ? length(local_energy(network, v)) : 1 
+        #ones(loc_dim, 1)
+        # v ∈ vertices(fg) ? ones(length(local_energy(network, v)), 1) : ones(1, 1)
     end
 end
 
 
-function projector(network::AbstractGibbsNetwork{S, T}, v, w) where {S, T}
-    proj = []
-    for ww ∈ w push!(proj, projector(network, v, ww)) end
+function projector(
+    network::AbstractGibbsNetwork{S, T}, 
+    v::S, 
+    W::NTuple{N, S}
+) where {S, T, N}
+    proj = [projector(network, v, w) for w ∈ W]
     first(fuse_projectors(proj))
 end
 
@@ -89,7 +105,11 @@ function local_energy(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, 
 end
 
 
-function interaction_energy(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
+function interaction_energy(
+    network::AbstractGibbsNetwork{S, T}, 
+    v::S, 
+    w::S
+) where {S, T}
     fg = factor_graph(network)
     vmap = vertex_map(network)
     fg_v, fg_w = vmap(v), vmap(w)
@@ -106,15 +126,14 @@ end
 
 @memoize function build_tensor(
     network::AbstractGibbsNetwork{S, T}, 
-    projectors,
     v::S
 ) where {S, T}
     loc_exp = exp.(-network.β .* local_energy(network, v))
-    dim = zeros(Int, length(projectors))
+    projs = projectors(network, v)
+    dim = zeros(Int, length(projs))
 
     @cast A[_, i] := loc_exp[i]
-    for (j, pv) ∈ enumerate(projectors)
-        println(size(A, 2), "<-->", size(pv, 1))
+    for (j, pv) ∈ enumerate(projs)
         @cast A[(c, γ), σ] |= A[c, σ] * pv[σ, γ]
         dim[j] = size(pv, 2)
     end
@@ -136,9 +155,9 @@ ones_like(x::Array) = ones(eltype(x), size(x))
 function generate_boundary_state(
     network::AbstractGibbsNetwork{S, T}, 
     v::S, 
-    w,
+    w::S,
     σ::Vector{Int}
-) where {S, T}
+) where {S, T, N}
     state = local_state_for_node(network, σ, v)
     if v ∉ vertices(network.network_graph) return ones_like(state) end
     pv = projector(network, v, w)
@@ -149,11 +168,11 @@ end
 function generate_boundary_state(
     network::AbstractGibbsNetwork{S, T}, 
     v::S, 
-    w, 
+    w::S, 
     k::S, 
-    l, 
+    l::S, 
     σ::Vector{Int}
-) where {S, T}
+) where {S, T, N}
 
     pv = projector(network, v, w)
 

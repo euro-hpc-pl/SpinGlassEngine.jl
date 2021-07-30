@@ -92,8 +92,7 @@ end
 
 function SpinGlassTensors.MPO(::Type{T},
     peps::FusedNetwork,
-    i::Int,
-    states_indices::Dict{NTuple{2, Int}, Int} = Dict{NTuple{2, Int}, Int}()
+    i::Int
 ) where {T <: Number}
 
     W = MPO(T, 2 * peps.ncols)
@@ -120,11 +119,9 @@ function SpinGlassTensors.MPO(::Type{T},
                                          B3[r, ũ] * p_lb[l, d̃]
         W[2*j-1] = B
         
-        A = build_tensor(peps, projectors(peps, (i, j)), (i, j))
+        A = build_tensor(peps, (i, j))
+        B = dropdims(sum(A, dims=5), dims=5)
 
-        idx = get(states_indices, peps.vertex_map((i, j)), nothing)
-        B = drop_physical_index(A, idx)
-    
         v = build_tensor(peps, (i-1, j), (i, j))
         @tensor C[l, u, r, d] := v[u, ũ] * B[l, ũ, r, d] 
         W[2*j] = C   
@@ -135,9 +132,8 @@ end
 
 @memoize Dict SpinGlassTensors.MPO(
     peps::FusedNetwork,
-    i::Int,
-    states_indices::Dict{NTuple{2, Int}, Int} = Dict{NTuple{2, Int}, Int}()
-) = SpinGlassTensors.MPO(Float64, peps, i, states_indices)
+    i::Int
+) = SpinGlassTensors.MPO(Float64, peps, i)
 
 
 function boundary_at_splitting_node(peps::FusedNetwork, node::NTuple{2, Int})
@@ -148,7 +144,7 @@ function boundary_at_splitting_node(peps::FusedNetwork, node::NTuple{2, Int})
         ]...,
         (
             (i, j-1), ((i+1, j), (i, j), (i-1, j))
-            ), 
+        ), 
         [
             [((i-1, k-1), (i, k), (i-1, k), (i, k-1)), ((i-1, k), (i, k))] for k ∈ j:peps.ncols
         ]...

@@ -10,7 +10,7 @@ export
 function cross_lattice(m::Int, n::Int)
     labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
     lg = LabelledGraph(labels, grid((m, n)))
-    for i in 1:m-1, j in 1:n-1
+    for i ∈ 1:m-1, j ∈ 1:n-1
         add_edge!(lg, (i, j), (i+1, j+1))
         add_edge!(lg, (i+1, j), (i, j+1))
     end
@@ -87,18 +87,23 @@ function projectors(network::FusedNetwork, vertex::NTuple{2, Int})
     projector.(Ref(network), Ref(vertex), neighbours)
 end
 
-@memoize Dict function peps_tensor(peps::FusedNetwork, i::Int, j::Int) 
-    # generate tensors from projectors 
-    w = (i, j)
-    projs, trl, trr = projectors_with_fusing(peps, w)
-    A = build_tensor(peps, projs, w) 
-    
-    # include energy
-    v = build_tensor(peps, (i-1, j), w)
-    @tensor B[l, u, r, d, σ] := v[u, ũ] * A[l, ũ, r, d, σ]
-    B, trl, trr
-end
+function SpinGlassTensors.MPO(::Type{T},
+    peps::FusedNetwork,
+    i::Int,
+    pos::Symbol
+) where {T <: Number}
+    W = MPO(T, 2 * peps.ncols)
+    di = pos == :up ? 1 : 0
 
+    for j ∈ 1:peps.ncols
+        v = build_tensor(peps, (i-di, j), (i-di+1, j))
+        @cast A[_, u, _, d] := v[u, d]
+        W[2*j] = A
+    end
+
+    # W[2*j-1] = TBW (@Ania && Tomek)
+    W
+end
 
 function SpinGlassTensors.MPO(::Type{T},
     peps::FusedNetwork,
@@ -106,7 +111,6 @@ function SpinGlassTensors.MPO(::Type{T},
 ) where {T <: Number}
 
     W = MPO(T, 2 * peps.ncols)
-    #p_rr_old, p_rt_old, p_rb_old  = ones(1, 1), ones(1, 1), ones(1, 1)
 
     for j ∈ 1:peps.ncols
         neighbours1 = ((i+1, j), (i, j), (i-1, j))
@@ -169,11 +173,16 @@ end
 
 
 function conditional_probability(peps::FusedNetwork, v::Vector{Int})   
-    (i, j), W, ψ, ∂v = initialize_MPS(peps, v)
+    i, j = node_from_index(peps, length(v)+1)
+
+    W = MPO(peps, i)
+    ψ = MPS(peps, i+1)
+
+    ∂v = generate_boundary_states(peps, v, (i, j))
 
     L = _left_env(peps, i, ∂v[1:2*j-2])
     R = _right_env(peps, i, ∂v[2*j+2:peps.ncols*2+1])
-    A = build_tensor(peps, projectors(peps, (i, j)), (i, j))
+    A = build_tensor(peps, (i, j))
         
     X, MX, M = W[2*j-1], ψ[2*j-1], ψ[2*j]
 
@@ -183,7 +192,6 @@ function conditional_probability(peps::FusedNetwork, v::Vector{Int})
     vt = ev[u, :]
 
     @tensor Ã[l, r, d, σ] := A[l, x, r, d, σ] * vt[x]
-    #Ã = @view A[:, u, :, :, :]
     Xt = @view X[l, d, :, :]
         
     @tensor prob[σ] := L[x] * Xt[k, y] * MX[x, y, z] * M[z, l, m] *

@@ -55,9 +55,15 @@ end
 
 function projectors_with_fusing(network::FusedNetwork, vertex::NTuple{2, Int})
     i, j = vertex
-    projs_left = projector.(Ref(network), Ref(vertex), ((i+1, j-1), (i, j-1), (i-1, j-1)))
-    pt, pb = projector.(Ref(network), Ref(vertex), ((i-1, j), (i+1, j)))
-    projs_right = projector.(Ref(network), Ref(vertex), ((i+1, j+1), (i, j+1), (i-1, j+1)))
+    projs_left = projector.(
+                    Ref(network), Ref(vertex), ((i+1, j-1), (i, j-1), (i-1, j-1))
+                )
+    pt, pb = projector.(
+                    Ref(network), Ref(vertex), ((i-1, j), (i+1, j))
+            )
+    projs_right = projector.(
+                    Ref(network), Ref(vertex), ((i+1, j+1), (i, j+1), (i-1, j+1))
+                )
 
     pl, tl_blt = fuse_projectors(projs_left)
     pr, tr_brt = fuse_projectors(projs_right)
@@ -69,10 +75,14 @@ end
 function projectors(network::FusedNetwork, vertex::NTuple{2, Int})
     i, j = vertex
     neighbours = (
-                ((i+1, j-1), (i, j-1), (i-1, j-1)), 
-                (i-1, j),
-                ((i+1, j+1), (i, j+1), (i-1, j+1)),
-                (i+1, j)
+                    (
+                        (i+1, j-1), (i, j-1), (i-1, j-1)
+                    ), 
+                    (i-1, j),
+                    (
+                        (i+1, j+1), (i, j+1), (i-1, j+1)
+                    ),
+                    (i+1, j)
                 )
     projector.(Ref(network), Ref(vertex), neighbours)
 end

@@ -57,17 +57,8 @@ function projector(
     elseif has_edge(fg, fg_v, fg_w)
         get_prop(fg, fg_v, fg_w, :pl)
     else
-        if v ∈ vertices(fg)
-            loc_dim = length(local_energy(network, v))
-        else
-            println(vertices(fg))
-            println("NOT in: ",  v)
-            loc_dim = 1
-        end
+        loc_dim = fg_v ∈ vertices(fg) ? length(local_energy(network, v)) : 1 
         ones(loc_dim, 1)
-        #loc_dim = v ∈ vertices(fg) ? length(local_energy(network, v)) : 1 
-        #ones(loc_dim, 1)
-        # v ∈ vertices(fg) ? ones(length(local_energy(network, v)), 1) : ones(1, 1)
     end
 end
 

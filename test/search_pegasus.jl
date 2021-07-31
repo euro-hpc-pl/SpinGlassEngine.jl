@@ -13,6 +13,10 @@
     n = 4
     t = 3
 
+    #m = 2
+    #n = 2
+    #t = 24
+
     β = 1.
 
     L = n * m * t
@@ -25,6 +29,8 @@
     )
 
     instance = "$(@__DIR__)/instances/pathological/cross_$(m)_$(n)_dd.txt"
+    #instance = "$(@__DIR__)/instances/pegasus_droplets/2_2_3_00.txt"
+
 
     ig = ising_graph(instance)
 

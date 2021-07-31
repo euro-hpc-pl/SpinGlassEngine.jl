@@ -146,7 +146,7 @@ ones_like(x::Array) = ones(eltype(x), size(x))
 function generate_boundary_state(
     network::AbstractGibbsNetwork{S, T}, 
     v::S, 
-    w::S,
+    w,#::S,
     σ::Vector{Int}
 ) where {S, T, N}
     state = local_state_for_node(network, σ, v)

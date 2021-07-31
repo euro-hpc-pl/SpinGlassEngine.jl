@@ -150,6 +150,25 @@ end
 ) = SpinGlassTensors.MPO(Float64, peps, i)
 
 
+@memoize Dict SpinGlassTensors.MPO(
+    peps::FusedNetwork,
+    i::Int,
+    pos::Symbol
+) = MPO(Float64, peps, i, pos)
+
+@memoize Dict function SpinGlassTensors.MPS(peps::FusedNetwork, i::Int)
+    if i > peps.nrows return IdentityMPS() end
+    M = MPO(peps, i) 
+    ψ = MPS(peps, i+1)
+    compress(M * ψ, peps)
+end
+
+@memoize Dict function _right_env(peps::FusedNetwork, i::Int, ∂v::Vector{Int}) 
+    W = MPO(peps, i)
+    ψ = MPS(peps, i+1)
+    right_env(ψ, W, ∂v)
+end
+
 function boundary_at_splitting_node(peps::FusedNetwork, node::NTuple{2, Int})
     i, j = node
     vcat(

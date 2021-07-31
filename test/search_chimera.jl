@@ -3,6 +3,10 @@
     n = 4
     t = 3
 
+    #m = 4
+    #n = 4
+    #t = 8
+
     β = 1.
 
     L = n * m * t
@@ -65,6 +69,8 @@
     # )
 
     instance = "$(@__DIR__)/instances/pathological/chim_$(m)_$(n)_$(t).txt"
+    #instance = "$(@__DIR__)/instances/chimera_droplets/128power/001.txt"
+
 
     ig = ising_graph(instance)
 

@@ -73,7 +73,7 @@ function solve(ψ::AbstractMPS, keep::Int)
         states = B[:, perm]
     end
 
-    states'[1:keep, :], lprob[1:keep], lpCut
+    Vector.(eachcol(states[:, 1:keep])), lprob[1:keep], lpCut
 end
 
 function _apply_bias!(ψ::AbstractMPS, ig::LabelledGraph, dβ::Number, i::Int)
@@ -127,7 +127,6 @@ function multiply_purifications(χ::T, ϕ::T, L::Int) where {T <: AbstractMPS}
     for i ∈ 1:L
         A1 = χ[i]
         A2 = ϕ[i]
-
         @cast B[(l, x), σ, (r, y)] := A1[l, σ, r] * A2[x, σ, y]
         ψ[i] = B
     end
@@ -137,11 +136,10 @@ end
 _holes(l::Int, nbrs::Vector) = setdiff(l+1 : last(nbrs), nbrs)
 
 function _apply_layer_of_gates(ig::LabelledGraph, ρ::AbstractMPS, control::MPSControl, dβ::Number)
-    L = nv(ig)
     Dcut = control.max_bond
     tol = control.var_ϵ
     max_sweeps = control.max_sweeps
-    for i ∈ 1:L
+    for i ∈ vertices(ig)
         _apply_bias!(ρ, ig, dβ, i)
         is_right = false
         nbrs = unique_neighbors(ig, i)
@@ -159,13 +157,13 @@ function _apply_layer_of_gates(ig::LabelledGraph, ρ::AbstractMPS, control::MPSC
 
         if bond_dimension(ρ) > Dcut
             @info "Compresing MPS" bond_dimension(ρ), Dcut
-            ρ = compress(ρ, Dcut, tol, max_sweeps)
+            ρ = SpinGlassTensors.compress(ρ, Dcut, tol, max_sweeps)
             is_right = true
         end
 
     end
     if !is_right
-        canonise!(ρ, :right)
+        SpinGlassTensors.canonise!(ρ, :right)
         is_right = true
     end
     ρ
@@ -213,7 +211,7 @@ function SpinGlassTensors.MPS(ig::LabelledGraph, control::MPSControl, type::Symb
             ρ = multiply_purifications(ρ, ρ, L)
             if bond_dimension(ρ) > Dcut
                 @info "Compresing MPS" bond_dimension(ρ), Dcut
-                ρ = compress(ρ, Dcut, tol, max_sweeps)
+                ρ = SpinGlassTensors.compress(ρ, Dcut, tol, max_sweeps)
                 is_right = true
             end
         end
@@ -227,7 +225,7 @@ function SpinGlassTensors.MPS(ig::LabelledGraph, control::MPSControl, type::Symb
             ρ = multiply_purifications(ρ, ρ0, L)
             if bond_dimension(ρ) > Dcut
                 @info "Compresing MPS" bond_dimension(ρ), Dcut
-                ρ = compress(ρ, Dcut, tol, max_sweeps)
+                ρ = SpinGlassTensors.compress(ρ, Dcut, tol, max_sweeps)
                 is_right = true
             end
         end

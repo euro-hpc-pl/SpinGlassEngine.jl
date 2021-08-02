@@ -52,7 +52,7 @@ struct FusedNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     end
 end
 
-
+# to be removed
 function projectors_with_fusing(network::FusedNetwork, vertex::NTuple{2, Int})
     i, j = vertex
     projs_left = projector.(
@@ -86,6 +86,7 @@ function projectors(network::FusedNetwork, vertex::NTuple{2, Int})
                 )
     projector.(Ref(network), Ref(vertex), neighbours)
 end
+
 
 function SpinGlassTensors.MPO(::Type{T},
     peps::FusedNetwork,
@@ -194,7 +195,7 @@ end
 function conditional_probability(peps::FusedNetwork, v::Vector{Int})   
     i, j = node_from_index(peps, length(v)+1)
 
-    W = MPO(peps, i)
+    W = MPO(peps, i) #* MPO(peps, i, :up)
     ψ = MPS(peps, i+1)
 
     ∂v = generate_boundary_states(peps, v, (i, j))

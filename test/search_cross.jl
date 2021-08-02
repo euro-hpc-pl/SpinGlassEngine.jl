@@ -42,6 +42,7 @@
         #@test sol.energies[1:num_states] ≈ expected_energies
 
         println(sol.energies)
+        #println(decode_factor_graph_state.(Ref(fg), sol.states))
         println(sol.states)
         println(sol.probabilities)
     end

@@ -50,7 +50,8 @@ push!(my_tests,
       #"network_interface.jl",
       #"search_chimera.jl",
       #"MPS_engine.jl",
-      "search_pegasus.jl",
+      "search_cross.jl",
+      #"search_pegasus.jl",
 )
 
 for my_test in my_tests

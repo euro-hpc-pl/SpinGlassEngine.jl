@@ -97,12 +97,15 @@ function SpinGlassTensors.MPO(::Type{T},
     di = pos == :up ? 1 : 0
 
     for j ∈ 1:peps.ncols
+        NW = build_tensor(peps, (i-1, j-1), (i, j))
+        NE = build_tensor(peps, (i-1, j), (i, j-1))
+        @cast B[_, (u1, u2), _, (d1, d2)] := NW[u1, d1] * NE[u2, d2] 
+        W[2*j-1] = B
         v = build_tensor(peps, (i-di, j), (i-di+1, j))
         @cast A[_, u, _, d] := v[u, d]
         W[2*j] = A
     end
 
-    # W[2*j-1] = TBW (@Ania && Tomek)
     W
 end
 
@@ -123,23 +126,17 @@ function SpinGlassTensors.MPO(::Type{T},
         _, (p_rb, p_r, p_rt) = fuse_projectors(prr)
 
         Nh = build_tensor(peps, (i, j-1), (i, j))
-        NW = build_tensor(peps, (i-1, j-1), (i, j))
-        NE = build_tensor(peps, (i-1, j), (i, j-1))
 
         @tensor B1[l, r] := p_l[l, x] * Nh[x, y] * p_r[r, y]    
-        @tensor B2[l, u] := p_lt[l, ũ] * NE[ũ, u]
-        @tensor B3[r, u] := p_rt[r, ũ] * NW[u, ũ]
 
-        @cast B[l, (ũ, u), r, (d̃, d)] |= B1[l, r] * B2[l, u] * p_rb[r, d] * 
-                                         B3[r, ũ] * p_lb[l, d̃]
+        @cast B[l, (ũ, u), r, (d̃, d)] |= B1[l, r] * p_lt[l, u] * p_rb[r, d] * 
+                                         p_rt[r, ũ] * p_lb[l, d̃]
         W[2*j-1] = B
         
         A = build_tensor(peps, (i, j))
         B = dropdims(sum(A, dims=5), dims=5)
 
-        v = build_tensor(peps, (i-1, j), (i, j))
-        @tensor C[l, u, r, d] := v[u, ũ] * B[l, ũ, r, d] 
-        W[2*j] = C   
+        W[2*j] = B   
     end
     W
 end
@@ -156,21 +153,6 @@ end
     i::Int,
     pos::Symbol
 ) = MPO(Float64, peps, i, pos)
-
-
-@memoize Dict function SpinGlassTensors.MPS(peps::FusedNetwork, i::Int)
-    if i > peps.nrows return IdentityMPS() end
-    M = MPO(peps, i) 
-    ψ = MPS(peps, i+1)
-    compress(M * ψ, peps)
-end
-
-
-@memoize Dict function _right_env(peps::FusedNetwork, i::Int, ∂v::Vector{Int}) 
-    W = MPO(peps, i)
-    ψ = MPS(peps, i+1)
-    right_env(ψ, W, ∂v)
-end
 
 
 function boundary_at_splitting_node(peps::FusedNetwork, node::NTuple{2, Int})
@@ -198,7 +180,7 @@ end
 function conditional_probability(peps::FusedNetwork, v::Vector{Int})   
     i, j = node_from_index(peps, length(v)+1)
 
-    W = MPO(peps, i) #* MPO(peps, i, :up)
+    W = MPO(peps, i, :up) * MPO(peps, i)
     ψ = MPS(peps, i+1)
 
     ∂v = generate_boundary_states(peps, v, (i, j))

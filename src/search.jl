@@ -1,8 +1,11 @@
-export AbstractGibbsNetwork
-export low_energy_spectrum, branch_state, bound_solution, merge_branches
-export Solution
-export empty_solution #only for testing
-using Memoize
+export 
+    AbstractGibbsNetwork,
+    low_energy_spectrum, 
+    branch_state,
+    bound_solution,
+    merge_branches,
+    Solution,
+    Memoize
 
 struct Solution
     energies::Vector{Float64}
@@ -47,19 +50,26 @@ end
 function merge_branches(network::AbstractGibbsNetwork{S, T}, energy_atol::Float64) where {S, T}
     function _merge(partial_sol::Solution)
         node = node_from_index(network, length(partial_sol.states[1])+1)
-        println(node)
-        println(boundary_at_splitting_node(network, node))
-
         boundaries = hcat(
             generate_boundary_states(network, partial_sol.states, node)...
         )
 
+        println(boundaries)
+        
         _unique_boundaries, indices = SpinGlassNetworks.unique_dims(boundaries, 1)
 
         sorting_idx = sortperm(indices)
         sorted_indices = indices[sorting_idx]
 
+        println(sorting_idx)
+        println(sorted_indices)
+
         start = 1
+
+        println(partial_sol.energies)
+        println(partial_sol.states)
+        println(partial_sol.probabilities)
+
         energies = partial_sol.energies[sorting_idx]
         states = partial_sol.states[sorting_idx]
         probs = partial_sol.probabilities[sorting_idx]

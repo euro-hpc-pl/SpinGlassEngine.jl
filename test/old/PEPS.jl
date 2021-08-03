@@ -28,7 +28,7 @@ for transform ∈ all_lattice_transformations
     ψ = IdentityMPS()
 
     for i ∈ peps.nrows:-1:1
-        ψ = MPO(T, peps, i) * ψ
+        ψ = MPO(T, peps, i, :up) * MPO(T, peps, i) * ψ
         @test MPS(peps, i) ≈ ψ
     end
 end

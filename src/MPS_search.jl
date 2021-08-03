@@ -185,7 +185,7 @@ function SpinGlassTensors.MPS(ig::LabelledGraph, control::MPSControl)
     @info "Set control parameters for MPS" Dcut tol max_sweeps
 
     @info "Preparing Hadamard state as MPS"
-    ρ = HadamardMPS(get_prop(ig, :rank))
+    ρ = HadamardMPS(values(get_prop(ig, :rank)))
 
     @info "Sweeping through β and σ" schedule
     for dβ ∈ schedule
@@ -204,7 +204,7 @@ function SpinGlassTensors.MPS(ig::LabelledGraph, control::MPSControl, type::Symb
     @info "Set control parameters for MPS" Dcut tol max_sweeps
 
     @info "Preparing Hadamard state as MPS"
-    ρ = HadamardMPS(get_prop(ig, :rank))
+    ρ = HadamardMPS(values(get_prop(ig, :rank)))
     is_right = true
     @info "Sweeping through β and σ" dβ
 
@@ -238,9 +238,8 @@ function SpinGlassTensors.MPS(ig::LabelledGraph, control::MPSControl, type::Symb
     ρ
 end
 
-function HadamardMPS(::Type{T}, rank::Dict{Int, Int}) where {T <: Number}
-    MPS(
-        [fill(one(T), r) ./ sqrt(T(r)) for r ∈ values(rank)]
-    )
+function HadamardMPS(::Type{T}, rank::Union{Vector, NTuple}) where {T <: Number}
+    vec = [ fill(one(T), r) ./ sqrt(T(r)) for r ∈ rank ]
+    MPS(vec)
 end
-HadamardMPS(rank::Dict{Int, Int}) = HadamardMPS(Float64, rank)
+HadamardMPS(rank::Union{Vector, NTuple}) = HadamardMPS(Float64, rank)

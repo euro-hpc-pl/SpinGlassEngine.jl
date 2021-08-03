@@ -11,10 +11,10 @@ struct MPSControl
     dβ::Number
 end
 
-
 _make_left_env(ψ::AbstractMPS, k::Int) = ones(eltype(ψ), 1, k)
 
 _make_LL(ψ::AbstractMPS, b::Int, k::Int, d::Int) = zeros(eltype(ψ), b, k, d)
+
 
 # ψ needs to be ∈ the right canonical form
 function solve(ψ::AbstractMPS, keep::Int)
@@ -22,13 +22,10 @@ function solve(ψ::AbstractMPS, keep::Int)
     T = eltype(ψ)
 
     keep_extra = keep
-    lpCut = -1000 # do not like this!
+    lpCut = -Inf
     k = 1
 
-    # this is not elegant
-    if keep < prod(rank(ψ))
-        keep_extra += 1
-    end
+    if keep < prod(rank(ψ)) keep_extra += 1 end
 
     lprob = zeros(T, k)
     states = fill([], 1, k)
@@ -76,16 +73,16 @@ function solve(ψ::AbstractMPS, keep::Int)
     Vector.(eachcol(states[:, 1:keep])), lprob[1:keep], lpCut
 end
 
+
 function _apply_bias!(ψ::AbstractMPS, ig::LabelledGraph, dβ::Number, i::Int)
     M = ψ[i]
-    d = size(M, 2)
-
     h = get_prop(ig, i, :h)
 
     v = exp.(-0.5 * dβ * h * local_basis(ψ, i))
     @cast M[x, σ, y] = M[x, σ, y] * v[σ]
     ψ[i] = M
 end
+
 
 function _apply_exponent!(ψ::AbstractMPS, ig::LabelledGraph, dβ::Number, i::Int, j::Int, last::Int)
     M = ψ[j]
@@ -103,6 +100,7 @@ function _apply_exponent!(ψ::AbstractMPS, ig::LabelledGraph, dβ::Number, i::In
     ψ[j] = M̃
 end
 
+
 function _apply_projector!(ψ::AbstractMPS, i::Int)
     M = ψ[i]
     D = typeof(M).name.wrapper(I(physical_dim(ψ, i)))
@@ -110,6 +108,7 @@ function _apply_projector!(ψ::AbstractMPS, i::Int)
     @cast M̃[a, σ, (y, b)] := D[σ, y] * M[a, σ, b]
     ψ[i] = M̃
 end
+
 
 function _apply_nothing!(ψ::AbstractMPS, l::Int, i::Int)
     M = ψ[l]
@@ -133,16 +132,19 @@ function multiply_purifications(χ::T, ϕ::T, L::Int) where {T <: AbstractMPS}
     ψ
 end
 
+
 _holes(l::Int, nbrs::Vector) = setdiff(l+1 : last(nbrs), nbrs)
 
+
 function _apply_layer_of_gates(ig::LabelledGraph, ρ::AbstractMPS, control::MPSControl, dβ::Number)
-    Dcut = control.max_bond
-    tol = control.var_ϵ
-    max_sweeps = control.max_sweeps
-    for i ∈ vertices(ig)
+
+    for i ∈ 1:nv(ig)
+
         _apply_bias!(ρ, ig, dβ, i)
+
         is_right = false
         nbrs = unique_neighbors(ig, i)
+
         if !isempty(nbrs)
             _apply_projector!(ρ, i)
 
@@ -155,13 +157,18 @@ function _apply_layer_of_gates(ig::LabelledGraph, ρ::AbstractMPS, control::MPSC
             end
         end
 
-        if bond_dimension(ρ) > Dcut
-            @info "Compresing MPS" bond_dimension(ρ), Dcut
-            ρ = SpinGlassTensors.compress(ρ, Dcut, tol, max_sweeps)
+        if bond_dimension(ρ) > control.max_bond
+            @info "Compresing MPS" bond_dimension(ρ), control.max_bond
+            ρ = SpinGlassTensors.compress(
+                    ρ, 
+                    control.max_bond, 
+                    control.var_ϵ, 
+                    control.max_sweeps
+                )
             is_right = true
         end
-
     end
+
     if !is_right
         SpinGlassTensors.canonise!(ρ, :right)
         is_right = true
@@ -176,11 +183,10 @@ function SpinGlassTensors.MPS(ig::LabelledGraph, control::MPSControl)
     max_sweeps = control.max_sweeps
     schedule = control.β
     @info "Set control parameters for MPS" Dcut tol max_sweeps
-    rank = get_prop(ig, :rank)
 
     @info "Preparing Hadamard state as MPS"
-    ρ = HadamardMPS(rank)
-    is_right = true
+    ρ = HadamardMPS(get_prop(ig, :rank))
+
     @info "Sweeping through β and σ" schedule
     for dβ ∈ schedule
         ρ = _apply_layer_of_gates(ig, ρ, control, dβ)
@@ -196,10 +202,9 @@ function SpinGlassTensors.MPS(ig::LabelledGraph, control::MPSControl, type::Symb
     dβ = control.dβ
     β = control.β
     @info "Set control parameters for MPS" Dcut tol max_sweeps
-    rank = get_prop(ig, :rank)
 
     @info "Preparing Hadamard state as MPS"
-    ρ = HadamardMPS(rank)
+    ρ = HadamardMPS(get_prop(ig, :rank))
     is_right = true
     @info "Sweeping through β and σ" dβ
 
@@ -233,8 +238,9 @@ function SpinGlassTensors.MPS(ig::LabelledGraph, control::MPSControl, type::Symb
     ρ
 end
 
-function HadamardMPS(::Type{T}, rank::Union{Vector, NTuple}) where {T <: Number}
-    vec = [ fill(one(T), r) ./ sqrt(T(r)) for r ∈ rank ]
-    MPS(vec)
+function HadamardMPS(::Type{T}, rank::Dict{Int, Int}) where {T <: Number}
+    MPS(
+        [fill(one(T), r) ./ sqrt(T(r)) for r ∈ values(rank)]
+    )
 end
-HadamardMPS(rank::Union{Vector, NTuple}) = HadamardMPS(Float64, rank)
+HadamardMPS(rank::Dict{Int, Int}) = HadamardMPS(Float64, rank)

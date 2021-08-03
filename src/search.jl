@@ -51,7 +51,7 @@ function merge_branches(network::AbstractGibbsNetwork{S, T}, energy_atol::Float6
     function _merge(partial_sol::Solution)
         node = node_from_index(network, length(partial_sol.states[1])+1)
         boundaries = hcat(
-            generate_boundary_states(network, partial_sol.states, node)...
+            boundary_state.(Ref(network), partial_sol.states, Ref(node))...
         )
 
         println(boundaries)

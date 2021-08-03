@@ -10,6 +10,7 @@ export
     build_central_tensor,
     build_connecting_tensor,
     boundary_state,
+    generate_boundary_states,
     local_state_for_node,
     iteration_order,
     fuse_projectors

@@ -84,7 +84,7 @@
         peps = PEPSNetwork(m, n, fg, transform, β=β)
 
         # solve the problem using B & B
-        sol = low_energy_spectrum(peps, num_states)#, merge_branches(peps, 1.0))
+        sol = low_energy_spectrum(peps, num_states, merge_branches(peps, 1.0))
 
         @testset "has correct spectrum given the transformation $(transform)" begin
             @test sol.energies ≈ exact_energies

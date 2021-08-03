@@ -99,11 +99,11 @@ function SpinGlassTensors.MPO(::Type{T},
     for j ∈ 1:peps.ncols
         left_nbrs = ((i+1, j), (i, j), (i-1, j))
         prl = projector.(Ref(peps), Ref((i, j-1)), left_nbrs)
-        _, (p_lb, p_l, p_lt) = fuse_projectors(prl)
+        p_lb, p_l, p_lt = last(fuse_projectors(prl))
 
         right_nbrs = ((i+1, j-1), (i, j-1), (i-1, j-1))
         prr = projector.(Ref(peps), Ref((i, j)), right_nbrs)
-        _, (p_rb, p_r, p_rt) = fuse_projectors(prr)
+        p_rb, p_r, p_rt = last(fuse_projectors(prr))
 
         h = build_connecting_tensor(peps, (i, j-1), (i, j))
 

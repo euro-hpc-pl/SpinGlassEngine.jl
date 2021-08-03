@@ -7,7 +7,8 @@ export
     projectors,
     local_energy,
     interaction_energy,
-    build_tensor,
+    build_central_tensor,
+    build_connecting_tensor,
     generate_boundary_states,
     local_state_for_node,
     iteration_order,
@@ -115,7 +116,7 @@ function interaction_energy(
 end
 
 
-@memoize function build_tensor(
+@memoize function build_central_tensor(
     network::AbstractGibbsNetwork{S, T}, 
     v::S
 ) where {S, T}
@@ -132,7 +133,11 @@ end
 end
 
 
-@memoize function build_tensor(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
+@memoize function build_connecting_tensor(
+    network::AbstractGibbsNetwork{S, T},
+    v::S, 
+    w::S
+) where {S, T}
     en = interaction_energy(network, v, w)
     exp.(-network.β .* (en .- minimum(en)))
 end

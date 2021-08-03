@@ -1,6 +1,5 @@
 export 
     FusedNetwork, 
-    projectors_with_fusing, 
     boundary_at_splitting_node,
     conditional_probability,
     update_energy,
@@ -52,25 +51,6 @@ struct FusedNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     end
 end
 
-# to be removed
-function projectors_with_fusing(network::FusedNetwork, vertex::NTuple{2, Int})
-    i, j = vertex
-    projs_left = projector.(
-                    Ref(network), Ref(vertex), ((i+1, j-1), (i, j-1), (i-1, j-1))
-                )
-    pt, pb = projector.(
-                    Ref(network), Ref(vertex), ((i-1, j), (i+1, j))
-            )
-    projs_right = projector.(
-                    Ref(network), Ref(vertex), ((i+1, j+1), (i, j+1), (i-1, j+1))
-                )
-
-    pl, tl_blt = fuse_projectors(projs_left)
-    pr, tr_brt = fuse_projectors(projs_right)
-
-    (pl, pt, pr, pb), tl_blt, tr_brt
-end
-
 
 function projectors(network::FusedNetwork, vertex::NTuple{2, Int})
     i, j = vertex
@@ -97,15 +77,16 @@ function SpinGlassTensors.MPO(::Type{T},
     di = pos == :up ? 1 : 0
 
     for j ∈ 1:peps.ncols
-        NW = build_tensor(peps, (i-1, j-1), (i, j))
-        NE = build_tensor(peps, (i-1, j), (i, j-1))
-        @cast B[_, (u1, u2), _, (d1, d2)] := NW[u1, d1] * NE[u2, d2] 
+        NW = build_connecting_tensor(peps, (i-1, j-1), (i, j))
+        NE = build_connecting_tensor(peps, (i-1, j), (i, j-1))
+
+        @cast B[_, (u, ũ), _, (d, d̃)] := NW[u, d] * NE[ũ, d̃] 
         W[2*j-1] = B
-        v = build_tensor(peps, (i-di, j), (i-di+1, j))
+
+        v = build_connecting_tensor(peps, (i-di, j), (i-di+1, j))
         @cast A[_, u, _, d] := v[u, d]
         W[2*j] = A
     end
-
     W
 end
 
@@ -117,23 +98,23 @@ function SpinGlassTensors.MPO(::Type{T},
     W = MPO(T, 2 * peps.ncols)
 
     for j ∈ 1:peps.ncols
-        neighbours1 = ((i+1, j), (i, j), (i-1, j))
-        prl = projector.(Ref(peps), Ref((i, j-1)), neighbours1)
+        left_nbrs = ((i+1, j), (i, j), (i-1, j))
+        prl = projector.(Ref(peps), Ref((i, j-1)), left_nbrs)
         _, (p_lb, p_l, p_lt) = fuse_projectors(prl)
 
-        neighbours2 = ((i+1, j-1), (i, j-1), (i-1, j-1))
-        prr = projector.(Ref(peps), Ref((i, j)), neighbours2)
+        right_nbrs = ((i+1, j-1), (i, j-1), (i-1, j-1))
+        prr = projector.(Ref(peps), Ref((i, j)), right_nbrs)
         _, (p_rb, p_r, p_rt) = fuse_projectors(prr)
 
-        Nh = build_tensor(peps, (i, j-1), (i, j))
+        h = build_connecting_tensor(peps, (i, j-1), (i, j))
 
-        @tensor B1[l, r] := p_l[l, x] * Nh[x, y] * p_r[r, y]    
+        @tensor B[l, r] := p_l[l, x] * h[x, y] * p_r[r, y]    
 
-        @cast B[l, (ũ, u), r, (d̃, d)] |= B1[l, r] * p_lt[l, u] * p_rb[r, d] * 
+        @cast C[l, (ũ, u), r, (d̃, d)] |= B[l, r] * p_lt[l, u] * p_rb[r, d] * 
                                          p_rt[r, ũ] * p_lb[l, d̃]
-        W[2*j-1] = B
+        W[2*j-1] = C
         
-        A = build_tensor(peps, (i, j))
+        A = build_central_tensor(peps, (i, j))
         B = dropdims(sum(A, dims=5), dims=5)
 
         W[2*j] = B   
@@ -170,12 +151,6 @@ function boundary_at_splitting_node(peps::FusedNetwork, node::NTuple{2, Int})
     )
 end
 
-# to be removed
-function initialize_MPS(peps::AbstractGibbsNetwork{S, T}, v::Vector{Int}) where {S, T}
-    i, j = node_from_index(peps, length(v)+1)
-    (i, j), MPO(peps, i), MPS(peps, i+1), generate_boundary_states(peps, v, (i, j))
-end
-
 
 function conditional_probability(peps::FusedNetwork, v::Vector{Int})   
     i, j = node_from_index(peps, length(v)+1)
@@ -187,13 +162,13 @@ function conditional_probability(peps::FusedNetwork, v::Vector{Int})
 
     L = _left_env(peps, i, ∂v[1:2*j-2])
     R = _right_env(peps, i, ∂v[2*j+2:peps.ncols*2+1])
-    A = build_tensor(peps, (i, j))
+    A = build_central_tensor(peps, (i, j))
         
     X, MX, M = W[2*j-1], ψ[2*j-1], ψ[2*j]
 
     l, d, u = ∂v[2*j-1:2*j+1]
     
-    ev = build_tensor(peps, (i-1, j), (i, j)) 
+    ev = build_connecting_tensor(peps, (i-1, j), (i, j)) 
     vt = ev[u, :]
 
     @tensor Ã[l, r, d, σ] := A[l, x, r, d, σ] * vt[x]

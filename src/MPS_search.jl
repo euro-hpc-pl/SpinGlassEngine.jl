@@ -74,7 +74,12 @@ function solve(ψ::AbstractMPS, keep::Int)
 end
 
 
-function _apply_bias!(ψ::AbstractMPS, ig::LabelledGraph, dβ::Number, i::Int)
+function _apply_bias!(
+    ψ::AbstractMPS,
+    ig::LabelledGraph, 
+    dβ::Number, 
+    i::Int
+)
     M = ψ[i]
     h = get_prop(ig, i, :h)
 
@@ -84,7 +89,14 @@ function _apply_bias!(ψ::AbstractMPS, ig::LabelledGraph, dβ::Number, i::Int)
 end
 
 
-function _apply_exponent!(ψ::AbstractMPS, ig::LabelledGraph, dβ::Number, i::Int, j::Int, last::Int)
+function _apply_exponent!(
+    ψ::AbstractMPS, 
+    ig::LabelledGraph, 
+    dβ::Number, 
+    i::Int, 
+    j::Int, 
+    last::Int
+)
     M = ψ[j]
     D = typeof(M).name.wrapper(I(physical_dim(ψ, i)))
 
@@ -96,7 +108,6 @@ function _apply_exponent!(ψ::AbstractMPS, ig::LabelledGraph, dβ::Number, i::In
     else
         @cast M̃[(x, a), σ, (y, b)] := C[x, σ] * D[x, y] * M[a, σ, b]
     end
-
     ψ[j] = M̃
 end
 
@@ -104,7 +115,6 @@ end
 function _apply_projector!(ψ::AbstractMPS, i::Int)
     M = ψ[i]
     D = typeof(M).name.wrapper(I(physical_dim(ψ, i)))
-
     @cast M̃[a, σ, (y, b)] := D[σ, y] * M[a, σ, b]
     ψ[i] = M̃
 end
@@ -113,7 +123,6 @@ end
 function _apply_nothing!(ψ::AbstractMPS, l::Int, i::Int)
     M = ψ[l]
     D = typeof(M).name.wrapper(I(physical_dim(ψ, i)))
-
     @cast M̃[(x, a), σ, (y, b)] := D[x, y] * M[a, σ, b]
     ψ[l] = M̃
 end
@@ -136,10 +145,13 @@ end
 _holes(l::Int, nbrs::Vector) = setdiff(l+1 : last(nbrs), nbrs)
 
 
-function _apply_layer_of_gates(ig::LabelledGraph, ρ::AbstractMPS, control::MPSControl, dβ::Number)
-
+function _apply_layer_of_gates(
+    ig::LabelledGraph, 
+    ρ::AbstractMPS, 
+    control::MPSControl, 
+    dβ::Number
+)
     for i ∈ 1:nv(ig)
-
         _apply_bias!(ρ, ig, dβ, i)
 
         is_right = false
@@ -147,11 +159,9 @@ function _apply_layer_of_gates(ig::LabelledGraph, ρ::AbstractMPS, control::MPSC
 
         if !isempty(nbrs)
             _apply_projector!(ρ, i)
-
             for j ∈ nbrs
                 _apply_exponent!(ρ, ig, dβ, i, j, last(nbrs))
             end
-
             for l ∈ _holes(i, nbrs)
                 _apply_nothing!(ρ, l, i)
             end
@@ -238,8 +248,8 @@ function SpinGlassTensors.MPS(ig::LabelledGraph, control::MPSControl, type::Symb
     ρ
 end
 
-function HadamardMPS(::Type{T}, rank::Union{Vector, NTuple}) where {T <: Number}
+function HadamardMPS(::Type{T}, rank) where {T <: Number}
     vec = [ fill(one(T), r) ./ sqrt(T(r)) for r ∈ rank ]
     MPS(vec)
 end
-HadamardMPS(rank::Union{Vector, NTuple}) = HadamardMPS(Float64, rank)
+HadamardMPS(rank) = HadamardMPS(Float64, rank)

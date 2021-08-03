@@ -11,12 +11,13 @@ instance = "$(@__DIR__)/instances/128_001.txt"
 max_states = 50
 to_show=8
 
+
 ig = ising_graph(instance)
+println(vertices(ig))
 
 dβ = 0.01
 β = 2.
 
-ϵ = 1E-8
 D = 16 
 var_ϵ = 1E-8
 sweeps = 4

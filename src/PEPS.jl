@@ -169,7 +169,7 @@ end
 
 function conditional_probability(peps::PEPSNetwork, w::Vector{Int})
     i, j = node_from_index(peps, length(w)+1)
-    ∂v = generate_boundary_states(peps, w, (i, j))
+    ∂v = boundary_state(peps, w, (i, j))
 
     L = _left_env(peps, i, ∂v[1:j-1])
     R = _right_env(peps, i, ∂v[j+2:peps.ncols+1])

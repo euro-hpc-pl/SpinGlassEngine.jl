@@ -35,6 +35,7 @@
     )
 
 
+    #for transform ∈ all_lattice_transformations
     for transform ∈ rotation.([0])
         peps = FusedNetwork(m, n, fg, transform, β=β)
         sol = low_energy_spectrum(peps, states_to_keep)#, merge_branches(peps, 1.0))

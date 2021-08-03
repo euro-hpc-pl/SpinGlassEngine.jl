@@ -94,7 +94,6 @@ function SpinGlassTensors.MPO(::Type{T},
     peps::FusedNetwork,
     i::Int
 ) where {T <: Number}
-
     W = MPO(T, 2 * peps.ncols)
 
     for j ∈ 1:peps.ncols
@@ -109,15 +108,12 @@ function SpinGlassTensors.MPO(::Type{T},
         h = build_connecting_tensor(peps, (i, j-1), (i, j))
 
         @tensor B[l, r] := p_l[l, x] * h[x, y] * p_r[r, y]    
-
         @cast C[l, (ũ, u), r, (d̃, d)] |= B[l, r] * p_lt[l, u] * p_rb[r, d] * 
                                          p_rt[r, ũ] * p_lb[l, d̃]
         W[2*j-1] = C
         
         A = build_central_tensor(peps, (i, j))
-        B = dropdims(sum(A, dims=5), dims=5)
-
-        W[2*j] = B   
+        W[2*j] = dropdims(sum(A, dims=5), dims=5) 
     end
     W
 end
@@ -158,7 +154,7 @@ function conditional_probability(peps::FusedNetwork, v::Vector{Int})
     W = MPO(peps, i, :up) * MPO(peps, i)
     ψ = MPS(peps, i+1)
 
-    ∂v = generate_boundary_states(peps, v, (i, j))
+    ∂v = boundary_state(peps, v, (i, j))
 
     L = _left_env(peps, i, ∂v[1:2*j-2])
     R = _right_env(peps, i, ∂v[2*j+2:peps.ncols*2+1])

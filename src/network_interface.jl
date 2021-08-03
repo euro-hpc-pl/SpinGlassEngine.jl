@@ -9,7 +9,7 @@ export
     interaction_energy,
     build_central_tensor,
     build_connecting_tensor,
-    generate_boundary_states,
+    boundary_state,
     local_state_for_node,
     iteration_order,
     fuse_projectors
@@ -148,44 +148,44 @@ ones_like(x::Number) = one(typeof(x))
 ones_like(x::Array) = ones(eltype(x), size(x))
 
 
-function generate_boundary_state(
+function _boundary_index(
     network::AbstractGibbsNetwork{S, T}, 
     v::S, 
-    w,#::S,
+    w,
     σ::Vector{Int}
-) where {S, T, N}
+) where {S, T}
     state = local_state_for_node(network, σ, v)
     if v ∉ vertices(network.network_graph) return ones_like(state) end
-    pv = projector(network, v, w)
+    pv = projector(network, v, w) 
     [findfirst(x -> x > 0, pv[i, :]) for i ∈ 1:size(pv)[1]][state]
 end
 
 
-function generate_boundary_state(
+function _boundary_index(
     network::AbstractGibbsNetwork{S, T}, 
     v::S, 
     w::S, 
     k::S, 
     l::S, 
     σ::Vector{Int}
-) where {S, T, N}
+) where {S, T}
 
     pv = projector(network, v, w)
 
-    ind_v = generate_boundary_state(network, v, w, σ)
-    ind_k = generate_boundary_state(network, k, l, σ)
+    ind_v = _boundary_index(network, v, w, σ)
+    ind_k = _boundary_index(network, k, l, σ)
 
     (ind_k - 1) * size(pv, 2) + ind_v
 end
 
 
-function generate_boundary_states(
+function boundary_state(
     network::AbstractGibbsNetwork{S, T},
     σ::Vector{Int},
     node::S
 ) where {S, T}
     [
-        generate_boundary_state(network, x..., σ)
+        _boundary_index(network, x..., σ)
         for x ∈ boundary_at_splitting_node(network, node)
     ]
 end
@@ -196,10 +196,7 @@ function generate_boundary_states(
     σ::Vector{Vector{Int}},
     node::S
 ) where {S, T}
-    [
-        generate_boundary_state.(Ref(network), Ref(x)..., σ)
-        for x ∈ boundary_at_splitting_node(network, node)
-    ]
+    boundary_state.(Ref(network), σ, Ref(node))
 end
 
 

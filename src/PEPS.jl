@@ -84,9 +84,9 @@ function SpinGlassTensors.MPO(::Type{T},
     W = MPO(T, peps.ncols)
 
     for j ∈ 1:peps.ncols
-        A = build_tensor(peps, (i, j))
+        A = build_central_tensor(peps, (i, j))
         Ã = dropdims(sum(A, dims=5), dims=5)
-        h = build_tensor(peps, (i, j-1), (i, j))
+        h = build_connecting_tensor(peps, (i, j-1), (i, j))
         @tensor B[l, u, r, d] := h[l, l̃] * Ã[l̃, u, r, d]
         W[j] = B
     end
@@ -108,7 +108,7 @@ function SpinGlassTensors.MPO(::Type{T},
     di = pos == :up ? 1 : 0
 
     for j ∈ 1:peps.ncols
-        v = build_tensor(peps, (i-di, j), (i-di+1, j))
+        v = build_connecting_tensor(peps, (i-di, j), (i-di+1, j))
         @cast A[_, u, _, d] := v[u, d]
         W[j] = A
     end
@@ -174,14 +174,14 @@ function conditional_probability(peps::PEPSNetwork, w::Vector{Int})
     L = _left_env(peps, i, ∂v[1:j-1])
     R = _right_env(peps, i, ∂v[j+2:peps.ncols+1])
 
-    h = build_tensor(peps, (i, j-1), (i, j))
-    v = build_tensor(peps, (i-1, j), (i, j))
+    h = build_connecting_tensor(peps, (i, j-1), (i, j))
+    v = build_connecting_tensor(peps, (i-1, j), (i, j))
 
     l, u = ∂v[j:j+1]
 
     h̃ = @view h[l, :]
     ṽ = @view v[u, :]
-    A = build_tensor(peps, (i, j))
+    A = build_central_tensor(peps, (i, j))
 
     @tensor B[r, d, σ] := h̃[l] * ṽ[u] * A[l, u, r, d, σ]
 

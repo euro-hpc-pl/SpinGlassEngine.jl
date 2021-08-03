@@ -7,8 +7,8 @@ export
     projectors,
     local_energy,
     interaction_energy,
-    build_central_tensor,
-    build_connecting_tensor,
+    central_tensor,
+    connecting_tensor,
     boundary_state,
     local_state_for_node,
     iteration_order,
@@ -116,7 +116,7 @@ function interaction_energy(
 end
 
 
-@memoize function build_central_tensor(
+@memoize function central_tensor(
     network::AbstractGibbsNetwork{S, T}, 
     v::S
 ) where {S, T}
@@ -133,7 +133,7 @@ end
 end
 
 
-@memoize function build_connecting_tensor(
+@memoize function connecting_tensor(
     network::AbstractGibbsNetwork{S, T},
     v::S, 
     w::S
@@ -151,9 +151,9 @@ ones_like(x::Array) = ones(eltype(x), size(x))
 function _boundary_index(
     network::AbstractGibbsNetwork{S, T}, 
     v::S, 
-    w,
+    w::Union{S, NTuple{N, S}},
     σ::Vector{Int}
-) where {S, T}
+) where {S, T, N}
     state = local_state_for_node(network, σ, v)
     if v ∉ vertices(network.network_graph) return ones_like(state) end
     pv = projector(network, v, w) 
@@ -169,12 +169,9 @@ function _boundary_index(
     l::S, 
     σ::Vector{Int}
 ) where {S, T}
-
     pv = projector(network, v, w)
-
     ind_v = _boundary_index(network, v, w, σ)
     ind_k = _boundary_index(network, k, l, σ)
-
     (ind_k - 1) * size(pv, 2) + ind_v
 end
 
@@ -201,7 +198,10 @@ function local_state_for_node(
 end
 
 
-function is_compatible(factor_graph, network_graph)
+function is_compatible(
+    factor_graph::LabelledGraph{T, NTuple{2, Int}}, 
+    network_graph::LabelledGraph{S, NTuple{2, Int}}
+) where {T, S}
     all(
         has_edge(network_graph, src(edge), dst(edge))
         for edge ∈ edges(factor_graph)

@@ -53,27 +53,18 @@ function merge_branches(network::AbstractGibbsNetwork{S, T}, energy_atol::Float6
         boundaries = hcat(
             boundary_state.(Ref(network), partial_sol.states, Ref(node))...
         )
-
-        println(boundaries)
         
         _unique_boundaries, indices = SpinGlassNetworks.unique_dims(boundaries, 1)
 
         sorting_idx = sortperm(indices)
         sorted_indices = indices[sorting_idx]
 
-        println(sorting_idx)
-        println(sorted_indices)
-
         start = 1
 
-        println(partial_sol.energies)
-        println(partial_sol.states)
-        println(partial_sol.probabilities)
-
-        energies = partial_sol.energies[sorting_idx]
-        states = partial_sol.states[sorting_idx]
-        probs = partial_sol.probabilities[sorting_idx]
-        degeneracy = partial_sol.degeneracy[sorting_idx]
+        energies = partial_sol.energies[sorted_indices]
+        states = partial_sol.states[sorted_indices]
+        probs = partial_sol.probabilities[sorted_indices]
+        degeneracy = partial_sol.degeneracy[sorted_indices]
 
         new_energies = []
         new_states = []

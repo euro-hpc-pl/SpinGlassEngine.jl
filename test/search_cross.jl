@@ -35,16 +35,16 @@
     )
 
 
-    #for transform ∈ all_lattice_transformations
-    for transform ∈ rotation.([0])
+    for transform ∈ all_lattice_transformations
+    #for transform ∈ rotation.([0])
         peps = FusedNetwork(m, n, fg, transform, β=β)
-        sol = low_energy_spectrum(peps, states_to_keep)#, merge_branches(peps, 1.0))
+        sol = low_energy_spectrum(peps, states_to_keep, merge_branches(peps, 1.0))
 
         #@test sol.energies[1:num_states] ≈ expected_energies
 
         println(sol.energies)
         #println(decode_factor_graph_state.(Ref(fg), sol.states))
-        println(sol.states)
-        println(sol.probabilities)
+        #println(sol.states)
+        #println(sol.probabilities)
     end
 end

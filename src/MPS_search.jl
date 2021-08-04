@@ -1,15 +1,6 @@
 using LabelledGraphs
 
-export MPSControl
 export solve
-
-struct MPSControl
-    max_bond::Int
-    var_ϵ::Number
-    max_sweeps::Int
-    β::Number
-    dβ::Number
-end
 
 _make_left_env(ψ::AbstractMPS, k::Int) = ones(eltype(ψ), 1, k)
 
@@ -69,7 +60,6 @@ function solve(ψ::AbstractMPS, keep::Int)
         @cast B[β, (l, d)] |= config[β, l, d]
         states = B[:, perm]
     end
-
     Vector.(eachcol(states[:, 1:keep])), lprob[1:keep], lpCut
 end
 
@@ -131,7 +121,6 @@ end
 function multiply_purifications(χ::T, ϕ::T, L::Int) where {T <: AbstractMPS}
     S = promote_type(eltype(χ), eltype(ϕ))
     ψ = T.name.wrapper(S, L)
-
     for i ∈ 1:L
         A1 = χ[i]
         A2 = ϕ[i]
@@ -148,7 +137,9 @@ _holes(l::Int, nbrs::Vector) = setdiff(l+1 : last(nbrs), nbrs)
 function _apply_layer_of_gates(
     ig::LabelledGraph, 
     ρ::AbstractMPS, 
-    control::MPSControl, 
+    max_bond::Int,
+    var_ϵ::Number,
+    max_sweeps::Int,
     dβ::Number
 )
     for i ∈ 1:nv(ig)
@@ -167,13 +158,12 @@ function _apply_layer_of_gates(
             end
         end
 
-        if bond_dimension(ρ) > control.max_bond
-            @info "Compresing MPS" bond_dimension(ρ), control.max_bond
+        if bond_dimension(ρ) > max_bond
             ρ = SpinGlassTensors.compress(
                     ρ, 
-                    control.max_bond, 
-                    control.var_ϵ, 
-                    control.max_sweeps
+                    max_bond, 
+                    var_ϵ, 
+                    max_sweeps
                 )
             is_right = true
         end
@@ -186,60 +176,52 @@ function _apply_layer_of_gates(
     ρ
 end
 
-function SpinGlassTensors.MPS(ig::LabelledGraph, control::MPSControl)
-
-    Dcut = control.max_bond
-    tol = control.var_ϵ
-    max_sweeps = control.max_sweeps
-    schedule = control.β
-    @info "Set control parameters for MPS" Dcut tol max_sweeps
-
-    @info "Preparing Hadamard state as MPS"
+function SpinGlassTensors.MPS(
+    ig::LabelledGraph, 
+    Dcut::Int,
+    var_ϵ::Number,
+    sweeps::Int,
+    schedule::Vector{<:Number}
+)
     ρ = HadamardMPS(values(get_prop(ig, :rank)))
-
-    @info "Sweeping through β and σ" schedule
     for dβ ∈ schedule
-        ρ = _apply_layer_of_gates(ig, ρ, control, dβ)
+        ρ = _apply_layer_of_gates(ig, ρ, Dcut, var_ϵ, sweeps, dβ)
     end
     ρ
 end
 
-function SpinGlassTensors.MPS(ig::LabelledGraph, control::MPSControl, type::Symbol)
+function SpinGlassTensors.MPS(
+    ig::LabelledGraph, 
+    Dcut::Int,
+    var_ϵ::Number,
+    sweeps::Int,
+    dβ::Number,
+    β::Number,
+    type::Symbol
+)
     L = nv(ig)
-    Dcut = control.max_bond
-    tol = control.var_ϵ
-    max_sweeps = control.max_sweeps
-    dβ = control.dβ
-    β = control.β
-    @info "Set control parameters for MPS" Dcut tol max_sweeps
-
-    @info "Preparing Hadamard state as MPS"
     ρ = HadamardMPS(values(get_prop(ig, :rank)))
     is_right = true
-    @info "Sweeping through β and σ" dβ
 
     if type == :log
         k = ceil(log2(β/dβ))
         dβmax = β/(2^k)
-        ρ = _apply_layer_of_gates(ig, ρ, control, dβmax)
-        for j ∈ 1:k
+        ρ = _apply_layer_of_gates(ig, ρ, Dcut, var_ϵ, sweeps, dβmax)
+        for _ ∈ 1:k
             ρ = multiply_purifications(ρ, ρ, L)
             if bond_dimension(ρ) > Dcut
-                @info "Compresing MPS" bond_dimension(ρ), Dcut
                 ρ = SpinGlassTensors.compress(ρ, Dcut, tol, max_sweeps)
                 is_right = true
             end
         end
-        ρ
     elseif type == :lin
         k = β/dβ
         dβmax = β/k
-        ρ = _apply_layer_of_gates(ig, ρ, control, dβmax)
+        ρ = _apply_layer_of_gates(ig, ρ, Dcut, var_ϵ, sweeps, dβmax)
         ρ0 = copy(ρ)
-        for j ∈ 1:k
+        for _ ∈ 1:k
             ρ = multiply_purifications(ρ, ρ0, L)
             if bond_dimension(ρ) > Dcut
-                @info "Compresing MPS" bond_dimension(ρ), Dcut
                 ρ = SpinGlassTensors.compress(ρ, Dcut, tol, max_sweeps)
                 is_right = true
             end
@@ -247,6 +229,7 @@ function SpinGlassTensors.MPS(ig::LabelledGraph, control::MPSControl, type::Symb
     end
     ρ
 end
+
 
 function HadamardMPS(::Type{T}, rank) where {T <: Number}
     vec = [ fill(one(T), r) ./ sqrt(T(r)) for r ∈ rank ]

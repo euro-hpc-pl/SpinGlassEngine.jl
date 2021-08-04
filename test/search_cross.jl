@@ -6,7 +6,7 @@
     n = 4
     t = 3
 
-    β = 1.
+    schedule = 1.
 
     L = n * m * t
     states_to_keep = 20

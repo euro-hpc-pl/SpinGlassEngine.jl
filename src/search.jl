@@ -47,12 +47,15 @@ end
 
 # TODO: convert probabilities to logarithms
 
-function merge_branches(network::AbstractGibbsNetwork{S, T}, energy_atol::Float64) where {S, T}
+function merge_branches(
+    network::AbstractGibbsNetwork{S, T}, 
+    energy_atol::Float64
+) where {S, T}
     function _merge(partial_sol::Solution)
         node = node_from_index(network, length(partial_sol.states[1])+1)
         boundaries = hcat(
-            boundary_state.(Ref(network), partial_sol.states, Ref(node))...
-        )'
+                        boundary_state.(Ref(network), partial_sol.states, Ref(node))...
+                    )'
 
         _unique_boundaries, indices = SpinGlassNetworks.unique_dims(boundaries, 1)
 

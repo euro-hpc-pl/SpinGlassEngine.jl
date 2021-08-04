@@ -52,8 +52,8 @@ function merge_branches(network::AbstractGibbsNetwork{S, T}, energy_atol::Float6
         node = node_from_index(network, length(partial_sol.states[1])+1)
         boundaries = hcat(
             boundary_state.(Ref(network), partial_sol.states, Ref(node))...
-        )
-        
+        )'
+
         _unique_boundaries, indices = SpinGlassNetworks.unique_dims(boundaries, 1)
 
         sorting_idx = sortperm(indices)
@@ -61,10 +61,10 @@ function merge_branches(network::AbstractGibbsNetwork{S, T}, energy_atol::Float6
 
         start = 1
 
-        energies = partial_sol.energies[sorted_indices]
-        states = partial_sol.states[sorted_indices]
-        probs = partial_sol.probabilities[sorted_indices]
-        degeneracy = partial_sol.degeneracy[sorted_indices]
+        energies = partial_sol.energies[sorting_idx]
+        states = partial_sol.states[sorting_idx]
+        probs = partial_sol.probabilities[sorting_idx]
+        degeneracy = partial_sol.degeneracy[sorting_idx]
 
         new_energies = []
         new_states = []
@@ -137,7 +137,6 @@ function low_energy_spectrum(network::AbstractGibbsNetwork, max_states::Int, mer
 
     # Sort using energies as keys
     outer_perm = sortperm(sol.energies)
-
     Solution(
         sol.energies[outer_perm],
         [σ[inner_perm] for σ ∈ sol.states[outer_perm]],

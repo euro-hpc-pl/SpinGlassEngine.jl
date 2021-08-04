@@ -81,7 +81,6 @@
         @test sol.energies ≈ exact_energies
         for (i, σ) ∈ enumerate(sol.states)
             @test σ ∈ exact_states[deg[i]]
-            #println(decode_factor_graph_state(fg, σ)) # this should work!
         end
     end
 end

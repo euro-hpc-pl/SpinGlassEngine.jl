@@ -74,7 +74,7 @@ function projector(
 end
 
 
-function fuse_projectors(projectors) 
+function fuse_projectors(projectors)
     fused, energy = rank_reveal(hcat(projectors...), :PE)
     i₀ = 1
     transitions = []
@@ -85,7 +85,6 @@ function fuse_projectors(projectors)
     end
     fused, transitions
 end
-
 
 function spectrum(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T}
     get_prop(factor_graph(network), vertex_map(network)(vertex), :spectrum)
@@ -106,13 +105,12 @@ function interaction_energy(
     vmap = vertex_map(network)
     fg_v, fg_w = vmap(v), vmap(w)
     if has_edge(fg, fg_w, fg_v)
-        en = get_prop(fg, fg_w, fg_v, :en)'
+        get_prop(fg, fg_w, fg_v, :en)'
     elseif has_edge(fg, fg_v, fg_w)
-        en = get_prop(fg, fg_v, fg_w, :en)
+        get_prop(fg, fg_v, fg_w, :en)
     else
-        en = zeros(1, 1)
+        zeros(1, 1)
     end
-    en
 end
 
 
@@ -170,9 +168,9 @@ function _boundary_index(
     σ::Vector{Int}
 ) where {S, T}
     pv = projector(network, v, w)
-    ind_v = _boundary_index(network, v, w, σ)
-    ind_k = _boundary_index(network, k, l, σ)
-    (ind_k - 1) * size(pv, 2) + ind_v
+    i = _boundary_index(network, v, w, σ)
+    j = _boundary_index(network, k, l, σ)
+    (j - 1) * size(pv, 2) + i
 end
 
 

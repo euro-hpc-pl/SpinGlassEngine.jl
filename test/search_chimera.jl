@@ -1,4 +1,4 @@
-@testset "Pathological instance" begin
+@testset "Chimera-like instance has the correct low energy spectrum" begin
     m = 3
     n = 4
     t = 3
@@ -58,11 +58,11 @@
         21 => 5, 22 => 5,
         )
 
-    # control_params = Dict(
-    #     "bond_dim" => typemax(Int),
-    #     "var_tol" => 1E-8,
-    #     "sweeps" => 4.
-    # )
+    control_params = Dict(
+         "bond_dim" => typemax(Int),
+         "var_tol" => 1E-8,
+         "sweeps" => 4.
+    )
 
     instance = "$(@__DIR__)/instances/pathological/chim_$(m)_$(n)_$(t).txt"
 
@@ -76,17 +76,12 @@
 
     for transform ∈ all_lattice_transformations
         peps = PEPSNetwork(m, n, fg, transform, β=β)
+        sol = low_energy_spectrum(peps, num_states)
 
-        # solve the problem using B & B
-        sol = low_energy_spectrum(peps, num_states, merge_branches(peps, 1.0))
-
-        @testset "has correct spectrum given the transformation $(transform)" begin
-            println(sol.energies)
-            #@test sol.energies ≈ exact_energies
-             #for (i, σ) ∈ enumerate(sol.states)
-             #    @test σ ∈ exact_states[deg[i]]
-                 #println(decode_factor_graph_state(fg, σ)) # this should work!
-             #end
+        @test sol.energies ≈ exact_energies
+        for (i, σ) ∈ enumerate(sol.states)
+            @test σ ∈ exact_states[deg[i]]
+            #println(decode_factor_graph_state(fg, σ)) # this should work!
         end
     end
 end

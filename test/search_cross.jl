@@ -1,13 +1,6 @@
-@testset "Pathological Pegasus instance works" begin
+@testset "Pegasus-like instance has the correct ground state energy" begin
 
-    # is this correct?
-    expected_energies = [-23.301855000000000, -23.221513000000002, -23.002799000000003,
-                         -22.922457000000005, -22.664197000000005, -22.583855000000000,
-                         -22.546913000000000, -22.530343000000002, -22.474668999999999, 
-                         -22.466571000000002
-                        ]
-
-    num_states = length(expected_energies)
+    ground_energy = -23.301855000000000
 
     m = 3
     n = 4
@@ -34,17 +27,9 @@
         cluster_assignment_rule=super_square_lattice((m, n, t)) 
     )
 
-
     for transform ∈ all_lattice_transformations
-    #for transform ∈ rotation.([0])
         peps = FusedNetwork(m, n, fg, transform, β=β)
         sol = low_energy_spectrum(peps, states_to_keep, merge_branches(peps, 1.0))
-
-        #@test sol.energies[1:num_states] ≈ expected_energies
-
-        println(sol.energies)
-        #println(decode_factor_graph_state.(Ref(fg), sol.states))
-        #println(sol.states)
-        #println(sol.probabilities)
+        @test first(sol.energies) ≈ ground_energy
     end
 end

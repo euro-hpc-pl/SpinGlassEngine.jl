@@ -21,16 +21,25 @@ end
     max_states = 100
     to_show = length(expected_energies)
 
-    dβ = 1.0
-    β = 1.0
-    schedule = fill(dβ, Int(ceil(β/dβ)))
-
+    dβ = 2.0
+    β = 2.0
+    
     Dcut = 32
     var_ϵ = 1E-8
     max_sweeps = 4
 
-    ψ = MPS(ig, Dcut, var_ϵ, max_sweeps, schedule)
-    states, lprob, _ = solve(ψ, max_states)
+    @testset "without purifications" begin
+        schedule = fill(dβ, Int(ceil(β/dβ)))
+        ψ = MPS(ig, Dcut, var_ϵ, max_sweeps, schedule)
+        println(dot(ψ, ψ))
+        states, lprob, _ = solve(ψ, max_states)
+        println(dot(ψ, ψ))
+        @test energy.(states[1:to_show], Ref(ig)) ≈ expected_energies
+    end
 
-    @test sort(energy.(states[1:to_show], Ref(ig))) ≈ expected_energies
+    #@testset "using purifications" begin
+    #    ψ = MPS(ig, Dcut, var_ϵ, max_sweeps, β, dβ, :lin)
+    #    states, lprob, _ = solve(ψ, max_states)
+    #    @test energy.(states[1:to_show], Ref(ig)) ≈ expected_energies
+    #end
 end 

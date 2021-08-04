@@ -72,7 +72,6 @@ function _apply_bias!(
 )
     M = ψ[i]
     h = get_prop(ig, i, :h)
-
     v = exp.(-0.5 * dβ * h * local_basis(ψ, i))
     @cast M[x, σ, y] = M[x, σ, y] * v[σ]
     ψ[i] = M
@@ -118,36 +117,34 @@ function _apply_nothing!(ψ::AbstractMPS, l::Int, i::Int)
 end
 
 
-function multiply_purifications(χ::T, ϕ::T, L::Int) where {T <: AbstractMPS}
+function purifications(χ::T, ϕ::T) where {T <: AbstractMPS}
     S = promote_type(eltype(χ), eltype(ϕ))
-    ψ = T.name.wrapper(S, L)
-    for i ∈ 1:L
-        A1 = χ[i]
-        A2 = ϕ[i]
-        @cast B[(l, x), σ, (r, y)] := A1[l, σ, r] * A2[x, σ, y]
-        ψ[i] = B
+    ψ = MPS(S, length(ϕ))
+    for (i, (A, B)) ∈ enumerate(zip(χ, ϕ))
+        @cast C[(l, l̃), σ, (r, r̃)] := A[l, σ, r] * B[l̃, σ, r̃]
+        ψ[i] = C
     end
     ψ
 end
+purifications(χ) = purifications(χ, χ) 
+
+_holes(l::Int, nbrs::Vector) = setdiff(l+1:last(nbrs), nbrs)
 
 
-_holes(l::Int, nbrs::Vector) = setdiff(l+1 : last(nbrs), nbrs)
-
-
-function _apply_layer_of_gates(
-    ig::LabelledGraph, 
+function _apply_layer_of_gates!(
     ρ::AbstractMPS, 
-    max_bond::Int,
+    ig::LabelledGraph, 
+    Dcut::Int,
     var_ϵ::Number,
-    max_sweeps::Int,
+    sweeps::Int,
     dβ::Number
 )
+    is_right = true
     for i ∈ 1:nv(ig)
         _apply_bias!(ρ, ig, dβ, i)
-
         is_right = false
-        nbrs = unique_neighbors(ig, i)
 
+        nbrs = unique_neighbors(ig, i)
         if !isempty(nbrs)
             _apply_projector!(ρ, i)
             for j ∈ nbrs
@@ -158,22 +155,17 @@ function _apply_layer_of_gates(
             end
         end
 
-        if bond_dimension(ρ) > max_bond
-            ρ = SpinGlassTensors.compress(
-                    ρ, 
-                    max_bond, 
-                    var_ϵ, 
-                    max_sweeps
-                )
+        if bond_dimension(ρ) > Dcut
+            ρ = SpinGlassTensors.compress(ρ, Dcut, var_ϵ, sweeps)
             is_right = true
         end
     end
-
-    if !is_right
+    println("right ", is_right)
+    if !is_right 
+        println("d ", dot(ρ, ρ))
         SpinGlassTensors.canonise!(ρ, :right)
-        is_right = true
+        println("dd ", dot(ρ, ρ))
     end
-    ρ
 end
 
 function SpinGlassTensors.MPS(
@@ -183,9 +175,10 @@ function SpinGlassTensors.MPS(
     sweeps::Int,
     schedule::Vector{<:Number}
 )
-    ρ = HadamardMPS(values(get_prop(ig, :rank)))
+    ρ = HadamardMPS(ig)
     for dβ ∈ schedule
-        ρ = _apply_layer_of_gates(ig, ρ, Dcut, var_ϵ, sweeps, dβ)
+        _apply_layer_of_gates!(ρ, ig, Dcut, var_ϵ, sweeps, dβ)
+        println("after layer: ", dot(ρ, ρ))
     end
     ρ
 end
@@ -197,42 +190,46 @@ function SpinGlassTensors.MPS(
     sweeps::Int,
     dβ::Number,
     β::Number,
-    type::Symbol
+    schedule::Symbol
 )
-    L = nv(ig)
-    ρ = HadamardMPS(values(get_prop(ig, :rank)))
+    ρ = HadamardMPS(ig)
     is_right = true
 
-    if type == :log
+    if schedule == :log
         k = ceil(log2(β/dβ))
-        dβmax = β/(2^k)
-        ρ = _apply_layer_of_gates(ig, ρ, Dcut, var_ϵ, sweeps, dβmax)
+        _apply_layer_of_gates!(ρ, ig, Dcut, var_ϵ, sweeps, β/(2^k))
         for _ ∈ 1:k
-            ρ = multiply_purifications(ρ, ρ, L)
+            ρ = purifications(ρ)
             if bond_dimension(ρ) > Dcut
-                ρ = SpinGlassTensors.compress(ρ, Dcut, tol, max_sweeps)
+                ρ = SpinGlassTensors.compress(ρ, Dcut, var_ϵ, sweeps)
                 is_right = true
             end
         end
-    elseif type == :lin
+    elseif schedule == :lin
         k = β/dβ
-        dβmax = β/k
-        ρ = _apply_layer_of_gates(ig, ρ, Dcut, var_ϵ, sweeps, dβmax)
-        ρ0 = copy(ρ)
+        _apply_layer_of_gates!(ρ, ig, Dcut, var_ϵ, sweeps, β/k)
         for _ ∈ 1:k
-            ρ = multiply_purifications(ρ, ρ0, L)
+            ρ = purifications(ρ)
             if bond_dimension(ρ) > Dcut
-                ρ = SpinGlassTensors.compress(ρ, Dcut, tol, max_sweeps)
+                ρ = SpinGlassTensors.compress(ρ, Dcut, var_ϵ, sweeps)
                 is_right = true
             end
         end
+    end
+    println("right ", is_right)
+    if !is_right 
+        println("d ", dot(ρ, ρ))
+        SpinGlassTensors.canonise!(ρ, :right)
+        println("dd ", dot(ρ, ρ))
     end
     ρ
 end
 
 
-function HadamardMPS(::Type{T}, rank) where {T <: Number}
-    vec = [ fill(one(T), r) ./ sqrt(T(r)) for r ∈ rank ]
-    MPS(vec)
+function HadamardMPS(::Type{T}, ig::IsingGraph) where T <: Number
+    MPS([
+        fill(one(T), r) ./ sqrt(T(r)) 
+        for r ∈ values(get_prop(ig, :rank))
+    ])
 end
-HadamardMPS(rank) = HadamardMPS(Float64, rank)
+HadamardMPS(ig) = HadamardMPS(Float64, ig)

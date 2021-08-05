@@ -42,12 +42,12 @@ end
 my_tests = []
 
 push!(my_tests,
-      #"network_operations.jl",
-      #"branch_and_bound.jl",
-      #"network_interface.jl",
-      "search_MPS.jl",
-      #"search_chimera.jl",
-      #"search_cross.jl",
+      "network_operations.jl",
+      "branch_and_bound.jl",
+      "network_interface.jl",
+      #"search_MPS.jl",
+      "search_chimera.jl",
+      "search_cross.jl",
 )
 
 for my_test in my_tests

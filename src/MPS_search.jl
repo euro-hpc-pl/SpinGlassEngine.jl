@@ -1,13 +1,48 @@
 using LabelledGraphs
 
-export solve
+export 
+    solve,
+    low_energy_spectrum,
+    prune
 
 _make_left_env(ψ::AbstractMPS, k::Int) = ones(eltype(ψ), 1, k)
 
 _make_LL(ψ::AbstractMPS, b::Int, k::Int, d::Int) = zeros(eltype(ψ), b, k, d)
 
 
-# ψ needs to be ∈ the right canonical form
+function prune(ig::IsingGraph) 
+    idx = findall(!iszero, degree(ig))
+    gg = ig[ig.labels[idx]]
+    labels = collect(vertices(gg.inner_graph))
+    reverse_label_map = Dict(i => i for i=1:nv(gg.inner_graph))
+    LabelledGraph(labels, gg.inner_graph, reverse_label_map)
+end
+
+
+function low_energy_spectrum(
+    ig::IsingGraph,
+    Dcut::Int, 
+    var_ϵ::T, 
+    max_sweeps::Int, 
+    dβ::T,
+    β::T,
+    schedule::Symbol, 
+    num_states::Int
+) where T <: Number
+
+    igp = prune(ig) 
+    ψ = MPS(igp, Dcut, var_ϵ, max_sweeps, dβ, β, schedule)
+    states, probs, ldp = solve(ψ, num_states)
+
+    Solution(
+        energy.(states, Ref(igp)),
+        states,
+        probs,
+        [0],
+        ldp
+    )
+end 
+
 function solve(ψ::AbstractMPS, keep::Int)
     @assert keep > 0 "Number of states has to be > 0"
     T = eltype(ψ)
@@ -72,7 +107,8 @@ function _apply_bias!(
 )
     M = ψ[i]
     h = get_prop(ig, i, :h)
-    v = exp.(-0.5 * dβ * h * local_basis(ψ, i))
+    σ = local_basis(ψ, i)
+    v = exp.(-0.5 * dβ * h * σ)
     @cast M[x, σ, y] = M[x, σ, y] * v[σ]
     ψ[i] = M
 end
@@ -90,7 +126,9 @@ function _apply_exponent!(
     D = typeof(M).name.wrapper(I(physical_dim(ψ, i)))
 
     J = get_prop(ig, i, j, :J)
-    C = exp.(-0.5 * dβ * J * local_basis(ψ, i) * local_basis(ψ, j)')
+    σ = local_basis(ψ, i)
+    η = local_basis(ψ, j)'
+    C = exp.(-0.5 * dβ * σ *J * η )
 
     if j == last
         @cast M̃[(x, a), σ, b] := C[x, σ] * M[a, σ, b]
@@ -131,9 +169,9 @@ purifications(χ) = purifications(χ, χ)
 _holes(l::Int, nbrs::Vector) = setdiff(l+1:last(nbrs), nbrs)
 
 
-function _apply_layer_of_gates!(
+function _apply_gates(
     ρ::AbstractMPS, 
-    ig::LabelledGraph, 
+    ig::IsingGraph, 
     Dcut::Int,
     var_ϵ::Number,
     sweeps::Int,
@@ -156,35 +194,38 @@ function _apply_layer_of_gates!(
         end
 
         if bond_dimension(ρ) > Dcut
+            println(Dcut, " ", var_ϵ, " ", sweeps)
             ρ = SpinGlassTensors.compress(ρ, Dcut, var_ϵ, sweeps)
             is_right = true
         end
     end
-    println("right ", is_right)
-    if !is_right 
-        println("d ", dot(ρ, ρ))
-        SpinGlassTensors.canonise!(ρ, :right)
-        println("dd ", dot(ρ, ρ))
-    end
+    if !is_right SpinGlassTensors.canonise!(ρ, :right) end
+    ρ
 end
 
+
 function SpinGlassTensors.MPS(
-    ig::LabelledGraph, 
+    ig::IsingGraph, 
     Dcut::Int,
     var_ϵ::Number,
     sweeps::Int,
     schedule::Vector{<:Number}
 )
     ρ = HadamardMPS(ig)
+    println(schedule)
+
     for dβ ∈ schedule
-        _apply_layer_of_gates!(ρ, ig, Dcut, var_ϵ, sweeps, dβ)
-        println("after layer: ", dot(ρ, ρ))
+        println(dβ)
+        ρ =_apply_gates(ρ, ig, Dcut, var_ϵ, sweeps, dβ)
+        println(SpinGlassTensors.is_right_normalized(ρ))
+        println(objectid(ρ), "  <--> ", dot(ρ, ρ))
     end
     ρ
 end
 
+
 function SpinGlassTensors.MPS(
-    ig::LabelledGraph, 
+    ig::IsingGraph,
     Dcut::Int,
     var_ϵ::Number,
     sweeps::Int,
@@ -196,8 +237,8 @@ function SpinGlassTensors.MPS(
     is_right = true
 
     if schedule == :log
-        k = ceil(log2(β/dβ))
-        _apply_layer_of_gates!(ρ, ig, Dcut, var_ϵ, sweeps, β/(2^k))
+        k = Int(ceil(log2(β/dβ)))
+        ρ =_apply_gates(ρ, ig, Dcut, var_ϵ, sweeps, β/(2^k))
         for _ ∈ 1:k
             ρ = purifications(ρ)
             if bond_dimension(ρ) > Dcut
@@ -206,9 +247,9 @@ function SpinGlassTensors.MPS(
             end
         end
     elseif schedule == :lin
-        k = β/dβ
-        _apply_layer_of_gates!(ρ, ig, Dcut, var_ϵ, sweeps, β/k)
-        for _ ∈ 1:k
+        k = ceil(β/dβ)
+        ρ = _apply_gates(ρ, ig, Dcut, var_ϵ, sweeps, β/k)
+        for _ ∈ 1:Int(k)
             ρ = purifications(ρ)
             if bond_dimension(ρ) > Dcut
                 ρ = SpinGlassTensors.compress(ρ, Dcut, var_ϵ, sweeps)
@@ -216,12 +257,7 @@ function SpinGlassTensors.MPS(
             end
         end
     end
-    println("right ", is_right)
-    if !is_right 
-        println("d ", dot(ρ, ρ))
-        SpinGlassTensors.canonise!(ρ, :right)
-        println("dd ", dot(ρ, ρ))
-    end
+    if !is_right SpinGlassTensors.canonise!(ρ, :right) end
     ρ
 end
 

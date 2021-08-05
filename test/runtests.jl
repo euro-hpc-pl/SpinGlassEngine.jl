@@ -45,7 +45,7 @@ push!(my_tests,
       #"network_operations.jl",
       #"branch_and_bound.jl",
       #"network_interface.jl",
-      "search_MPS.jl",
+      "search_MPS_2.jl",
       #"search_chimera.jl",
       #"search_cross.jl",
 )

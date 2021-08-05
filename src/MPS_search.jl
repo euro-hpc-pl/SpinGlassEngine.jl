@@ -194,7 +194,6 @@ function _apply_gates(
         end
 
         if bond_dimension(ρ) > Dcut
-            println(Dcut, " ", var_ϵ, " ", sweeps)
             ρ = SpinGlassTensors.compress(ρ, Dcut, var_ϵ, sweeps)
             is_right = true
         end
@@ -212,13 +211,8 @@ function SpinGlassTensors.MPS(
     schedule::Vector{<:Number}
 )
     ρ = HadamardMPS(ig)
-    println(schedule)
-
     for dβ ∈ schedule
-        println(dβ)
         ρ =_apply_gates(ρ, ig, Dcut, var_ϵ, sweeps, dβ)
-        println(SpinGlassTensors.is_right_normalized(ρ))
-        println(objectid(ρ), "  <--> ", dot(ρ, ρ))
     end
     ρ
 end
@@ -249,8 +243,9 @@ function SpinGlassTensors.MPS(
     elseif schedule == :lin
         k = ceil(β/dβ)
         ρ = _apply_gates(ρ, ig, Dcut, var_ϵ, sweeps, β/k)
+        ρ0 = copy(ρ)
         for _ ∈ 1:Int(k)
-            ρ = purifications(ρ)
+            ρ = purifications(ρ, ρ0)
             if bond_dimension(ρ) > Dcut
                 ρ = SpinGlassTensors.compress(ρ, Dcut, var_ϵ, sweeps)
                 is_right = true

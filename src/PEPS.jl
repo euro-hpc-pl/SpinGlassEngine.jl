@@ -5,7 +5,8 @@ export
     node_from_index, 
     drop_physical_index,
     initialize_MPS,
-    conditional_probability
+    conditional_probability,
+    MPO_gauge
 
 
 const DEFAULT_CONTROL_PARAMS = Dict(
@@ -123,6 +124,36 @@ end
 ) = MPO(Float64, peps, i, pos)
 
 
+function MPO_gauge(::Type{T},
+    network::PEPSNetwork,
+    i::Int,
+    pos::Symbol,
+    trans::Symbol = :none
+) where {T <: Number}
+    W = MPO(T, network.ncols)
+    for j ∈ 1:network.ncols
+        dim = size(interaction_energy(network, (i, j), (i+1, j)))
+        if pos == :up
+            E = Matrix(I, dim[2], dim[2])
+            @cast A[ _, u, _, d] := E[u, d]
+        else
+            E = Matrix(I, dim[1], dim[1])
+            @cast A[ _, u, _, d] := E[u, d]
+        end
+        W[j] = A
+    end
+    W
+end
+
+
+@memoize Dict MPO_gauge(
+network::PEPSNetwork,
+i::Int,
+pos::Symbol,
+trans::Symbol = :none
+) = MPO_gauge(Float64, network, i, pos, trans)
+
+
 function compress(
     ψ::AbstractMPS,
     peps::AbstractGibbsNetwork;
@@ -134,9 +165,13 @@ end
 
 @memoize Dict function SpinGlassTensors.MPS(peps::AbstractGibbsNetwork, i::Int)
     if i > peps.nrows return IdentityMPS() end
-    M = MPO(peps, i, :up) * MPO(peps, i) 
+
+    X = MPO_gauge(peps, i-1, :down) 
+    M = MPO(peps, i, :up) 
+    W = MPO(peps, i) 
+    X_inv = MPO_gauge(peps, i, :down, :inv)
     ψ = MPS(peps, i+1)
-    compress(M * ψ, peps)
+    compress((((X * M) * W) * X_inv) * ψ, peps)
 end
 
 

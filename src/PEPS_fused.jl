@@ -137,28 +137,31 @@ function MPO_gauge(::Type{T},
     network::FusedNetwork,
     i::Int,
     pos::Symbol,
-    trans::Symbol = :none
+    trans::Symbol=:none
 ) where {T <: Number}
     W = MPO(T, 2 * network.ncols)
     for j ∈ 1:network.ncols
-        dim = size(interaction_energy(network, (i, j), (i+1, j)))
-        dim_NW = size(interaction_energy(network, (i, j-1), (i+1, j)))
-        dim_NE = size(interaction_energy(network,(i, j), (i+1, j-1)))
-        if pos == :up
-            E = Matrix(I, dim[2], dim[2])
-            @cast A[ _, u, _, d] := E[u, d]
+        a, b = size(
+                interaction_energy(network, (i, j), (i+1, j))
+                )
+        c, d = size(
+                interaction_energy(network, (i, j-1), (i+1, j))
+                )
+        e, f = size(
+                interaction_energy(network, (i, j), (i+1, j-1))
+                )
 
-            E1 = Matrix(I, dim_NW[2], dim_NW[2])
-            E2 = Matrix(I, dim_NE[2], dim_NE[2])
-            @cast B[_, (u, ũ), _, (d, d̃)] := E1[u, d] * E2[ũ, d̃] 
-        else
-            E = Matrix(I, dim[1], dim[1])
-            @cast A[ _, u, _, d] := E[u, d]
+        dim_v = pos == :up ? b : a
+        dim_NW = pos == :up ? d : c
+        dim_NE = pos == :up ? f : e
 
-            E1 = Matrix(I, dim_NW[1], dim_NW[1])
-            E2 = Matrix(I, dim_NE[1], dim_NE[1])
-            @cast B[_, (u, ũ), _, (d, d̃)] := E1[u, d] * E2[ũ, d̃] 
-        end
+        E_v = Matrix(I, dim_v, dim_v)
+        E_NW = Matrix(I, dim_NW, dim_NW)
+        E_NE = Matrix(I, dim_NE, dim_NE)
+
+        @cast A[ _, u, _, d] := E_v[u, d]
+        @cast B[_, (u, ũ), _, (d, d̃)] := E_NW[u, d] * E_NE[ũ, d̃]
+
         W[2*j] = A
         W[2*j-1] = B
     end

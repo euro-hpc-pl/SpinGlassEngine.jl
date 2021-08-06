@@ -22,7 +22,7 @@ end
 
 include("network_operations.jl")
 include("network_interface.jl")
-include("MPS_search.jl")
+#include("MPS_search.jl")
 include("search.jl")
 include("PEPS.jl")
 include("PEPS_fused.jl")

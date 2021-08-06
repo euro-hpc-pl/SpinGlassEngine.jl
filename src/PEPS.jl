@@ -128,18 +128,16 @@ function MPO_gauge(::Type{T},
     network::PEPSNetwork,
     i::Int,
     pos::Symbol,
-    trans::Symbol = :none
+    trans::Symbol=:none
 ) where {T <: Number}
     W = MPO(T, network.ncols)
     for j ∈ 1:network.ncols
-        dim = size(interaction_energy(network, (i, j), (i+1, j)))
-        if pos == :up
-            E = Matrix(I, dim[2], dim[2])
-            @cast A[ _, u, _, d] := E[u, d]
-        else
-            E = Matrix(I, dim[1], dim[1])
-            @cast A[ _, u, _, d] := E[u, d]
-        end
+        a, b = size(
+                interaction_energy(network, (i, j), (i+1, j))
+                )
+        dim = pos == :up ? b : a 
+        E = Matrix(I, dim, dim)
+        @cast A[ _, u, _, d] := E[u, d]
         W[j] = A
     end
     W

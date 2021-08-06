@@ -3,7 +3,8 @@ export
     boundary_at_splitting_node,
     conditional_probability,
     update_energy,
-    projectors
+    projectors,
+    MPO_gauge
 
     
 function cross_lattice(m::Int, n::Int)
@@ -130,6 +131,48 @@ end
     i::Int,
     pos::Symbol
 ) = MPO(Float64, peps, i, pos)
+
+
+function MPO_gauge(::Type{T},
+    network::FusedNetwork,
+    i::Int,
+    pos::Symbol,
+    trans::Symbol = :none
+) where {T <: Number}
+    W = MPO(T, 2 * network.ncols)
+    for j ∈ 1:network.ncols
+        dim = size(interaction_energy(network, (i, j), (i+1, j)))
+        dim_NW = size(interaction_energy(network, (i, j-1), (i+1, j)))
+        dim_NE = size(interaction_energy(network,(i, j), (i+1, j-1)))
+        if pos == :up
+            E = Matrix(I, dim[2], dim[2])
+            @cast A[ _, u, _, d] := E[u, d]
+
+            E1 = Matrix(I, dim_NW[2], dim_NW[2])
+            E2 = Matrix(I, dim_NE[2], dim_NE[2])
+            @cast B[_, (u, ũ), _, (d, d̃)] := E1[u, d] * E2[ũ, d̃] 
+        else
+            E = Matrix(I, dim[1], dim[1])
+            @cast A[ _, u, _, d] := E[u, d]
+
+            E1 = Matrix(I, dim_NW[1], dim_NW[1])
+            E2 = Matrix(I, dim_NE[1], dim_NE[1])
+            @cast B[_, (u, ũ), _, (d, d̃)] := E1[u, d] * E2[ũ, d̃] 
+        end
+        W[2*j] = A
+        W[2*j-1] = B
+
+    end
+    W
+end
+
+
+@memoize Dict MPO_gauge(
+network::FusedNetwork,
+i::Int,
+pos::Symbol,
+trans::Symbol = :none
+) = MPO_gauge(Float64, network, i, pos, trans)
 
 
 function boundary_at_splitting_node(peps::FusedNetwork, node::NTuple{2, Int})

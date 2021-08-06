@@ -1,5 +1,5 @@
 using LabelledGraphs
-
+using LowRankApprox
 export 
     solve,
     low_energy_spectrum,
@@ -168,6 +168,35 @@ purifications(χ) = purifications(χ, χ)
 
 _holes(l::Int, nbrs::Vector) = setdiff(l+1:last(nbrs), nbrs)
 
+function ___svd(A::AbstractMatrix, Dcut::Int, args...)
+    U, Σ, V = psvd(A, rank=Dcut, args...)
+    d = maximum(U, dims=1)
+    d[d .≈ 0] .= -1
+    ph = d ./ abs.(d)
+    return  U * Diagonal(ph), Σ, V * Diagonal(ph)
+end
+
+function ___left_sweep_SVD!(ψ::AbstractMPS, Dcut::Int=typemax(Int))
+    Σ = U = ones(eltype(ψ), 1, 1)
+
+    for i ∈ length(ψ):-1:1
+        B = ψ[i]
+        C = U * (Diagonal(Σ) ./ Σ[1])
+
+        # attach
+        @tensor M[x, σ, y]   := B[x, σ, α] * C[α, y]
+        @cast   M̃[x, (σ, y)] |= M[x, σ, y]
+
+        # decompose
+        U, Σ, V = ___svd(M̃, Dcut)
+
+        # create new
+        d = physical_dim(ψ, i)
+        @cast B[x, σ, y] |= V'[x, (σ, y)] (σ ∈ 1:d)
+        ψ[i] = B
+    end
+    ψ[1] *= tr(U)
+end
 
 function _apply_gates(
     ρ::AbstractMPS, 
@@ -198,7 +227,9 @@ function _apply_gates(
             is_right = true
         end
     end
-    if !is_right SpinGlassTensors.canonise!(ρ, :right) end
+
+    #if !is_right SpinGlassTensors.canonise!(ρ, :right) end
+    if !is_right ___left_sweep_SVD!(ρ, Dcut) end
     ρ
 end
 

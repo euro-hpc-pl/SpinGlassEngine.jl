@@ -18,16 +18,14 @@
     Dcut = 32
     var_ϵ = 1E-8
     max_sweeps = 4
-
- #=   
-    @testset "without purifications" begin
+ 
+    @testset "without any purification" begin
         schedule = fill(dβ, Int(ceil(β/dβ)))
         ψ = MPS(ig, Dcut, var_ϵ, max_sweeps, schedule)
         states, lprob, _ = solve(ψ, max_states)
         @test energy.(states[1:to_show], Ref(ig)) ≈ expected_energies
-    end
-=#    
-
+    end  
+#=
     @testset "LES" begin
         sol = low_energy_spectrum(
             ig, Dcut, var_ϵ, max_sweeps, 
@@ -35,5 +33,5 @@
         )
         @test sol.energies[1:to_show] ≈ expected_energies
     end
-
+=#
 end 

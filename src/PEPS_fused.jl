@@ -161,7 +161,6 @@ function MPO_gauge(::Type{T},
         end
         W[2*j] = A
         W[2*j-1] = B
-
     end
     W
 end

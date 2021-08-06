@@ -124,6 +124,20 @@ end
 ) = MPO(Float64, peps, i, pos)
 
 
+function generate_gauge(
+    network::AbstractGibbsNetwork,
+    node::NTuple{2, Int},
+    pos::Symbol=:up
+)
+    i, j = node
+    di = pos == :up ? 1 : 0
+    a, b = size(interaction_energy(
+                network, (i-di, j), (i-di+1, j)
+            ))
+    d = pos == :up ? a : b 
+    Matrix(I, d, d)
+end
+
 function MPO_gauge(::Type{T},
     network::PEPSNetwork,
     i::Int,
@@ -132,12 +146,8 @@ function MPO_gauge(::Type{T},
 ) where {T <: Number}
     W = MPO(T, network.ncols)
     for j ∈ 1:network.ncols
-        a, b = size(
-                interaction_energy(network, (i, j), (i+1, j))
-                )
-        dim = pos == :up ? b : a 
-        E = Matrix(I, dim, dim)
-        @cast A[ _, u, _, d] := E[u, d]
+        X = generate_gauge(network, (i, j), pos)
+        @cast A[_, u, _, d] := X[u, d]
         W[j] = A
     end
     W
@@ -163,11 +173,10 @@ end
 
 @memoize Dict function SpinGlassTensors.MPS(peps::AbstractGibbsNetwork, i::Int)
     if i > peps.nrows return IdentityMPS() end
-
-    X = MPO_gauge(peps, i-1, :down) 
+    X = MPO_gauge(peps, i, :up) 
     M = MPO(peps, i, :up) 
     W = MPO(peps, i) 
-    X_inv = MPO_gauge(peps, i, :down, :inv)
+    X_inv = MPO_gauge(peps, i+1, :up, :inv)
     ψ = MPS(peps, i+1)
     compress((((X * M) * W) * X_inv) * ψ, peps)
 end

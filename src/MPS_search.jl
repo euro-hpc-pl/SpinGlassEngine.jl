@@ -170,7 +170,7 @@ _holes(l::Int, nbrs::Vector) = setdiff(l+1:last(nbrs), nbrs)
 
 function ___svd(A::AbstractMatrix, Dcut::Int, args...)
     U, Σ, V = psvd(A, rank=Dcut, args...)
-    d = maximum(U, dims=1)
+    d = U[1, :]
     d[d .≈ 0] .= -1
     ph = d ./ abs.(d)
     return  U * Diagonal(ph), Σ, V * Diagonal(ph)

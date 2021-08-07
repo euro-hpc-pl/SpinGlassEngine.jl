@@ -141,28 +141,12 @@ function MPO_gauge(::Type{T},
 ) where {T <: Number}
     W = MPO(T, 2 * network.ncols)
     for j ∈ 1:network.ncols
-        a, b = size(
-                interaction_energy(network, (i, j), (i+1, j))
-                )
-        c, d = size(
-                interaction_energy(network, (i, j-1), (i+1, j))
-                )
-        e, f = size(
-                interaction_energy(network, (i, j), (i+1, j-1))
-                )
-
-        dim_v = pos == :up ? b : a
-        dim_NW = pos == :up ? d : c
-        dim_NE = pos == :up ? f : e
-
-        E_v = Matrix(I, dim_v, dim_v)
-        E_NW = Matrix(I, dim_NW, dim_NW)
-        E_NE = Matrix(I, dim_NE, dim_NE)
-
-        @cast A[ _, u, _, d] := E_v[u, d]
-        @cast B[_, (u, ũ), _, (d, d̃)] := E_NW[u, d] * E_NE[ũ, d̃]
-
+        X = generate_gauge(network, (i, j), pos)
+        Y = generate_gauge(network, (i, j), pos, :diag)
+        Z = generate_gauge(network, (i, j), pos, :antydiag)
+        @cast A[_, u, _, d] := X[u, d]
         W[2*j] = A
+        @cast B[_, (u, ũ), _, (d, d̃)] := Y[u, d] * Z[ũ, d̃]
         W[2*j-1] = B
     end
     W

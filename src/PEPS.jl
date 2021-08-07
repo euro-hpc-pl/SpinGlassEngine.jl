@@ -6,6 +6,7 @@ export
     drop_physical_index,
     initialize_MPS,
     conditional_probability,
+    generate_gauge,
     MPO_gauge
 
 
@@ -127,16 +128,25 @@ end
 function generate_gauge(
     network::AbstractGibbsNetwork,
     node::NTuple{2, Int},
-    pos::Symbol=:up
+    pos::Symbol=:up,
+    trans::Symbol=:none
 )
     i, j = node
     di = pos == :up ? 1 : 0
-    a, b = size(interaction_energy(
+    if trans == :none
+        a, b = size(interaction_energy(
                 network, (i-di, j), (i-di+1, j)
             ))
+    else
+        dj = trans == :diag ? 1 : 0 
+        a, b = size(interaction_energy(
+                network, (i-di, j-dj), (i-di+1, j+dj-1)
+            ))
+    end
     d = pos == :up ? a : b 
     Matrix(I, d, d)
 end
+
 
 function MPO_gauge(::Type{T},
     network::PEPSNetwork,

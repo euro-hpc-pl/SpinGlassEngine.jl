@@ -3,8 +3,7 @@ export
     boundary_at_splitting_node,
     conditional_probability,
     update_energy,
-    projectors,
-    MPO_gauge
+    projectors
 
     
 function cross_lattice(m::Int, n::Int)
@@ -69,7 +68,7 @@ function projectors(network::FusedNetwork, vertex::NTuple{2, Int})
 end
 
 
-function SpinGlassTensors.MPO(::Type{T},
+function MPO_connecting(::Type{T},
     peps::FusedNetwork,
     i::Int,
     pos::Symbol
@@ -126,11 +125,11 @@ end
 ) = SpinGlassTensors.MPO(Float64, peps, i)
 
 
-@memoize Dict SpinGlassTensors.MPO(
+@memoize Dict MPO_connecting(
     peps::FusedNetwork,
     i::Int,
     pos::Symbol
-) = MPO(Float64, peps, i, pos)
+) = MPO_connecting(Float64, peps, i, pos)
 
 
 function MPO_gauge(::Type{T},
@@ -180,7 +179,7 @@ end
 function conditional_probability(peps::FusedNetwork, v::Vector{Int})   
     i, j = node_from_index(peps, length(v)+1)
 
-    W = MPO(peps, i, :up) * MPO(peps, i)
+    W = MPO_connecting(peps, i, :up) * MPO(peps, i)
     ψ = MPS(peps, i+1)
 
     ∂v = boundary_state(peps, v, (i, j))

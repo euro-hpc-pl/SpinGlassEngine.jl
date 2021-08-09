@@ -7,6 +7,7 @@ export
     initialize_MPS,
     conditional_probability,
     generate_gauge,
+    MPO_connecting,
     MPO_gauge
 
 
@@ -25,7 +26,7 @@ end
 
 
 @memoize Dict function _right_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int}) 
-    M = MPO(peps, i, :up) 
+    M = MPO_connecting(peps, i, :up) 
     W = MPO(peps, i)
     ψ = MPS(peps, i+1)
     right_env(ψ, M * W, ∂v)
@@ -101,7 +102,7 @@ end
 ) = MPO(Float64, peps, i)
 
 
-function SpinGlassTensors.MPO(::Type{T},
+function MPO_connecting(::Type{T},
     peps::PEPSNetwork,
     i::Int,
     pos::Symbol
@@ -118,11 +119,11 @@ function SpinGlassTensors.MPO(::Type{T},
 end
 
 
-@memoize Dict SpinGlassTensors.MPO(
+@memoize Dict MPO_connecting(
     peps::PEPSNetwork,
     i::Int,
     pos::Symbol
-) = MPO(Float64, peps, i, pos)
+) = MPO_connecting(Float64, peps, i, pos)
 
 
 function generate_gauge(
@@ -184,7 +185,7 @@ end
 @memoize Dict function SpinGlassTensors.MPS(peps::AbstractGibbsNetwork, i::Int)
     if i > peps.nrows return IdentityMPS() end
     X = MPO_gauge(peps, i, :up) 
-    M = MPO(peps, i, :up) 
+    M = MPO_connecting(peps, i, :up) 
     W = MPO(peps, i) 
     X_inv = MPO_gauge(peps, i+1, :up, :inv)
     ψ = MPS(peps, i+1)

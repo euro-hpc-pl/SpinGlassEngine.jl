@@ -22,7 +22,7 @@
         igp = prune(ig) 
         schedule = fill(dβ, Int(ceil(β/dβ)))
         ψ = MPS(igp, Dcut, var_ϵ, max_sweeps, schedule)
-        states, lprob, _ = solve(ψ, max_states)
+        states, lprob, _ = solve(ψ, mncbrax_states)
         @test energy.(states[1:to_show], Ref(igp)) ≈ expected_energies
     end  
 #=

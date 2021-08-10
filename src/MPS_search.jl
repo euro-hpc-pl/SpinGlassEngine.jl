@@ -1,23 +1,13 @@
 using LabelledGraphs
-using LowRankApprox
+
 export 
     solve,
-    low_energy_spectrum,
-    prune
+    low_energy_spectrum
 
 _make_left_env(ψ::AbstractMPS, k::Int) = ones(eltype(ψ), 1, k)
 
 _make_LL(ψ::AbstractMPS, b::Int, k::Int, d::Int) = zeros(eltype(ψ), b, k, d)
 
-
-function prune(ig::IsingGraph) 
-    idx = findall(!iszero, degree(ig))
-    gg = ig[ig.labels[idx]]
-    labels = collect(vertices(gg.inner_graph))
-    reverse_label_map = Dict(i => i for i=1:nv(gg.inner_graph))
-    LabelledGraph(labels, gg.inner_graph, reverse_label_map)
-end
-# test
 
 function low_energy_spectrum(
     ig::IsingGraph,
@@ -228,8 +218,7 @@ function _apply_gates(
         end
     end
 
-    #if !is_right SpinGlassTensors.canonise!(ρ, :right) end
-    if !is_right ___left_sweep_SVD!(ρ, Dcut) end
+    if !is_right SpinGlassTensors.canonise!(ρ, :right) end
     ρ
 end
 

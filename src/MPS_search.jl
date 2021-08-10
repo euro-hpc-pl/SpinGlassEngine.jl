@@ -17,7 +17,7 @@ function prune(ig::IsingGraph)
     reverse_label_map = Dict(i => i for i=1:nv(gg.inner_graph))
     LabelledGraph(labels, gg.inner_graph, reverse_label_map)
 end
-
+# test
 
 function low_energy_spectrum(
     ig::IsingGraph,

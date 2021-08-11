@@ -26,7 +26,7 @@ end
 
 
 @memoize Dict function _right_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int}) 
-    M = MPO_connecting(peps, i, :up) 
+    M = MPO_connecting(peps, i - 1//2) 
     W = MPO(peps, i)
     ψ = MPS(peps, i+1)
     right_env(ψ, M * W, ∂v)
@@ -105,14 +105,11 @@ end
 
 function MPO_connecting(::Type{T},
     peps::PEPSNetwork,
-    i::Int,
-    pos::Symbol
+    r::Rational{Int}  # r == n + 1//2
 ) where {T <: Number}
     W = MPO(T, peps.ncols)
-    di = pos == :up ? 1 : 0
-
     for j ∈ 1:peps.ncols
-        v = connecting_tensor(peps, (i-di, j), (i-di+1, j))
+        v = connecting_tensor(peps, (floor(Int, r), j), (ceil(Int, r), j))
         @cast A[_, u, _, d] := v[u, d]
         W[j] = A
     end
@@ -122,9 +119,8 @@ end
 
 @memoize Dict MPO_connecting(
     peps::PEPSNetwork,
-    i::Int,
-    pos::Symbol
-) = MPO_connecting(Float64, peps, i, pos)
+    r::Rational{Int}
+) = MPO_connecting(Float64, peps, r)
 
 
 # function update_gauges!(
@@ -202,12 +198,13 @@ end
 
 @memoize Dict function SpinGlassTensors.MPS(peps::AbstractGibbsNetwork, i::Int)
     if i > peps.nrows return IdentityMPS() end
-    X = MPO_gauge(peps, i, :up) 
-    M = MPO_connecting(peps, i, :up) 
+    # X = MPO_gauge(peps, i, :up) 
+    M = MPO_connecting(peps, i - 1//2) 
     W = MPO(peps, i) 
-    Y_inv = MPO_gauge(peps, i+1, :up, :inv)
+    # Y_inv = MPO_gauge(peps, i+1, :up, :inv)
     ψ = MPS(peps, i+1)
-    compress((((X * M) * W) * Y_inv) * ψ, peps)
+    compress((M * W) * ψ, peps)
+    # compress((((X * M) * W) * Y_inv) * ψ, peps)
 end
 
 

@@ -70,20 +70,21 @@ end
 
 function MPO_connecting(::Type{T},
     peps::FusedNetwork,
-    i::Int,
-    pos::Symbol
+    r::Rational{Int}
 ) where {T <: Number}
     W = MPO(T, 2 * peps.ncols)
-    di = pos == :up ? 1 : 0
+
+    id = floor(Int, r)
+    iu = ceil(Int, r)
 
     for j ∈ 1:peps.ncols
-        NW = connecting_tensor(peps, (i-1, j-1), (i, j))
-        NE = connecting_tensor(peps, (i-1, j), (i, j-1))
+        NW = connecting_tensor(peps, (id, j-1), (iu, j))
+        NE = connecting_tensor(peps, (id, j), (iu, j-1))
 
         @cast B[_, (u, ũ), _, (d, d̃)] := NW[u, d] * NE[ũ, d̃] 
         W[2*j-1] = B
 
-        v = connecting_tensor(peps, (i-di, j), (i-di+1, j))
+        v = connecting_tensor(peps, (id, j), (iu, j))
         @cast A[_, u, _, d] := v[u, d]
         W[2*j] = A
     end
@@ -127,9 +128,8 @@ end
 
 @memoize Dict MPO_connecting(
     peps::FusedNetwork,
-    i::Int,
-    pos::Symbol
-) = MPO_connecting(Float64, peps, i, pos)
+    r::Rational{Int}
+) = MPO_connecting(Float64, peps, r)
 
 
 function MPO_gauge(::Type{T},
@@ -179,7 +179,7 @@ end
 function conditional_probability(peps::FusedNetwork, v::Vector{Int})   
     i, j = node_from_index(peps, length(v)+1)
 
-    W = MPO_connecting(peps, i, :up) * MPO(peps, i)
+    W = MPO_connecting(peps, i - 1//2) * MPO(peps, i)
     ψ = MPS(peps, i+1)
 
     ∂v = boundary_state(peps, v, (i, j))

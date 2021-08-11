@@ -51,6 +51,7 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     bond_dim::Int
     var_tol::Real
     sweeps::Int
+    # gauges::Dict
 
 
     function PEPSNetwork(
@@ -126,6 +127,23 @@ end
 ) = MPO_connecting(Float64, peps, i, pos)
 
 
+# function update_gauges!(
+#     network::AbstractGibbsNetwork
+#     parameters::Symbol
+# )
+#     loop = [((i, :row), (i, :down))... for i ∈ 1:network.ncols]
+
+#     for (i, sym) ∈ loop[1:end-1], j ∈ 1:network.nrows
+#         X = sym == :row ? network.gauges(i - 1, j, :down)[2] : network.gauges(i, j, :row)[2]
+#         Xinv = 1 ./ X
+#         dc = sym == :row ? 1 : 2
+#         d = size(interaction_energy(network, (i, j), (i + 1, j)), dc)
+#         Y = rand(d) .+ 0.1
+#         push!(network.gauges, (i, j, sym) => (Xinv, Y))
+#     end
+# end
+
+
 function generate_gauge(
     network::AbstractGibbsNetwork,
     node::NTuple{2, Int},
@@ -187,9 +205,9 @@ end
     X = MPO_gauge(peps, i, :up) 
     M = MPO_connecting(peps, i, :up) 
     W = MPO(peps, i) 
-    X_inv = MPO_gauge(peps, i+1, :up, :inv)
+    Y_inv = MPO_gauge(peps, i+1, :up, :inv)
     ψ = MPS(peps, i+1)
-    compress((((X * M) * W) * X_inv) * ψ, peps)
+    compress((((X * M) * W) * Y_inv) * ψ, peps)
 end
 
 

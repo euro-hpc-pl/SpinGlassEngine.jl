@@ -1,4 +1,6 @@
 
+using SpinGlassNetworks
+
 @testset "MPS based search finds the correct low energy spectrum" begin
 
     instance = "$(@__DIR__)/instances/pathological/cross_3_4_dd.txt"

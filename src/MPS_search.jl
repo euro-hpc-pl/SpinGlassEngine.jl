@@ -7,17 +7,6 @@ _make_left_env(ψ::AbstractMPS, k::Int) = ones(eltype(ψ), 1, k)
 
 _make_LL(ψ::AbstractMPS, b::Int, k::Int, d::Int) = zeros(eltype(ψ), b, k, d)
 
-
-# to be removed
-function prune(ig::IsingGraph) 
-    idx = findall(!iszero, degree(ig))
-    gg = ig[ig.labels[idx]]
-    labels = collect(vertices(gg.inner_graph))
-    reverse_label_map = Dict(i => i for i=1:nv(gg.inner_graph))
-    LabelledGraph(labels, gg.inner_graph, reverse_label_map)
-end
-
-
 function low_energy_spectrum(
     ig::IsingGraph,
     Dcut::Int, 

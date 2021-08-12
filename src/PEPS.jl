@@ -8,8 +8,7 @@ export
     conditional_probability,
     generate_gauge,
     MPO_connecting,
-    MPO_gauge,
-    update_gauges!
+    MPO_gauge
 
 
 const DEFAULT_CONTROL_PARAMS = Dict(
@@ -127,26 +126,6 @@ end
     peps::PEPSNetwork,
     r::Rational{Int}
 ) = MPO_connecting(Float64, peps, r)
-
-
-function update_gauges!(
-    network::AbstractGibbsNetwork,
-    type::Symbol=:rand
-)
-    for i ∈ 1:network.nrows - 1, j ∈ 1:network.ncols
-        d1, d2 = size(interaction_energy(network, (i, j), (i + 1, j)))
-        Y = type == :id ? ones(d1) : rand(d1) .+ 0.1
-        push!(network.gauges, (i + 1//6, j) => Y)
-        push!(network.gauges, (i + 2//6, j) => 1 ./ Y)
-        Z = type == :id ? ones(d2) : rand(d2) .+ 0.1
-        push!(network.gauges, (i + 4//6, j) => Z)
-        push!(network.gauges, (i + 5//6, j) => 1 ./ Z)
-    end
-    for j ∈ 1:network.ncols
-        push!(network.gauges, (network.nrows + 1//6, j) => ones(1))
-        push!(network.gauges, (-1//6, j) => ones(1))
-    end
-end
 
 
 function MPO_gauge(::Type{T},

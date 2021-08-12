@@ -1,11 +1,23 @@
 export 
     solve,
-    low_energy_spectrum
+    low_energy_spectrum,
+    _prune
 
     
 _make_left_env(ψ::AbstractMPS, k::Int) = ones(eltype(ψ), 1, k)
 
 _make_LL(ψ::AbstractMPS, b::Int, k::Int, d::Int) = zeros(eltype(ψ), b, k, d)
+
+
+# to be removed
+function _prune(ig::IsingGraph) 
+    idx = findall(!iszero, degree(ig))
+    gg = ig[ig.labels[idx]]
+    labels = collect(vertices(gg.inner_graph))
+    reverse_label_map = Dict(i => i for i=1:nv(gg.inner_graph))
+    LabelledGraph(labels, gg.inner_graph, reverse_label_map)
+end
+
 
 function low_energy_spectrum(
     ig::IsingGraph,
@@ -18,17 +30,13 @@ function low_energy_spectrum(
     num_states::Int
 ) where T <: Number
 
-    igp = prune(ig) 
+    igp = _prune(ig) 
     ψ = MPS(igp, Dcut, var_ϵ, max_sweeps, dβ, β, schedule)
     states, probs, ldp = solve(ψ, num_states)
 
-    Solution(
-        energy.(states, Ref(igp)),
-        states,
-        probs,
-        [0],
-        ldp
-    )
+    en = energy.(states, Ref(igp))
+    idx = sortperm(en)
+    Solution(en[idx], states[idx], probs[idx], [0], ldp)
 end 
 
 function solve(ψ::AbstractMPS, keep::Int)
@@ -156,13 +164,6 @@ purifications(χ) = purifications(χ, χ)
 
 _holes(l::Int, nbrs::Vector) = setdiff(l+1:last(nbrs), nbrs)
 
-function ___svd(A::AbstractMatrix, Dcut::Int, args...)
-    U, Σ, V = psvd(A, rank=Dcut, args...)
-    d = U[1, :]
-    d[d .≈ 0] .= -1
-    ph = d ./ abs.(d)
-    return  U * Diagonal(ph), Σ, V * Diagonal(ph)
-end
 
 function _apply_gates(
     ρ::AbstractMPS, 

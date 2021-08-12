@@ -8,7 +8,8 @@ export
     conditional_probability,
     generate_gauge,
     MPO_connecting,
-    MPO_gauge
+    MPO_gauge,
+    update_gauges!
 
 
 const DEFAULT_CONTROL_PARAMS = Dict(
@@ -51,7 +52,7 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     bond_dim::Int
     var_tol::Real
     sweeps::Int
-    gauges::Dict
+    gauges::Dict{Tuple{Rational{Int}, Int}, Vector{Real}}
 
 
     function PEPSNetwork(
@@ -72,7 +73,7 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         end
         gauges = Dict()
         network = new(factor_graph, ng, vmap, m, n, nrows, ncols, β, bond_dim, var_tol, sweeps, gauges)
-        update_gauges!(network)
+        update_gauges!(network, :id)
         network
     end
 end
@@ -83,6 +84,7 @@ function projectors(network::PEPSNetwork, vertex::NTuple{2, Int})
     neighbours = ((i, j-1), (i-1, j), (i, j+1), (i+1, j))
     projector.(Ref(network), Ref(vertex), neighbours)
 end
+
 
 function SpinGlassTensors.MPO(::Type{T},
     peps::PEPSNetwork,
@@ -99,6 +101,7 @@ function SpinGlassTensors.MPO(::Type{T},
     end
     W
 end
+
 
 @memoize Dict SpinGlassTensors.MPO(
     peps::PEPSNetwork,
@@ -128,20 +131,20 @@ end
 
 function update_gauges!(
     network::AbstractGibbsNetwork,
-    type::Symbol = :id
+    type::Symbol=:rand
 )
     for i ∈ 1:network.nrows - 1, j ∈ 1:network.ncols
         d1, d2 = size(interaction_energy(network, (i, j), (i + 1, j)))
         Y = type == :id ? ones(d1) : rand(d1) .+ 0.1
         push!(network.gauges, (i + 1//6, j) => Y)
         push!(network.gauges, (i + 2//6, j) => 1 ./ Y)
-        #Z = type == :id ? ones(d2) : rand(d2) .+ 0.1
-        #push!(network.gauges, (i + 4//6, j) => Z)
-        #push!(network.gauges, (i + 5//6, j) => 1 ./ Z)
+        Z = type == :id ? ones(d2) : rand(d2) .+ 0.1
+        push!(network.gauges, (i + 4//6, j) => Z)
+        push!(network.gauges, (i + 5//6, j) => 1 ./ Z)
     end
     for j ∈ 1:network.ncols
         push!(network.gauges, (network.nrows + 1//6, j) => ones(1))
-        # push!(network.gauges, ( - 1//6, j) => ones(1))
+        push!(network.gauges, (-1//6, j) => ones(1))
     end
 end
 
@@ -153,8 +156,7 @@ function MPO_gauge(::Type{T},
     W = MPO(T, network.ncols)
     for j ∈ 1:network.ncols
         X = network.gauges[(r, j)]
-        Xd = Diagonal(X)
-        @cast A[_, u, _, d] := Xd[u, d]
+        @cast A[_, u, _, d] := Diagonal(X)[u, d]
         W[j] = A
     end
     W
@@ -179,12 +181,15 @@ end
 @memoize Dict function SpinGlassTensors.MPS(peps::AbstractGibbsNetwork, i::Int)
     if i > peps.nrows return IdentityMPS() end
     ψ = MPS(peps, i+1)
-    # layers = [1//6, 0, - 3//6, - 4//6]
-    # MPOS = [MPO_row(peps, r) for r ∈ layers]
+
+    #new concept
+    #for r ∈ layers ψ *= MPO(peps, r) end
+    #compress(ψ, peps)
+
     Y = MPO_gauge(peps, i + 1 - 5//6)
     W = MPO(peps, i) 
-    M = MPO_connecting(peps, i - 3 // 6)
-    X = MPO_gauge(peps, i - 4 // 6)
+    M = MPO_connecting(peps, i - 3//6)
+    X = MPO_gauge(peps, i - 4//6)
     compress((((X * M) * W) * Y) * ψ, peps)
 end
 

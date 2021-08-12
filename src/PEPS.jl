@@ -10,15 +10,6 @@ export
     MPO_connecting,
     MPO_gauge
 
-
-const DEFAULT_CONTROL_PARAMS = Dict(
-    "bond_dim" => typemax(Int),
-    "var_tol" => 1E-8,
-    "sweeps" => 4.,
-    "β" => 1.
-)
-
-
 function peps_lattice(m::Int, n::Int)
     labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
     LabelledGraph(labels, grid((m, n)))

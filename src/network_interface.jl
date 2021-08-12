@@ -12,7 +12,8 @@ export
     boundary_state,
     local_state_for_node,
     iteration_order,
-    fuse_projectors
+    fuse_projectors,
+    update_gauges!
 
 # S: type of the vertex of network
 # T: type of the vertex of underlying factor graph
@@ -204,4 +205,26 @@ function is_compatible(
         has_edge(network_graph, src(edge), dst(edge))
         for edge ∈ edges(factor_graph)
     )
+end
+
+
+function update_gauges!(
+    network::AbstractGibbsNetwork,
+    type::Symbol=:rand
+)
+    N = 6
+    @assert type ∈ (:id, :rand)
+    for i ∈ 1:network.nrows - 1, j ∈ 1:network.ncols
+        a, b = size(interaction_energy(network, (i, j), (i + 1, j)))
+        Y = type == :id ? ones(a) : rand(a) .+ 0.1
+        push!(network.gauges, (i + 1//N, j) => Y)
+        push!(network.gauges, (i + 2//N, j) => 1 ./ Y)
+        Z = type == :id ? ones(b) : rand(b) .+ 0.1
+        push!(network.gauges, (i + 4//N, j) => Z)
+        push!(network.gauges, (i + 5//N, j) => 1 ./ Z)
+    end
+    for j ∈ 1:network.ncols
+        push!(network.gauges, (network.nrows + 1//N, j) => ones(1))
+        push!(network.gauges, (-1//N, j) => ones(1))
+    end
 end

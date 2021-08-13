@@ -53,7 +53,7 @@ function projector(
     fg = factor_graph(network)
     vmap = vertex_map(network)
     fg_v, fg_w = vmap(v), vmap(w)
-
+    
     if has_edge(fg, fg_w, fg_v)
         get_prop(fg, fg_w, fg_v, :pr)'
     elseif has_edge(fg, fg_v, fg_w)
@@ -132,6 +132,81 @@ end
 end
 
 
+function _traced_tensor(
+    network::AbstractGibbsNetwork{S, T}, 
+    v::S
+) where {S, T}
+    A = central_tensor(network, v)
+    dropdims(sum(A, dims=5), dims=5)
+end
+
+
+function _vertical_central_tensor(
+    network::AbstractGibbsNetwork{S, T}, 
+    v::Tuple{Rational{Int}, Int}
+) where {S, T}
+    r, j = v
+    i = floor(Int, r)
+    v = connecting_tensor(network, (i, j), (i+1, j))
+    @cast A[l, _, r, _] := v[l, r]
+    A
+end
+
+function _horizontal_central_tensor(
+    network::AbstractGibbsNetwork{S, T}, 
+    v::Tuple{Int, Rational{Int}}
+) where {S, T}
+    i, r = v
+    j = floor(Int, r)
+    h = connecting_tensor(network, (i, j), (i, j+1))
+    @cast A[_, u, _, d] := h[u, d]
+    A
+end
+
+function _gauge_tensor(
+    network::AbstractGibbsNetwork{S, T}, 
+    v::Tuple{Rational{Int}, Int}
+) where {S, T}
+    X = network.gauges[v]
+    @cast A[_, u, _, d] := Diagonal(X)[u, d]
+    A
+end
+
+tensor( 
+    network::AbstractGibbsNetwork{S, T}, 
+    v::R,
+    type::Symbol
+) = tensor(network, v, Val(type))
+
+
+tensor(
+    network::AbstractGibbsNetwork{S, T}, 
+    v::S,
+    ::Val{:site}
+) = _traced_tensor(network, v)
+
+
+tensor(
+    network::AbstractGibbsNetwork{S, T}, 
+    v::Tuple{Rational{Int}, Int},
+    ::Val{:vertical}
+) = _vertical_central_tensor(network, v)
+
+
+tensor(
+    network::AbstractGibbsNetwork{S, T}, 
+    v::Tuple{Int, Rational{Int}},
+    ::Val{:horizontal}
+) = _horizontal_central_tensor(network, v)
+
+
+tensor(
+    network::AbstractGibbsNetwork{S, T}, 
+    v::R,
+    ::Val{:gauge}
+) = _gauge_tensor(network, v)
+
+
 @memoize function connecting_tensor(
     network::AbstractGibbsNetwork{S, T},
     v::S, 
@@ -139,7 +214,7 @@ end
 ) where {S, T}
     en = interaction_energy(network, v, w)
     exp.(-network.β .* (en .- minimum(en)))
-end
+end 
 
 
 ones_like(x::Number) = one(typeof(x))

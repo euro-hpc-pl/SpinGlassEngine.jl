@@ -4,11 +4,11 @@ export
     generate_boundary, 
     node_from_index, 
     drop_physical_index,
-    initialize_MPS,
+    #initialize_MPS,
     conditional_probability,
-    generate_gauge,
-    MPO_connecting,
-    MPO_gauge
+    generate_gauge#,
+    #MPO_connecting,
+    #MPO_gauge
 
 function peps_lattice(m::Int, n::Int)
     labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
@@ -76,7 +76,7 @@ function projectors(network::PEPSNetwork, vertex::NTuple{2, Int})
 end
 
 
-function SpinGlassTensors.MPO(::Type{T},
+#= function SpinGlassTensors.MPO(::Type{T},
     peps::PEPSNetwork,
     i::Int
 ) where {T <: Number}
@@ -90,8 +90,19 @@ function SpinGlassTensors.MPO(::Type{T},
         W[j] = B
     end
     W
-end
+end =#
 
+function SpinGlassTensors.MPO(::Type{T},
+    peps::PEPSNetwork,
+    i::Int,
+) where {T <: Number}
+    W = MPO(T, 2 * peps.ncols)
+    for j ∈ peps.ncols
+        W[2*j-1] = tensor(peps, (i, j), :site)
+        W[2*j] = tensor(peps, (i, j), :horizontal)
+    end
+    W
+end
 
 @memoize Dict SpinGlassTensors.MPO(
     peps::PEPSNetwork,
@@ -99,7 +110,27 @@ end
 ) = MPO(Float64, peps, i)
 
 
-function MPO_connecting(::Type{T},
+function SpinGlassTensors.MPO(::Type{T},
+    peps::PEPSNetwork,
+    r::Rational{Int},
+    type::Symbol
+) where {T <: Number}
+    @assert type ∈ (:gauge, :vertical)
+    W = MPO(T, 2 * peps.ncols)
+    for j ∈ 1:length(W)
+        W[j] = tensor(peps, (r, j), :type)
+    end
+    W
+end
+
+@memoize Dict SpinGlassTensors.MPO(
+    peps::PEPSNetwork,
+    r::Rational{Int},
+    type::Symbol
+) = MPO(Float64, peps, r, type)
+
+
+#= function MPO_connecting(::Type{T},
     peps::PEPSNetwork,
     r::Rational{Int}  # r == n + 1//2
 ) where {T <: Number}
@@ -110,16 +141,16 @@ function MPO_connecting(::Type{T},
         W[j] = A
     end
     W
-end
+end =#
 
 
-@memoize Dict MPO_connecting(
+#= @memoize Dict MPO_connecting(
     peps::PEPSNetwork,
     r::Rational{Int}
 ) = MPO_connecting(Float64, peps, r)
+ =#
 
-
-function MPO_gauge(::Type{T},
+#= function MPO_gauge(::Type{T},
     network::PEPSNetwork,
     r::Rational{Int}
 ) where {T <: Number}
@@ -130,15 +161,15 @@ function MPO_gauge(::Type{T},
         W[j] = A
     end
     W
-end
+end =#
 
 
-@memoize Dict MPO_gauge(
+#= @memoize Dict MPO_gauge(
 network::PEPSNetwork,
 r::Rational{Int}
 ) = MPO_gauge(Float64, network, r)
 
-
+ =#
 function compress(
     ψ::AbstractMPS,
     peps::AbstractGibbsNetwork;
@@ -151,16 +182,15 @@ end
 @memoize Dict function SpinGlassTensors.MPS(peps::AbstractGibbsNetwork, i::Int)
     if i > peps.nrows return IdentityMPS() end
     ψ = MPS(peps, i+1)
+    layers = [(i+1//6, :gauge), (i, ), (i-3//6, :central), (i-4//6, :gauge)]
+    for t ∈ layers ψ *= MPO(peps, t...) end
+    compress(ψ, peps)
 
-    #new concept
-    #for r ∈ layers ψ *= MPO(peps, r) end
-    #compress(ψ, peps)
-
-    Y = MPO_gauge(peps, i + 1 - 5//6)
+#=     Y = MPO_gauge(peps, i + 1 - 5//6)
     W = MPO(peps, i) 
     M = MPO_connecting(peps, i - 3//6)
     X = MPO_gauge(peps, i - 4//6)
-    compress((((X * M) * W) * Y) * ψ, peps)
+    compress((((X * M) * W) * Y) * ψ, peps) =#
 end
 
 

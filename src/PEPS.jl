@@ -179,11 +179,15 @@ function compress(
 end
 
 
+network_layer(i::Int) = (
+    (i+1//6, :gauge), (i, ), (i-3//6, :central), (i-4//6, :gauge)
+)
+
+
 @memoize Dict function SpinGlassTensors.MPS(peps::AbstractGibbsNetwork, i::Int)
     if i > peps.nrows return IdentityMPS() end
     ψ = MPS(peps, i+1)
-    layers = [(i+1//6, :gauge), (i, ), (i-3//6, :central), (i-4//6, :gauge)]
-    for t ∈ layers ψ *= MPO(peps, t...) end
+    for l ∈ network_layer(i) ψ *= MPO(peps, l...) end
     compress(ψ, peps)
 
 #=     Y = MPO_gauge(peps, i + 1 - 5//6)

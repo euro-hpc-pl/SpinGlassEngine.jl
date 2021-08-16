@@ -81,11 +81,10 @@ function tensor_species_map!(network::PEPSNetwork)
         push!(network.tensor_spiecies, (i + 1//2, j + 1//2) => :central_d)
     end
     for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols
-        push!(network.tensor_spiecies, 
-            (i + 1//2, j) => :central_h,
-            (i + 1//6, j) => :gauge_h, 
-            (i + 2//6, j) => :gauge_h
-        )
+        push!(network.tensor_spiecies, (i + 1//2, j) => :central_h)
+    end
+    for i ∈ 1:network.nrows-1, j ∈ 1:2*network.ncols
+        push!(network.tensor_spiecies, (i + 1//6, j) => :gauge_h, (i + 2//6, j) => :gauge_h)
     end
 end
 

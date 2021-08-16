@@ -175,35 +175,35 @@ end
 tensor( 
     network::AbstractGibbsNetwork{S, T}, 
     v::R
-) = tensor(network, v, network.tensor_spiecies[v])
+) where {S, T, R} = tensor(network, v, network.tensor_spiecies[v]) 
 
 
 tensor(
     network::AbstractGibbsNetwork{S, T}, 
     v::S,
     ::Val{:site}
-) = _traced_tensor(network, v)
+) where {S, T} = _traced_tensor(network, v) 
 
 
 tensor(
     network::AbstractGibbsNetwork{S, T}, 
     v::Tuple{Rational{Int}, Int},
     ::Val{:central_v}
-) = _vertical_central_tensor(network, v)
+) where {S, T} = _vertical_central_tensor(network, v) 
 
 
 tensor(
     network::AbstractGibbsNetwork{S, T}, 
     v::Tuple{Int, Rational{Int}},
     ::Val{:central_h}
-) = _horizontal_central_tensor(network, v)
+) where {S, T} = _horizontal_central_tensor(network, v) 
 
 
 tensor(
     network::AbstractGibbsNetwork{S, T}, 
     v::R,
     ::Val{:gauge_h}
-) = _gauge_tensor(network, v)
+) where {S, T, R} = _gauge_tensor(network, v) 
 
 
 @memoize function connecting_tensor(

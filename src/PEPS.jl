@@ -3,7 +3,6 @@ export
     contract_network,
     generate_boundary, 
     node_from_index, 
-    drop_physical_index,
     conditional_probability
 
 function peps_lattice(m::Int, n::Int)
@@ -40,8 +39,8 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     sweeps::Int
     gauges::Dict{Tuple{Rational{Int}, Rational{Int}}, Vector{Real}}
     tensor_spiecies::Dict{Tuple{Rational{Int}, Rational{Int}}, Symbol}
-    layers_rows  
-    layers_cols  
+    layers_rows#::NTuple{N, Union{Rational{Int}}, Int} where N  
+    layers_cols#::NTuple{N, Union{Rational{Int}}, Int} where M
 
     function PEPSNetwork(
         m::Int,
@@ -54,19 +53,19 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         sweeps::Int=4,
         layers_rows=(-1//2, 0),
         layers_cols=(1//6, 0, -3//6, -4//6)
-        )
-
+    )
         vmap = vertex_map(transformation, m, n)
         ng = peps_lattice(m, n)
         nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
+        
         if !is_compatible(factor_graph, ng)
             throw(ArgumentError("Factor graph not compatible with given network."))
         end
 
         gauges = Dict()
         tensor_spiecies = Dict()
-        network = new(factor_graph, ng, vmap, m, n, nrows, ncols, β, bond_dim, var_tol, sweeps, 
-                      gauges, tensor_spiecies, layers_rows, layers_cols
+        network = new(factor_graph, ng, vmap, m, n, nrows, ncols, β, bond_dim, var_tol, 
+                      sweeps, gauges, tensor_spiecies, layers_rows, layers_cols
                 )
         update_gauges!(network, :id)
         tensor_species_map!(network)

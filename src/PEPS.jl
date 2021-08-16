@@ -11,7 +11,7 @@ end
 
 
 @memoize Dict function _right_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int}) 
-    W = prod(MPO.(Ref(peps), peps.layers_rows))
+    W = prod(MPO.(Ref(peps), i .+ peps.layers_rows))
     ψ = MPS(peps, i+1)
     right_env(ψ, W, ∂v)
 end
@@ -75,16 +75,19 @@ function tensor_species_map!(network::PEPSNetwork)
         push!(network.tensor_spiecies, (i, j) => :site)
     end
     for i ∈ 1:network.nrows, j ∈ 1:network.ncols-1
-        push!(network.tensor_spiecies, (i, j + 1//2) => :central_v)
+        push!(network.tensor_spiecies, (i, j + 1//2) => :central_h)
     end
     for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols-1
         push!(network.tensor_spiecies, (i + 1//2, j + 1//2) => :central_d)
     end
     for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols
-        push!(network.tensor_spiecies, (i + 1//2, j) => :central_h)
+        push!(network.tensor_spiecies, (i + 1//2, j) => :central_v)
     end
     for i ∈ 1:network.nrows-1, j ∈ 1:2*network.ncols
         push!(network.tensor_spiecies, (i + 1//6, j) => :gauge_h, (i + 2//6, j) => :gauge_h)
+    end
+    for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols
+        push!(network.tensor_spiecies, (i + 1//6, j+1//2) => :gauge_h, (i + 2//6, j+1//2) => :gauge_h)
     end
 end
 
@@ -101,7 +104,10 @@ function SpinGlassTensors.MPO(::Type{T},
     r::Union{Rational{Int}, Int}
 ) where {T <: Number}
     W = MPO(T, length(peps.layers_cols) * peps.ncols)
-    for (k, j) ∈ enumerate(1:peps.ncols), d ∈ peps.layers_cols
+    k = 0
+    for j ∈ 1:peps.ncols, d ∈ peps.layers_cols
+        k += 1
+        println(r, " ", (k, j), " ", d)
         W[k] = tensor(peps, (r, j + d))
     end
     W
@@ -122,7 +128,7 @@ end
 @memoize Dict function SpinGlassTensors.MPS(peps::AbstractGibbsNetwork, i::Int)
     if i > peps.nrows return IdentityMPS() end
     ψ = MPS(peps, i+1)
-    for r ∈ peps.layers_rows ψ *= MPO(peps, r) end
+    for r ∈ peps.layers_rows ψ *= MPO(peps, i+r) end
     compress(ψ, peps)
 end
 

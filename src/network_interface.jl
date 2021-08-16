@@ -167,6 +167,12 @@ function _horizontal_central_tensor(
 end
 
 
+_diagonal_central_tensor(
+    network::AbstractGibbsNetwork{S, T}, 
+    v::NTuple{2, Rational{Int}}
+) where {S, T} = ones(1, 1, 1, 1)
+
+
 function _gauge_tensor(
     network::AbstractGibbsNetwork{S, T}, 
     v::Tuple{Rational{Int}, Int}
@@ -202,6 +208,13 @@ tensor(
     v::Tuple{Int, Rational{Int}},
     ::Val{:central_h}
 ) where {S, T} = _horizontal_central_tensor(network, v) 
+
+
+tensor(
+    network::AbstractGibbsNetwork{S, T}, 
+    v::NTuple{2, Rational{Int}},
+    ::Val{:central_d}
+) where {S, T} = _diagonal_central_tensor(network, v) 
 
 
 tensor(

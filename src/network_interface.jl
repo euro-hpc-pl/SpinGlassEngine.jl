@@ -175,7 +175,7 @@ end
 tensor( 
     network::AbstractGibbsNetwork{S, T}, 
     v::R
-) = tensor(network, v, network.tensor_spiecies(v))
+) = tensor(network, v, network.tensor_spiecies[v])
 
 
 tensor(

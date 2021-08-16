@@ -13,7 +13,7 @@ end
 
 
 @memoize Dict function _right_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int}) 
-    M = MPO_connecting(peps, i - 1//2) 
+    M = MPO(peps, i-1//2) 
     W = MPO(peps, i)
     ψ = MPS(peps, i+1)
     right_env(ψ, M * W, ∂v)
@@ -40,8 +40,8 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     sweeps::Int
     gauges::Dict{Tuple{Rational{Int}, Rational{Int}}, Vector{Real}}
     tensor_spiecies::Dict{Tuple{Rational{Int}, Rational{Int}}, Symbol}
-    layers_rows  # :: NTuple(Rational{Int})
-    layers_cols  # :: NTuple(Rational{Int})
+    layers_rows  
+    layers_cols  
 
     function PEPSNetwork(
         m::Int,
@@ -55,15 +55,19 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         layers_rows=(-1//2, 0),
         layers_cols=(1//6, 0, -3//6, -4//6)
         )
+
         vmap = vertex_map(transformation, m, n)
         ng = peps_lattice(m, n)
         nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
         if !is_compatible(factor_graph, ng)
             throw(ArgumentError("Factor graph not compatible with given network."))
         end
+
         gauges = Dict()
         tensor_spiecies = Dict()
-        network = new(factor_graph, ng, vmap, m, n, nrows, ncols, β, bond_dim, var_tol, sweeps, gauges, tensor_spiecies, layers_rows, layers_cols)
+        network = new(factor_graph, ng, vmap, m, n, nrows, ncols, β, bond_dim, var_tol, sweeps, 
+                      gauges, tensor_spiecies, layers_rows, layers_cols
+                )
         update_gauges!(network, :id)
         tensor_species_map!(network)
         network
@@ -93,16 +97,15 @@ function projectors(network::PEPSNetwork, vertex::NTuple{2, Int})
 end
 
 
-function SpinGlassTensors.MPO(
-    ::Type{T},
+function SpinGlassTensors.MPO(::Type{T},
     peps::PEPSNetwork,
     r::Rational{Int}
 ) where {T <: Number}
     W = MPO(T, length(peps.layers_cols) * peps.ncols)
     ind = 0
-    for j ∈ 1:peps.ncols, dj ∈ peps.layers_cols
+    for j ∈ 1:peps.ncols, d ∈ peps.layers_cols
         ind = ind + 1
-        W[ind] = tensor(peps, (r, j + dj))
+        W[ind] = tensor(peps, (r, j + d))
     end
     W
 end
@@ -122,22 +125,11 @@ function compress(
 end
 
 
-network_layer(i::Int) = (
-    (i+1//6, :gauge), (i, ), (i-3//6, :central), (i-4//6, :gauge)
-)
-
-
 @memoize Dict function SpinGlassTensors.MPS(peps::AbstractGibbsNetwork, i::Int)
     if i > peps.nrows return IdentityMPS() end
     ψ = MPS(peps, i+1)
-    for l ∈ network_layer(i) ψ *= MPO(peps, l...) end
+    for r ∈ peps.layers_rows ψ *= MPO(peps, r) end
     compress(ψ, peps)
-
-#=     Y = MPO_gauge(peps, i + 1 - 5//6)
-    W = MPO(peps, i) 
-    M = MPO_connecting(peps, i - 3//6)
-    X = MPO_gauge(peps, i - 4//6)
-    compress((((X * M) * W) * Y) * ψ, peps) =#
 end
 
 

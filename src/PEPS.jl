@@ -4,11 +4,7 @@ export
     generate_boundary, 
     node_from_index, 
     drop_physical_index,
-    #initialize_MPS,
-    conditional_probability,
-    generate_gauge#,
-    #MPO_connecting,
-    #MPO_gauge
+    conditional_probability
 
 function peps_lattice(m::Int, n::Int)
     labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
@@ -42,8 +38,10 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     bond_dim::Int
     var_tol::Real
     sweeps::Int
-    gauges::Dict{Tuple{Rational{Int}, Int}, Vector{Real}}
-
+    gauges::Dict{Tuple{Rational{Int}, Rational{Int}}, Vector{Real}}
+    tensor_spiecies::Dict{Tuple{Rational{Int}, Rational{Int}}, Symbol}
+    layers_rows  # :: NTuple(Rational{Int})
+    layers_cols  # :: NTuple(Rational{Int})
 
     function PEPSNetwork(
         m::Int,
@@ -53,8 +51,10 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         β::Real,
         bond_dim::Int=typemax(Int),
         var_tol::Real=1E-8,
-        sweeps::Int=4
-    )
+        sweeps::Int=4,
+        layers_rows=(-1//2, 0),
+        layers_cols=(1//6, 0, -3//6, -4//6)
+        )
         vmap = vertex_map(transformation, m, n)
         ng = peps_lattice(m, n)
         nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
@@ -62,9 +62,26 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
             throw(ArgumentError("Factor graph not compatible with given network."))
         end
         gauges = Dict()
-        network = new(factor_graph, ng, vmap, m, n, nrows, ncols, β, bond_dim, var_tol, sweeps, gauges)
+        tensor_spiecies = Dict()
+        network = new(factor_graph, ng, vmap, m, n, nrows, ncols, β, bond_dim, var_tol, sweeps, gauges, tensor_spiecies, layers_rows, layers_cols)
         update_gauges!(network, :id)
+        tensor_species_map!(network)
         network
+    end
+end
+
+
+function tensor_species_map!(network::PEPSNetwork)
+    for i ∈ 1:network.nrows, j ∈ 1:network.ncols
+        push!(network.tensor_spiecies, (i, j) => :traced)
+    end
+    for i ∈ 1:network.nrows, j ∈ 1:network.ncols-1
+        push!(network.tensor_spiecies, (i, j + 1//2) => :central_v)
+    end
+    for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols
+        push!(network.tensor_spiecies, (i + 1//2, j) => :central_h)
+        push!(network.tensor_spiecies, (i + 1//6, j) => :gauge_h)
+        push!(network.tensor_spiecies, (i + 2//6, j) => :gauge_h)
     end
 end
 
@@ -76,100 +93,26 @@ function projectors(network::PEPSNetwork, vertex::NTuple{2, Int})
 end
 
 
-#= function SpinGlassTensors.MPO(::Type{T},
+function SpinGlassTensors.MPO(
+    ::Type{T},
     peps::PEPSNetwork,
-    i::Int
+    r::Rational{Int}
 ) where {T <: Number}
-    W = MPO(T, peps.ncols)
-
-    for j ∈ 1:peps.ncols
-        A = central_tensor(peps, (i, j))
-        Ã = dropdims(sum(A, dims=5), dims=5)
-        h = connecting_tensor(peps, (i, j-1), (i, j))
-        @tensor B[l, u, r, d] := h[l, l̃] * Ã[l̃, u, r, d]
-        W[j] = B
-    end
-    W
-end =#
-
-function SpinGlassTensors.MPO(::Type{T},
-    peps::PEPSNetwork,
-    i::Int,
-) where {T <: Number}
-    W = MPO(T, 2 * peps.ncols)
-    for j ∈ peps.ncols
-        W[2*j-1] = tensor(peps, (i, j), :site)
-        W[2*j] = tensor(peps, (i, j), :horizontal)
+    W = MPO(T, length(peps.layers_cols) * peps.ncols)
+    ind = 0
+    for j ∈ 1:peps.ncols, dj ∈ peps.layers_cols
+        ind = ind + 1
+        W[ind] = tensor(peps, (r, j + dj))
     end
     W
 end
 
 @memoize Dict SpinGlassTensors.MPO(
     peps::PEPSNetwork,
-    i::Int
-) = MPO(Float64, peps, i)
-
-
-function SpinGlassTensors.MPO(::Type{T},
-    peps::PEPSNetwork,
-    r::Rational{Int},
-    type::Symbol
-) where {T <: Number}
-    @assert type ∈ (:gauge, :vertical)
-    W = MPO(T, 2 * peps.ncols)
-    for j ∈ 1:length(W)
-        W[j] = tensor(peps, (r, j), :type)
-    end
-    W
-end
-
-@memoize Dict SpinGlassTensors.MPO(
-    peps::PEPSNetwork,
-    r::Rational{Int},
-    type::Symbol
-) = MPO(Float64, peps, r, type)
-
-
-#= function MPO_connecting(::Type{T},
-    peps::PEPSNetwork,
-    r::Rational{Int}  # r == n + 1//2
-) where {T <: Number}
-    W = MPO(T, peps.ncols)
-    for j ∈ 1:peps.ncols
-        v = connecting_tensor(peps, (floor(Int, r), j), (ceil(Int, r), j))
-        @cast A[_, u, _, d] := v[u, d]
-        W[j] = A
-    end
-    W
-end =#
-
-
-#= @memoize Dict MPO_connecting(
-    peps::PEPSNetwork,
     r::Rational{Int}
-) = MPO_connecting(Float64, peps, r)
- =#
-
-#= function MPO_gauge(::Type{T},
-    network::PEPSNetwork,
-    r::Rational{Int}
-) where {T <: Number}
-    W = MPO(T, network.ncols)
-    for j ∈ 1:network.ncols
-        X = network.gauges[(r, j)]
-        @cast A[_, u, _, d] := Diagonal(X)[u, d]
-        W[j] = A
-    end
-    W
-end =#
+) = MPO(Float64, peps, r)
 
 
-#= @memoize Dict MPO_gauge(
-network::PEPSNetwork,
-r::Rational{Int}
-) = MPO_gauge(Float64, network, r)
-
- =#
 function compress(
     ψ::AbstractMPS,
     peps::AbstractGibbsNetwork;

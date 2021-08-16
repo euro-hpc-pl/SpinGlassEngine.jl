@@ -13,6 +13,7 @@ export
     local_state_for_node,
     iteration_order,
     fuse_projectors,
+    tensor,
     update_gauges!
 
 # S: type of the vertex of network
@@ -87,6 +88,7 @@ function fuse_projectors(projectors)
     fused, transitions
 end
 
+
 function spectrum(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T}
     get_prop(factor_graph(network), vertex_map(network)(vertex), :spectrum)
 end
@@ -152,6 +154,7 @@ function _vertical_central_tensor(
     A
 end
 
+
 function _horizontal_central_tensor(
     network::AbstractGibbsNetwork{S, T}, 
     v::Tuple{Int, Rational{Int}}
@@ -163,6 +166,7 @@ function _horizontal_central_tensor(
     A
 end
 
+
 function _gauge_tensor(
     network::AbstractGibbsNetwork{S, T}, 
     v::Tuple{Rational{Int}, Int}
@@ -171,6 +175,7 @@ function _gauge_tensor(
     @cast A[_, u, _, d] := Diagonal(X)[u, d]
     A
 end
+
 
 tensor( 
     network::AbstractGibbsNetwork{S, T}, 

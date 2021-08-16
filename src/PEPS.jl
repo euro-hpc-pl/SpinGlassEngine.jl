@@ -1,6 +1,5 @@
 export 
     PEPSNetwork, 
-    contract_network,
     generate_boundary, 
     node_from_index, 
     conditional_probability
@@ -12,10 +11,9 @@ end
 
 
 @memoize Dict function _right_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int}) 
-    M = MPO(peps, i-1//2) 
-    W = MPO(peps, i)
+    W = prod(MPO.(Ref(peps), peps.layers_rows))
     ψ = MPS(peps, i+1)
-    right_env(ψ, M * W, ∂v)
+    right_env(ψ, W, ∂v)
 end
 
 
@@ -39,13 +37,13 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     sweeps::Int
     gauges::Dict{Tuple{Rational{Int}, Rational{Int}}, Vector{Real}}
     tensor_spiecies::Dict{Tuple{Rational{Int}, Rational{Int}}, Symbol}
-    layers_rows#::NTuple{N, Union{Rational{Int}}, Int} where N  
-    layers_cols#::NTuple{N, Union{Rational{Int}}, Int} where M
+    layers_rows::NTuple{N, Union{Rational{Int}, Int}} where N  
+    layers_cols::NTuple{M, Union{Rational{Int}, Int}} where M
 
     function PEPSNetwork(
         m::Int,
         n::Int,
-        factor_graph,
+        factor_graph::LabelledGraph,
         transformation::LatticeTransformation;
         β::Real,
         bond_dim::Int=typemax(Int),
@@ -62,10 +60,8 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
             throw(ArgumentError("Factor graph not compatible with given network."))
         end
 
-        gauges = Dict()
-        tensor_spiecies = Dict()
-        network = new(factor_graph, ng, vmap, m, n, nrows, ncols, β, bond_dim, var_tol, 
-                      sweeps, gauges, tensor_spiecies, layers_rows, layers_cols
+        network = new(factor_graph, ng, vmap, m, n, nrows, ncols, β, bond_dim,
+                      var_tol, sweeps, Dict(), Dict(), layers_rows, layers_cols
                 )
         update_gauges!(network, :id)
         tensor_species_map!(network)
@@ -98,13 +94,11 @@ end
 
 function SpinGlassTensors.MPO(::Type{T},
     peps::PEPSNetwork,
-    r::Rational{Int}
+    r::Union{Rational{Int}, Int}
 ) where {T <: Number}
     W = MPO(T, length(peps.layers_cols) * peps.ncols)
-    ind = 0
-    for j ∈ 1:peps.ncols, d ∈ peps.layers_cols
-        ind = ind + 1
-        W[ind] = tensor(peps, (r, j + d))
+    for (k, j) ∈ enumerate(1:peps.ncols), d ∈ peps.layers_cols
+        W[k] = tensor(peps, (r, j + d))
     end
     W
 end
@@ -115,10 +109,7 @@ end
 ) = MPO(Float64, peps, r)
 
 
-function compress(
-    ψ::AbstractMPS,
-    peps::AbstractGibbsNetwork;
-)
+function compress(ψ::AbstractMPS, peps::AbstractGibbsNetwork)
     if bond_dimension(ψ) < peps.bond_dim return ψ end
     SpinGlassTensors.compress(ψ, peps.bond_dim, peps.var_tol, peps.sweeps)
 end
@@ -132,10 +123,7 @@ end
 end
 
 
-contract_network(peps::AbstractGibbsNetwork) = prod(dropindices(MPS(peps, 1)))[]
-
 node_index(peps::AbstractGibbsNetwork, node::NTuple{2, Int}) = peps.ncols * (node[1] - 1) + node[2]
-
 _mod_wo_zero(k, m) = k % m == 0 ? m : k % m
 
 

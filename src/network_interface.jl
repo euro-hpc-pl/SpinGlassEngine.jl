@@ -174,9 +174,8 @@ end
 
 tensor( 
     network::AbstractGibbsNetwork{S, T}, 
-    v::R,
-    type::Symbol
-) = tensor(network, v, Val(type))
+    v::R
+) = tensor(network, v, network.tensor_spiecies(v))
 
 
 tensor(
@@ -189,27 +188,27 @@ tensor(
 tensor(
     network::AbstractGibbsNetwork{S, T}, 
     v::Tuple{Rational{Int}, Int},
-    ::Val{:vertical}
+    ::Val{:central_v}
 ) = _vertical_central_tensor(network, v)
 
 
 tensor(
     network::AbstractGibbsNetwork{S, T}, 
     v::Tuple{Int, Rational{Int}},
-    ::Val{:horizontal}
+    ::Val{:central_h}
 ) = _horizontal_central_tensor(network, v)
 
 
 tensor(
     network::AbstractGibbsNetwork{S, T}, 
     v::R,
-    ::Val{:gauge}
+    ::Val{:gauge_h}
 ) = _gauge_tensor(network, v)
 
 
 @memoize function connecting_tensor(
     network::AbstractGibbsNetwork{S, T},
-    v::S, 
+    v::S,
     w::S
 ) where {S, T}
     en = interaction_energy(network, v, w)

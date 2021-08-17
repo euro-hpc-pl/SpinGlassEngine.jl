@@ -49,8 +49,8 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         bond_dim::Int=typemax(Int),
         var_tol::Real=1E-8,
         sweeps::Int=4,
-        layers_rows=(-1//2, 0),
-        layers_cols=(1//6, 0, -3//6, -4//6)
+        layers_cols=(0, 1//2),
+        layers_rows=(-4//6, -3//6, 0, 1//6)
     )
         vmap = vertex_map(transformation, m, n)
         ng = peps_lattice(m, n)
@@ -77,17 +77,19 @@ function tensor_species_map!(network::PEPSNetwork)
     for i ∈ 1:network.nrows, j ∈ 1:network.ncols-1
         push!(network.tensor_spiecies, (i, j + 1//2) => :central_h)
     end
-    for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols-1
-        push!(network.tensor_spiecies, (i + 1//2, j + 1//2) => :central_d)
-    end
     for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols
-        push!(network.tensor_spiecies, (i + 1//2, j) => :central_v)
-    end
-    for i ∈ 1:network.nrows-1, j ∈ 1:2*network.ncols
-        push!(network.tensor_spiecies, (i + 1//6, j) => :gauge_h, (i + 2//6, j) => :gauge_h)
-    end
-    for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols
-        push!(network.tensor_spiecies, (i + 1//6, j+1//2) => :gauge_h, (i + 2//6, j+1//2) => :gauge_h)
+        push!(network.tensor_spiecies,
+            (i + 1//2, j + 1//2) => :central_d,
+            (i + 1//2, j) => :central_v,
+            (i + 1//6, j) => :gauge_h, 
+            (i + 2//6, j) => :gauge_h,
+            (i + 4//6, j) => :gauge_h, 
+            (i + 5//6, j) => :gauge_h,
+            (i + 1//6, j+1//2) => :gauge_h, 
+            (i + 2//6, j+1//2) => :gauge_h,
+            (i + 4//6, j+1//2) => :gauge_h, 
+            (i + 5//6, j+1//2) => :gauge_h
+        )
     end
 end
 
@@ -115,7 +117,7 @@ end
 
 @memoize Dict SpinGlassTensors.MPO(
     peps::PEPSNetwork,
-    r::Rational{Int}
+    r::Union{Rational{Int}, Int}
 ) = MPO(Float64, peps, r)
 
 
@@ -128,7 +130,13 @@ end
 @memoize Dict function SpinGlassTensors.MPS(peps::AbstractGibbsNetwork, i::Int)
     if i > peps.nrows return IdentityMPS() end
     ψ = MPS(peps, i+1)
-    for r ∈ peps.layers_rows ψ *= MPO(peps, i+r) end
+    # ψ *= MPO(peps, i+r) - this should work but does not
+#    for r ∈ peps.layers_rows ψ = MPO(peps, i+r) * ψ end
+    for r ∈ peps.layers_rows 
+        println(i, " ", r)
+        ψ = MPO(peps, i+r) * ψ
+    end
+
     compress(ψ, peps)
 end
 

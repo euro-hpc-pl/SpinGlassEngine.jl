@@ -143,25 +143,25 @@ function _traced_tensor(
 end
 
 
+function _horizontal_central_tensor(
+    network::AbstractGibbsNetwork{S, T}, 
+    w::Tuple{Int, Rational{Int}}
+) where {S, T}
+    i, r = w
+    j = floor(Int, r)
+    v = connecting_tensor(network, (i, j), (i, j+1))
+    @cast A[l, _, r, _] := v[l, r]
+    A
+end
+
+
 function _vertical_central_tensor(
     network::AbstractGibbsNetwork{S, T}, 
     v::Tuple{Rational{Int}, Int}
 ) where {S, T}
     r, j = v
     i = floor(Int, r)
-    v = connecting_tensor(network, (i, j), (i+1, j))
-    @cast A[l, _, r, _] := v[l, r]
-    A
-end
-
-
-function _horizontal_central_tensor(
-    network::AbstractGibbsNetwork{S, T}, 
-    v::Tuple{Int, Rational{Int}}
-) where {S, T}
-    i, r = v
-    j = floor(Int, r)
-    h = connecting_tensor(network, (i, j), (i, j+1))
+    h = connecting_tensor(network, (i, j), (i+1, j))
     @cast A[_, u, _, d] := h[u, d]
     A
 end
@@ -175,8 +175,8 @@ _diagonal_central_tensor(
 
 function _gauge_tensor(
     network::AbstractGibbsNetwork{S, T}, 
-    v::Tuple{Rational{Int}, Int}
-) where {S, T}
+    v::R
+) where {S, T, R}
     X = network.gauges[v]
     @cast A[_, u, _, d] := Diagonal(X)[u, d]
     A
@@ -186,7 +186,7 @@ end
 tensor( 
     network::AbstractGibbsNetwork{S, T}, 
     v::R
-) where {S, T, R} = tensor(network, v, network.tensor_spiecies[v]) 
+) where {S, T, R} = tensor(network, v, Val(network.tensor_spiecies[v])) 
 
 
 tensor(
@@ -318,5 +318,11 @@ function update_gauges!(
     for j ∈ 1:network.ncols
         push!(network.gauges, (network.nrows + 1//N, j) => ones(1))
         push!(network.gauges, (-1//N, j) => ones(1))
+    end
+    for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols
+        push!(network.gauges, (i + 1//N, j+1//2) => ones(1))
+        push!(network.gauges, (i + 2//N, j+1//2) => ones(1))
+        push!(network.gauges, (i + 4//N, j+1//2) => ones(1))
+        push!(network.gauges, (i + 5//N, j+1//2) => ones(1))
     end
 end

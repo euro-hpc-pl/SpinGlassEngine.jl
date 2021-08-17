@@ -50,7 +50,8 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         var_tol::Real=1E-8,
         sweeps::Int=4,
         layers_cols=(0, 1//2),
-        layers_rows=(-4//6, -3//6, 0, 1//6)
+        #layers_rows=(-4//6, -3//6, 0, 1//6)
+        layers_rows=(-1//2, 0)
     )
         vmap = vertex_map(transformation, m, n)
         ng = peps_lattice(m, n)
@@ -134,9 +135,12 @@ end
 #    for r ∈ peps.layers_rows ψ = MPO(peps, i+r) * ψ end
     for r ∈ peps.layers_rows 
         println(i, " ", r)
+        W = MPO(peps, i+r)
+        show(W)
+        show(ψ)
+        if i > peps.nrows SpinGlassTensors.verify_bonds(ψ) end
         ψ = MPO(peps, i+r) * ψ
     end
-
     compress(ψ, peps)
 end
 

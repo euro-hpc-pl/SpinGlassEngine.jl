@@ -74,7 +74,7 @@ function tensor_species_map!(network::PEPSNetwork)
     for i ∈ 1:network.nrows, j ∈ 1:network.ncols
         push!(network.tensor_spiecies, (i, j) => :site)
     end
-    for i ∈ 1:network.nrows, j ∈ 1:network.ncols-1
+    for i ∈ 1:network.nrows, j ∈ 1:network.ncols
         push!(network.tensor_spiecies, (i, j + 1//2) => :central_h)
     end
     for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols

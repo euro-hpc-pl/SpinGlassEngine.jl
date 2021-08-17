@@ -76,7 +76,7 @@
 
     for transform ∈ all_lattice_transformations
         peps = PEPSNetwork(m, n, fg, transform, β=β)
-        #update_gauges!(peps, :id)
+        update_gauges!(peps, :rand)
         sol = low_energy_spectrum(peps, num_states)
 
         @test sol.energies ≈ exact_energies

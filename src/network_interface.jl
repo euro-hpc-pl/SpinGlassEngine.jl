@@ -183,10 +183,16 @@ function _gauge_tensor(
 end
 
 
-tensor( 
-    network::AbstractGibbsNetwork{S, T}, 
+function tensor(
+    network::AbstractGibbsNetwork{S, T},
     v::R
-) where {S, T, R} = tensor(network, v, Val(network.tensor_spiecies[v])) 
+) where {S, T, R}
+    if v ∈ keys(network.tensor_spiecies)
+        tensor(network, v, Val(network.tensor_spiecies[v]))
+    else
+        ones(1, 1, 1, 1)
+    end
+end
 
 
 tensor(

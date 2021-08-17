@@ -35,7 +35,7 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     bond_dim::Int
     var_tol::Real
     sweeps::Int
-    gauges::Dict{Tuple{Rational{Int}, Rational{Int}}, Vector{Real}}
+    gauges::Dict{Tuple{Rational{Int}, Rational{Int}}, Vector{Float64}} # Real ?
     tensor_spiecies::Dict{Tuple{Rational{Int}, Rational{Int}}, Symbol}
     layers_rows::NTuple{N, Union{Rational{Int}, Int}} where N  
     layers_cols::NTuple{M, Union{Rational{Int}, Int}} where M
@@ -141,16 +141,16 @@ node_from_index(peps::AbstractGibbsNetwork, index::Int) =
 
 function boundary_at_splitting_node(peps::PEPSNetwork, node::NTuple{2, Int})
     i, j = node
+    x = (-4, -2)
     vcat(
         [
-            [((0, 0), (-1, 0)), ((i, k), (i+1, k))] for k ∈ 1:j-1
+            [(x, x), ((i, k), (i+1, k))] for k ∈ 1:j-1
         ]...,
-        ((0, 0), (-1, 0)),
-        ((i, j-1), (i, j)),
+            (x, x), ((i, j-1), (i, j)),
         [
-            [((0, 0), (-1, 0)), ((i-1, k), (i, k))] for k ∈ j:peps.ncols
+            [(x, x), ((i-1, k), (i, k))] for k ∈ j:peps.ncols
         ]...
-        )
+    )
 end
 
 
@@ -183,12 +183,10 @@ function conditional_probability(peps::PEPSNetwork, w::Vector{Int})
     ψ = MPS(peps, i+1)
     M = ψ[2 * j]
 
-    igauge = Diagonal(peps.gauges[(i + 1//6, j)])
-    println("==================")
-    println(igauge)
-    @tensor MM[l, p, r] := M[l, pp, r] * igauge[p, pp]
+    Y = peps.gauges[(i + 1//6, j)]
+    @tensor M̃[l, p, r] := M[l, p̃, r] * Diagonal(Y)[p, p̃]
 
-    @tensor prob[σ] := L[x] * MM[x, d, y] *
+    @tensor prob[σ] := L[x] * M̃[x, d, y] *
                        B[r, d, σ] * R[y, r] order = (x, d, r, y)
 
     _normalize_probability(prob)

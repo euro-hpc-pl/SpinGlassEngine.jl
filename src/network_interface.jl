@@ -167,12 +167,6 @@ function _vertical_central_tensor(
 end
 
 
-_diagonal_central_tensor(
-    network::AbstractGibbsNetwork{S, T}, 
-    v::NTuple{2, Rational{Int}}
-) where {S, T} = ones(1, 1, 1, 1)
-
-
 function _gauge_tensor(
     network::AbstractGibbsNetwork{S, T}, 
     v::R
@@ -214,13 +208,6 @@ tensor(
     v::Tuple{Int, Rational{Int}},
     ::Val{:central_h}
 ) where {S, T} = _horizontal_central_tensor(network, v) 
-
-
-tensor(
-    network::AbstractGibbsNetwork{S, T}, 
-    v::NTuple{2, Rational{Int}},
-    ::Val{:central_d}
-) where {S, T} = _diagonal_central_tensor(network, v) 
 
 
 tensor(
@@ -309,7 +296,7 @@ end
 function update_gauges!(
     network::AbstractGibbsNetwork,
     type::Symbol=:rand
-)
+) where T
     N = 6
     @assert type ∈ (:id, :rand)
     for i ∈ 1:network.nrows - 1, j ∈ 1:network.ncols

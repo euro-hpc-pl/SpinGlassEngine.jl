@@ -52,11 +52,11 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         var_tol::Real=1E-8,
         sweeps::Int=4,
         columns_MPO = (-1//2, 0),  # from left to right
-        # layers_MPS = (1//6, 0, -3//6, -4//6),  # from bottom to top
-        # layers_left_env = (1//6,),
+        # layers_MPS=(1//6, 0, -3//6, -4//6),  # from bottom to top
+        # layers_left_env=(1//6,),
         # layers_right_env=(0, -3//6)
-        layers_MPS = (4//6, 3//6, 0, -1//6),  # from bottom to top
-        layers_left_env = (4//6, 3//6),
+        layers_MPS=(4//6, 3//6, 0, -1//6),  # from bottom to top
+        layers_left_env=(4//6, 3//6),
         layers_right_env=(0, -3//6)
     )
         vmap = vertex_map(transformation, m, n)
@@ -97,6 +97,29 @@ function tensor_species_map!(network::PEPSNetwork)
 end
 
 
+function _vertical_central_tensor(
+    network::PEPSNetwork, 
+    v::Tuple{Rational{Int}, Int}
+) 
+    r, j = v
+    i = floor(Int, r)
+    h = connecting_tensor(network, (i, j), (i+1, j))
+    @cast A[_, u, _, d] := h[u, d]
+    A
+end
+
+
+function _horizontal_central_tensor(
+    network::PEPSNetwork, 
+    w::Tuple{Int, Rational{Int}}
+) 
+    i, r = w
+    j = floor(Int, r)
+    v = connecting_tensor(network, (i, j), (i, j+1))
+    @cast A[l, _, r, _] := v[l, r]
+    A
+end
+
 function projectors(network::PEPSNetwork, vertex::NTuple{2, Int})
     i, j = vertex
     neighbours = ((i, j-1), (i-1, j), (i, j+1), (i+1, j))
@@ -116,6 +139,7 @@ function SpinGlassTensors.MPO(::Type{T},
     end
     W
 end
+
 
 @memoize Dict SpinGlassTensors.MPO(
     peps::PEPSNetwork,
@@ -142,6 +166,7 @@ end
     for r ∈ peps.layers_left_env ψ = MPO(peps, i+r) * ψ end
     ψ
 end
+
 
 SpinGlassTensors.MPS(
     peps::AbstractGibbsNetwork,
@@ -185,13 +210,6 @@ function boundary_at_splitting_node(peps::PEPSNetwork, node::NTuple{2, Int})
     )
 end
 
-
-function _normalize_probability(prob::Vector{T}) where {T <: Number}
-    # exceptions (negative pdo, etc)
-    prob / sum(prob)
-end
-
-
 function _reduced_site_tensor(
     network::PEPSNetwork,
     v::Tuple{Int, Int},
@@ -203,6 +221,7 @@ function _reduced_site_tensor(
     pl = projector(network, v, (i, j-1))
     eng_pl = interaction_energy(network, v, (i, j-1))
     @reduce eng_left[x] := sum(y) pl[x, y] * eng_pl[y, $l]
+    
     pu = projector(network, v, (i-1, j))
     eng_pu = interaction_energy(network, v, (i-1, j))
     @reduce eng_up[x] := sum(y) pu[x, y] * eng_pu[y, $u]
@@ -217,6 +236,11 @@ function _reduced_site_tensor(
 end
 
 
+function _normalize_probability(prob::Vector{T}) where {T <: Number}
+    # exceptions (negative pdo, etc)
+    prob / sum(prob)
+end
+
 
 function conditional_probability(peps::PEPSNetwork, w::Vector{Int})
     i, j = node_from_index(peps, length(w)+1)
@@ -229,8 +253,8 @@ function conditional_probability(peps::PEPSNetwork, w::Vector{Int})
     ψ = MPS(peps, i, :dressed)
     M = ψ[2 * j]
 
-    @tensor prob[σ] := L[x] * M[x, d, y] *
-                       A[r, d, σ] * R[y, r] order = (x, d, r, y)
+    @tensor prob[σ] := L[x] * M[x, d, y] * A[r, d, σ] *
+                       R[y, r] order = (x, d, r, y)
 
     _normalize_probability(prob)
 end

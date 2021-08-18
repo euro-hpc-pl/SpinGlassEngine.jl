@@ -143,30 +143,6 @@ function _traced_tensor(
 end
 
 
-function _horizontal_central_tensor(
-    network::AbstractGibbsNetwork{S, T}, 
-    w::Tuple{Int, Rational{Int}}
-) where {S, T}
-    i, r = w
-    j = floor(Int, r)
-    v = connecting_tensor(network, (i, j), (i, j+1))
-    @cast A[l, _, r, _] := v[l, r]
-    A
-end
-
-
-function _vertical_central_tensor(
-    network::AbstractGibbsNetwork{S, T}, 
-    v::Tuple{Rational{Int}, Int}
-) where {S, T}
-    r, j = v
-    i = floor(Int, r)
-    h = connecting_tensor(network, (i, j), (i+1, j))
-    @cast A[_, u, _, d] := h[u, d]
-    A
-end
-
-
 function _gauge_tensor(
     network::AbstractGibbsNetwork{S, T}, 
     v::R
@@ -198,16 +174,16 @@ tensor(
 
 tensor(
     network::AbstractGibbsNetwork{S, T}, 
-    v::Tuple{Rational{Int}, Int},
-    ::Val{:central_v}
-) where {S, T} = _vertical_central_tensor(network, v) 
+    v::Tuple{Int, Rational{Int}},
+    ::Val{:central_h}
+) where {S, T} = _horizontal_central_tensor(network, v) 
 
 
 tensor(
     network::AbstractGibbsNetwork{S, T}, 
-    v::Tuple{Int, Rational{Int}},
-    ::Val{:central_h}
-) where {S, T} = _horizontal_central_tensor(network, v) 
+    v::Tuple{Rational{Int}, Int},
+    ::Val{:central_v}
+) where {S, T} = _vertical_central_tensor(network, v) 
 
 
 tensor(

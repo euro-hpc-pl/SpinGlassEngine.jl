@@ -97,10 +97,11 @@ function tensor_species_map!(network::PEPSNetwork)
 end
 
 
-function _vertical_central_tensor(
+function tensor(
     network::PEPSNetwork, 
-    v::Tuple{Rational{Int}, Int}
-) 
+    v::Tuple{Rational{Int}, Int},
+    ::Val{:central_v}
+)
     r, j = v
     i = floor(Int, r)
     h = connecting_tensor(network, (i, j), (i+1, j))
@@ -109,16 +110,18 @@ function _vertical_central_tensor(
 end
 
 
-function _horizontal_central_tensor(
+function tensor(
     network::PEPSNetwork, 
-    w::Tuple{Int, Rational{Int}}
-) 
+    w::Tuple{Int, Rational{Int}},
+    ::Val{:central_h}
+)
     i, r = w
     j = floor(Int, r)
     v = connecting_tensor(network, (i, j), (i, j+1))
     @cast A[l, _, r, _] := v[l, r]
     A
 end
+
 
 function projectors(network::PEPSNetwork, vertex::NTuple{2, Int})
     i, j = vertex

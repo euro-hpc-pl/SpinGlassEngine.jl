@@ -134,23 +134,23 @@ end
 end
 
 
-function _traced_tensor(
+#= function _traced_tensor(
     network::AbstractGibbsNetwork{S, T}, 
     v::S
 ) where {S, T}
     A = site_tensor(network, v)
     dropdims(sum(A, dims=5), dims=5)
-end
+end =#
 
 
-function _gauge_tensor(
+#= function _gauge_tensor(
     network::AbstractGibbsNetwork{S, T}, 
     v::R
 ) where {S, T, R}
     X = network.gauges[v]
     @cast A[_, u, _, d] := Diagonal(X)[u, d]
     A
-end
+end =#
 
 
 function tensor(
@@ -165,32 +165,38 @@ function tensor(
 end
 
 
-tensor(
+function tensor(
     network::AbstractGibbsNetwork{S, T}, 
     v::S,
     ::Val{:site}
-) where {S, T} = _traced_tensor(network, v) 
+) where {S, T} 
+    A = site_tensor(network, v)
+    dropdims(sum(A, dims=5), dims=5)
+end 
 
-
-tensor(
+#= tensor(
     network::AbstractGibbsNetwork{S, T}, 
     v::Tuple{Int, Rational{Int}},
     ::Val{:central_h}
-) where {S, T} = _horizontal_central_tensor(network, v) 
+) where {S, T} = _horizontal_central_tensor(network, v)  =#
 
-
+#= 
 tensor(
     network::AbstractGibbsNetwork{S, T}, 
     v::Tuple{Rational{Int}, Int},
     ::Val{:central_v}
-) where {S, T} = _vertical_central_tensor(network, v) 
+) where {S, T} = _vertical_central_tensor(network, v)  =#
 
 
-tensor(
+function tensor(
     network::AbstractGibbsNetwork{S, T}, 
     v::R,
     ::Val{:gauge_h}
-) where {S, T, R} = _gauge_tensor(network, v) 
+) where {S, T, R}
+    X = network.gauges[v]
+    @cast A[_, u, _, d] := Diagonal(X)[u, d]
+    A
+end
 
 
 @memoize function connecting_tensor(

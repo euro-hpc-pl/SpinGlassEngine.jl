@@ -12,13 +12,13 @@ end
 
 @memoize Dict function _right_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int}) 
     W = prod(MPO.(Ref(peps), i .+ reverse(peps.layers_right_env)))
-    ψ = MPS_dressed(peps, i)
+    ψ = MPS(peps, i, :dressed)
     right_env(ψ, W, ∂v)
 end
 
 
 @memoize Dict function _left_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int})
-    ψ = MPS_dressed(peps, i)
+    ψ = MPS(peps, i, :dressed)
     left_env(ψ, ∂v)
 end
 
@@ -58,7 +58,7 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         layers_MPS = (4//6, 3//6, 0, -1//6),  # from bottom to top
         layers_left_env = (4//6, 3//6),
         layers_right_env=(0, -3//6)
-        )
+    )
         vmap = vertex_map(transformation, m, n)
         ng = peps_lattice(m, n)
         nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
@@ -128,20 +128,39 @@ function compress(ψ::AbstractMPS, peps::AbstractGibbsNetwork)
     SpinGlassTensors.compress(ψ, peps.bond_dim, peps.var_tol, peps.sweeps)
 end
 
-@memoize Dict function SpinGlassTensors.MPS(peps::AbstractGibbsNetwork, i::Int)
+
+@memoize Dict function _MPS(peps::AbstractGibbsNetwork, i::Int)
     if i > peps.nrows return IdentityMPS() end
     ψ = MPS(peps, i+1)
-    # ψ *= MPO(peps, i+r) - this should work but does not
     for r ∈ peps.layers_MPS ψ = MPO(peps, i+r) * ψ end
     compress(ψ, peps)
 end
 
 
-@memoize Dict function MPS_dressed(peps::AbstractGibbsNetwork, i::Int)
+@memoize Dict function _MPS_dressed(peps::AbstractGibbsNetwork, i::Int)
     ψ = MPS(peps, i+1)
     for r ∈ peps.layers_left_env ψ = MPO(peps, i+r) * ψ end
     ψ
 end
+
+SpinGlassTensors.MPS(
+    peps::AbstractGibbsNetwork,
+    i::Int,
+    s::Symbol
+) = SpinGlassTensors.MPS(peps, i, Val(s))
+
+
+SpinGlassTensors.MPS(
+    peps::AbstractGibbsNetwork,
+    i::Int,
+    ::Val{:dressed}
+) = _MPS_dressed(peps, i)
+
+
+SpinGlassTensors.MPS(
+    peps::AbstractGibbsNetwork,
+    i::Int,
+) = _MPS(peps, i)
 
 
 node_index(peps::AbstractGibbsNetwork, node::NTuple{2, Int}) = peps.ncols * (node[1] - 1) + node[2]
@@ -207,7 +226,7 @@ function conditional_probability(peps::PEPSNetwork, w::Vector{Int})
     R = _right_env(peps, i, ∂v[2*j+3 : 2*peps.ncols+2])
     A = _reduced_site_tensor(peps, (i, j), ∂v[2*j], ∂v[2*j+2])
 
-    ψ = MPS_dressed(peps, i)
+    ψ = MPS(peps, i, :dressed)
     M = ψ[2 * j]
 
     @tensor prob[σ] := L[x] * M[x, d, y] *

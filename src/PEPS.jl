@@ -11,14 +11,14 @@ end
 
 
 @memoize Dict function _right_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int}) 
-    W = prod(MPO.(Ref(peps), i .+ reverse(peps.layers_rows)))
-    ψ = MPS(peps, i+1)
+    W = prod(MPO.(Ref(peps), i .+ reverse(peps.layers_right_env)))
+    ψ = MPS_dressed(peps, i)
     right_env(ψ, W, ∂v)
 end
 
 
 @memoize Dict function _left_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int})
-    ψ = MPS(peps, i+1)
+    ψ = MPS_dressed(peps, i)
     left_env(ψ, ∂v)
 end
 
@@ -37,8 +37,10 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     sweeps::Int
     gauges::Dict{Tuple{Rational{Int}, Rational{Int}}, Vector{Float64}} # Real ?
     tensor_spiecies::Dict{Tuple{Rational{Int}, Rational{Int}}, Symbol}
-    layers_rows::NTuple{N, Union{Rational{Int}, Int}} where N  
-    layers_cols::NTuple{M, Union{Rational{Int}, Int}} where M
+    columns_MPO::NTuple{N, Union{Rational{Int}, Int}} where N
+    layers_MPS::NTuple{M, Union{Rational{Int}, Int}} where M
+    layers_left_env::NTuple{K, Union{Rational{Int}, Int}} where K
+    layers_right_env::NTuple{L, Union{Rational{Int}, Int}} where L
 
     function PEPSNetwork(
         m::Int,
@@ -49,10 +51,14 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         bond_dim::Int=typemax(Int),
         var_tol::Real=1E-8,
         sweeps::Int=4,
-        layers_cols=(-1//2, 0),  # from left to right
-        layers_rows=(1//6, 0, -3//6, -4//6)
-        # layers_rows=(0, -1//2)  # from bottom to top
-    )
+        columns_MPO = (-1//2, 0),  # from left to right
+        # layers_MPS = (1//6, 0, -3//6, -4//6),  # from bottom to top
+        # layers_left_env = (1//6,),
+        # layers_right_env=(0, -3//6)
+        layers_MPS = (4//6, 3//6, 0, -1//6),  # from bottom to top
+        layers_left_env = (4//6, 3//6),
+        layers_right_env=(0, -3//6)
+        )
         vmap = vertex_map(transformation, m, n)
         ng = peps_lattice(m, n)
         nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
@@ -62,7 +68,8 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         end
 
         network = new(factor_graph, ng, vmap, m, n, nrows, ncols, β, bond_dim,
-                      var_tol, sweeps, Dict(), Dict(), layers_rows, layers_cols
+                      var_tol, sweeps, Dict(), Dict(),
+                      columns_MPO, layers_MPS, layers_left_env, layers_right_env
                 )
         update_gauges!(network, :id)
         tensor_species_map!(network)
@@ -101,9 +108,9 @@ function SpinGlassTensors.MPO(::Type{T},
     peps::PEPSNetwork,
     r::Union{Rational{Int}, Int}
 ) where {T <: Number}
-    W = MPO(T, length(peps.layers_cols) * peps.ncols)
+    W = MPO(T, length(peps.columns_MPO) * peps.ncols)
     k = 0
-    for j ∈ 1:peps.ncols, d ∈ peps.layers_cols
+    for j ∈ 1:peps.ncols, d ∈ peps.columns_MPO
         k += 1
         W[k] = tensor(peps, (r, j + d))
     end
@@ -121,13 +128,19 @@ function compress(ψ::AbstractMPS, peps::AbstractGibbsNetwork)
     SpinGlassTensors.compress(ψ, peps.bond_dim, peps.var_tol, peps.sweeps)
 end
 
-
 @memoize Dict function SpinGlassTensors.MPS(peps::AbstractGibbsNetwork, i::Int)
     if i > peps.nrows return IdentityMPS() end
     ψ = MPS(peps, i+1)
     # ψ *= MPO(peps, i+r) - this should work but does not
-    for r ∈ peps.layers_rows ψ = MPO(peps, i+r) * ψ end
+    for r ∈ peps.layers_MPS ψ = MPO(peps, i+r) * ψ end
     compress(ψ, peps)
+end
+
+
+@memoize Dict function MPS_dressed(peps::AbstractGibbsNetwork, i::Int)
+    ψ = MPS(peps, i+1)
+    for r ∈ peps.layers_left_env ψ = MPO(peps, i+r) * ψ end
+    ψ
 end
 
 
@@ -160,34 +173,45 @@ function _normalize_probability(prob::Vector{T}) where {T <: Number}
 end
 
 
+function _reduced_site_tensor(
+    network::PEPSNetwork,
+    v::Tuple{Int, Int},
+    l::Int,
+    u::Int
+)
+    i, j = v
+    eng_local = local_energy(network, v)
+    pl = projector(network, v, (i, j-1))
+    eng_pl = interaction_energy(network, v, (i, j-1))
+    @reduce eng_left[x] := sum(y) pl[x, y] * eng_pl[y, $l]
+    pu = projector(network, v, (i-1, j))
+    eng_pu = interaction_energy(network, v, (i-1, j))
+    @reduce eng_up[x] := sum(y) pu[x, y] * eng_pu[y, $u]
+
+    en = eng_local .+ eng_left .+ eng_up
+    loc_exp = exp.(-network.β .* (en .- minimum(en)))
+
+    pr = projector(network, v, (i, j+1))
+    pd = projector(network, v, (i+1, j))
+    @cast A[r, d, σ] := pr[σ, r] * pd[σ, d] * loc_exp[σ]
+    A
+end
+
+
+
 function conditional_probability(peps::PEPSNetwork, w::Vector{Int})
     i, j = node_from_index(peps, length(w)+1)
     ∂v = boundary_state(peps, w, (i, j))
 
     L = _left_env(peps, i, ∂v[1:2*j-1])
     R = _right_env(peps, i, ∂v[2*j+3 : 2*peps.ncols+2])
+    A = _reduced_site_tensor(peps, (i, j), ∂v[2*j], ∂v[2*j+2])
 
-    h = connecting_tensor(peps, (i, j-1), (i, j))
-    v = connecting_tensor(peps, (i-1, j), (i, j))
-
-    l = ∂v[2*j]
-    u = ∂v[2*j+2]
-
-    h̃ = @view h[l, :]
-    ṽ = @view v[u, :]
-    A = central_tensor(peps, (i, j))
-
-
-    @tensor B[r, d, σ] := h̃[l] * ṽ[u] * A[l, u, r, d, σ]
-
-    ψ = MPS(peps, i+1)
+    ψ = MPS_dressed(peps, i)
     M = ψ[2 * j]
 
-    Y = peps.gauges[(i + 1//6, j)]
-    @tensor M̃[l, p, r] := M[l, p̃, r] * Diagonal(Y)[p, p̃]
-
-    @tensor prob[σ] := L[x] * M̃[x, d, y] *
-                       B[r, d, σ] * R[y, r] order = (x, d, r, y)
+    @tensor prob[σ] := L[x] * M[x, d, y] *
+                       A[r, d, σ] * R[y, r] order = (x, d, r, y)
 
     _normalize_probability(prob)
 end

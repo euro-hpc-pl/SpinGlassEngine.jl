@@ -7,7 +7,7 @@ export
     projectors,
     local_energy,
     interaction_energy,
-    central_tensor,
+    site_tensor,
     connecting_tensor,
     boundary_state,
     local_state_for_node,
@@ -117,7 +117,7 @@ function interaction_energy(
 end
 
 
-@memoize function central_tensor(
+@memoize function site_tensor(
     network::AbstractGibbsNetwork{S, T}, 
     v::S
 ) where {S, T}
@@ -138,7 +138,7 @@ function _traced_tensor(
     network::AbstractGibbsNetwork{S, T}, 
     v::S
 ) where {S, T}
-    A = central_tensor(network, v)
+    A = site_tensor(network, v)
     dropdims(sum(A, dims=5), dims=5)
 end
 

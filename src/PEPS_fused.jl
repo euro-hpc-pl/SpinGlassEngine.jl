@@ -113,7 +113,7 @@ function SpinGlassTensors.MPO(::Type{T},
                                          p_rt[r, ũ] * p_lb[l, d̃]
         W[2*j-1] = C
         
-        A = central_tensor(peps, (i, j))
+        A = site_tensor(peps, (i, j))
         W[2*j] = dropdims(sum(A, dims=5), dims=5) 
     end
     W
@@ -186,7 +186,7 @@ function conditional_probability(peps::FusedNetwork, v::Vector{Int})
 
     L = _left_env(peps, i, ∂v[1:2*j-2])
     R = _right_env(peps, i, ∂v[2*j+2:peps.ncols*2+1])
-    A = central_tensor(peps, (i, j))
+    A = site_tensor(peps, (i, j))
         
     X, MX, M = W[2*j-1], ψ[2*j-1], ψ[2*j]
 

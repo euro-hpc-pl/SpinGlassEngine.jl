@@ -188,6 +188,7 @@ function update_gauges!(
     @assert type ∈ (:id, :rand)
     for i ∈ 1:network.nrows - 1, j ∈ 1:network.ncols
         a, b = size(interaction_energy(network, (i, j), (i + 1, j)))
+
         Y = type == :id ? ones(a) : rand(a) .+ 0.1
         push!(network.gauges, (i + 1//N, j) => Y, (i + 2//N, j) => 1 ./ Y)
         Z = type == :id ? ones(b) : rand(b) .+ 0.1

@@ -29,25 +29,69 @@ struct FusedNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     bond_dim::Int
     var_tol::Real
     sweeps::Int
+    gauges::Dict{Tuple{Rational{Int}, Rational{Int}}, Vector{Float64}} # Real ?
+    tensor_spiecies::Dict{Tuple{Rational{Int}, Rational{Int}}, Symbol}
+    columns_MPO::NTuple{N, Union{Rational{Int}, Int}} where N
+    layers_MPS::NTuple{M, Union{Rational{Int}, Int}} where M
+    layers_left_env::NTuple{K, Union{Rational{Int}, Int}} where K
+    layers_right_env::NTuple{L, Union{Rational{Int}, Int}} where L
 
 
     function FusedNetwork(
         m::Int,
         n::Int,
-        factor_graph,
+        factor_graph::LabelledGraph,
         transformation::LatticeTransformation;
         β::Real,
         bond_dim::Int=typemax(Int),
         var_tol::Real=1E-8,
-        sweeps::Int=4
+        sweeps::Int=4,
+        columns_MPO = (-1//2, 0),  # from left to right
+        # layers_MPS=(0, -3//6),  # from bottom to top
+        # layers_left_env=(),
+        # layers_right_env=(0, -3//6)
+        layers_MPS=(3//6, 0),  # from bottom to top
+        layers_left_env=(3//6,),
+        layers_right_env=(0, -3//6)
     )
-        vmap = vertex_map(transformation, m, n)
-        ng = cross_lattice(m, n)
-        nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
-        if !is_compatible(factor_graph, ng)
-            throw(ArgumentError("Factor graph not compatible with given network."))
-        end
-        new(factor_graph, ng, vmap, m, n, nrows, ncols, β, bond_dim, var_tol, sweeps)
+    vmap = vertex_map(transformation, m, n)
+    ng = cross_lattice(m, n)
+    nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
+    
+    if !is_compatible(factor_graph, ng)
+        throw(ArgumentError("Factor graph not compatible with given network."))
+    end
+    network = new(factor_graph, ng, vmap, m, n, nrows, ncols, β, bond_dim,
+                  var_tol, sweeps, Dict(), Dict(),
+                  columns_MPO, layers_MPS, layers_left_env, layers_right_env
+            )
+    update_gauges!(network, :id)
+    tensor_species_map!(network)
+    network
+    end
+end
+
+
+function tensor_species_map!(network::FusedNetwork)
+    for i ∈ 1:network.nrows, j ∈ 1:network.ncols
+        push!(network.tensor_spiecies, (i, j) => :site)
+    end
+    for i ∈ 1:network.nrows, j ∈ 1:network.ncols - 1
+        push!(network.tensor_spiecies, (i, j + 1//2) => :virtual)
+    end
+    for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols
+        push!(network.tensor_spiecies, (i + 1//2, j) => :central_v)
+    end
+    for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols-1
+        push!(network.tensor_spiecies, (i + 1//2, j + 1//2) => :central_d)
+    end
+    for i ∈ 1:network.nrows-1, r ∈ 1:1//2:network.ncols
+        push!(network.tensor_spiecies,
+            (i + 1//6, r) => :gauge_h, 
+            (i + 2//6, r) => :gauge_h,
+            (i + 4//6, r) => :gauge_h, 
+            (i + 5//6, r) => :gauge_h,
+        )
     end
 end
 
@@ -68,98 +112,6 @@ function projectors(network::FusedNetwork, vertex::NTuple{2, Int})
 end
 
 
-function MPO_connecting(::Type{T},
-    peps::FusedNetwork,
-    r::Rational{Int}
-) where {T <: Number}
-    W = MPO(T, 2 * peps.ncols)
-
-    id = floor(Int, r)
-    iu = ceil(Int, r)
-
-    for j ∈ 1:peps.ncols
-        NW = connecting_tensor(peps, (id, j-1), (iu, j))
-        NE = connecting_tensor(peps, (id, j), (iu, j-1))
-
-        @cast B[_, (u, ũ), _, (d, d̃)] := NW[u, d] * NE[ũ, d̃] 
-        W[2*j-1] = B
-
-        v = connecting_tensor(peps, (id, j), (iu, j))
-        @cast A[_, u, _, d] := v[u, d]
-        W[2*j] = A
-    end
-    W
-end
-
-function SpinGlassTensors.MPO(::Type{T},
-    peps::FusedNetwork,
-    i::Int
-) where {T <: Number}
-    W = MPO(T, 2 * peps.ncols)
-
-    for j ∈ 1:peps.ncols
-        left_nbrs = ((i+1, j), (i, j), (i-1, j))
-        prl = projector.(Ref(peps), Ref((i, j-1)), left_nbrs)
-        p_lb, p_l, p_lt = last(fuse_projectors(prl))
-
-        right_nbrs = ((i+1, j-1), (i, j-1), (i-1, j-1))
-        prr = projector.(Ref(peps), Ref((i, j)), right_nbrs)
-        p_rb, p_r, p_rt = last(fuse_projectors(prr))
-
-        h = connecting_tensor(peps, (i, j-1), (i, j))
-
-        @tensor B[l, r] := p_l[l, x] * h[x, y] * p_r[r, y]    
-        @cast C[l, (ũ, u), r, (d̃, d)] |= B[l, r] * p_lt[l, u] * p_rb[r, d] * 
-                                         p_rt[r, ũ] * p_lb[l, d̃]
-        W[2*j-1] = C
-        
-        A = site_tensor(peps, (i, j))
-        W[2*j] = dropdims(sum(A, dims=5), dims=5) 
-    end
-    W
-end
-
-
-@memoize Dict SpinGlassTensors.MPO(
-    peps::FusedNetwork,
-    i::Int
-) = SpinGlassTensors.MPO(Float64, peps, i)
-
-
-@memoize Dict MPO_connecting(
-    peps::FusedNetwork,
-    r::Rational{Int}
-) = MPO_connecting(Float64, peps, r)
-
-
-function MPO_gauge(::Type{T},
-    network::FusedNetwork,
-    i::Int,
-    pos::Symbol,
-    trans::Symbol=:none
-) where {T <: Number}
-    W = MPO(T, 2 * network.ncols)
-    for j ∈ 1:network.ncols
-        X = generate_gauge(network, (i, j), pos)
-        Y = generate_gauge(network, (i, j), pos, :diag)
-        Z = generate_gauge(network, (i, j), pos, :antydiag)
-        @cast A[_, u, _, d] := X[u, d]
-        W[2*j] = A
-        @cast B[_, (u, ũ), _, (d, d̃)] := Y[u, d] * Z[ũ, d̃]
-        W[2*j-1] = B
-    end
-    W
-end
-
-
-@memoize Dict MPO_gauge(
-network::FusedNetwork,
-i::Int,
-pos::Symbol,
-trans::Symbol = :none
-) = MPO_gauge(Float64, network, i, pos, trans)
-
-
 function boundary_at_splitting_node(peps::FusedNetwork, node::NTuple{2, Int})
     i, j = node
     vcat(
@@ -176,31 +128,34 @@ function boundary_at_splitting_node(peps::FusedNetwork, node::NTuple{2, Int})
 end
 
 
-function conditional_probability(peps::FusedNetwork, v::Vector{Int})   
-    i, j = node_from_index(peps, length(v)+1)
-
-    W = MPO_connecting(peps, i - 1//2) * MPO(peps, i)
-    ψ = MPS(peps, i+1)
-
-    ∂v = boundary_state(peps, v, (i, j))
+function conditional_probability(peps::FusedNetwork, w::Vector{Int})
+    i, j = node_from_index(peps, length(w)+1)
+    ∂v = boundary_state(peps, w, (i, j))
 
     L = _left_env(peps, i, ∂v[1:2*j-2])
-    R = _right_env(peps, i, ∂v[2*j+2:peps.ncols*2+1])
-    A = site_tensor(peps, (i, j))
-        
-    X, MX, M = W[2*j-1], ψ[2*j-1], ψ[2*j]
+    R = _right_env(peps, i, ∂v[2*j+2 : 2*peps.ncols+1])
+
+    # A = _reduced_site_tensor(peps, (i, j), ∂v[2*j], ∂v[2*j+2])
+    A = tensor_temp(peps, (i, j))
+    X = tensor(peps, (i, j-1//2))
+    Xdiag = tensor(peps, (i - 1//2, j-1//2))
 
     l, d, u = ∂v[2*j-1:2*j+1]
-    
+
+    X1 = @view Xdiag[1, d, 1, :]
+    X2 = @view X[l, :, :, :]
+    @tensor Xt[r, d] := X2[x, r, d] * X1[x]
+
     ev = connecting_tensor(peps, (i-1, j), (i, j)) 
     vt = ev[u, :]
-
     @tensor Ã[l, r, d, σ] := A[l, x, r, d, σ] * vt[x]
-    Xt = @view X[l, d, :, :]
-        
+
+    ψ = MPS(peps, i, :dressed)
+    MX, M = ψ[2*j-1], ψ[2*j]
+
     @tensor prob[σ] := L[x] * Xt[k, y] * MX[x, y, z] * M[z, l, m] *
                        Ã[k, n, l, σ] * R[m, n] order = (x, y, z, k, l, m, n)
-    
+
     _normalize_probability(prob)
 end
 

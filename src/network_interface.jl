@@ -14,6 +14,7 @@ export
     iteration_order,
     fuse_projectors,
     tensor,
+    tensor_temp,
     update_gauges!
 
 # S: type of the vertex of network
@@ -130,8 +131,99 @@ end
         @cast A[(c, γ), σ] |= A[c, σ] * pv[σ, γ]
         dim[j] = size(pv, 2)
     end
+    Ã = reshape(A, dim..., :)
+    dropdims(sum(Ã, dims=5), dims=5)
+end
+
+
+function tensor_temp(
+    network::AbstractGibbsNetwork{S, T}, 
+    v::Tuple{Int, Int}
+) where {S, T}
+    loc_exp = exp.(-network.β .* local_energy(network, v))
+    projs = projectors(network, v)
+    dim = zeros(Int, length(projs))
+
+    @cast A[_, i] := loc_exp[i]
+    for (j, pv) ∈ enumerate(projs)
+        @cast A[(c, γ), σ] |= A[c, σ] * pv[σ, γ]
+        dim[j] = size(pv, 2)
+    end
     reshape(A, dim..., :)
 end
+
+
+function tensor(
+    network::AbstractGibbsNetwork{S, T},
+    v::Tuple{Rational{Int}, Int},
+    ::Val{:central_v}
+) where {S, T}
+    r, j = v
+    i = floor(Int, r)
+    h = connecting_tensor(network, (i, j), (i+1, j))
+    @cast A[_, u, _, d] := h[u, d]
+    A
+end
+
+
+function tensor(
+    network::AbstractGibbsNetwork{S, T},
+    w::Tuple{Int, Rational{Int}},
+    ::Val{:central_h}
+) where {S, T}
+    i, r = w
+    j = floor(Int, r)
+    v = connecting_tensor(network, (i, j), (i, j+1))
+    @cast A[l, _, r, _] := v[l, r]
+    A
+end
+
+
+function tensor(
+    network::AbstractGibbsNetwork{S, T},
+    v::Tuple{Rational{Int}, Rational{Int}},
+    ::Val{:central_d}
+) where {S, T}
+    r, s = v
+    i = floor(Int, r)
+    j = floor(Int, s)
+    NW = connecting_tensor(network, (i, j), (i + 1, j + 1))
+    NE = connecting_tensor(network, (i, j + 1), (i + 1, j))
+    @cast A[_, (u, ũ), _, (d, d̃)] := NW[u, d] * NE[ũ, d̃] 
+    A
+end
+
+
+function tensor(
+    network::AbstractGibbsNetwork{S, T},
+    v::Tuple{Int, Rational{Int}},
+    ::Val{:virtual}
+) where {S, T}
+    i, s = v
+    j = floor(Int, s)
+
+    left_nbrs = ((i+1, j+1), (i, j+1), (i-1, j+1))
+    prl = projector.(Ref(network), Ref((i, j)), left_nbrs)
+    p_lb, p_l, p_lt = last(fuse_projectors(prl))
+
+    right_nbrs = ((i+1, j), (i, j), (i-1, j))
+    prr = projector.(Ref(network), Ref((i, j+1)), right_nbrs)
+    p_rb, p_r, p_rt = last(fuse_projectors(prr))
+
+    h = connecting_tensor(network, (i, j), (i, j+1))
+
+    @tensor B[l, r] := p_l[l, x] * h[x, y] * p_r[r, y]    
+    @cast C[l, (ũ, u), r, (d̃, d)] |= B[l, r] * p_lt[l, u] * p_rb[r, d] * 
+                                     p_rt[r, ũ] * p_lb[l, d̃]
+    C
+end
+
+
+tensor(
+    network::AbstractGibbsNetwork{S, T}, 
+    v::S,
+    ::Val{:site}
+) where {S, T} = site_tensor(network, v)
 
 
 function tensor(
@@ -144,16 +236,6 @@ function tensor(
         ones(1, 1, 1, 1)
     end
 end
-
-
-function tensor(
-    network::AbstractGibbsNetwork{S, T}, 
-    v::S,
-    ::Val{:site}
-) where {S, T} 
-    A = site_tensor(network, v)
-    dropdims(sum(A, dims=5), dims=5)
-end 
 
 
 function tensor(

@@ -82,7 +82,7 @@ function tensor_species_map!(network::PEPSNetwork)
     for i ∈ 1:network.nrows, j ∈ 1:network.ncols
         push!(network.tensor_spiecies, (i, j) => :site)
     end
-    for i ∈ 1:network.nrows, j ∈ 1:network.ncols
+    for i ∈ 1:network.nrows, j ∈ 1:network.ncols-1
         push!(network.tensor_spiecies, (i, j + 1//2) => :central_h)
     end
     for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols
@@ -97,32 +97,6 @@ function tensor_species_map!(network::PEPSNetwork)
 end
 
 
-function tensor(
-    network::PEPSNetwork, 
-    v::Tuple{Rational{Int}, Int},
-    ::Val{:central_v}
-)
-    r, j = v
-    i = floor(Int, r)
-    h = connecting_tensor(network, (i, j), (i+1, j))
-    @cast A[_, u, _, d] := h[u, d]
-    A
-end
-
-
-function tensor(
-    network::PEPSNetwork, 
-    w::Tuple{Int, Rational{Int}},
-    ::Val{:central_h}
-)
-    i, r = w
-    j = floor(Int, r)
-    v = connecting_tensor(network, (i, j), (i, j+1))
-    @cast A[l, _, r, _] := v[l, r]
-    A
-end
-
-
 function projectors(network::PEPSNetwork, vertex::NTuple{2, Int})
     i, j = vertex
     neighbours = ((i, j-1), (i-1, j), (i, j+1), (i+1, j))
@@ -131,7 +105,7 @@ end
 
 
 function SpinGlassTensors.MPO(::Type{T},
-    peps::PEPSNetwork,
+    peps::AbstractGibbsNetwork,
     r::Union{Rational{Int}, Int}
 ) where {T <: Number}
     W = MPO(T, length(peps.columns_MPO) * peps.ncols)
@@ -145,7 +119,7 @@ end
 
 
 @memoize Dict SpinGlassTensors.MPO(
-    peps::PEPSNetwork,
+    peps::AbstractGibbsNetwork,
     r::Union{Rational{Int}, Int}
 ) = MPO(Float64, peps, r)
 

@@ -17,11 +17,16 @@ export
 end
 
 
-tensor_size(
+function tensor_size(
     network::AbstractGibbsNetwork{S, T}, 
     v::S
-) where {S, T} = tensor_size(network, v, network.tensor_species_map[v])
-
+) where {S, T} 
+    if v ∈ keys(network.tensor_spiecies)
+        tensor_size(network, v, Val(network.tensor_spiecies[v]))
+    else
+        (1, 1, 1, 1)
+    end
+end
 
 function tensor(
     network::AbstractGibbsNetwork{S, T}, 
@@ -47,7 +52,7 @@ function tensor_size(
     v::S,
     ::Val{:site}
 ) where {S, T}
-    dims = sizes.(projectors(network, v))
+    dims = size.(projectors(network, v))
     pdims = first.(dims)
     @assert all(σ -> σ == first(pdims), first.(dims))
     last.(dims)

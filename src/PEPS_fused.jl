@@ -127,7 +127,7 @@ function boundary_at_splitting_node(peps::FusedNetwork, node::NTuple{2, Int})
     )
 end
 
-
+# to be simplified
 function conditional_probability(peps::FusedNetwork, w::Vector{Int})
     i, j = node_from_index(peps, length(w)+1)
     ∂v = boundary_state(peps, w, (i, j))
@@ -135,7 +135,6 @@ function conditional_probability(peps::FusedNetwork, w::Vector{Int})
     L = _left_env(peps, i, ∂v[1:2*j-2])
     R = _right_env(peps, i, ∂v[2*j+2 : 2*peps.ncols+1])
 
-    # A = _reduced_site_tensor(peps, (i, j), ∂v[2*j], ∂v[2*j+2])
     A = tensor_temp(peps, (i, j))
     X = tensor(peps, (i, j-1//2))
     Xdiag = tensor(peps, (i - 1//2, j-1//2))

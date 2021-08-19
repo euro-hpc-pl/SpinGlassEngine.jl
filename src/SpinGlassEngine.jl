@@ -26,5 +26,6 @@ include("MPS_search.jl")
 include("search.jl")
 include("PEPS.jl")
 include("PEPS_fused.jl")
+include("network_tensors.jl")
 
 end # module

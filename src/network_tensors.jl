@@ -158,33 +158,16 @@ function _all_fused_projectors(
     i, s = v
     j = floor(Int, s)
 
-    (last(projector.(Ref(network), Ref((i, j)), 
-                    ((i+1, j+1), (i, j+1), (i-1, j+1))
-                    )),
-    last(projector.(Ref(network), Ref((i, j+1)), 
-                    ((i+1, j), (i, j), (i-1, j))
-    )))
+    left_nbrs = ((i+1, j+1), (i, j+1), (i-1, j+1))
+    prl = projector.(Ref(network), Ref((i, j)), left_nbrs)
+    p_lb, p_l, p_lt = last(fuse_projectors(prl))
+
+    right_nbrs = ((i+1, j), (i, j), (i-1, j))
+    prr = projector.(Ref(network), Ref((i, j+1)), right_nbrs)
+    p_rb, p_r, p_rt = last(fuse_projectors(prr))
+                
+    p_lb, p_l, p_lt, p_rb, p_r, p_rt
 end
-
-
-#= function tensor(
-    network::AbstractGibbsNetwork{S, T},
-    v::Tuple{Int, Rational{Int}},
-    ::Val{:virtual}
-) where {S, T}
-    i, s = v
-    j = floor(Int, s)
-
-    ((p_lb, p_l, p_lt), 
-     (p_rb, p_r, p_rt)) = _all_fused_projectors(network, v)
-
-    h = connecting_tensor(network, (i, j), (i, j+1)) #floor.(Int, v), ceil.(Int, v))
-
-    @tensor B[l, r] := p_l[l, x] * h[x, y] * p_r[r, y]    
-    @cast A[l, (ũ, u), r, (d̃, d)] |= B[l, r] * p_lt[l, u] * p_rb[r, d] * 
-                                     p_rt[r, ũ] * p_lb[l, d̃]
-    A
-end =#
 
 
 function tensor(
@@ -195,21 +178,16 @@ function tensor(
     i, s = v
     j = floor(Int, s)
 
-    left_nbrs = ((i+1, j+1), (i, j+1), (i-1, j+1))
-    prl = projector.(Ref(network), Ref((i, j)), left_nbrs)
-    p_lb, p_l, p_lt = last(fuse_projectors(prl))
+    p_lb, p_l, p_lt, 
+    p_rb, p_r, p_rt = _all_fused_projectors(network, v)
 
-    right_nbrs = ((i+1, j), (i, j), (i-1, j))
-    prr = projector.(Ref(network), Ref((i, j+1)), right_nbrs)
-    p_rb, p_r, p_rt = last(fuse_projectors(prr))
-
-    h = connecting_tensor(network, (i, j), (i, j+1))
+    h = connecting_tensor(network, (i, j), (i, j+1)) #floor.(Int, v), ceil.(Int, v))
 
     @tensor B[l, r] := p_l[l, x] * h[x, y] * p_r[r, y]    
-    @cast C[l, (ũ, u), r, (d̃, d)] |= B[l, r] * p_lt[l, u] * p_rb[r, d] * 
+    @cast A[l, (ũ, u), r, (d̃, d)] |= B[l, r] * p_lt[l, u] * p_rb[r, d] * 
                                      p_rt[r, ũ] * p_lb[l, d̃]
-    C
-end
+    A
+end 
 
 
 function tensor_size(
@@ -217,8 +195,8 @@ function tensor_size(
     v::Tuple{Int, Rational{Int}},
     ::Val{:virtual}
 ) where {S, T}
-    ((p_lb, p_l, p_lt), 
-     (p_rb, p_r, p_rt)) = _all_fused_projectors(network, v)
+    p_lb, p_l, p_lt, 
+    p_rb, p_r, p_rt = _all_fused_projectors(network, v)
 
     (size(p_l, 1), size(p_lt, 2) * size(p_rt, 2),
      size(p_r, 1), size(p_rb, 2) * size(p_lb, 2))
@@ -302,7 +280,10 @@ end
 ) = MPO(Float64, peps, r)
 
 
-@memoize Dict function _MPS(peps::AbstractGibbsNetwork, i::Int)
+@memoize Dict function SpinGlassTensors.MPS(
+    peps::AbstractGibbsNetwork,
+    i::Int
+) 
     if i > peps.nrows return IdentityMPS() end
     ψ = MPS(peps, i+1)
     for r ∈ peps.layers_MPS ψ = MPO(peps, i+r) * ψ end
@@ -310,31 +291,22 @@ end
 end
 
 
-@memoize Dict function _MPS_dressed(peps::AbstractGibbsNetwork, i::Int)
+function SpinGlassTensors.MPS(
+    peps::AbstractGibbsNetwork,
+    i::Int,
+    ::Val{:dressed}
+)
     ψ = MPS(peps, i+1)
     for r ∈ peps.layers_left_env ψ = MPO(peps, i+r) * ψ end
     ψ
 end
 
 
-SpinGlassTensors.MPS(
+@memoize Dict SpinGlassTensors.MPS(
     peps::AbstractGibbsNetwork,
     i::Int,
     s::Symbol
 ) = SpinGlassTensors.MPS(peps, i, Val(s))
-
-
-SpinGlassTensors.MPS(
-    peps::AbstractGibbsNetwork,
-    i::Int,
-    ::Val{:dressed}
-) = _MPS_dressed(peps, i)
-
-
-SpinGlassTensors.MPS(
-    peps::AbstractGibbsNetwork,
-    i::Int,
-) = _MPS(peps, i)
 
 
 function compress(ψ::AbstractMPS, peps::AbstractGibbsNetwork)

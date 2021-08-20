@@ -19,8 +19,8 @@ end
 
 function tensor_size(
     network::AbstractGibbsNetwork{S, T}, 
-    v::S
-) where {S, T} 
+    v::R
+) where {S, T, R}
     if v ∈ keys(network.tensor_spiecies)
         tensor_size(network, v, Val(network.tensor_spiecies[v]))
     else
@@ -251,6 +251,44 @@ function reduced_site_tensor(
     pr = projector(network, v, (i, j+1))
     pd = projector(network, v, (i+1, j))
     @cast A[r, d, σ] := pr[σ, r] * pd[σ, d] * loc_exp[σ]
+    A
+end
+
+
+
+function reduced_site_tensor(
+    network::FusedNetwork,
+    v::Tuple{Int, Int},
+    ld::Int,
+    l::Int,
+    d::Int,
+    u::Int
+)
+    i, j = v
+    eng_local = local_energy(network, v)
+
+    pl = projector(network, v, (i, j-1))
+    eng_pl = interaction_energy(network, v, (i, j-1))
+    @reduce eng_left[x] := sum(y) pl[x, y] * eng_pl[y, $l]
+
+    pd = projector(network, v, (i-1, j-1))
+    eng_pd = interaction_energy(network, v, (i-1, j-1))
+    @reduce eng_diag[x] := sum(y) pd[x, y] * eng_pd[y, $d]
+    
+    pu = projector(network, v, (i-1, j))
+    eng_pu = interaction_energy(network, v, (i-1, j))
+    @reduce eng_up[x] := sum(y) pu[x, y] * eng_pu[y, $u]
+
+    en = eng_local .+ eng_left .+ eng_diag .+ eng_up
+    loc_exp = exp.(-network.β .* (en .- minimum(en)))
+
+    p_lb = projector(network, (i, j-1), (i+1, j))
+    p_rb = projector(network, (i, j), (i+1, j-1))
+    @cast rp_lb[x] := p_lb[$ld, x]
+    pr = projector(network, v, ((i+1, j+1), (i, j+1), (i-1, j+1)))
+    pd = projector(network, v, (i+1, j))
+
+    @cast A[r, d, (k̃, k), σ] := p_rb[σ, k] * rp_lb[k̃] * pr[σ, r] * pd[σ, d] * loc_exp[σ]
     A
 end
 

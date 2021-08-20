@@ -1,7 +1,7 @@
 export
     reduced_site_tensor,
-    tensor,
-    tensor_size
+    tensor_size,
+    tensor
 
 
 @memoize function tensor(
@@ -161,13 +161,10 @@ function tensor(
     v::Tuple{Int, Rational{Int}},
     ::Val{:virtual}
 ) where {S, T}
-    i, s = v
-    j = floor(Int, s)
-
     p_lb, p_l, p_lt, 
     p_rb, p_r, p_rt = _all_fused_projectors(network, v)
 
-    h = connecting_tensor(network, (i, j), (i, j+1)) #floor.(Int, v), ceil.(Int, v))
+    h = connecting_tensor(network, floor.(Int, v), ceil.(Int, v))
 
     @tensor B[l, r] := p_l[l, x] * h[x, y] * p_r[r, y]    
     @cast A[l, (ũ, u), r, (d̃, d)] |= B[l, r] * p_lt[l, u] * p_rb[r, d] * 
@@ -236,7 +233,6 @@ function reduced_site_tensor(
 end
 
 
-
 function reduced_site_tensor(
     network::FusedNetwork,
     v::Tuple{Int, Int},
@@ -269,7 +265,8 @@ function reduced_site_tensor(
     pr = projector(network, v, ((i+1, j+1), (i, j+1), (i-1, j+1)))
     pd = projector(network, v, (i+1, j))
 
-    @cast A[r, d, (k̃, k), σ] := p_rb[σ, k] * rp_lb[k̃] * pr[σ, r] * pd[σ, d] * loc_exp[σ]
+    @cast A[r, d, (k̃, k), σ] := p_rb[σ, k] * rp_lb[k̃] * pr[σ, r] * 
+                                pd[σ, d] * loc_exp[σ]
     A
 end
 

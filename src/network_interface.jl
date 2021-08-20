@@ -32,7 +32,7 @@ network_graph(network::AbstractGibbsNetwork{S, T}) where {S, T} = network.networ
 
 vertex_map(network::AbstractGibbsNetwork{S, T}) where {S, T} = network.vertex_map
 
-boundary_at_splitting_node(network::AbstractGibbsNetwork{S, T}, node::S) where {S, T} = not_implmented("boundary_at_splitting_node")
+boundary(network::AbstractGibbsNetwork{S, T}, node::S) where {S, T} = not_implmented("boundary_at_splitting_node")
 
 node_index(network::AbstractGibbsNetwork{S, T}, node::S) where {S, T} = not_implmented("node_index")
 
@@ -73,7 +73,7 @@ function projector(
 end
 
 
-function fuse_projectors(projectors)
+function fuse_projectors(projectors) # Union{Vector{R}, NTuple{N, T}} where T
     fused, energy = rank_reveal(hcat(projectors...), :PE)
     i₀ = 1
     transitions = []
@@ -133,10 +133,7 @@ end
 
 function _boundary_index(
     network::AbstractGibbsNetwork{S, T}, 
-    v::S, 
-    w::S, 
-    k::S, 
-    l::S, 
+    v::S, w::S, k::S, l::S, 
     σ::Vector{Int}
 ) where {S, T}
     pv = projector(network, v, w)
@@ -150,10 +147,10 @@ function boundary_state(
     network::AbstractGibbsNetwork{S, T},
     σ::Vector{Int},
     node::S
-) where {S, T}
+) where {S, T} 
     [
         _boundary_index(network, x..., σ)
-        for x ∈ boundary_at_splitting_node(network, node)
+        for x ∈ boundary(network, node)
     ]
 end
 

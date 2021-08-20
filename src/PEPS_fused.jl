@@ -1,6 +1,6 @@
 export
     FusedNetwork, 
-    boundary_at_splitting_node,
+    boundary,
     conditional_probability,
     update_energy,
     projectors
@@ -121,7 +121,7 @@ function projectors(network::FusedNetwork, vertex::NTuple{2, Int})
 end
 
 
-function boundary_at_splitting_node(peps::FusedNetwork, node::NTuple{2, Int})
+function boundary(peps::FusedNetwork, node::NTuple{2, Int})
     i, j = node
     vcat(
         [

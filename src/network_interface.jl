@@ -4,7 +4,6 @@ export
     AbstractGibbsNetwork,
     network_graph,
     vertex_map,
-    projectors,
     local_energy,
     interaction_energy,
     connecting_tensor,
@@ -186,24 +185,16 @@ function update_gauges!(
 ) where T
     N = 6
     @assert type ∈ (:id, :rand)
-    for i ∈ 1:network.nrows - 1, j ∈ 1:network.ncols
-        a, b = size(interaction_energy(network, (i, j), (i + 1, j)))
-
-        Y = type == :id ? ones(a) : rand(a) .+ 0.1
+    for i ∈ 1:network.nrows-1, j ∈ 1:1//2:network.ncols
+        _, u, _, d = tensor_size(network, (i+1//2, j))
+        Y = type == :id ? ones(u) : rand(u) .+ 0.1
         push!(network.gauges, (i + 1//N, j) => Y, (i + 2//N, j) => 1 ./ Y)
-        Z = type == :id ? ones(b) : rand(b) .+ 0.1
-        push!(network.gauges, 
-            (i + 4//N, j) => Z,
-            (i + 5//N, j) => 1 ./ Z,
-            (i + 1//N, j+1//2) => ones(1),
-            (i + 2//N, j+1//2) => ones(1),
-            (i + 4//N, j+1//2) => ones(1),
-            (i + 5//N, j+1//2) => ones(1)
-        )
+        Z = type == :id ? ones(d) : rand(d) .+ 0.1
+        push!(network.gauges, (i + 4//N, j) => Z, (i + 5//N, j) => 1 ./ Z)
     end
-    for j ∈ 1:network.ncols
-        push!(network.gauges, 
-            (network.nrows + 1//N, j) => ones(1), (-1//N, j) => ones(1)
-        )
-    end
+    # for j ∈ 1:network.ncols
+    #     push!(network.gauges, 
+    #         (network.nrows + 1//N, j) => ones(1), (-1//N, j) => ones(1)
+    #     )
+    # end
 end

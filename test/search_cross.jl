@@ -31,6 +31,7 @@
 
     for transform ∈ all_lattice_transformations
         peps = FusedNetwork(m, n, fg, transform, β=β)
+        update_gauges!(peps, :rand)
         sol = low_energy_spectrum(peps, states_to_keep)#, merge_branches(peps, 1.0))
         #println(sol.energies)
         @test first(sol.energies) ≈ ground_energy

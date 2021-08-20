@@ -1,4 +1,4 @@
-export 
+export
     FusedNetwork, 
     boundary_at_splitting_node,
     conditional_probability,
@@ -47,6 +47,14 @@ struct FusedNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         var_tol::Real=1E-8,
         sweeps::Int=4,
         columns_MPO = (-1//2, 0),  # from left to right
+        # with gauges
+        # layers_MPS=(1//6, 0, -3//6, -4//6),  # from bottom to top 
+        # layers_left_env=(1//6,),
+        # layers_right_env=(0, -3//6)
+        # with gauges
+        # layers_MPS=(4//6, 3//6, 0, -1//6),  # from bottom to top 
+        # layers_left_env=(4//6, 3//6),
+        # layers_right_env=(0, -3//6)
         # layers_MPS=(0, -3//6),  # from bottom to top
         # layers_left_env=(),
         # layers_right_env=(0, -3//6)
@@ -119,44 +127,86 @@ function boundary_at_splitting_node(peps::FusedNetwork, node::NTuple{2, Int})
             [((i, k-1), (i+1, k), (i, k), (i+1, k-1)), ((i, k), (i+1, k))] for k ∈ 1:j-1
         ]...,
         (
-            (i, j-1), ((i+1, j), (i, j), (i-1, j))
-        ), 
+            (i, j-1), (i+1, j)
+        ),
+        (
+            (i, j-1), (i, j)
+        ),
+        (
+            (i-1, j-1), (i, j)
+        ),
+        (
+            (i-1, j), (i, j)
+        ),
         [
-            [((i-1, k-1), (i, k), (i-1, k), (i, k-1)), ((i-1, k), (i, k))] for k ∈ j:peps.ncols
+            [((i-1, k-1), (i, k), (i-1, k), (i, k-1)), ((i-1, k), (i, k))] for k ∈ j+1:peps.ncols
         ]...
     )
 end
 
-# to be simplified
+
 function conditional_probability(peps::FusedNetwork, w::Vector{Int})
     i, j = node_from_index(peps, length(w)+1)
     ∂v = boundary_state(peps, w, (i, j))
 
     L = _left_env(peps, i, ∂v[1:2*j-2])
-    R = _right_env(peps, i, ∂v[2*j+2 : 2*peps.ncols+1])
-
-    A = tensor_temp(peps, (i, j))
-    X = tensor(peps, (i, j-1//2))
-    Xdiag = tensor(peps, (i - 1//2, j-1//2))
-
-    l, d, u = ∂v[2*j-1:2*j+1]
-
-    X1 = @view Xdiag[1, d, 1, :]
-    X2 = @view X[l, :, :, :]
-    @tensor Xt[r, d] := X2[x, r, d] * X1[x]
-
-    ev = connecting_tensor(peps, (i-1, j), (i, j)) 
-    vt = ev[u, :]
-    @tensor Ã[l, r, d, σ] := A[l, x, r, d, σ] * vt[x]
+    R = _right_env(peps, i, ∂v[2*j+3 : 2*peps.ncols+2])
+    A = reduced_site_tensor(peps, (i, j), ∂v[2*j-1], ∂v[2*j], ∂v[2*j+1], ∂v[2*j+2])
 
     ψ = MPS(peps, i, :dressed)
     MX, M = ψ[2*j-1], ψ[2*j]
 
-    @tensor prob[σ] := L[x] * Xt[k, y] * MX[x, y, z] * M[z, l, m] *
-                       Ã[k, n, l, σ] * R[m, n] order = (x, y, z, k, l, m, n)
-
+    @tensor prob[σ] := L[x] * MX[x, m, y] * M[y, l, z] * R[z, k] *
+                        A[k, l, m, σ]  order = (x, y, z, k, l, m)
     _normalize_probability(prob)
 end
+
+
+# function boundary_at_splitting_node(peps::FusedNetwork, node::NTuple{2, Int})
+#     i, j = node
+#     vcat(
+#         [
+#             [((i, k-1), (i+1, k), (i, k), (i+1, k-1)), ((i, k), (i+1, k))] for k ∈ 1:j-1
+#         ]...,
+#         (
+#             (i, j-1), ((i+1, j), (i, j), (i-1, j))
+#         ), 
+#         [
+#             [((i-1, k-1), (i, k), (i-1, k), (i, k-1)), ((i-1, k), (i, k))] for k ∈ j:peps.ncols
+#         ]...
+#     )
+# end
+
+# # to be simplified
+# function conditional_probability(peps::FusedNetwork, w::Vector{Int})
+#     i, j = node_from_index(peps, length(w)+1)
+#     ∂v = boundary_state(peps, w, (i, j))
+
+#     L = _left_env(peps, i, ∂v[1:2*j-2])
+#     R = _right_env(peps, i, ∂v[2*j+2 : 2*peps.ncols+1])
+
+#     A = tensor_temp(peps, (i, j))
+#     X = tensor(peps, (i, j-1//2))
+#     Xdiag = tensor(peps, (i - 1//2, j-1//2))
+
+#     l, d, u = ∂v[2*j-1:2*j+1]
+
+#     X1 = @view Xdiag[1, d, 1, :]
+#     X2 = @view X[l, :, :, :]
+#     @tensor Xt[r, d] := X2[x, r, d] * X1[x]
+
+#     ev = connecting_tensor(peps, (i-1, j), (i, j)) 
+#     vt = ev[u, :]
+#     @tensor Ã[l, r, d, σ] := A[l, x, r, d, σ] * vt[x]
+
+#     ψ = MPS(peps, i, :dressed)
+#     MX, M = ψ[2*j-1], ψ[2*j]
+
+#     @tensor prob[σ] := L[x] * Xt[k, y] * MX[x, y, z] * M[z, l, m] *
+#                        Ã[k, n, l, σ] * R[m, n] order = (x, y, z, k, l, m, n)
+
+#     _normalize_probability(prob)
+# end
 
 
 function update_energy(network::FusedNetwork, σ::Vector{Int})

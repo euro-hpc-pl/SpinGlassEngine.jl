@@ -47,8 +47,8 @@ push!(my_tests,
     #   "network_interface.jl",
      #  "ising_MPS.jl",
      # "search_MPS.jl",
-      "search_chimera.jl",
-      "search_cross.jl",
+     "search_chimera.jl",
+     "search_cross.jl",
 )
 
 for my_test in my_tests

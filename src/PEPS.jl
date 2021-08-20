@@ -115,7 +115,7 @@ node_from_index(peps::AbstractGibbsNetwork, index::Int) =
     ((index-1) ÷ peps.ncols + 1, _mod_wo_zero(index, peps.ncols))
 
 
-function boundary_at_splitting_node(peps::PEPSNetwork, node::NTuple{2, Int})
+function boundary(peps::PEPSNetwork, node::NTuple{2, Int})
     i, j = node
     x = (-4, -2)
     vcat(

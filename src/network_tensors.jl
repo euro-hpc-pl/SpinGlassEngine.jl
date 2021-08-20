@@ -1,8 +1,7 @@
 export
     reduced_site_tensor,
     tensor,
-    tensor_size,
-    tensor_temp # to be removed
+    tensor_size
 
 
 @memoize function tensor(
@@ -56,24 +55,6 @@ function tensor_size(
     pdims = first.(dims)
     @assert all(σ -> σ == first(pdims), first.(dims))
     last.(dims)
-end
-
-
-# to be removed
-function tensor_temp(
-    network::AbstractGibbsNetwork{S, T}, 
-    v::Tuple{Int, Int}
-) where {S, T}
-    loc_exp = exp.(-network.β .* local_energy(network, v))
-    projs = projectors(network, v)
-    dim = zeros(Int, length(projs))
-
-    @cast A[_, i] := loc_exp[i]
-    for (j, pv) ∈ enumerate(projs)
-        @cast A[(c, γ), σ] |= A[c, σ] * pv[σ, γ]
-        dim[j] = size(pv, 2)
-    end
-    reshape(A, dim..., :)
 end
 
 

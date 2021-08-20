@@ -53,9 +53,11 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         var_tol::Real=1E-8,
         sweeps::Int=4,
         columns_MPO = (-1//2, 0),  # from left to right
+        # with gauges
         # layers_MPS=(1//6, 0, -3//6, -4//6),  # from bottom to top
         # layers_left_env=(1//6,),
         # layers_right_env=(0, -3//6)
+        # with gauges but differently
         layers_MPS=(4//6, 3//6, 0, -1//6),  # from bottom to top
         layers_left_env=(4//6, 3//6),
         layers_right_env=(0, -3//6)

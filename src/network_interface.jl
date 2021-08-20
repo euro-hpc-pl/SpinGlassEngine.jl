@@ -180,21 +180,16 @@ end
 
 
 function update_gauges!(
-    network::AbstractGibbsNetwork,
+    network::AbstractGibbsNetwork{S, T},
     type::Symbol=:rand
-) where T
-    N = 6
+) where {S, T}
     @assert type ∈ (:id, :rand)
-    for i ∈ 1:network.nrows-1, j ∈ 1:1//2:network.ncols
+    for i ∈ 1:network.nrows-1, k ∈ 1:1//2:network.ncols
+        j = denominator(k) == 1 ? numerator(k) : k
         _, u, _, d = tensor_size(network, (i+1//2, j))
         Y = type == :id ? ones(u) : rand(u) .+ 0.1
-        push!(network.gauges, (i + 1//N, j) => Y, (i + 2//N, j) => 1 ./ Y)
+        push!(network.gauges, (i + 1//6, j) => Y, (i + 2//6, j) => 1 ./ Y)
         Z = type == :id ? ones(d) : rand(d) .+ 0.1
-        push!(network.gauges, (i + 4//N, j) => Z, (i + 5//N, j) => 1 ./ Z)
+        push!(network.gauges, (i + 4//6, j) => Z, (i + 5//6, j) => 1 ./ Z)
     end
-    # for j ∈ 1:network.ncols
-    #     push!(network.gauges, 
-    #         (network.nrows + 1//N, j) => ones(1), (-1//N, j) => ones(1)
-    #     )
-    # end
 end

@@ -1,22 +1,11 @@
 export 
     solve,
-    low_energy_spectrum,
-    _prune
+    low_energy_spectrum
 
     
 _make_left_env(ψ::AbstractMPS, k::Int) = ones(eltype(ψ), 1, k)
 
 _make_LL(ψ::AbstractMPS, b::Int, k::Int, d::Int) = zeros(eltype(ψ), b, k, d)
-
-
-# to be removed
-function _prune(ig::IsingGraph) 
-    idx = findall(!iszero, degree(ig))
-    gg = ig[ig.labels[idx]]
-    labels = collect(vertices(gg.inner_graph))
-    reverse_label_map = Dict(i => i for i=1:nv(gg.inner_graph))
-    LabelledGraph(labels, gg.inner_graph, reverse_label_map)
-end
 
 
 function low_energy_spectrum(
@@ -30,7 +19,7 @@ function low_energy_spectrum(
     num_states::Int
 ) where T <: Number
 
-    igp = _prune(ig) 
+    igp = prune(ig) 
     ψ = MPS(igp, Dcut, var_ϵ, max_sweeps, dβ, β, schedule)
     states, probs, ldp = solve(ψ, num_states)
 
@@ -38,6 +27,7 @@ function low_energy_spectrum(
     idx = sortperm(en)
     Solution(en[idx], states[idx], probs[idx], [0], ldp)
 end 
+
 
 function solve(ψ::AbstractMPS, keep::Int)
     @assert keep > 0 "Number of states has to be > 0"

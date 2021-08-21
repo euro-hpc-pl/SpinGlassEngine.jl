@@ -18,7 +18,7 @@
     max_sweeps = 4
  
     @testset "without any purification" begin
-        igp = _prune(ig) 
+        igp = prune(ig) 
         schedule = fill(dβ, Int(ceil(β/dβ)))
         ψ = MPS(igp, Dcut, var_ϵ, max_sweeps, schedule)
         states, lprob, _ = solve(ψ, max_states)

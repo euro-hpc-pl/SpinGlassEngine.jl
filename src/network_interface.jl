@@ -7,6 +7,7 @@ export
     local_energy,
     interaction_energy,
     connecting_tensor,
+    ormalize_probability,
     boundary_state,
     local_state_for_node,
     iteration_order,
@@ -190,4 +191,13 @@ function update_gauges!(
         Z = type == :id ? ones(d) : rand(d) .+ 0.1
         push!(network.gauges, (i + 4//6, j) => Z, (i + 5//6, j) => 1 ./ Z)
     end
+end
+
+
+function normalize_probability(
+    network::AbstractGibbsNetwork{S, T}, 
+    prob::Vector{R}
+) where {S, T, R<:Number}
+    # exceptions (negative pdo, etc)
+    prob / sum(prob)
 end

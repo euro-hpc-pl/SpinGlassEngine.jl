@@ -73,9 +73,11 @@ struct FusedNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     end
 
     _types = (:site, :central_h, :central_v, :virtual, :central_d, :gauge_h)
+    _gauges = Dict()
+    _tensor_spiecies = Dict()
 
     network = new(factor_graph, ng, vmap, m, n, nrows, ncols, β, bond_dim,
-                  var_tol, sweeps, _types, Dict(), Dict(),
+                  var_tol, sweeps, _types, _gauges, _tensor_spiecies,
                   columns_MPO, layers_MPS, layers_left_env, layers_right_env
             )
     update_gauges!(network, :id)
@@ -139,7 +141,8 @@ function conditional_probability(peps::FusedNetwork, w::Vector{Int})
 
     @tensor prob[σ] := L[x] * MX[x, m, y] * M[y, l, z] * R[z, k] *
                         A[k, l, m, σ]  order = (x, y, z, k, l, m)
-    _normalize_probability(prob)
+                        
+    normalize_probability(peps, prob)
 end
 
 

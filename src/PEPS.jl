@@ -36,6 +36,7 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     bond_dim::Int
     var_tol::Real
     sweeps::Int
+    tensor_types
     gauges
     tensor_spiecies
     columns_MPO::NTuple{N, Union{Rational{Int}, Int}} where N
@@ -70,12 +71,14 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
             throw(ArgumentError("Factor graph not compatible with given network."))
         end
 
+        _types = (:site, :central_h, :central_v, :gauge_h)
+        
         network = new(factor_graph, ng, vmap, m, n, nrows, ncols, β, bond_dim,
-                      var_tol, sweeps, Dict(), Dict(),
+                      var_tol, sweeps, _types, Dict(), Dict(),
                       columns_MPO, layers_MPS, layers_left_env, layers_right_env
                 )
         update_gauges!(network, :id)
-        tensor_species_map!(network, (:site, :central_h, :central_v, :gauge_h))
+        tensor_species_map!(network, network.tensor_types)
         network
     end
 end

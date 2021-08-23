@@ -29,8 +29,8 @@ struct FusedNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     bond_dim::Int
     var_tol::Real
     sweeps::Int
-    gauges::Dict{Tuple{Rational{Int}, Rational{Int}}, Vector{Float64}} # Real ?
-    tensor_spiecies::Dict{Tuple{Rational{Int}, Rational{Int}}, Symbol}
+    gauges
+    tensor_spiecies
     columns_MPO::NTuple{N, Union{Rational{Int}, Int}} where N
     layers_MPS::NTuple{M, Union{Rational{Int}, Int}} where M
     layers_left_env::NTuple{K, Union{Rational{Int}, Int}} where K
@@ -75,12 +75,13 @@ struct FusedNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
                   columns_MPO, layers_MPS, layers_left_env, layers_right_env
             )
     update_gauges!(network, :id)
-    tensor_species_map!(network)
+    tensor_species_map!(network, (:site, :central_h, :central_v, :virtual, :central_d, :gauge_h))
     network
     end
 end
 
 
+#=
 function tensor_species_map!(network::FusedNetwork)
     for i ∈ 1:network.nrows, j ∈ 1:network.ncols
         push!(network.tensor_spiecies, (i, j) => :site)
@@ -103,7 +104,7 @@ function tensor_species_map!(network::FusedNetwork)
         )
     end
 end
-
+=#
 
 function projectors(network::FusedNetwork, vertex::NTuple{2, Int})
     i, j = vertex

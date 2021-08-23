@@ -1,7 +1,79 @@
 export
+    tensor_assignment,
+    tensor_species_map!,
     reduced_site_tensor,
     tensor_size,
     tensor
+
+
+tensor_assignment(
+    network::AbstractGibbsNetwork{S, T},
+    s::Symbol
+) where {S, T} = tensor_assignment(network, Val(s))
+
+
+tensor_assignment(
+    network::AbstractGibbsNetwork{S, T},
+    ::Val{:site} 
+) where {S, T} =
+((i, j) => :site for i ∈ 1:network.nrows, j ∈ 1:network.ncols)
+
+
+tensor_assignment(
+    network::AbstractGibbsNetwork{S, T},
+    ::Val{:central_h} 
+) where {S, T} =
+((i, j + 1//2) => :central_h for i ∈ 1:network.nrows, j ∈ 1:network.ncols)
+
+ 
+tensor_assignment(
+    network::AbstractGibbsNetwork{S, T},
+    ::Val{:central_v} 
+) where {S, T} =
+((i + 1//2, j) => :central_v for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols)
+
+
+tensor_assignment(
+    network::PEPSNetwork,
+    ::Val{:gauge_h} 
+) = 
+( 
+    (i + δ, j) => :gauge_h for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols, 
+                               δ ∈ (1//6, 2//6, 4//6, 5//6)
+)
+
+
+tensor_assignment(
+    network::FusedNetwork,
+    ::Val{:gauge_h} 
+) =
+( 
+    (i + δ, r) => :gauge_h for i ∈ 1:network.nrows-1, r ∈ 1:1//2:network.ncols, 
+                               δ ∈ (1//6, 2//6, 4//6, 5//6)
+)
+
+
+tensor_assignment(
+    network::FusedNetwork,
+    ::Val{:virtual} 
+) = ((i, j + 1//2) => :virtual for i ∈ 1:network.nrows, j ∈ 1:network.ncols-1)
+
+
+tensor_assignment(
+    network::FusedNetwork,
+    ::Val{:central_d} 
+) = ((i + 1//2, j + 1//2) => :central_d for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols-1)
+
+
+
+function tensor_species_map!(
+    network::AbstractGibbsNetwork{S, T}, 
+    tensor_types::NTuple{N, Symbol}
+) where {S, T, N}
+    for type ∈ tensor_types
+        push!(network.tensor_spiecies, tensor_assignment(network, type)...) 
+    end
+end
 
 
 @memoize function tensor(
@@ -194,6 +266,17 @@ function tensor(
     X = network.gauges[v]
     @cast A[_, u, _, d] := Diagonal(X)[u, d]
     A
+end
+
+
+function tensor_size(
+    network::AbstractGibbsNetwork{S, T}, 
+    v::R,
+    ::Val{:gauge_h}
+) where {S, T, R}
+    X = network.gauges[v]
+    u = size(X, 1)
+    (1, u, 1, u)
 end
 
 

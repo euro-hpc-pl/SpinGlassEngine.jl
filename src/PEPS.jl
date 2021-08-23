@@ -36,8 +36,8 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     bond_dim::Int
     var_tol::Real
     sweeps::Int
-    gauges::Dict{Tuple{Rational{Int}, Rational{Int}}, Vector{Float64}} # Real ?
-    tensor_spiecies::Dict{Tuple{Rational{Int}, Rational{Int}}, Symbol}
+    gauges
+    tensor_spiecies
     columns_MPO::NTuple{N, Union{Rational{Int}, Int}} where N
     layers_MPS::NTuple{M, Union{Rational{Int}, Int}} where M
     layers_left_env::NTuple{K, Union{Rational{Int}, Int}} where K
@@ -75,27 +75,8 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
                       columns_MPO, layers_MPS, layers_left_env, layers_right_env
                 )
         update_gauges!(network, :id)
-        tensor_species_map!(network)
+        tensor_species_map!(network, (:site, :central_h, :central_v, :gauge_h))
         network
-    end
-end
-
-
-function tensor_species_map!(network::PEPSNetwork)
-    for i ∈ 1:network.nrows, j ∈ 1:network.ncols
-        push!(network.tensor_spiecies, (i, j) => :site)
-    end
-    for i ∈ 1:network.nrows, j ∈ 1:network.ncols-1
-        push!(network.tensor_spiecies, (i, j + 1//2) => :central_h)
-    end
-    for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols
-        push!(network.tensor_spiecies,
-            (i + 1//2, j) => :central_v,
-            (i + 1//6, j) => :gauge_h, 
-            (i + 2//6, j) => :gauge_h,
-            (i + 4//6, j) => :gauge_h, 
-            (i + 5//6, j) => :gauge_h,
-            )
     end
 end
 

@@ -29,6 +29,7 @@ struct FusedNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     bond_dim::Int
     var_tol::Real
     sweeps::Int
+    tensor_types
     gauges
     tensor_spiecies
     columns_MPO::NTuple{N, Union{Rational{Int}, Int}} where N
@@ -70,41 +71,19 @@ struct FusedNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     if !is_compatible(factor_graph, ng)
         throw(ArgumentError("Factor graph not compatible with given network."))
     end
+
+    _types = (:site, :central_h, :central_v, :virtual, :central_d, :gauge_h)
+
     network = new(factor_graph, ng, vmap, m, n, nrows, ncols, β, bond_dim,
-                  var_tol, sweeps, Dict(), Dict(),
+                  var_tol, sweeps, _types, Dict(), Dict(),
                   columns_MPO, layers_MPS, layers_left_env, layers_right_env
             )
     update_gauges!(network, :id)
-    tensor_species_map!(network, (:site, :central_h, :central_v, :virtual, :central_d, :gauge_h))
+    tensor_species_map!(network, network.tensor_types)
     network
     end
 end
 
-
-#=
-function tensor_species_map!(network::FusedNetwork)
-    for i ∈ 1:network.nrows, j ∈ 1:network.ncols
-        push!(network.tensor_spiecies, (i, j) => :site)
-    end
-    for i ∈ 1:network.nrows, j ∈ 1:network.ncols - 1
-        push!(network.tensor_spiecies, (i, j + 1//2) => :virtual)
-    end
-    for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols
-        push!(network.tensor_spiecies, (i + 1//2, j) => :central_v)
-    end
-    for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols-1
-        push!(network.tensor_spiecies, (i + 1//2, j + 1//2) => :central_d)
-    end
-    for i ∈ 1:network.nrows-1, r ∈ 1:1//2:network.ncols
-        push!(network.tensor_spiecies,
-            (i + 1//6, r) => :gauge_h, 
-            (i + 2//6, r) => :gauge_h,
-            (i + 4//6, r) => :gauge_h, 
-            (i + 5//6, r) => :gauge_h,
-        )
-    end
-end
-=#
 
 function projectors(network::FusedNetwork, vertex::NTuple{2, Int})
     i, j = vertex

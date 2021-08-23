@@ -13,12 +13,6 @@
     L = n * m * t
     states_to_keep = 20
 
-    control_params = Dict(
-         "bond_dim" => typemax(Int),
-         "var_tol" => 1E-8,
-         "sweeps" => 4.
-    )
-
     instance = "$(@__DIR__)/instances/pathological/cross_$(m)_$(n)_dd.txt"
 
     ig = ising_graph(instance)

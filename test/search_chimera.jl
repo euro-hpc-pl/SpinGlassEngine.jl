@@ -58,12 +58,6 @@
         21 => 5, 22 => 5,
         )
 
-    control_params = Dict(
-         "bond_dim" => typemax(Int),
-         "var_tol" => 1E-8,
-         "sweeps" => 4.
-    )
-
     instance = "$(@__DIR__)/instances/pathological/chim_$(m)_$(n)_$(t).txt"
 
     ig = ising_graph(instance)

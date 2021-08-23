@@ -27,6 +27,7 @@ function tensor_size(
     end
 end
 
+
 function tensor(
     network::AbstractGibbsNetwork{S, T}, 
     v::S,
@@ -180,7 +181,6 @@ function tensor_size(
 ) where {S, T}
     p_lb, p_l, p_lt, 
     p_rb, p_r, p_rt = _all_fused_projectors(network, v)
-
     (size(p_l, 1), size(p_lt, 2) * size(p_rt, 2),
      size(p_r, 1), size(p_rb, 2) * size(p_lb, 2))
 end

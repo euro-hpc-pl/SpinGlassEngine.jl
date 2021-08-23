@@ -68,12 +68,13 @@ function projector(
     v::S, 
     W::NTuple{N, S}
 ) where {S, T, N}
-    proj = [projector(network, v, w) for w ∈ W]
-    first(fuse_projectors(proj))
+    first(fuse_projectors(
+        [projector(network, v, w) for w ∈ W]
+    ))
 end
 
 
-function fuse_projectors(projectors) # Union{Vector{R}, NTuple{N, T}} where T
+function fuse_projectors(projectors::Union{Vector{T}, NTuple{N, T}}) where {N, T}
     fused, energy = rank_reveal(hcat(projectors...), :PE)
     i₀ = 1
     transitions = []

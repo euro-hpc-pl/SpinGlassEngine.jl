@@ -72,9 +72,11 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         end
 
         _types = (:site, :central_h, :central_v, :gauge_h)
+        _gauges = Dict()
+        _tensor_spiecies = Dict()
         
         network = new(factor_graph, ng, vmap, m, n, nrows, ncols, β, bond_dim,
-                      var_tol, sweeps, _types, Dict(), Dict(),
+                      var_tol, sweeps, _types, _gauges, _tensor_spiecies,
                       columns_MPO, layers_MPS, layers_left_env, layers_right_env
                 )
         update_gauges!(network, :id)
@@ -114,12 +116,6 @@ function boundary(peps::PEPSNetwork, node::NTuple{2, Int})
 end
 
 
-function _normalize_probability(prob::Vector{T}) where {T <: Number}
-    # exceptions (negative pdo, etc)
-    prob / sum(prob)
-end
-
-
 function conditional_probability(peps::PEPSNetwork, w::Vector{Int})
     i, j = node_from_index(peps, length(w)+1)
     ∂v = boundary_state(peps, w, (i, j))
@@ -134,7 +130,7 @@ function conditional_probability(peps::PEPSNetwork, w::Vector{Int})
     @tensor prob[σ] := L[x] * M[x, d, y] * A[r, d, σ] *
                        R[y, r] order = (x, d, r, y)
 
-    _normalize_probability(prob)
+    normalize_probability(peps, prob)
 end
 
 

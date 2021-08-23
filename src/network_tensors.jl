@@ -15,54 +15,57 @@ tensor_assignment(
 tensor_assignment(
     network::AbstractGibbsNetwork{S, T},
     ::Val{:site} 
-) where {S, T} =
-((i, j) => :site for i ∈ 1:network.nrows, j ∈ 1:network.ncols)
+) where {S, T} = Dict(
+    (i, j) => :site for i ∈ 1:network.nrows, j ∈ 1:network.ncols
+)
 
 
 tensor_assignment(
     network::AbstractGibbsNetwork{S, T},
     ::Val{:central_h} 
-) where {S, T} =
-((i, j + 1//2) => :central_h for i ∈ 1:network.nrows, j ∈ 1:network.ncols)
+) where {S, T} = Dict(
+    (i, j + 1//2) => :central_h for i ∈ 1:network.nrows, j ∈ 1:network.ncols
+)
 
  
 tensor_assignment(
     network::AbstractGibbsNetwork{S, T},
     ::Val{:central_v} 
-) where {S, T} =
-((i + 1//2, j) => :central_v for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols)
+) where {S, T} = Dict(
+    (i + 1//2, j) => :central_v for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols
+)
 
 
 tensor_assignment(
     network::PEPSNetwork,
     ::Val{:gauge_h} 
-) = 
-( 
-    (i + δ, j) => :gauge_h for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols, 
-                               δ ∈ (1//6, 2//6, 4//6, 5//6)
+) = Dict((i + δ, j) => :gauge_h 
+    for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols, δ ∈ (1//6, 2//6, 4//6, 5//6)
 )
 
 
 tensor_assignment(
     network::FusedNetwork,
     ::Val{:gauge_h} 
-) =
-( 
-    (i + δ, r) => :gauge_h for i ∈ 1:network.nrows-1, r ∈ 1:1//2:network.ncols, 
-                               δ ∈ (1//6, 2//6, 4//6, 5//6)
+) = Dict((i + δ, r) => :gauge_h 
+    for i ∈ 1:network.nrows-1, r ∈ 1:1//2:network.ncols, δ ∈ (1//6, 2//6, 4//6, 5//6)
 )
 
 
 tensor_assignment(
     network::FusedNetwork,
     ::Val{:virtual} 
-) = ((i, j + 1//2) => :virtual for i ∈ 1:network.nrows, j ∈ 1:network.ncols-1)
+) = Dict(
+    (i, j + 1//2) => :virtual for i ∈ 1:network.nrows, j ∈ 1:network.ncols-1
+)
 
 
 tensor_assignment(
     network::FusedNetwork,
     ::Val{:central_d} 
-) = ((i + 1//2, j + 1//2) => :central_d for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols-1)
+) = Dict(
+    (i + 1//2, j + 1//2) => :central_d for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols-1
+)
 
 
 
@@ -72,7 +75,7 @@ function tensor_species_map!(
 ) where {S, T, N}
     for type ∈ tensor_types
         push!(network.tensor_spiecies, tensor_assignment(network, type)...) 
-    end
+    end 
 end
 
 

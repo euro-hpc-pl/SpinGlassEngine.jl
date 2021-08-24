@@ -80,8 +80,8 @@ struct FusedNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
                   var_tol, sweeps, _types, _gauges, _tensor_spiecies,
                   columns_MPO, layers_MPS, layers_left_env, layers_right_env
             )
-    update_gauges!(network, :id)
     tensor_species_map!(network, network.tensor_types)
+    update_gauges!(network, :id)
     network
     end
 end
@@ -132,8 +132,8 @@ function conditional_probability(peps::FusedNetwork, w::Vector{Int})
     i, j = node_from_index(peps, length(w)+1)
     ∂v = boundary_state(peps, w, (i, j))
 
-    L = _left_env(peps, i, ∂v[1:2*j-2])
-    R = _right_env(peps, i, ∂v[2*j+3 : 2*peps.ncols+2])
+    L = left_env(peps, i, ∂v[1:2*j-2])
+    R = right_env(peps, i, ∂v[2*j+3 : 2*peps.ncols+2])
     A = reduced_site_tensor(peps, (i, j), ∂v[2*j-1], ∂v[2*j], ∂v[2*j+1], ∂v[2*j+2])
 
     ψ = mps(peps, i, :dressed)

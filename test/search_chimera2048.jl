@@ -1,3 +1,4 @@
+using Memoize
 @testset "Chimera 2048 instance has the correct low energy spectrum" begin
     m = 16 
     n = 16
@@ -20,8 +21,8 @@
 
     #for transform ∈ all_lattice_transformations
     for transform ∈ rotation.([0])
-        peps = PEPSNetwork(m, n, fg, transform, β=β)
-        update_gauges!(peps, :rand)
+        peps = PEPSNetwork(m, n, fg, transform, β=β, bond_dim=128)
+        #update_gauges!(peps, :rand)
         sol = low_energy_spectrum(peps, num_states)
         println(sol.energies[1:5])
     end

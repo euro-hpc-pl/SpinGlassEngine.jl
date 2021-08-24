@@ -4,6 +4,8 @@ export
     reduced_site_tensor,
     tensor_size,
     tensor,
+    right_env,
+    left_env,
     mpo, 
     mps
 
@@ -421,4 +423,32 @@ end
 function compress(ψ::AbstractMPS, peps::AbstractGibbsNetwork)
     if bond_dimension(ψ) < peps.bond_dim return ψ end
     SpinGlassTensors.compress(ψ, peps.bond_dim, peps.var_tol, peps.sweeps)
+end
+
+
+@memoize Dict function right_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int}) 
+    l = length(∂v)
+    if l == 0 return ones(1, 1) end
+    ϕ = mps(peps, i, :dressed)
+    layers = i .+ reverse(peps.layers_right_env)
+    W = prod(mpo.(Ref(peps), layers))
+    k = length(W)
+    m = ∂v[1]
+    R̃ = right_env(peps, i, ∂v[2:l])
+    M = ϕ[k-l+1]
+    M̃ = W[k-l+1]
+    @reduce R[x, y] := sum(α, β, γ) M̃[y, $m, β, γ] * M[x, γ, α] * R̃[α, β]
+    R
+end
+
+
+@memoize Dict function left_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int})
+    l = length(∂v)
+    if l == 0 return [1.] end
+    ϕ = mps(peps, i, :dressed)
+    m = ∂v[l]
+    L̃ = left_env(peps, i, ∂v[1:l-1])
+    M = ϕ[l]
+    @reduce L[x] := sum(α) L̃[α] * M[α, $m, x]
+    L
 end

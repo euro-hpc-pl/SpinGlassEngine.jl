@@ -50,8 +50,8 @@ push!(my_tests,
         #"ising_MPS.jl",
         #"search_MPS.jl",
         "search_chimera.jl",
-        #"search_cross.jl",
-        #"search_chimera2048.jl",
+        "search_cross.jl",
+       #"search_chimera2048.jl",
         #"network_tensors.jl",
 )
 

@@ -6,7 +6,7 @@
     β = 1.
 
     L = n * m * t
-    num_states = 1
+    num_states = 100
 
     instance = "$(@__DIR__)/instances/chimera_droplets/2048power/001.txt"
 
@@ -18,9 +18,11 @@
         cluster_assignment_rule=super_square_lattice((m, n, t))
     )
 
-    for transform ∈ all_lattice_transformations
+    #for transform ∈ all_lattice_transformations
+    for transform ∈ rotation.([0])
         peps = PEPSNetwork(m, n, fg, transform, β=β)
         update_gauges!(peps, :rand)
         sol = low_energy_spectrum(peps, num_states)
+        println(sol.energies[1:5])
     end
 end

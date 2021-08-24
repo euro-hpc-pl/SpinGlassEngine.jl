@@ -12,14 +12,14 @@ end
 
 
 @memoize Dict function _right_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int}) 
-    W = prod(MPO.(Ref(peps), i .+ reverse(peps.layers_right_env)))
-    ψ = MPS(peps, i, :dressed)
+    W = prod(mpo.(Ref(peps), i .+ reverse(peps.layers_right_env)))
+    ψ = mps(peps, i, :dressed)
     right_env(ψ, W, ∂v)
 end
 
 
 @memoize Dict function _left_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int})
-    ψ = MPS(peps, i, :dressed)
+    ψ = mps(peps, i, :dressed)
     left_env(ψ, ∂v)
 end
 
@@ -124,7 +124,7 @@ function conditional_probability(peps::PEPSNetwork, w::Vector{Int})
     R = _right_env(peps, i, ∂v[2*j+3 : 2*peps.ncols+2])
     A = reduced_site_tensor(peps, (i, j), ∂v[2*j], ∂v[2*j+2])
 
-    ψ = MPS(peps, i, :dressed)
+    ψ = mps(peps, i, :dressed)
     M = ψ[2 * j]
 
     @tensor prob[σ] := L[x] * M[x, d, y] * A[r, d, σ] *

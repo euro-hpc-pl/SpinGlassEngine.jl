@@ -3,7 +3,9 @@ export
     tensor_species_map!,
     reduced_site_tensor,
     tensor_size,
-    tensor
+    tensor,
+    mpo, 
+    mps
 
 
 tensor_assignment(
@@ -79,7 +81,7 @@ function tensor_species_map!(
 end
 
 
-@memoize function tensor(
+function tensor(
     network::AbstractGibbsNetwork{S, T},
     v::R
 ) where {S, T, R}
@@ -283,7 +285,7 @@ function tensor_size(
 end
 
 
-@memoize function connecting_tensor(
+function connecting_tensor(
     network::AbstractGibbsNetwork{S, T},
     v::S,
     w::S
@@ -370,7 +372,7 @@ function tensor_size(
 end 
 
 
-function SpinGlassTensors.MPO(::Type{T},
+function mpo(::Type{T},
     peps::AbstractGibbsNetwork,
     r::Union{Rational{Int}, Int}
 ) where {T <: Number}
@@ -381,39 +383,39 @@ function SpinGlassTensors.MPO(::Type{T},
 end
 
 
-@memoize Dict SpinGlassTensors.MPO(
+@memoize Dict mpo(
     peps::AbstractGibbsNetwork,
     r::Union{Rational{Int}, Int}
-) = MPO(Float64, peps, r)
+) = mpo(Float64, peps, r)
 
 
-@memoize Dict function SpinGlassTensors.MPS(
+@memoize Dict function mps(
     peps::AbstractGibbsNetwork,
     i::Int
 ) 
     if i > peps.nrows return IdentityMPS() end
-    ψ = MPS(peps, i+1)
-    for r ∈ peps.layers_MPS ψ = MPO(peps, i+r) * ψ end
+    ψ = mps(peps, i+1)
+    for r ∈ peps.layers_MPS ψ = mpo(peps, i+r) * ψ end
     compress(ψ, peps)
 end
 
 
-function SpinGlassTensors.MPS(
+function mps(
     peps::AbstractGibbsNetwork,
     i::Int,
     ::Val{:dressed}
 )
-    ψ = MPS(peps, i+1)
-    for r ∈ peps.layers_left_env ψ = MPO(peps, i+r) * ψ end
+    ψ = mps(peps, i+1)
+    for r ∈ peps.layers_left_env ψ = mpo(peps, i+r) * ψ end
     ψ
 end
 
 
-@memoize Dict SpinGlassTensors.MPS(
+@memoize Dict mps(
     peps::AbstractGibbsNetwork,
     i::Int,
     s::Symbol
-) = SpinGlassTensors.MPS(peps, i, Val(s))
+) = mps(peps, i, Val(s))
 
 
 function compress(ψ::AbstractMPS, peps::AbstractGibbsNetwork)

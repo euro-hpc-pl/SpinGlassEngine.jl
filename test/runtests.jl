@@ -20,6 +20,8 @@ function proj(state, dims::Union{Vector, NTuple})
     P
 end
 
+# multiple dispatch with functions in network_tensors.jl doesn't work
+#=
 function tensor(ψ::AbstractMPS, state::State)
     C = I
     for (A, σ) ∈ zip(ψ, state)
@@ -37,18 +39,20 @@ function tensor(ψ::MPS)
     end
     Θ
 end
-
+=#
 
 my_tests = []
 
 push!(my_tests,
         "network_operations.jl",
-       "branch_and_bound.jl",
-       "network_interface.jl",
-        "ising_MPS.jl",
-        "search_MPS.jl",
+        "branch_and_bound.jl",
+        "network_interface.jl",
+        #"ising_MPS.jl",
+        #"search_MPS.jl",
         "search_chimera.jl",
         "search_cross.jl",
+        #"search_chimera2048.jl",
+        "network_tensors.jl",
 )
 
 for my_test in my_tests

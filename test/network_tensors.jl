@@ -26,8 +26,8 @@
         update_gauges!(peps, :rand)
         for i ∈ 1:peps.nrows-1, k ∈ 1:1//2:peps.ncols
             j = denominator(k) == 1 ? numerator(k) : k
-            l, u, r, d = tensor_size(peps, (i+1//2, j))
-            @test size(tensor(peps, (i+1//2, j))) == tensor_size(peps, (i+1//2, j))
+            A = tensor(peps, (i+1//2, j))
+            @test size(A) == tensor_size(peps, (i+1//2, j))
         end
     end
 end

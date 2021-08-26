@@ -24,8 +24,9 @@
         states, lprob, _ = solve(ψ, max_states)
         @test sort(energy.(states[1:to_show], Ref(igp))) ≈ expected_energies
     end  
-
-#=     @testset "with purification" begin
+    
+    #=
+    @testset "with purification" begin
         sol = low_energy_spectrum(
             ig, Dcut, var_ϵ, max_sweeps, 
             dβ, β, :log, max_states

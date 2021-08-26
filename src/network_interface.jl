@@ -7,7 +7,7 @@ export
     local_energy,
     interaction_energy,
     connecting_tensor,
-    ormalize_probability,
+    normalize_probability,
     boundary_state,
     local_state_for_node,
     iteration_order,

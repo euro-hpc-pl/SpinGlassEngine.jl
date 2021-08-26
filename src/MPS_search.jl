@@ -219,7 +219,7 @@ function SpinGlassTensors.MPS(
 
     if schedule == :log
         k = Int(ceil(log2(β/dβ)))
-        ρ =_apply_gates(ρ, ig, Dcut, var_ϵ, sweeps, β/(2^k))
+        ρ = _apply_gates(ρ, ig, Dcut, var_ϵ, sweeps, β/(2^k))
         for _ ∈ 1:k
             ρ = purifications(ρ)
             if bond_dimension(ρ) > Dcut

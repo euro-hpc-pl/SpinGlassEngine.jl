@@ -49,9 +49,9 @@ push!(my_tests,
         #"network_interface.jl",
         #"ising_MPS.jl",
         #"search_MPS.jl",
-        "search_chimera.jl",
+        #"search_chimera.jl",
         #"search_cross.jl",
-       #"search_chimera2048.jl",
+       "search_chimera2048.jl",
        #"mps_mpo_times_test.jl"
         #"network_tensors.jl",
 )

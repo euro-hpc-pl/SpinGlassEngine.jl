@@ -89,3 +89,51 @@
         end
     end
 end 
+
+
+@testset "Tensors in pathological instance have correct sizes" begin
+
+    m = 3
+    n = 4
+    t = 3
+    
+    β = 1.
+
+    schedule = 1.
+
+    L = n * m * t
+    states_to_keep = 20
+
+    instance = "$(@__DIR__)/instances/pathological/cross_$(m)_$(n)_dd.txt"
+
+    ig = ising_graph(instance)
+
+    fg = factor_graph(
+        ig,
+        spectrum=full_spectrum,
+        cluster_assignment_rule=super_square_lattice((m, n, t)) 
+    )
+
+    peps = FusedNetwork(m, n, fg, rotation(0), β=β)
+    update_gauges!(peps, :rand)
+
+    expected_site = [
+        (1,1,4,2) (4,1,4,2) (8,1,8,2) (4,1,1,2);
+        (1,2,8,2) (8,2,8,2) (8,2,4,2) (8,2,1,1);
+        (1,2,2,1) (4,2,4,1) (8,2,8,1) (1,1,1,1)
+        ]
+
+    expected_connecting = [
+        (4,1,4,8) (4,1,8,2) (8,1,4,4) (1,1,1,1);
+        (8,8,8,8) (8,2,8,2) (4,4,8,8) (1,1,1,1);
+        (2,8,4,1) (4,2,8,1) (8,8,1,1) (1,1,1,1)
+        ]
+
+    for i ∈ 1:peps.nrows, k ∈ 1:peps.ncols
+        j = denominator(k) == 1 ? numerator(k) : k
+        A = tensor(peps, (i, j))
+        B = tensor(peps, (i, j+1//2))
+        @test size(A) == tensor_size(peps, (i, j)) == expected_site[i,j]
+        @test size(B) == tensor_size(peps, (i, j+1//2)) == expected_connecting[i,j]
+    end
+end

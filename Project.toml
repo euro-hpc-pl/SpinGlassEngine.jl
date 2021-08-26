@@ -1,6 +1,6 @@
 name = "SpinGlassEngine"
 uuid = "0563570f-ea1b-4080-8a64-041ac6565a4e"
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"

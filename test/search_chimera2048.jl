@@ -1,7 +1,7 @@
 using Memoize
 @testset "Chimera 2048 instance has the correct low energy spectrum" begin
-    m = 16 
-    n = 16
+    m = 8 
+    n = 8
     t = 8
 
     β = 1.
@@ -9,7 +9,9 @@ using Memoize
     L = n * m * t
     num_states = 100
 
-    instance = "$(@__DIR__)/instances/chimera_droplets/2048power/001.txt"
+    #instance = "$(@__DIR__)/instances/chimera_droplets/2048power/001.txt"
+    instance = "$(@__DIR__)/instances/chimera_droplets/512power/001.txt"
+    #instance = "$(@__DIR__)/instances/chimera_droplets/128power/001.txt"
 
     ig = ising_graph(instance)
 
@@ -21,9 +23,10 @@ using Memoize
 
     #for transform ∈ all_lattice_transformations
     for transform ∈ rotation.([0])
-        peps = PEPSNetwork(m, n, fg, transform, β=β, bond_dim=128)
+        @time peps = PEPSNetwork(m, n, fg, transform, β=β, bond_dim=32)
         #update_gauges!(peps, :rand)
-        sol = low_energy_spectrum(peps, num_states)
-        println(sol.energies[1:5])
+        @time x = mps(peps, 1)
+        #@time sol = low_energy_spectrum(peps, num_states)
+        #println(sol.energies[1:5])
     end
 end

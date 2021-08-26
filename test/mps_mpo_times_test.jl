@@ -70,6 +70,55 @@ function test()
     #@test x ≈ y
 end
 
-test()
+
+function test2()
+
+    D = 100
+    L = rand(D, D)
+    R = rand(D, D)
+    M = rand(D, 2, D)
+
+    @time begin
+        @tensor M̃[x, σ, y] := L[x, β] * M[β, σ, α] * R[α, y] order = (α, β)
+        @cast A[(x, σ), y] |= M̃[x, σ, y]
+    end
+
+    @time begin
+        @matmul M̃[x, σ, α] := sum(β) L[x, β] * M[β, σ, α] 
+        @matmul B[(x, σ), y] |= sum(α) M̃[x, σ, α] * R[α, y]
+    end
+
+    @time begin
+        @tensor M̃[x, σ, α] := L[x, β] * M[β, σ, α] 
+        @matmul C[(x, σ), y] |= sum(α) M̃[x, σ, α] * R[α, y]
+    end
+end
+
+
+function test3()
+    m=1
+    D = 4000
+    L = rand(D)
+    O = rand(1, D)
+    M = rand(D, 2, D)
+
+    @time @matmul LL[x] := sum(α) L[α] * M[α, $m, x]
+    K = @view M[:, m, :]
+    println(size(O), size(K))
+    @time LLL = O * K
+end
+
+
+function test4()
+    D = 5000
+    X = rand(D, D)
+
+    @time @cast A[_, a, _, b] := X[a, b]
+
+    a, b = size(X)
+    @time B = reshape(X, (1, a, 1, b))
+end
+
+test4()
 
 

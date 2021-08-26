@@ -307,11 +307,11 @@ function reduced_site_tensor(
     eng_local = local_energy(network, v)
     pl = projector(network, v, (i, j-1))
     eng_pl = interaction_energy(network, v, (i, j-1))
-    @reduce eng_left[x] := sum(y) pl[x, y] * eng_pl[y, $l]
+    @matmul eng_left[x] := sum(y) pl[x, y] * eng_pl[y, $l]
     
     pu = projector(network, v, (i-1, j))
     eng_pu = interaction_energy(network, v, (i-1, j))
-    @reduce eng_up[x] := sum(y) pu[x, y] * eng_pu[y, $u]
+    @matmul eng_up[x] := sum(y) pu[x, y] * eng_pu[y, $u]
 
     en = eng_local .+ eng_left .+ eng_up
     loc_exp = exp.(-network.β .* (en .- minimum(en)))
@@ -336,26 +336,25 @@ function reduced_site_tensor(
 
     pl = projector(network, v, (i, j-1))
     eng_pl = interaction_energy(network, v, (i, j-1))
-    @reduce eng_left[x] := sum(y) pl[x, y] * eng_pl[y, $l]
+    @matmul eng_left[x] := sum(y) pl[x, y] * eng_pl[y, $l]
 
     pd = projector(network, v, (i-1, j-1))
     eng_pd = interaction_energy(network, v, (i-1, j-1))
-    @reduce eng_diag[x] := sum(y) pd[x, y] * eng_pd[y, $d]
+    @matmul eng_diag[x] := sum(y) pd[x, y] * eng_pd[y, $d]
     
     pu = projector(network, v, (i-1, j))
     eng_pu = interaction_energy(network, v, (i-1, j))
-    @reduce eng_up[x] := sum(y) pu[x, y] * eng_pu[y, $u]
+    @matmul eng_up[x] := sum(y) pu[x, y] * eng_pu[y, $u]
 
     en = eng_local .+ eng_left .+ eng_diag .+ eng_up
     loc_exp = exp.(-network.β .* (en .- minimum(en)))
 
     p_lb = projector(network, (i, j-1), (i+1, j))
     p_rb = projector(network, (i, j), (i+1, j-1))
-    @cast rp_lb[x] := p_lb[$ld, x]
     pr = projector(network, v, ((i+1, j+1), (i, j+1), (i-1, j+1)))
     pd = projector(network, v, (i+1, j))
 
-    @cast A[r, d, (k̃, k), σ] := p_rb[σ, k] * rp_lb[k̃] * pr[σ, r] * 
+    @cast A[r, d, (k̃, k), σ] := p_rb[σ, k] * p_lb[$ld, k̃] * pr[σ, r] * 
                                 pd[σ, d] * loc_exp[σ]
     A
 end
@@ -389,8 +388,6 @@ end
     peps::AbstractGibbsNetwork,
     r::Union{Rational{Int}, Int}
 ) = mpo(Float64, peps, r)
-
-
 
 
 @memoize Dict function mps(
@@ -439,7 +436,9 @@ end
     R̃ = right_env(peps, i, ∂v[2:l])
     M = ϕ[k-l+1]
     M̃ = W[k-l+1]
-    @reduce R[x, y] := sum(α, β, γ) M̃[y, $m, β, γ] * M[x, γ, α] * R̃[α, β]
+
+    K = @view M̃[:, m, :, :]
+    @tensor R[x, y] := K[y, β, γ] * M[x, γ, α] * R̃[α, β] order = (β, γ, α)
     R
 end
 
@@ -451,6 +450,6 @@ end
     m = ∂v[l]
     L̃ = left_env(peps, i, ∂v[1:l-1])
     M = ϕ[l]
-    @reduce L[x] := sum(α) L̃[α] * M[α, $m, x]
+    @matmul L[x] := sum(α) L̃[α] * M[α, $m, x]
     L
 end

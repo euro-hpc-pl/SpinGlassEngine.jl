@@ -391,13 +391,15 @@ end
 ) = mpo(Float64, peps, r)
 
 
+
+
 @memoize Dict function mps(
     peps::AbstractGibbsNetwork,
     i::Int
 ) 
     if i > peps.nrows return IdentityMPS() end
     ψ = mps(peps, i+1)
-    for r ∈ peps.layers_MPS ψ = mpo(peps, i+r) * ψ end
+    @time for r ∈ peps.layers_MPS ψ = mpo(peps, i+r) * ψ end
     compress(ψ, peps)
 end
 

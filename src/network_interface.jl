@@ -22,11 +22,11 @@ abstract type AbstractGibbsNetwork{S, T} end
 struct NotImplementedError{M} <: Exception
     m::M
     NotImplementedError(m::M) where {M} = new{M}(m)
-end
+end 
 
-not_implmented(name) = throw(NotImplementedError(name))
+not_implmented(name) = throw(NotImplementedError(name)) 
 
-
+ 
 factor_graph(network::AbstractGibbsNetwork{S, T}) where {S, T} = network.factor_graph
 
 network_graph(network::AbstractGibbsNetwork{S, T}) where {S, T} = network.network_graph
@@ -150,11 +150,14 @@ function boundary_state(
     σ::Vector{Int},
     node::S
 ) where {S, T} 
-    [
+     [
         _boundary_index(network, x..., σ)
         for x ∈ boundary(network, node)
-    ]
+    ] 
 end
+
+
+
 
 
 function local_state_for_node(

@@ -119,6 +119,34 @@ function test4()
     @time B = reshape(X, (1, a, 1, b))
 end
 
-test4()
+
+function test5()
+    D = 50
+    d = 30
+    
+    projs = (rand(d, D) for _ in 1:4)    
+    loc_exp = ones(d)
+
+    @time begin
+        @cast A[i, _] := loc_exp[i]
+        for pv ∈ projs 
+            @cast A[σ, (c, γ)] |= A[σ, c] * pv[σ, γ] 
+        end 
+        BB = sum(A, dims=1)
+    end
+
+
+    @time begin
+        @cast A[_, i] := loc_exp[i]
+        for pv ∈ projs 
+            @cast A[(c, γ), σ] |= A[c, σ] * pv[σ, γ] 
+            B = sum(A, dims=5)
+        end 
+    end
+
+    #@test A ≈ B
+end 
+
+test5()
 
 

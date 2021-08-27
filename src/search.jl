@@ -53,15 +53,11 @@ function merge_branches(
 ) where {S, T}
     function _merge(partial_sol::Solution)
         node = node_from_index(network, length(partial_sol.states[1])+1)
-        boundaries = hcat(
-                        boundary_state.(Ref(network), partial_sol.states, Ref(node))...
-                    )'
-
+        boundaries = hcat(boundary_state.(Ref(network), partial_sol.states, Ref(node))...)'  
         _unique_boundaries, indices = SpinGlassNetworks.unique_dims(boundaries, 1)
 
         sorting_idx = sortperm(indices)
         sorted_indices = indices[sorting_idx]
-
         start = 1
 
         energies = partial_sol.energies[sorting_idx]
@@ -80,16 +76,15 @@ function merge_branches(
                 stop = stop + 1
             end
 
-            best_idx = argmin(energies[start:stop]) # Use view if it works
+            best_idx = argmin(@view energies[start:stop]) + start-1
 
-            push!(new_energies, energies[start-1+best_idx])
-            push!(new_states, states[start-1+best_idx])
-            push!(new_probs, probs[start-1+best_idx])
-            push!(new_degeneracy, degeneracy[start-1+best_idx])
+            push!(new_energies, energies[best_idx])
+            push!(new_states, states[best_idx])
+            push!(new_probs, probs[best_idx])
+            push!(new_degeneracy, degeneracy[best_idx])
 
             start = stop + 1
         end
-
         Solution(new_energies, new_states, new_probs, new_degeneracy, partial_sol.largest_discarded_probability)
     end
     _merge
@@ -100,7 +95,7 @@ function no_merge(partial_sol::Solution)
 end
 
 function bound_solution(partial_sol::Solution, max_states::Int, merge_strategy=no_merge)
-    partial_sol = merge_strategy(partial_sol)
+    #partial_sol = merge_strategy(partial_sol)
     if length(partial_sol.probabilities) <= max_states
         probs = vcat(partial_sol.probabilities, -Inf)
         k = length(probs)
@@ -114,13 +109,13 @@ function bound_solution(partial_sol::Solution, max_states::Int, merge_strategy=n
 
     indices = @view indices[1:k-1]
 
-    Solution(
+    merge_strategy(Solution(
         partial_sol.energies[indices],
         partial_sol.states[indices],
         partial_sol.probabilities[indices],
         partial_sol.degeneracy[indices],
         new_max_discarded_prob
-    )
+    ))
 end
 
 
@@ -129,7 +124,11 @@ function low_energy_spectrum(network::AbstractGibbsNetwork, max_states::Int, mer
     sol = empty_solution()
 
     for _ ∈ 1:nv(network_graph(network))
-        sol = bound_solution(branch_solution(sol, network), max_states, merge_strategy)
+        node = node_from_index(network, length(sol.states[1])+1)
+        #println("branch: ", node)
+        sol = branch_solution(sol, network)
+        #println("bound: ", node)
+        sol = bound_solution(sol, max_states, merge_strategy)
     end
 
     # Translate variable order (from network to factor graph)

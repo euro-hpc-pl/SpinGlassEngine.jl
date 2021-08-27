@@ -6,6 +6,7 @@ export
     tensor,
     right_env,
     left_env,
+    dressed_mps,
     mpo, 
     mps
 
@@ -114,17 +115,12 @@ function tensor(
 ) where {S, T}
     loc_exp = exp.(-network.β .* local_energy(network, v))
     projs = projectors(network, v)
-    dim = zeros(Int, length(projs))
-
-    @cast A[_, i] := loc_exp[i]
-    for (j, pv) ∈ enumerate(projs)
-        @cast A[(c, γ), σ] |= A[c, σ] * pv[σ, γ]
-        dim[j] = size(pv, 2)
-    end
-    Ã = reshape(A, dim..., :)
-    dropdims(sum(Ã, dims=5), dims=5)
+    @cast A[σ, _] := loc_exp[σ]
+    for pv ∈ projs @cast A[σ, (c, γ)] |= A[σ, c] * pv[σ, γ] end 
+    B = dropdims(sum(A, dims=1), dims=1)
+    reshape(B, size.(projs, 2))
 end
-
+ 
 
 function tensor_size(
     network::AbstractGibbsNetwork{S, T}, 
@@ -396,27 +392,19 @@ end
 ) 
     if i > peps.nrows return IdentityMPS() end
     ψ = mps(peps, i+1)
-    @time for r ∈ peps.layers_MPS ψ = mpo(peps, i+r) * ψ end
+    for r ∈ peps.layers_MPS ψ = mpo(peps, i+r) * ψ end
     compress(ψ, peps)
 end
 
 
-function mps(
+@memoize Dict function dressed_mps(
     peps::AbstractGibbsNetwork,
-    i::Int,
-    ::Val{:dressed}
+    i::Int
 )
     ψ = mps(peps, i+1)
     for r ∈ peps.layers_left_env ψ = mpo(peps, i+r) * ψ end
     ψ
 end
-
-
-@memoize Dict mps(
-    peps::AbstractGibbsNetwork,
-    i::Int,
-    s::Symbol
-) = mps(peps, i, Val(s))
 
 
 function compress(ψ::AbstractMPS, peps::AbstractGibbsNetwork)
@@ -428,12 +416,12 @@ end
 @memoize Dict function right_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int}) 
     l = length(∂v)
     if l == 0 return ones(1, 1) end
-    ϕ = mps(peps, i, :dressed)
+    R̃ = right_env(peps, i, ∂v[2:l])
+    ϕ = dressed_mps(peps, i)
     layers = i .+ reverse(peps.layers_right_env)
     W = prod(mpo.(Ref(peps), layers))
     k = length(W)
     m = ∂v[1]
-    R̃ = right_env(peps, i, ∂v[2:l])
     M = ϕ[k-l+1]
     M̃ = W[k-l+1]
 
@@ -446,9 +434,9 @@ end
 @memoize Dict function left_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int})
     l = length(∂v)
     if l == 0 return [1.] end
-    ϕ = mps(peps, i, :dressed)
-    m = ∂v[l]
     L̃ = left_env(peps, i, ∂v[1:l-1])
+    ϕ = dressed_mps(peps, i)
+    m = ∂v[l]
     M = ϕ[l]
     @matmul L[x] := sum(α) L̃[α] * M[α, $m, x]
     L

@@ -1,6 +1,4 @@
-export
-    FusedNetwork, 
-    boundary,
+export FusedNetwork, boundary,
     conditional_probability,
     update_energy,
     projectors

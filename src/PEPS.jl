@@ -110,7 +110,7 @@ function conditional_probability(peps::PEPSNetwork, w::Vector{Int})
     R = right_env(peps, i, ∂v[2*j+3 : 2*peps.ncols+2])
     A = reduced_site_tensor(peps, (i, j), ∂v[2*j], ∂v[2*j+2])
 
-    ψ = mps(peps, i, :dressed)
+    ψ = dressed_mps(peps, i)
     M = ψ[2 * j]
 
     @tensor prob[σ] := L[x] * M[x, d, y] * A[r, d, σ] *

@@ -7,7 +7,7 @@ using Memoize
     β = 1.
 
     L = n * m * t
-    num_states = 100
+    num_states = 5
 
     #instance = "$(@__DIR__)/instances/chimera_droplets/2048power/001.txt"
     instance = "$(@__DIR__)/instances/chimera_droplets/512power/001.txt"
@@ -23,10 +23,12 @@ using Memoize
 
     #for transform ∈ all_lattice_transformations
     for transform ∈ rotation.([0])
-        @time peps = PEPSNetwork(m, n, fg, transform, β=β, bond_dim=32)
+        peps = PEPSNetwork(m, n, fg, transform, β=β, bond_dim=32)
+
+        # @time x = mps(peps, 1)
+
         #update_gauges!(peps, :rand)
-        @time x = mps(peps, 1)
-        #@time sol = low_energy_spectrum(peps, num_states)
-        #println(sol.energies[1:5])
+        @time sol = low_energy_spectrum(peps, num_states)#, merge_branches(peps, 1.0))
+        #println(sol.energies[1:1])
     end
 end

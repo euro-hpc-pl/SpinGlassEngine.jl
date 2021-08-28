@@ -147,6 +147,6 @@ function test5()
     #@test A ≈ B
 end 
 
-test5()
+test()
 
 

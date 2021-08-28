@@ -15,6 +15,21 @@ struct Solution
     largest_discarded_probability::Float64
 end
 
+# this is far from optimal
+function _clear_cache(network::AbstractGibbsNetwork, i)
+    delete!(memoize_cache(mps), (network, i))
+    delete!(memoize_cache(mpo), (network, i-1))
+
+    lec = memoize_cache(left_env)
+    for k ∈ keys(lec)
+        if k[2]==i delete!(lec, k) end
+    end
+
+    rec = memoize_cache(right_env)
+    for k ∈ keys(rec)
+        if k[2]==i delete!(rec, k) end
+   end
+end
 
 empty_solution() = Solution([0.], [[]], [1.], [1], -Inf)
 
@@ -124,11 +139,13 @@ function low_energy_spectrum(network::AbstractGibbsNetwork, max_states::Int, mer
     sol = empty_solution()
 
     for _ ∈ 1:nv(network_graph(network))
-        node = node_from_index(network, length(sol.states[1])+1)
-        #println("branch: ", node)
+        i, j = node_from_index(network, length(sol.states[1])+1)
+        #println("branch: ", (i, j))
         sol = branch_solution(sol, network)
-        #println("bound: ", node)
+        #println("bound: ", (i, j))
         sol = bound_solution(sol, max_states, merge_strategy)
+
+        @time if j == network.ncols _clear_cache(network, i) end
     end
 
     # Translate variable order (from network to factor graph)

@@ -16,9 +16,13 @@ struct Solution
 end
 
 
-function _clear_cache(network::AbstractGibbsNetwork, i)
+function _clear_cache(network::AbstractGibbsNetwork, sol::Solution)
+    i, j = node_from_index(network, length(first(sol.states))+1)
+    if j != network.ncols return end
     delete!(memoize_cache(mps), (network, i))
+    delete!(memoize_cache(dressed_mps), (network, i))
     delete!(memoize_cache(mpo), (network, i-1))
+    delete!(memoize_cache(_mpo), (network, i-1))
     lec = memoize_cache(left_env)
     delete!.(Ref(lec), filter(k->k[2]==i, keys(lec)))
     rec = memoize_cache(right_env)
@@ -106,7 +110,6 @@ function no_merge(partial_sol::Solution)
 end
 
 function bound_solution(partial_sol::Solution, max_states::Int, merge_strategy=no_merge)
-    #partial_sol = merge_strategy(partial_sol)
     if length(partial_sol.probabilities) <= max_states
         probs = vcat(partial_sol.probabilities, -Inf)
         k = length(probs)
@@ -132,16 +135,19 @@ end
 
 #TODO: incorporate "going back" move to improve alghoritm
 function low_energy_spectrum(network::AbstractGibbsNetwork, max_states::Int, merge_strategy=no_merge)
+    # Build all boundary mps
+    println("Pre-processing ...")
+    ψ = dressed_mps(network, 1)
+
+    # Start branch and bound search
     sol = empty_solution()
-    for _ ∈ 1:nv(network_graph(network))
-        i, j = node_from_index(network, length(sol.states[1])+1)
-        println("branch at ", (i, j))
+    @showprogress for _ ∈ 1:nv(network_graph(network))
         sol = branch_solution(sol, network)
-        println("bound at ", (i, j))
         sol = bound_solution(sol, max_states, merge_strategy)
-        if j == network.ncols _clear_cache(network, i) end
+        _clear_cache(network, sol) 
     end
 
+    println("Post-processing ...")
     # Translate variable order (from network to factor graph)
     inner_perm = sortperm([
         factor_graph(network).reverse_label_map[idx]
@@ -157,4 +163,5 @@ function low_energy_spectrum(network::AbstractGibbsNetwork, max_states::Int, mer
         sol.degeneracy[outer_perm],
         sol.largest_discarded_probability
     )
+    println("Argo F*** Yourself.")
 end

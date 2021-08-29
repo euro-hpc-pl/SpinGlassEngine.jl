@@ -385,15 +385,30 @@ end
 ) = mpo(Float64, peps, r)
 
 
-@memoize Dict function mps(
+function mps(::Type{T},
     peps::AbstractGibbsNetwork,
     i::Int
-) 
+) where {T <: Number}
     if i > peps.nrows return IdentityMPS() end
     ψ = mps(peps, i+1)
     for r ∈ peps.layers_MPS ψ = mpo(peps, i+r) * ψ end
-    compress(ψ, peps)
+    compress(ψ, peps) 
+
+#=     if i > peps.nrows 
+        ψ = MPS(T, peps.ncols)
+        for i ∈ 1:peps.ncols ψ[i] = ones(T, 1, 1, 1) end
+        return ψ
+    end
+    ψ = mps(T, peps, i+1)
+    for r ∈ peps.layers_MPS dot!(ψ, mpo(T, peps, i+r)) end
+    compress(ψ, peps) =#
 end
+
+
+@memoize Dict mps(
+    peps::AbstractGibbsNetwork,
+    i::Int
+) = mps(Float64, peps, i)
 
 
 @memoize Dict function dressed_mps(
@@ -412,19 +427,21 @@ function compress(ψ::AbstractMPS, peps::AbstractGibbsNetwork)
 end
 
 
+@memoize Dict function _mpo(peps::AbstractGibbsNetwork, i::Int)
+    prod(mpo.(Ref(peps), i .+ reverse(peps.layers_right_env)))
+end
+
+
 @memoize Dict function right_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int}) 
     l = length(∂v)
     if l == 0 return ones(1, 1) end
     R̃ = right_env(peps, i, ∂v[2:l])
     ϕ = dressed_mps(peps, i)
-    layers = i .+ reverse(peps.layers_right_env)
-    W = prod(mpo.(Ref(peps), layers))
+    W = _mpo(peps, i)
     k = length(W)
-    m = ∂v[1]
     M = ϕ[k-l+1]
     M̃ = W[k-l+1]
-
-    K = @view M̃[:, m, :, :]
+    K = @view M̃[:, ∂v[1], :, :]
     @tensor R[x, y] := K[y, β, γ] * M[x, γ, α] * R̃[α, β] order = (β, γ, α)
     R
 end
@@ -432,7 +449,7 @@ end
 
 @memoize Dict function left_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int})
     l = length(∂v)
-    if l == 0 return [1.] end
+    if l == 0 return ones(1) end
     L̃ = left_env(peps, i, ∂v[1:l-1])
     ϕ = dressed_mps(peps, i)
     m = ∂v[l]

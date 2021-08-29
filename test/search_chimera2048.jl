@@ -23,7 +23,7 @@
 
     #for transform ∈ all_lattice_transformations
     for transform ∈ rotation.([0])
-        peps = PEPSNetwork(m, n, fg, transform, β=β, bond_dim=16)
+        peps = PEPSNetwork(m, n, fg, transform, β=β, bond_dim=32)
 
 #=         for i in peps.ncols:-1:1
             @time W = mpo(peps, i)

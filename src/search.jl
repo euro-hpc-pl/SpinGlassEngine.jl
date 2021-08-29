@@ -136,18 +136,16 @@ end
 #TODO: incorporate "going back" move to improve alghoritm
 function low_energy_spectrum(network::AbstractGibbsNetwork, max_states::Int, merge_strategy=no_merge)
     # Build all boundary mps
-    println("Pre-processing ...")
-    ψ = dressed_mps(network, 1)
+    @showprogress "Preprocesing: " for i ∈ network.nrows:-1:1 dressed_mps(network, i) end
 
     # Start branch and bound search
     sol = empty_solution()
-    @showprogress for _ ∈ 1:nv(network_graph(network))
+    @showprogress "Search: " for _ ∈ 1:nv(network_graph(network))
         sol = branch_solution(sol, network)
         sol = bound_solution(sol, max_states, merge_strategy)
         _clear_cache(network, sol) 
     end
 
-    println("Post-processing ...")
     # Translate variable order (from network to factor graph)
     inner_perm = sortperm([
         factor_graph(network).reverse_label_map[idx]

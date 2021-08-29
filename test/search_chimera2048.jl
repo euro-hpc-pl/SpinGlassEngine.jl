@@ -24,17 +24,8 @@
     #for transform ∈ all_lattice_transformations
     for transform ∈ rotation.([0])
         peps = PEPSNetwork(m, n, fg, transform, β=β, bond_dim=32)
-
-#=         for i in peps.ncols:-1:1
-            @time W = mpo(peps, i)
-        end
-        println()
-        for i in peps.ncols:-1:1
-            @time x = dressed_mps(peps, i)
-        end =#
-
-        #update_gauges!(peps, :rand)
+        update_gauges!(peps, :rand)
         @time sol = low_energy_spectrum(peps, num_states)#, merge_branches(peps, 1.0))
-        #println(sol.energies[1:1])
+        println(sol.energies[1:1])
     end
 #end

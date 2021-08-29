@@ -1,7 +1,7 @@
 
 #@testset "Chimera 2048 instance has the correct low energy spectrum" begin
-    m = 8 
-    n = 8
+    m = 16 
+    n = 16
     t = 8
 
     β = 1.
@@ -9,8 +9,8 @@
     L = n * m * t
     num_states = 100
 
-    #instance = "$(@__DIR__)/instances/chimera_droplets/2048power/001.txt"
-    instance = "$(@__DIR__)/instances/chimera_droplets/512power/001.txt"
+    instance = "$(@__DIR__)/instances/chimera_droplets/2048power/001.txt"
+    #instance = "$(@__DIR__)/instances/chimera_droplets/512power/001.txt"
     #instance = "$(@__DIR__)/instances/chimera_droplets/128power/001.txt"
 
     ig = ising_graph(instance)

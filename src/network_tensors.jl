@@ -385,23 +385,23 @@ end
 ) = mpo(Float64, peps, r)
 
 
+function trivial_mps(::Type{T}, peps::AbstractGibbsNetwork) where {T <: Number}
+    L = length(peps.columns_MPO) * peps.ncols
+    ψ = MPS(T, L)
+    for i ∈ 1:L ψ[i] = ones(T, 1, 1, 1) end
+    return ψ
+end
+trivial_mps(peps::AbstractGibbsNetwork) = trivial_mps(Float64, peps)
+
+
 function mps(::Type{T},
     peps::AbstractGibbsNetwork,
     i::Int
 ) where {T <: Number}
-    if i > peps.nrows return IdentityMPS() end
+    if i > peps.nrows return trivial_mps(peps) end
     ψ = mps(peps, i+1)
     for r ∈ peps.layers_MPS ψ = mpo(peps, i+r) * ψ end
     compress(ψ, peps) 
-
-#=     if i > peps.nrows 
-        ψ = MPS(T, peps.ncols)
-        for i ∈ 1:peps.ncols ψ[i] = ones(T, 1, 1, 1) end
-        return ψ
-    end
-    ψ = mps(T, peps, i+1)
-    for r ∈ peps.layers_MPS dot!(ψ, mpo(T, peps, i+r)) end
-    compress(ψ, peps) =#
 end
 
 

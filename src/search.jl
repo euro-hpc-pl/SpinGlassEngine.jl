@@ -161,5 +161,4 @@ function low_energy_spectrum(network::AbstractGibbsNetwork, max_states::Int, mer
         sol.degeneracy[outer_perm],
         sol.largest_discarded_probability
     )
-    println("Argo F*** Yourself.")
 end

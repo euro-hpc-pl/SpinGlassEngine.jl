@@ -373,8 +373,11 @@ function mpo(::Type{T},
     r::Union{Rational{Int}, Int}
 ) where {T <: Number}
     W = MPO(T, length(peps.columns_MPO) * peps.ncols)
-    layers = Iterators.product(peps.columns_MPO, 1:peps.ncols)
-    @floop for (k, (d, j)) ∈ enumerate(layers) W[k] = tensor(peps, (r, j + d)) end
+    layers = collect(Iterators.product(peps.columns_MPO, 1:peps.ncols))
+    Threads.@threads for k=1:length(layers)
+        d, j = layers[k]
+        W[k] = tensor(peps, (r, j + d)) 
+    end
     W 
 end
 

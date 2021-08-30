@@ -1,5 +1,8 @@
+using SpinGlassNetworks
+using SpinGlassTensors
+using SpinGlassEngine
 
-#@testset "Chimera 2048 instance has the correct low energy spectrum" begin
+function bench()
     m = 16 
     n = 16
     t = 8
@@ -28,4 +31,6 @@
         @time sol = low_energy_spectrum(peps, num_states)#, merge_branches(peps, 1.0))
         println(sol.energies[1:1])
     end
-#end
+end
+
+bench()

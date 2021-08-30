@@ -374,7 +374,7 @@ function mpo(::Type{T},
 ) where {T <: Number}
     W = MPO(T, length(peps.columns_MPO) * peps.ncols)
     layers = Iterators.product(peps.columns_MPO, 1:peps.ncols)
-    for (k, (d, j)) ∈ enumerate(layers) W[k] = tensor(peps, (r, j + d)) end
+    @floop for (k, (d, j)) ∈ enumerate(layers) W[k] = tensor(peps, (r, j + d)) end
     W 
 end
 

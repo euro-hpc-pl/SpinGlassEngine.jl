@@ -13,8 +13,6 @@ function bench()
     num_states = 100
 
     instance = "$(@__DIR__)/instances/chimera_droplets/2048power/001.txt"
-    #instance = "$(@__DIR__)/instances/chimera_droplets/512power/001.txt"
-    #instance = "$(@__DIR__)/instances/chimera_droplets/128power/001.txt"
 
     ig = ising_graph(instance)
 

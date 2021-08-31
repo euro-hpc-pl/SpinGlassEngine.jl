@@ -8,7 +8,6 @@ using Memoize
 using LinearAlgebra
 using LightGraphs
 using ProgressMeter
-using FLoops
 
 SpinGlassNetworks.local_basis(ψ::AbstractMPS, i::Int) = SpinGlassNetworks.local_basis(physical_dim(ψ, i))
 

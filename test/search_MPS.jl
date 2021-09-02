@@ -7,8 +7,9 @@
     ig = ising_graph(instance)
 
     expected_energies = [-23.301855, -23.221513, -23.002799, -22.922457]
+    ground_state_energy = -23.301855
 
-    max_states = 25000
+    max_states = 20000
     to_show = length(expected_energies)
 
     β = 2.
@@ -35,6 +36,6 @@
             ig, Dcut, var_ϵ, max_sweeps, 
             dβ, β, :lin, max_states
         )
-        @test sol_log.energies[1:to_show] ≈ sol_lin.energies[1:to_show] ≈ expected_energies
+        @test sol_log.energies[1] ≈ sol_lin.energies[1] ≈ ground_state_energy
     end 
 end 

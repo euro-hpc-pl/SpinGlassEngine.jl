@@ -1,13 +1,14 @@
 @testset "MPS based search finds the correct low energy spectrum" begin
 
     instance = "$(@__DIR__)/instances/pathological/cross_3_4_dd.txt"
+    #instance = "$(@__DIR__)/instances/basic/16_001.txt"
     #instance = "$(@__DIR__)/instances/basic/128_001.txt"
 
     ig = ising_graph(instance)
 
     expected_energies = [-23.301855, -23.221513, -23.002799, -22.922457]
 
-    max_states = 200
+    max_states = 25000
     to_show = length(expected_energies)
 
     β = 2.
@@ -25,12 +26,15 @@
         @test sort(energy.(states[1:to_show], Ref(igp))) ≈ expected_energies
     end  
     
-    #=
     @testset "with purification" begin
-        sol = low_energy_spectrum(
+        sol_log = low_energy_spectrum(
             ig, Dcut, var_ϵ, max_sweeps, 
             dβ, β, :log, max_states
         )
-        @test sol.energies[1:to_show] ≈ expected_energies
-    end =#
+        sol_lin = low_energy_spectrum(
+            ig, Dcut, var_ϵ, max_sweeps, 
+            dβ, β, :lin, max_states
+        )
+        @test sol_log.energies[1:to_show] ≈ sol_lin.energies[1:to_show] ≈ expected_energies
+    end 
 end 

@@ -202,5 +202,12 @@ function normalize_probability(
     prob::Vector{R}
 ) where {S, T, R<:Number}
     # exceptions (negative pdo, etc)
-    prob / sum(prob)
+    minp = min(prob...)
+    if minp < 0
+        amp = abs(minp)
+        for p ∈ prob
+            p < amp ? p = amp : p
+        end
+    end
+    prob / (sum(prob) + 1E-9)
 end

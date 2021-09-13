@@ -52,7 +52,8 @@ function branch_solution(partial_sol::Solution, network::AbstractGibbsNetwork)
         ),
         vcat(branch_state.(Ref(network), partial_sol.states)...),
         vcat(
-            partial_sol.probabilities .* conditional_probability.(Ref(network), partial_sol.states)
+            #partial_sol.probabilities .* conditional_probability.(Ref(network), partial_sol.states)
+            log.(partial_sol.probabilities) .+ log.(conditional_probability.(Ref(network), partial_sol.states))
             ...
         ),
         repeat(partial_sol.degeneracy, inner=local_dim),

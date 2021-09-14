@@ -43,8 +43,7 @@ end
 function branch_solution(partial_sol::Solution, network::AbstractGibbsNetwork)
     local_dim = length(local_energy(network, node_from_index(network, length(partial_sol.states[1])+1))) 
     Solution(
-        vcat
-        (
+        vcat(
             [
                 (en .+ update_energy(network, state))
                 for (en, state) ∈ zip(partial_sol.energies, partial_sol.states)

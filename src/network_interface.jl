@@ -205,9 +205,9 @@ function normalize_probability(
     minp = min(prob...)
     if minp < 0
         amp = abs(minp)
-        for p ∈ prob
-            p < amp ? p = amp : p
+        for (i, p) ∈ enumerate(prob)
+            p < amp ? prob[i] = amp : prob[i]
         end
     end
-    prob / (sum(prob) + 1E-9)
+    prob / sum(prob)
 end

@@ -1,9 +1,11 @@
 export compress
 
-mutable struct Environment
-    bra::Dict,  # this will be optimized
-    mpo::Dict,
-    ket::Dict,
+abstract type AbstractEnvironment end
+
+mutable struct Environment <: AbstractEnvironment
+    bra::Dict  # to be optimized
+    mpo::Dict
+    ket::Dict
     transpose::Bool
     sites_bra
     sites_mpo
@@ -17,28 +19,31 @@ mutable struct Environment
     )
         sites_bra = sort(keys(bra))
         sites_mpo = sort(keys(mpo))
-        sites_ket = sort(keys(bra))
+        sites_ket = sort(keys(ket))
+
         @assert sites_bra == sites_ket
         @assert issubset(sites_bra, site_mpo)  
-        # last line follows convention that mpo can have
-        # central sites with indices that are not in bra and ket
+
+        # mpo can have sites with indices that are not in bra and ket
         env = Dict(
                    (first(sites_bra), :left) => ones(1, 1, 1),
                    (last(sites_bra), :right) => ones(1, 1, 1)
             )
-        new(bra, mpo, ket, transpose, sites_bra, sites_mpo, env)
+        env = new(bra, mpo, ket, transpose, sites_bra, sites_mpo, env)
+        for site ∈ env.sites_bra update_env!(env, site, :left) end
+        env
     end
 end
 
 
-function compress(W::Dict, ψ::Dict, Dcut::Int, tol::Number=1E-8, max_sweeps::Int=4, ψ₀::Dict)
+function compress(W::Dict, ψ::Dict, Dcut::Int, ψ₀::Dict, tol::Number=1E-8, max_sweeps::Int=4)
 
     # initial guess + its canonization
     # ψ₀ :rand, :svd, Dict(mps)
     ket = copy(ψ)
 
-    env = Environment(bra=ψ, mpo=W, ket=ket, transpose=true)
-    _initialize_left_env!(env)
+    env = Environment(ψ, W, ket, true)
+    #_initialize_left_env!(env)
     overlap_before = measure_env(env, last(env.sites_bra))
 
     for sweep ∈ 1:max_sweeps
@@ -60,7 +65,7 @@ function compress(W::Dict, ψ::Dict, Dcut::Int, tol::Number=1E-8, max_sweeps::In
 end
 
 
-_initialize_left_env!(env) = for site ∈ env.sites_bra update_env!(env, site, :left) end
+#_initialize_left_env!(env) = for site ∈ env.sites_bra update_env!(env, site, :left) end
 
 
 # maximum(filter(x -> x < site, sites))

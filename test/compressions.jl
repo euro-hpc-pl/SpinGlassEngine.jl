@@ -14,5 +14,5 @@
     mps = Dict(i => A for (i, A) ∈ enumerate(ψ))
     mpo = Dict(i => O for (i, O) ∈ enumerate(W))
 
-    ϕ = compress(W, ψ, Dcut, tol, max_sweeps, ψ₀)
+    ϕ = compress(W, ψ, Dcut, ψ₀, tol, max_sweeps)
 end

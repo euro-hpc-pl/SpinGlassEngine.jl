@@ -41,9 +41,10 @@ end
 
 
 function branch_solution(partial_sol::Solution, network::AbstractGibbsNetwork)
-    local_dim = length(local_energy(network, node_from_index(network, length(partial_sol.states[1])+1)))
+    local_dim = length(local_energy(network, node_from_index(network, length(partial_sol.states[1])+1))) 
     Solution(
-        vcat(
+        vcat
+        (
             [
                 (en .+ update_energy(network, state))
                 for (en, state) ∈ zip(partial_sol.energies, partial_sol.states)
@@ -52,16 +53,16 @@ function branch_solution(partial_sol::Solution, network::AbstractGibbsNetwork)
         ),
         vcat(branch_state.(Ref(network), partial_sol.states)...),
         vcat(
-            #partial_sol.probabilities .* conditional_probability.(Ref(network), partial_sol.states)
-            log.(partial_sol.probabilities) .+ log.(conditional_probability.(Ref(network), partial_sol.states))
+            [
+                partial_sol.probabilities[i] .+ log.(p) 
+                for (i,p) in enumerate(conditional_probability.(Ref(network), partial_sol.states))
+                    ]
             ...
         ),
         repeat(partial_sol.degeneracy, inner=local_dim),
         partial_sol.largest_discarded_probability
     )
 end
-
-# TODO: convert probabilities to logarithms
 
 function merge_branches(
     network::AbstractGibbsNetwork{S, T}, 

@@ -1,5 +1,3 @@
-export compress!
-
 abstract type AbstractEnvironment end
 
 mutable struct Environment <: AbstractEnvironment
@@ -36,7 +34,7 @@ mutable struct Environment <: AbstractEnvironment
 end
 
 
-function compress!(
+function SpinGlassTensors.compress(
     bra::Dict,
     mpo::Dict,
     ket::Dict,
@@ -51,23 +49,21 @@ function compress!(
         # left sweep
         for site ∈ reverse(env.sites_bra)
             update_env_right!(env, site)
-            T = project_ket_on_bra(env, site)
-            d = size(T, 2)
-            @cast T2[x, (y, z)] := T[x, y, z]
-            Q = rq(T2, Dcut)
-            @cast T3[x, σ, y] |= Q[x, (σ, y)] (σ ∈ 1:d)
-            env.bra[site] = T3
+            A = project_ket_on_bra(env, site)
+            @cast B[x, (y, z)] := A[x, y, z]
+            Q = rq(B, Dcut)
+            @cast C[x, σ, y] := Q[x, (σ, y)] (σ ∈ 1:size(A, 2))
+            env.bra[site] = C
             clear_env_site!(env, site)
         end
         # right sweep
         for site ∈ env.sites_bra
             update_env_left!(env, site)
-            T = project_ket_on_bra(env, site)
-            d = size(T, 2)
-            @cast T2[(x, y), z] := T[x, y, z]
-            Q = qr(T2, Dcut)
-            @cast T3[x, σ, y] |= Q[(x, σ), y] (σ ∈ 1:d)
-            env.bra[site] = T3
+            A = project_ket_on_bra(env, site)
+            @cast B[(x, y), z] := A[x, y, z]
+            Q = qr(B, Dcut)
+            @cast C[x, σ, y] := Q[(x, σ), y] (σ ∈ 1:size(A, 2))
+            env.bra[site] = C
             clear_env_site!(env, site)
         end
         overlap = measure_env(env, last(env.sites_bra))
@@ -77,11 +73,12 @@ function compress!(
 
         if Δ < tol
             @info "Finished in $sweep sweeps of $(max_sweeps)."
-            return
+            return env.bra
         else
             overlap_before = overlap
         end
     end
+    env.bra
 end
 
 # maximum(filter(x -> x < site, sites))
@@ -107,7 +104,7 @@ function _neighbouring_site_to_right(site, sites)
 end
 
 
-function update_env_left!(env, site)
+function update_env_left!(env::Environment, site)
     if site <= first(env.sites_bra) return end
 
     lsite = _neighbouring_site_to_left(site, env.sites_bra)
@@ -127,7 +124,7 @@ function update_env_left!(env, site)
 end
 
 
-function update_env_right!(env, site)
+function update_env_right!(env::Environment, site)
     if site >= last(env.sites_bra) return end
 
     rsite = _neighbouring_site_to_right(site, env.sites_bra)
@@ -147,7 +144,7 @@ function update_env_right!(env, site)
 end
 
 
-function clear_env_site!(env, site)
+function clear_env_site!(env::Environment, site)
     # delete!(env.env, (site, :right))
     # delete!(env.env, (site, :left))
 end
@@ -196,7 +193,7 @@ function update_env_right(RE, iM)  # same tensory bez wymiernych indeksow;  mult
 end
 
 
-function project_ket_on_bra(env, site)
+function project_ket_on_bra(env::Environment, site)
     LE = env.env[(site, :left)]
     M = env.mpo[site]
     B = env.ket[site]
@@ -219,7 +216,7 @@ function project_ket_on_bra(LE, B, M, RE, :transposed)
 end
 =#
 
-function measure_env(env, site)
+function measure_env(env::Environment, site)
     LE = env.env[(site, :left)]
     T = env.bra[site]
     M = env.mpo[site]
@@ -231,15 +228,45 @@ function measure_env(env, site)
 end
 
 
-function SpinGlassTensors.canonise!(ψ::Dict, s::Symbol)
-    L = length(ψ)
-    ϕ = MPS(typeof(ψ[1]), L) 
-    for i ∈ 1:L ϕ[i] = ψ[i] end
+function SpinGlassTensors.canonise!(ket::Dict, s::Symbol)
+    L = length(ket)
+    ϕ = MPS(eltype(ket[1]), L) 
+    for i ∈ 1:L ϕ[i] = ket[i] end
     canonise!(ϕ, s)
-    for i ∈ 1:L ψ[i] = ϕ[i] end
+    for i ∈ 1:L ket[i] = ϕ[i] end
 end
 
 
+function SpinGlassTensors.truncate!(ket::Dict, s::Symbol, Dcut::Int)
+    L = length(ket)
+    ϕ = MPS(eltype(ket[1]), L) 
+    for i ∈ 1:L ϕ[i] = ket[i] end
+    truncate!(ϕ, s, Dcut)
+    for i ∈ 1:L ket[i] = ϕ[i] end
+end
 
 
+function SpinGlassTensors.dot(ψ::AbstractMPS, ket::Dict)
+    L = length(ket)
+    ϕ = MPS(eltype(ket[1]), L) 
+    for i ∈ 1:L ϕ[i] = ket[i] end
+    dot(ψ, ϕ)
+end
 
+
+function SpinGlassTensors.dot(ket::Dict, ψ::AbstractMPS)
+    L = length(ket)
+    ϕ = MPS(eltype(ket[1]), L) 
+    for i ∈ 1:L ϕ[i] = ket[i] end
+    dot(ϕ, ψ)
+end
+
+
+function SpinGlassTensors.dot(ket1::Dict, ket2::Dict)
+    L = length(ket1)
+    ϕ = MPS(eltype(ket1[1]), L) 
+    ψ = MPS(eltype(ket2[1]), L) 
+    for i ∈ 1:L ϕ[i] = ket1[i] end
+    for i ∈ 1:L ψ[i] = ket2[i] end
+    dot(ϕ, ψ)
+end

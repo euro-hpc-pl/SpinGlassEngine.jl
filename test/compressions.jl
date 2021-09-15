@@ -6,7 +6,7 @@
     
     Dcut = 8 
     max_sweeps = 4
-    tol = =1E-8
+    tol = 1E-8
 
     ψ = randn(MPS{T}, sites, D, d)
     W = randn(MPO{T}, sites, D, d)

@@ -1,5 +1,3 @@
-export compress
-
 abstract type AbstractEnvironment end
 
 mutable struct Environment <: AbstractEnvironment
@@ -36,14 +34,19 @@ mutable struct Environment <: AbstractEnvironment
 end
 
 
-function compress(W::Dict, ψ::Dict, Dcut::Int, ψ₀::Dict, tol::Number=1E-8, max_sweeps::Int=4)
-
+function SpinGlassTensors.compress(
+    W::Dict, 
+    ψ::Dict, 
+    Dcut::Int,
+    ψ₀::Dict, 
+    tol::Number=1E-8,
+    max_sweeps::Int=4
+)
     # initial guess + its canonization
     # ψ₀ :rand, :svd, Dict(mps)
     ket = copy(ψ)
 
     env = Environment(ψ, W, ket, true)
-    #_initialize_left_env!(env)
     overlap_before = measure_env(env, last(env.sites_bra))
 
     for sweep ∈ 1:max_sweeps
@@ -147,13 +150,14 @@ function update_left_env(LE, T, M, B)  # same tensory bez wymiernych indeksow;  
 end
 
 
+#=
 function update_left_env(LE, T, M, B, :transposed)  # same tensory bez wymiernych indeksow;  multiple dispatch for M sparse
     @tensor L[nb, nc, nt] := LE[ob, oc, ot] * T[ot, α, nt] * 
                              M[oc, β, nc, α] * B[ob, β, nb] order = (ot, α, oc, β, ob)  
     # for real there is no conjugate, otherwise conj(T)
     L
 end
-
+=#
 
 function update_left_env(LE, iM)  # same tensory bez wymiernych indeksow;  multiple dispatch for M sparse
     @tensor L[nb, nc, nt] := LE[nb, oc, nt] * M[oc, nc]
@@ -167,13 +171,13 @@ function update_right_env(RE, T, M, B)  # same tensory bez wymiernych indeksow
     R
 end
 
-
+#=
 function update_right_env(RE, T, M, B, :transposed)  # same tensory bez wymiernych indeksow
     @tensor R[nt, nc, nb] := RE[ot, oc, ob] * T[nt, α, ot] * M[nc,  β, oc, α] * B[nb, β, ob] order = (ot, α, oc, β, ob)
     # for real there is no conjugate, otherwise conj(T)
     R
 end
-
+=#
 
 function update_right_env(RE, iM)  # same tensory bez wymiernych indeksow;  multiple dispatch for M sparse
     @tensor R[nt, nc, nb] := M[nc, oc] * RE[nt, oc, nb]
@@ -196,13 +200,13 @@ function project_ket_on_bra(LE, B, M, RE)
     T
 end
 
-
+#=
 function project_ket_on_bra(LE, B, M, RE, :transposed)
     @tensor T[x, y, z] := LE[k, l, x] * B[k, m, o] * 
                           M[l, m, n, y] * RE[z, n, o] order = (k, l, m, n, o)
     T
 end
-
+=#
 
 function measure_env(env, site)
     LE = env.env[(site, :left)]

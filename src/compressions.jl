@@ -44,11 +44,11 @@ function compress!(
     tol::Number=1E-8,
     max_sweeps::Int=4
 )
-
     env = Environment(bra, mpo, ket, true)
     overlap_before = measure_env(env, last(env.sites_bra))
 
     for sweep ∈ 1:max_sweeps
+        # left sweep
         for site ∈ reverse(env.sites_bra)
             update_env_right!(env, site)
             T = project_ket_on_bra(env, site)
@@ -59,6 +59,7 @@ function compress!(
             env.bra[site] = T3
             clear_env_site!(env, site)
         end
+        # right sweep
         for site ∈ env.sites_bra
             update_env_left!(env, site)
             T = project_ket_on_bra(env, site)
@@ -69,12 +70,10 @@ function compress!(
             env.bra[site] = T3
             clear_env_site!(env, site)
         end
-
         overlap = measure_env(env, last(env.sites_bra))
 
         Δ = abs(overlap_before - abs(overlap))
         @info "Convergence" Δ
-        println("Convergence", " ", sweep, " " Δ)
 
         if Δ < tol
             @info "Finished in $sweep sweeps of $(max_sweeps)."
@@ -84,10 +83,6 @@ function compress!(
         end
     end
 end
-
-
-#_initialize_left_env!(env) = for site ∈ env.sites_bra update_env!(env, site, :left) end
-
 
 # maximum(filter(x -> x < site, sites))
 function _neighbouring_site_to_left(site, sites)
@@ -110,7 +105,6 @@ function _neighbouring_site_to_right(site, sites)
     end
     ind  # what should it return if there  is nothigh to the right
 end
-
 
 
 function update_env_left!(env, site)
@@ -157,7 +151,6 @@ function clear_env_site!(env, site)
     # delete!(env.env, (site, :right))
     # delete!(env.env, (site, :left))
 end
-
 
 
 function update_env_left(LE, T, M, B)  # same tensory bez wymiernych indeksow;  multiple dispatch for M sparse
@@ -238,54 +231,15 @@ function measure_env(env, site)
 end
 
 
+function SpinGlassTensors.canonise!(ψ::Dict, s::Symbol)
+    L = length(ψ)
+    ϕ = MPS(typeof(ψ[1]), L) 
+    for i ∈ 1:L ϕ[i] = ψ[i] end
+    canonise!(ϕ, s)
+    for i ∈ 1:L ψ[i] = ϕ[i] end
+end
 
 
 
-# function canonise!(ψ::AbstractMPS)
-#     canonise!(ψ, :right)
-#     canonise!(ψ, :left)
-# end
-
-# canonise!(ψ::AbstractMPS, s::Symbol) = canonise!(ψ, Val(s))
-# canonise!(ψ::AbstractMPS, ::Val{:right}) = _left_sweep_SVD!(ψ)
-# canonise!(ψ::AbstractMPS, ::Val{:left}) = _right_sweep_SVD!(ψ)
-
-# function _right_sweep_SVD!(ψ::AbstractMPS, Dcut::Int=typemax(Int))
-#     Σ = V = ones(eltype(ψ), 1, 1)
-#     for (i, A) ∈ enumerate(ψ)
-#         C = (Diagonal(Σ) ./ Σ[1]) * V'
-
-#         # attach
-#         @matmul M̃[(x, σ), y] := sum(α) C[x, α] * A[α, σ, y]
-
-#         # decompose
-#         U, Σ, V = svd(M̃, Dcut)
-
-#         # create new
-#         d = physical_dim(ψ, i)
-#         @cast A[x, σ, y] |= U[(x, σ), y] (σ ∈ 1:d)
-#         ψ[i] = A
-#     end
-#     ψ[end] *= tr(V)
-# end
 
 
-# function _left_sweep_SVD!(ψ::AbstractMPS, Dcut::Int=typemax(Int))
-#     Σ = U = ones(eltype(ψ), 1, 1)
-#     for i ∈ length(ψ):-1:1
-#         B = ψ[i]
-#         C = U * (Diagonal(Σ) ./ Σ[1])
-
-#         # attach    
-#         @matmul M̃[x, (σ, y)] := sum(α) B[x, σ, α] * C[α, y]
-
-#         # decompose
-#         U, Σ, V = svd(M̃, Dcut)
-
-#         # create new
-#         d = physical_dim(ψ, i)
-#         @cast B[x, σ, y] |= V'[x, (σ, y)] (σ ∈ 1:d)
-#         ψ[i] = B
-#     end
-#     ψ[1] *= tr(U)
-# end

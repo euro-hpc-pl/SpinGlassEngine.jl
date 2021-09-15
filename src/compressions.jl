@@ -1,12 +1,3 @@
-
-# to be moved to SpinGlassTensors
-function Base.copy(ψ::AbstractMPS)
-    L = length(ψ)
-    ϕ = MPS(eltype(ψ), L)
-    for i ∈ 1:L ϕ[i] = copy(ψ[i]) end
-    ϕ
-end
-
 abstract type AbstractEnvironment end
 
 mutable struct Environment <: AbstractEnvironment
@@ -54,6 +45,8 @@ function SpinGlassTensors.compress(
     env = Environment(bra, mpo, ket, true)
     overlap_before = measure_env(env, last(env.sites_bra))
 
+    println(objectid(bra))
+    println(objectid(env.bra))
     for sweep ∈ 1:max_sweeps
         # left sweep
         for site ∈ reverse(env.sites_bra)
@@ -234,49 +227,4 @@ function measure_env(env::Environment, site)
     LL = update_env_left(LE, T, M, B)
     @tensor scalar = LL[t, c, b] * RE[b, c, t]
     scalar
-end
-
-
-function SpinGlassTensors.canonise!(ket::Dict, s::Symbol)
-    L = length(ket)
-    ϕ = MPS(eltype(ket[1]), L) 
-    for i ∈ 1:L ϕ[i] = copy(ket[i]) end
-    canonise!(ϕ, s)
-    for i ∈ 1:L ket[i] = copy(ϕ[i]) end
-end
-
-
-function SpinGlassTensors.truncate!(ket::Dict, s::Symbol, Dcut::Int)
-    L = length(ket)
-    ϕ = MPS(eltype(ket[1]), L) 
-    for i ∈ 1:L ϕ[i] = copy(ket[i]) end
-    println( [objectid(ϕ[i]) == objectid(ket[i]) for i ∈ 1:L] )
-    truncate!(ϕ, s, Dcut)
-    for i ∈ 1:L ket[i] = copy(ϕ[i]) end
-end
-
-
-function SpinGlassTensors.dot(ψ::AbstractMPS, ket::Dict)
-    L = length(ket)
-    ϕ = MPS(eltype(ket[1]), L) 
-    for i ∈ 1:L ϕ[i] = copy(ket[i]) end
-    dot(ψ, ϕ)
-end
-
-
-function SpinGlassTensors.dot(ket::Dict, ψ::AbstractMPS)
-    L = length(ket)
-    ϕ = MPS(eltype(ket[1]), L) 
-    for i ∈ 1:L ϕ[i] = ket[i] end
-    dot(ϕ, ψ)
-end
-
-
-function SpinGlassTensors.dot(ket1::Dict, ket2::Dict)
-    L = length(ket1)
-    ϕ = MPS(eltype(ket1[1]), L) 
-    ψ = MPS(eltype(ket2[1]), L) 
-    for i ∈ 1:L ϕ[i] = ket1[i] end
-    for i ∈ 1:L ψ[i] = ket2[i] end
-    dot(ϕ, ψ)
 end

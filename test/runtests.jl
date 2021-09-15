@@ -6,7 +6,7 @@ using LinearAlgebra
 using TensorCast
 using MetaGraphs
 
-disable_logging(LogLevel(1))
+# disable_logging(LogLevel(1))
 
 using Test
 

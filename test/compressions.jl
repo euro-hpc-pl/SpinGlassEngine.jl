@@ -1,3 +1,10 @@
+function copy_mps(ψ::AbstractMPS)
+    L = length(ψ)
+    ϕ = MPS(eltype(ψ), L)
+    for i ∈ 1:L ϕ[i] = copy(ψ[i]) end
+    ϕ
+end
+
 @testset "Compressions for sparse mps and mpo works" begin
     D = 16
     d = 2
@@ -11,24 +18,42 @@
     ψ = randn(MPS{T}, sites, D, d)
     W = randn(MPO{T}, sites, D, d)
 
-    ket = Dict(i => A for (i, A) ∈ enumerate(ψ))
-    mpo = Dict(i => O for (i, O) ∈ enumerate(W))
+    ket = Dict(i => copy(A) for (i, A) ∈ enumerate(ψ))
+    mpo = Dict(i => B for (i, B) ∈ enumerate(W))
 
     @testset "Two mps representations are the same" begin
         for i ∈ 1:sites @test ψ[i] ≈ ket[i] end
     end
 
+    #
     @testset "Two mps representations are truncated to the same state" begin
-        ψ̃ = copy(ψ)
-        truncate!(ψ̃, :right, Dcut)
-        @test ψ̃ * ψ̃ ≈ 1 
-
-        truncate!(ket, :right, Dcut)
-        @test dot(ket, ket) ≈ 1 
+        ψ̃ = copy_mps(ψ)
+        ϕ = copy_mps(ψ)
         
-        @test dot(ψ̃, ket) ≈ 1 
-        @test dot(ket, ψ̃) ≈ 1 
-    end    
+        @test ϕ == ψ̃
+        @test norm(ϕ) ≈ norm(ψ̃)
+
+        truncate!(ψ̃, :right, Dcut)
+        truncate!(ϕ, :right, Dcut)
+        
+        @test norm(ϕ) ≈ norm(ψ̃)
+        @test dot(ψ̃, ϕ) ≈ dot(ϕ, ψ̃) ≈ 1
+
+        #ϕ = MPS(T, sites) 
+        #for i ∈ 1:sites ϕ[i] = copy(ψ̃[i]) end
+        
+        #truncate!(ϕ, :right, Dcut)
+
+        #for i ∈ 1:sites ket[i] = copy(ϕ[i]) end
+
+        #truncate!(ket, :right, Dcut)
+
+        #@test dot(ket, ket) ≈ ψ * ψ ≈ 1 
+
+        #@test dot(ϕ, ϕ) ≈ ψ * ψ ≈ 1 
+        #@test dot(ψ, ket) ≈ dot(ket, ψ) ≈ 1
+    end 
+       
 
     #=
     @testset "Two mps representations are compressed to the same state" begin 

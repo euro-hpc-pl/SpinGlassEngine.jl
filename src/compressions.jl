@@ -1,3 +1,12 @@
+
+# to be moved to SpinGlassTensors
+function Base.copy(ψ::AbstractMPS)
+    L = length(ψ)
+    ϕ = MPS(eltype(ψ), L)
+    for i ∈ 1:L ϕ[i] = copy(ψ[i]) end
+    ϕ
+end
+
 abstract type AbstractEnvironment end
 
 mutable struct Environment <: AbstractEnvironment
@@ -231,25 +240,26 @@ end
 function SpinGlassTensors.canonise!(ket::Dict, s::Symbol)
     L = length(ket)
     ϕ = MPS(eltype(ket[1]), L) 
-    for i ∈ 1:L ϕ[i] = ket[i] end
+    for i ∈ 1:L ϕ[i] = copy(ket[i]) end
     canonise!(ϕ, s)
-    for i ∈ 1:L ket[i] = ϕ[i] end
+    for i ∈ 1:L ket[i] = copy(ϕ[i]) end
 end
 
 
 function SpinGlassTensors.truncate!(ket::Dict, s::Symbol, Dcut::Int)
     L = length(ket)
     ϕ = MPS(eltype(ket[1]), L) 
-    for i ∈ 1:L ϕ[i] = ket[i] end
+    for i ∈ 1:L ϕ[i] = copy(ket[i]) end
+    println( [objectid(ϕ[i]) == objectid(ket[i]) for i ∈ 1:L] )
     truncate!(ϕ, s, Dcut)
-    for i ∈ 1:L ket[i] = ϕ[i] end
+    for i ∈ 1:L ket[i] = copy(ϕ[i]) end
 end
 
 
 function SpinGlassTensors.dot(ψ::AbstractMPS, ket::Dict)
     L = length(ket)
     ϕ = MPS(eltype(ket[1]), L) 
-    for i ∈ 1:L ϕ[i] = ket[i] end
+    for i ∈ 1:L ϕ[i] = copy(ket[i]) end
     dot(ψ, ϕ)
 end
 

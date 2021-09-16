@@ -53,7 +53,6 @@ end
     m, n = 2, 2
     t = 1
     β = 1.
-    num_states = 4
 
     # read in pure Ising
     ig = ising_graph(D)
@@ -72,5 +71,6 @@ end
     sum = 26.391
     expected_prob = [0.08386950096623849, 0.08386950096623849, 0.5806524951688076, 
                     0.08386950096623849, 0.08386950096623849, 0.08386950096623849]
-    @test normalize_probability(peps, prob) ≈ expected_prob
+
+    @test normalize_probability(peps, prob) ≈ expected_prob ≈ prob_new/sum
 end

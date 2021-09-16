@@ -1,3 +1,5 @@
+export compress!
+
 abstract type AbstractEnvironment end
 
 mutable struct Environment <: AbstractEnvironment
@@ -34,7 +36,7 @@ mutable struct Environment <: AbstractEnvironment
 end
 
 
-function SpinGlassTensors.compress(
+function compress!(
     bra::Dict,
     mpo::Dict,
     ket::Dict,
@@ -45,25 +47,24 @@ function SpinGlassTensors.compress(
     env = Environment(bra, mpo, ket, true)
     overlap_before = measure_env(env, last(env.sites_bra))
 
-    println(objectid(bra))
-    println(objectid(env.bra))
     for sweep ∈ 1:max_sweeps
         # left sweep
         for site ∈ reverse(env.sites_bra)
             update_env_right!(env, site)
             A = project_ket_on_bra(env, site)
             @cast B[x, (y, z)] := A[x, y, z]
-            Q = rq(B, Dcut)
+            Q = rqf(B)
             @cast C[x, σ, y] := Q[x, (σ, y)] (σ ∈ 1:size(A, 2))
             env.bra[site] = C
             clear_env_site!(env, site)
         end
+        
         # right sweep
         for site ∈ env.sites_bra
             update_env_left!(env, site)
             A = project_ket_on_bra(env, site)
             @cast B[(x, y), z] := A[x, y, z]
-            Q = qr(B, Dcut)
+            Q = qrf(B)
             @cast C[x, σ, y] := Q[(x, σ), y] (σ ∈ 1:size(A, 2))
             env.bra[site] = C
             clear_env_site!(env, site)
@@ -75,12 +76,11 @@ function SpinGlassTensors.compress(
 
         if Δ < tol
             @info "Finished in $sweep sweeps of $(max_sweeps)."
-            return env.bra
+            return 
         else
             overlap_before = overlap
         end
     end
-    env.bra
 end
 
 # maximum(filter(x -> x < site, sites))
@@ -93,6 +93,7 @@ function _neighbouring_site_to_left(site, sites)
     end
     ind  # what should it return if there  is nothigh to the left?
 end
+
 
 # minimum(filter(x -> x > site, sites))
 function _neighbouring_site_to_right(site, sites)

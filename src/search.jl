@@ -54,7 +54,7 @@ function branch_solution(partial_sol::Solution, network::AbstractGibbsNetwork)
         vcat(
             [
                 partial_sol.probabilities[i] .+ log.(p) 
-                for (i,p) in enumerate(conditional_probability.(Ref(network), partial_sol.states))
+                for (i,p) ∈ enumerate(conditional_probability.(Ref(network), partial_sol.states))
                     ]
             ...
         ),

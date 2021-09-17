@@ -1,5 +1,4 @@
 @testset "Pegasus-like instance has the correct ground state energy" begin
-
     ground_energy = -23.301855
 
     m = 3
@@ -26,7 +25,7 @@
     for transform ∈ all_lattice_transformations
         peps = FusedNetwork(m, n, fg, transform, β=β)
         update_gauges!(peps, :rand)
-        sol = low_energy_spectrum(peps, states_to_keep)#, merge_branches(peps, 1.0))
+        sol = low_energy_spectrum(peps, states_to_keep)
         @test first(sol.energies) ≈ ground_energy
     end
 end

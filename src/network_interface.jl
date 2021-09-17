@@ -197,17 +197,14 @@ function update_gauges!(
 end
 
 
-function normalize_probability(
-    network::AbstractGibbsNetwork{S, T}, 
-    prob::Vector{R}
-) where {S, T, R<:Number}
+function normalize_probability(values::Vector{R}) where {R<:Number}
     # exceptions (negative pdo, etc)
-    minp = min(prob...)
+    minp = minimum(values)
     if minp < 0
         amp = abs(minp)
-        for (i, p) ∈ enumerate(prob)
-            p < amp ? prob[i] = amp : prob[i]
+        for (i, p) ∈ enumerate(values)
+            p < amp ? values[i] = amp : values[i]
         end
     end
-    prob / sum(prob)
+    values / sum(values)
 end

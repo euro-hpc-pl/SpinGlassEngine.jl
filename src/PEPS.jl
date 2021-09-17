@@ -116,7 +116,7 @@ function conditional_probability(peps::PEPSNetwork, w::Vector{Int})
     @tensor prob[σ] := L[x] * M[x, d, y] * A[r, d, σ] *
                        R[y, r] order = (x, d, r, y)
 
-    normalize_probability(peps, prob)
+    normalize_probability(prob)
 end
 
 

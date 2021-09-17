@@ -140,7 +140,7 @@ function conditional_probability(peps::FusedNetwork, w::Vector{Int})
     @tensor prob[σ] := L[x] * MX[x, m, y] * M[y, l, z] * R[z, k] *
                         A[k, l, m, σ] order = (x, y, z, k, l, m)
                         
-    normalize_probability(peps, prob)
+    normalize_probability(prob)
 end
 
 

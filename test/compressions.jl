@@ -28,6 +28,7 @@ Base.Dict(
 
     @testset "Two mps representations are compressed to the same state" begin 
         @time χ = compress(W * ψ, Dcut, tol, max_sweeps)
+        @time is_right_normalized(χ)
 
         #ϕ = copy(ψ)
         #canonise!(ϕ, :right)
@@ -37,7 +38,8 @@ Base.Dict(
         @time compress!(bra, mpo, ket, Dcut, tol, max_sweeps)
 
         ϕ = MPS(bra)
-        @test χ * χ ≈ ϕ * ϕ ≈ 1
+        @time is_right_normalized(ϕ)
+        @test norm(χ) ≈ norm(ϕ) ≈ 1
         @test dot(ϕ, χ) ≈ dot(χ, ϕ) ≈ 1 
     end
 end

@@ -53,7 +53,9 @@ function compress!(
             update_env_right!(env, site)
             A = project_ket_on_bra(env, site)
             @cast B[x, (y, z)] := A[x, y, z]
-            Q = rqf(B)
+            #_, Q = rq(B, typemax(Int))
+            _, _, V = svd(B, typemax(Int)) 
+            Q = V'
             @cast C[x, σ, y] := Q[x, (σ, y)] (σ ∈ 1:size(A, 2))
             env.bra[site] = C
             clear_env_site!(env, site)
@@ -64,7 +66,8 @@ function compress!(
             update_env_left!(env, site)
             A = project_ket_on_bra(env, site)
             @cast B[(x, y), z] := A[x, y, z]
-            Q = qrf(B)
+            #Q, _ = qr(B, typemax(Int))
+            Q, _, _ = svd(B, typemax(Int))
             @cast C[x, σ, y] := Q[(x, σ), y] (σ ∈ 1:size(A, 2))
             env.bra[site] = C
             clear_env_site!(env, site)

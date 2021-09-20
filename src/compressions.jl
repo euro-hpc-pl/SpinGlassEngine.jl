@@ -42,7 +42,8 @@ function compress!(
     ket::Dict,
     Dcut::Int,
     tol::Number=1E-8,
-    max_sweeps::Int=4
+    max_sweeps::Int=4,
+    args...
 )
     env = Environment(bra, mpo, ket, true)
     overlap_before = measure_env(env, last(env.sites_bra))
@@ -53,9 +54,7 @@ function compress!(
             update_env_right!(env, site)
             A = project_ket_on_bra(env, site)
             @cast B[x, (y, z)] := A[x, y, z]
-            #_, Q = rq(B, typemax(Int))
-            _, _, V = svd(B, typemax(Int)) 
-            Q = V'
+            _, Q = rq(B, args...)
             @cast C[x, σ, y] := Q[x, (σ, y)] (σ ∈ 1:size(A, 2))
             env.bra[site] = C
             clear_env_site!(env, site)
@@ -66,8 +65,7 @@ function compress!(
             update_env_left!(env, site)
             A = project_ket_on_bra(env, site)
             @cast B[(x, y), z] := A[x, y, z]
-            #Q, _ = qr(B, typemax(Int))
-            Q, _, _ = svd(B, typemax(Int))
+            Q, _ = qr_fact(B, args...)
             @cast C[x, σ, y] := Q[(x, σ), y] (σ ∈ 1:size(A, 2))
             env.bra[site] = C
             clear_env_site!(env, site)

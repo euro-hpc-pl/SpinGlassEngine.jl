@@ -30,11 +30,11 @@ Base.Dict(
         @time χ = compress(W * ψ, Dcut, tol, max_sweeps)
         @time is_right_normalized(χ)
 
-        #ϕ = copy(ψ)
-        #canonise!(ϕ, :right)
-        #bra = Dict(ϕ)
+        ϕ = copy(ψ)
+        canonise!(ϕ, :left)
+        bra = Dict(ϕ)
 
-        bra = copy(Dict(χ))
+        #bra = copy(Dict(χ))
         @time compress!(bra, mpo, ket, Dcut, tol, max_sweeps)
 
         ϕ = MPS(bra)

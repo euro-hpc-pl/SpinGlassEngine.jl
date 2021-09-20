@@ -6,7 +6,7 @@ using LinearAlgebra
 using TensorCast
 using MetaGraphs
 
-# disable_logging(LogLevel(1))
+disable_logging(LogLevel(1))
 
 using Test
 
@@ -42,7 +42,7 @@ using Test
 my_tests = []
 
 push!(my_tests,
-#= 
+#=
         "network_operations.jl",
         "branch_and_bound.jl",
         "network_interface.jl",
@@ -51,9 +51,10 @@ push!(my_tests,
         "search_chimera.jl",
         "search_cross.jl",
         "network_tensors.jl",
-        "search_full_chimera.jl",
 =#
-        "compressions.jl"
+        "search_full_chimera.jl",
+
+#        "compressions.jl"
 )
 
 for my_test in my_tests

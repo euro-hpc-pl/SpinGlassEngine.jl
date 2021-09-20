@@ -396,7 +396,8 @@ function mps(::Type{T},
     if i > peps.nrows return IdentityMPS() end
     ψ = mps(peps, i+1)
     for r ∈ peps.layers_MPS ψ = mpo(peps, i+r) * ψ end
-    compress(ψ, peps) 
+    compress!(ψ, peps) 
+    ψ
 end
 
 
@@ -416,9 +417,9 @@ end
 end
 
 
-function compress(ψ::AbstractMPS, peps::AbstractGibbsNetwork)
+function compress!(ψ::AbstractMPS, peps::AbstractGibbsNetwork)
     if bond_dimension(ψ) < peps.bond_dim return ψ end
-    SpinGlassTensors.compress(ψ, peps.bond_dim, peps.var_tol, peps.sweeps)
+    SpinGlassTensors.compress!(ψ, peps.bond_dim, peps.var_tol, peps.sweeps)
 end
 
 

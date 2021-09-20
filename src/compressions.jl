@@ -1,5 +1,5 @@
 export Mps
-export compress!, dot, canonise!, norm
+export compress!, dot, canonise, norm
 
 abstract type AbstractEnvironment end
 
@@ -263,7 +263,7 @@ function LinearAlgebra.dot(ψ::Mps, ϕ::Mps)
 end
 
 
-function canonise!(ψ::AbstractMPS, s::Symbol, Dcut::Int=typemax(Int))
+function canonise(ψ::Mps, s::Symbol, Dcut::Int=typemax(Int))
     @assert s ∈ (:left, :right)
     if s == :right
         nrm = _right_sweep!(ψ, typemax(Int))
@@ -276,44 +276,45 @@ function canonise!(ψ::AbstractMPS, s::Symbol, Dcut::Int=typemax(Int))
 end
 
 
-function _right_sweep!(ψ::AbstractMPS, Dcut::Int=typemax(Int))
-    R = ones(eltype(ψ), 1, 1)
+function _right_sweep!(ψ::Mps, Dcut::Int=typemax(Int))
+    R = ones(eltype(ψ.ket[1]), 1, 1)
 
-    for (i, A) ∈ enumerate(ψ)
+    for i ∈ ψ.sites_ket
+        A = ψ.ket[i]
         # attach
         @matmul M̃[(x, σ), y] := sum(α) R[x, α] * A[α, σ, y]
 
         # decompose
-        Q, R = qr(M̃, Dcut)
-        #Q, S, V = svd(M̃, Dcut)
-        #R = Diagonal(S) * V'
+        #Q, R = qr(M̃, Dcut)
+        Q, S, V = svd(M̃, Dcut)
+        R = Diagonal(S) * V'
 
         # create new
         @cast A[x, σ, y] := Q[(x, σ), y] (σ ∈ 1:size(A, 2))
-        ψ[i] = A
+        ψ.ket[i] = A
     end
     R[1] 
 end
 
 
-function _left_sweep!(ψ::AbstractMPS, Dcut::Int=typemax(Int))
-    R = ones(eltype(ψ), 1, 1)
+function _left_sweep!(ψ::Mps, Dcut::Int=typemax(Int))
+    R = ones(eltype(ψ.ket[1]), 1, 1)
 
-    for i ∈ length(ψ):-1:1
-        B = ψ[i]
+    for i ∈ length(ψ.sites_ket):-1:1
+        B = ψ.ket[i]
 
         # attach    
         @matmul M̃[x, (σ, y)] := sum(α) B[x, σ, α] * R[α, y]
 
         # decompose
-        R, Q = rq(M̃, Dcut)
-        #U, Σ, V = svd(M̃, Dcut) 
-        #R = U * Diagonal(Σ)
+        #R, Q = rq(M̃, Dcut)
+        U, Σ, V = svd(M̃, Dcut) 
+        R = U * Diagonal(Σ)
         Q = V'
 
         # create new
         @cast B[x, σ, y] := Q[x, (σ, y)] (σ ∈ 1:size(B, 2))
-        ψ[i] = B
+        ψ.ket[i] = B
     end
     R[1]
 end

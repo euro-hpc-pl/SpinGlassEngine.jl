@@ -45,7 +45,7 @@ Base.Dict(
 end
 =#
 
-@testset "Contraction of two MPS works" begin
+@testset "Contraction" begin
     D = 3
     d = 2
     sites = 5
@@ -57,11 +57,8 @@ end
 
     M = randn(MPS{T}, sites, D, d)
     W = randn(MPS{T}, sites, D, d)
-
-    ket = Dict(M)
-    bra = Dict(W)
-    ψ = Mps(ket)
-    ϕ = Mps(bra)
+    ψ = Mps(Dict(M))
+    ϕ = Mps(Dict(W))
 
     @testset "dot products" begin
         @testset "is equal to itself" begin
@@ -85,4 +82,37 @@ end
         end
     
     end 
+end
+
+@testset "Canonisation" begin
+
+    D = 16
+    Dcut = 8
+    
+    d = 2
+    sites = 100
+    
+    T = Float64
+    
+    M = randn(MPS{T}, sites, D, d)
+    W = randn(MPS{T}, sites, D, d)
+    ψ = Mps(Dict(M))
+    ϕ = Mps(Dict(W))
+    
+    
+    @testset "Canonisation (left)" begin
+        a = norm(ψ)
+        b = canonise(ψ, :left, Dcut)
+        @test a ≈ b
+        #@test is_left_normalized(ψ)
+        @test dot(ψ, ψ) ≈ 1
+    end
+    
+    @testset "Canonisation (right)" begin
+        a = norm(ϕ)
+        b = canonise(ϕ, :right, Dcut)
+        @test a ≈ b 
+        #@test is_right_normalized(ϕ)
+        @test dot(ϕ, ϕ) ≈ 1
+    end
 end

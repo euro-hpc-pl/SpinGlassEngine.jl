@@ -36,7 +36,7 @@ mutable struct Environment <: AbstractEnvironment
 end
 
 
-function compress!(
+function SpinGlassTensors.compress!(
     bra::Dict,
     mpo::Dict,
     ket::Dict,

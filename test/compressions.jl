@@ -27,14 +27,13 @@ Base.Dict(
     mpo = Dict(W)
 
     @testset "Two mps representations are compressed to the same state" begin 
-        η = W * ψ
-        canonise!(η, :left)
-        @time χ = compress(η, Dcut, tol, max_sweeps)
-        @time is_right_normalized(χ)
+        χ = W * ψ
+        @time compress!(χ, Dcut, tol, max_sweeps)
+        @test is_left_normalized(χ)
 
         #ϕ = copy(ψ)
         #canonise!(ϕ, :left)
-        #bra = Dict(ϕ)
+        3bra = Dict(ϕ)
 
         bra = copy(Dict(χ))
         @time compress!(bra, mpo, ket, Dcut, tol, max_sweeps)

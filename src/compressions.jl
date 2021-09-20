@@ -54,7 +54,7 @@ function compress!(
             update_env_right!(env, site)
             A = project_ket_on_bra(env, site)
             @cast B[x, (y, z)] := A[x, y, z]
-            _, Q = rq(B, args...)
+            _, Q = rq_fact(B, args...)
             @cast C[x, σ, y] := Q[x, (σ, y)] (σ ∈ 1:size(A, 2))
             env.bra[site] = C
             clear_env_site!(env, site)

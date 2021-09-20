@@ -28,16 +28,18 @@ Base.Dict(
 
     @testset "Two mps representations are compressed to the same state" begin 
         χ = W * ψ
-        @time compress!(χ, Dcut, tol, max_sweeps)
+        @time overlap = compress!(χ, Dcut, tol, max_sweeps)
         @test is_left_normalized(χ)
+        println(overlap)
 
         #ϕ = copy(ψ)
         #canonise!(ϕ, :left)
-        3bra = Dict(ϕ)
+        #bra = Dict(ϕ)
 
         bra = copy(Dict(χ))
-        @time compress!(bra, mpo, ket, Dcut, tol, max_sweeps)
-
+        @time overlap = compress!(bra, mpo, ket, Dcut, tol, max_sweeps)
+        println(overlap)
+        
         ϕ = MPS(bra)
         @time is_right_normalized(ϕ)
         @test norm(χ) ≈ norm(ϕ) ≈ 1

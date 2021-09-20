@@ -51,10 +51,10 @@ push!(my_tests,
         "search_chimera.jl",
         "search_cross.jl",
         "network_tensors.jl",
-=#
-        "search_full_chimera.jl",
 
-#       "compressions.jl"
+        "search_full_chimera.jl",
+=#
+      "compressions.jl"
 )
 
 for my_test in my_tests

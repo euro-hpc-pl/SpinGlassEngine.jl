@@ -417,9 +417,9 @@ end
 end
 
 
-function compress!(ψ::AbstractMPS, peps::AbstractGibbsNetwork)
+function SpinGlassTensors.compress!(ψ::AbstractMPS, peps::AbstractGibbsNetwork)
     if bond_dimension(ψ) < peps.bond_dim return ψ end
-    SpinGlassTensors.compress!(ψ, peps.bond_dim, peps.var_tol, peps.sweeps)
+    compress!(ψ, peps.bond_dim, peps.var_tol, peps.sweeps)
 end
 
 

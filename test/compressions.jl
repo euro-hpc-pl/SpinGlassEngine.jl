@@ -9,7 +9,7 @@ Base.Dict(
     ϕ::SpinGlassTensors.AbstractTensorNetwork
 ) = Dict(i => A for (i, A) ∈ enumerate(ϕ))
 
-
+#=
 @testset "Compressions for sparse mps and mpo works" begin
     D = 16
     d = 2
@@ -42,4 +42,47 @@ Base.Dict(
         @test norm(χ) ≈ norm(ϕ) ≈ 1
         @test dot(ϕ, χ) ≈ dot(χ, ϕ) ≈ 1 
     end
+end
+=#
+
+@testset "Contraction of two MPS works" begin
+    D = 3
+    d = 2
+    sites = 5
+    T = Float64
+    
+    #Dcut = 8
+    #max_sweeps = 10
+    #tol = 1E-10
+
+    M = randn(MPS{T}, sites, D, d)
+    W = randn(MPS{T}, sites, D, d)
+
+    ket = Dict(M)
+    bra = Dict(W)
+    ψ = Mps(ket)
+    ϕ = Mps(bra)
+
+    @testset "dot products" begin
+        @testset "is equal to itself" begin
+            @test dot(ψ, ψ) ≈ dot(ψ, ψ)
+        end
+    
+        @testset "change of arguments results in conjugation" begin
+            @test dot(ψ, ϕ) ≈ conj(dot(ϕ, ψ))
+        end
+    
+        @testset "norm is 2-norm" begin
+            @test norm(ψ) ≈ sqrt(abs(dot(ψ, ψ)))
+        end
+    
+        @testset "renormalizations" begin
+            ψ.ket[ψ.sites_ket[end]] *= 1/norm(ψ)
+            @test dot(ψ, ψ) ≈ 1
+    
+            ϕ.ket[ψ.sites_ket[1]] *= 1/norm(ϕ)
+            @test dot(ϕ, ϕ) ≈ 1
+        end
+    
+    end 
 end

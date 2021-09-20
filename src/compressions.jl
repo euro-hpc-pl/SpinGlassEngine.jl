@@ -1,6 +1,18 @@
-export compress!
+export Mps
+export compress!, dot, canonise!, norm
 
 abstract type AbstractEnvironment end
+
+mutable struct Mps
+    ket::Dict
+    sites_ket
+    function Mps(ket::Dict)
+        sites_ket = sort(collect(keys(ket)))
+        #ket = sort(collect(ket), by = x->x[1])
+        mps = new(ket, sites_ket)
+        mps
+    end
+end
 
 mutable struct Environment <: AbstractEnvironment
     bra::Dict  # to be optimized
@@ -231,4 +243,77 @@ function measure_env(env::Environment, site)
     LL = update_env_left(LE, T, M, B)
     @tensor scalar = LL[t, c, b] * RE[b, c, t]
     scalar
+end
+
+
+"""
+Calculates the norm of an MPS \$\\ket{\\phi}\$
+"""
+LinearAlgebra.norm(ψ::Mps) = sqrt(abs(dot(ψ, ψ)))
+
+function LinearAlgebra.dot(ψ::Mps, ϕ::Mps)
+    T = promote_type(eltype(ψ.ket[1]), eltype(ϕ.ket[1]))
+    C = ones(T, 1, 1)
+
+    for i ∈ ψ.sites_ket
+        A, B = ψ.ket[i], ϕ.ket[i]
+        @tensor C[x, y] := conj(B)[β, σ, x] * C[β, α] * A[α, σ, y] order = (α, β, σ)
+    end
+    tr(C)
+end
+
+
+function canonise!(ψ::AbstractMPS, s::Symbol, Dcut::Int=typemax(Int))
+    @assert s ∈ (:left, :right)
+    if s == :right
+        nrm = _right_sweep!(ψ, typemax(Int))
+        _left_sweep!(ψ, Dcut)
+    else
+        nrm = _left_sweep!(ψ, typemax(Int))
+        _right_sweep!(ψ, Dcut)
+    end
+    abs(nrm)
+end
+
+
+function _right_sweep!(ψ::AbstractMPS, Dcut::Int=typemax(Int))
+    R = ones(eltype(ψ), 1, 1)
+
+    for (i, A) ∈ enumerate(ψ)
+        # attach
+        @matmul M̃[(x, σ), y] := sum(α) R[x, α] * A[α, σ, y]
+
+        # decompose
+        Q, R = qr(M̃, Dcut)
+        #Q, S, V = svd(M̃, Dcut)
+        #R = Diagonal(S) * V'
+
+        # create new
+        @cast A[x, σ, y] := Q[(x, σ), y] (σ ∈ 1:size(A, 2))
+        ψ[i] = A
+    end
+    R[1] 
+end
+
+
+function _left_sweep!(ψ::AbstractMPS, Dcut::Int=typemax(Int))
+    R = ones(eltype(ψ), 1, 1)
+
+    for i ∈ length(ψ):-1:1
+        B = ψ[i]
+
+        # attach    
+        @matmul M̃[x, (σ, y)] := sum(α) B[x, σ, α] * R[α, y]
+
+        # decompose
+        R, Q = rq(M̃, Dcut)
+        #U, Σ, V = svd(M̃, Dcut) 
+        #R = U * Diagonal(Σ)
+        Q = V'
+
+        # create new
+        @cast B[x, σ, y] := Q[x, (σ, y)] (σ ∈ 1:size(B, 2))
+        ψ[i] = B
+    end
+    R[1]
 end

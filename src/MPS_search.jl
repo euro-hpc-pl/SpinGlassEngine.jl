@@ -3,11 +3,6 @@ export
     low_energy_spectrum
 
     
-_make_left_env(ψ::AbstractMPS, k::Int) = ones(eltype(ψ), 1, k)
-
-_make_LL(ψ::AbstractMPS, b::Int, k::Int, d::Int) = zeros(eltype(ψ), b, k, d)
-
-
 function low_energy_spectrum(
     ig::IsingGraph,
     Dcut::Int, 
@@ -41,14 +36,14 @@ function solve(ψ::AbstractMPS, keep::Int)
 
     lprob = zeros(T, k)
     states = fill([], 1, k)
-    left_env = _make_left_env(ψ, k)
+    left_env = ones(eltype(ψ), 1, k)
 
     for (i, M) ∈ enumerate(ψ)
         _, d, b = size(M)
 
         pdo = ones(T, k, d)
         lpdo = zeros(T, k, d)
-        LL = _make_LL(ψ, b, k, d)
+        LL = zeros(T, b, k, d)
         config = zeros(Int, i, k, d)
 
         for j ∈ 1:k
@@ -93,8 +88,7 @@ function _apply_bias!(
 )
     M = ψ[i]
     h = get_prop(ig, i, :h)
-    σ = local_basis(ψ, i)
-    v = exp.(-0.5 * dβ * h * σ)
+    v = exp.(-0.5 * dβ * h * local_basis(ψ, i))
     @cast M[x, σ, y] = M[x, σ, y] * v[σ]
     ψ[i] = M
 end
@@ -112,9 +106,7 @@ function _apply_exponent!(
     D = typeof(M).name.wrapper(I(physical_dim(ψ, i)))
 
     J = get_prop(ig, i, j, :J)
-    σ = local_basis(ψ, i)
-    η = local_basis(ψ, j)'
-    C = exp.(-0.5 * dβ * σ *J * η )
+    C = exp.(-0.5 * dβ * local_basis(ψ, i) * J * local_basis(ψ, j)')
 
     if j == last
         @cast M̃[(x, a), σ, b] := C[x, σ] * M[a, σ, b]
@@ -204,7 +196,7 @@ function SpinGlassTensors.MPS(
     ρ
 end
 
-
+#TODO: WTF?
 function SpinGlassTensors.MPS(
     ig::IsingGraph,
     Dcut::Int,
@@ -223,7 +215,7 @@ function SpinGlassTensors.MPS(
         for _ ∈ 1:k
             ρ = purifications(ρ)
             if bond_dimension(ρ) > Dcut
-                ρ = SpinGlassTensors.compress(ρ, Dcut, var_ϵ, sweeps)
+                ρ = compress(ρ, Dcut, var_ϵ, sweeps)
                 is_right = true
             end
         end
@@ -234,7 +226,7 @@ function SpinGlassTensors.MPS(
         for _ ∈ 1:Int(k)
             ρ = purifications(ρ, ρ0)
             if bond_dimension(ρ) > Dcut
-                ρ = SpinGlassTensors.compress(ρ, Dcut, var_ϵ, sweeps)
+                ρ = compress(ρ, Dcut, var_ϵ, sweeps)
                 is_right = true
             end
         end

@@ -24,7 +24,7 @@ struct NotImplementedError{M} <: Exception
     NotImplementedError(m::M) where {M} = new{M}(m)
 end 
 
-not_implmented(name) = throw(NotImplementedError(name)) 
+not_implemented(name) = throw(NotImplementedError(name)) 
 
  
 factor_graph(network::AbstractGibbsNetwork{S, T}) where {S, T} = network.factor_graph
@@ -33,22 +33,18 @@ network_graph(network::AbstractGibbsNetwork{S, T}) where {S, T} = network.networ
 
 vertex_map(network::AbstractGibbsNetwork{S, T}) where {S, T} = network.vertex_map
 
-boundary(network::AbstractGibbsNetwork{S, T}, node::S) where {S, T} = not_implmented("boundary_at_splitting_node")
+boundary(network::AbstractGibbsNetwork{S, T}, node::S) where {S, T} = not_implemented("boundary")
 
-node_index(network::AbstractGibbsNetwork{S, T}, node::S) where {S, T} = not_implmented("node_index")
+node_index(network::AbstractGibbsNetwork{S, T}, node::S) where {S, T} = not_implemented("node_index")
 
-update_energy(network::AbstractGibbsNetwork{S, T}, σ::Vector{Int}) where {S, T} = not_implmented("update_energy")
+update_energy(network::AbstractGibbsNetwork{S, T}, σ::Vector{Int}) where {S, T} = not_implemented("update_energy")
 
 conditional_probability(network::AbstractGibbsNetwork{S, T}, v::Vector{Int}) where {S, T} = not_implemented("conditional_probability")
 
 iteration_order(peps::AbstractGibbsNetwork) = [(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols]
 
 
-function projector(
-    network::AbstractGibbsNetwork{S, T}, 
-    v::S, 
-    w::S
-) where {S, T}
+function projector(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
     fg = factor_graph(network)
     vmap = vertex_map(network)
     fg_v, fg_w = vmap(v), vmap(w)
@@ -64,11 +60,7 @@ function projector(
 end
 
 
-function projector(
-    network::AbstractGibbsNetwork{S, T}, 
-    v::S, 
-    W::NTuple{N, S}
-) where {S, T, N}
+function projector(network::AbstractGibbsNetwork{S, T}, v::S, W::NTuple{N, S}) where {S, T, N}
     first(fuse_projectors(
         [projector(network, v, w) for w ∈ W]
     ))
@@ -77,32 +69,28 @@ end
 
 function fuse_projectors(projectors::Union{Vector{T}, NTuple{N, T}}) where {N, T}
     fused, energy = rank_reveal(hcat(projectors...), :PE)
-    i₀ = 1
+    i0 = 1
     transitions = []
     for proj ∈ projectors
-        iₑ = i₀ + size(proj, 2) - 1
-        push!(transitions, energy[:, i₀:iₑ])
-        i₀ = iₑ + 1
+        ie = i0 + size(proj, 2) - 1
+        push!(transitions, energy[:, i0:ie])
+        i0 = ie + 1
     end
     fused, transitions
 end
 
 
-function spectrum(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T}
-    get_prop(factor_graph(network), vertex_map(network)(vertex), :spectrum)
+function spectrum(network::AbstractGibbsNetwork{S, T}, v::S) where {S, T}
+    get_prop(factor_graph(network), vertex_map(network)(v), :spectrum)
 end
 
 
-function local_energy(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T}
-    spectrum(network, vertex).energies
+function local_energy(network::AbstractGibbsNetwork{S, T}, v::S) where {S, T}
+    spectrum(network, v).energies
 end
 
 
-function interaction_energy(
-    network::AbstractGibbsNetwork{S, T}, 
-    v::S, 
-    w::S
-) where {S, T}
+function interaction_energy(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
     fg = factor_graph(network)
     vmap = vertex_map(network)
     fg_v, fg_w = vmap(v), vmap(w)
@@ -114,12 +102,7 @@ function interaction_energy(
         zeros(1, 1)
     end
 end
-
-ones_like(x::Number) = one(typeof(x))
-
-ones_like(x::Array) = ones(eltype(x), size(x))
-
-
+#TODO: W T F 
 function _boundary_index(
     network::AbstractGibbsNetwork{S, T}, 
     v::S, 
@@ -127,12 +110,12 @@ function _boundary_index(
     σ::Vector{Int}
 ) where {S, T, N}
     state = local_state_for_node(network, σ, v)
-    if v ∉ vertices(network.network_graph) return ones_like(state) end
+    if v ∉ vertices(network.network_graph) return one(typeof(state)) end
     pv = projector(network, v, w) 
     [findfirst(x -> x > 0, pv[i, :]) for i ∈ 1:size(pv)[1]][state]
 end
 
-
+#TODO: W T F ^ 2
 function _boundary_index(
     network::AbstractGibbsNetwork{S, T}, 
     v::S, w::S, k::S, l::S, 
@@ -146,9 +129,7 @@ end
 
 
 function boundary_state(
-    network::AbstractGibbsNetwork{S, T},
-    σ::Vector{Int},
-    node::S
+    network::AbstractGibbsNetwork{S, T}, σ::Vector{Int}, node::S
 ) where {S, T} 
      [
         _boundary_index(network, x..., σ)
@@ -157,13 +138,8 @@ function boundary_state(
 end
 
 
-
-
-
 function local_state_for_node(
-    network::AbstractGibbsNetwork{S, T},
-    σ::Vector{Int},
-    w::S
+    network::AbstractGibbsNetwork{S, T}, σ::Vector{Int}, w::S
 ) where {S, T}
     k = node_index(network, w)
     0 < k <= length(σ) ? σ[k] : 1
@@ -189,9 +165,9 @@ function update_gauges!(
     for i ∈ 1:network.nrows-1, k ∈ 1:1//2:network.ncols
         j = denominator(k) == 1 ? numerator(k) : k
         _, u, _, d = tensor_size(network, (i+1//2, j))
-        Y = type == :id ? ones(u) : rand(u) .+ 0.1
+        Y = type == :id ? ones(u) : rand(u) .+ 0.1 #TODO: maybe 0.42?
         push!(network.gauges, (i + 1//6, j) => Y, (i + 2//6, j) => 1 ./ Y)
-        Z = type == :id ? ones(d) : rand(d) .+ 0.1
+        Z = type == :id ? ones(d) : rand(d) .+ 0.1 #TODO: maybe 0.42?
         push!(network.gauges, (i + 4//6, j) => Z, (i + 5//6, j) => 1 ./ Z)
     end
 end

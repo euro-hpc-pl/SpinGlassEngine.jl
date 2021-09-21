@@ -1,5 +1,4 @@
 using Logging
-using SpinGlassNetworks
 using SpinGlassEngine
 using MetaGraphs
 using LightGraphs

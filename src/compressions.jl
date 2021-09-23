@@ -1,4 +1,4 @@
-export Mps
+export Mps, Mpo
 export compress!, dot, canonise, norm, is_left_normalized, is_right_normalized
 
 abstract type AbstractEnvironment end
@@ -185,13 +185,31 @@ function clear_env_site!(env::Environment, site)
 end
 
 
-function update_env_left(LE, T, M, B)  # same tensory bez wymiernych indeksow;  multiple dispatch for M sparse
+function update_env_left(LE::S, T::S, M::S, B::S) where S <: AbstractMatrix # same tensory bez wymiernych indeksow;  multiple dispatch for M sparse
     @tensor L[nb, nc, nt] := LE[ob, oc, ot] * T[ot, α, nt] * 
                              M[oc, α, nc, β] * B[ob, β, nb] order = (ot, α, oc, β, ob)  
     # for real there is no conjugate, otherwise conj(T)
     L
 end
 
+
+function update_env_left(LE::S, T::S, M::Dict, B::S) where S <: AbstractMatrix # same tensory bez wymiernych indeksow;  multiple dispatch for M sparse
+    vertical_sites = collect(sort(keys(M)))
+    M0 = M[0]
+    T1 = T
+    B1 = B
+    for i in vertical_sites
+        if i == 0 break end
+        A = M[i]
+        @tensor T1[l, x, r] := T1[l, y, r] * A[y, x]
+    end
+    for i in reverse(vertical_sites)
+        if i == 0 break end
+        A = M[i]
+        @tensor B1[l, x, r] := B1[l, y, r] * A[x, y]
+    end
+    update_env_left(LE, T1, M0, B1)
+end
 
 #=
 function update_env_left(LE, T, M, B, :transposed)  # same tensory bez wymiernych indeksow;  multiple dispatch for M sparse
@@ -202,16 +220,34 @@ function update_env_left(LE, T, M, B, :transposed)  # same tensory bez wymiernyc
 end
 =#
 
-function update_env_left(LE, iM)  # same tensory bez wymiernych indeksow;  multiple dispatch for M sparse
+function update_env_left(LE::S, iM::S) where S <: AbstractMatrix # same tensory bez wymiernych indeksow;  multiple dispatch for M sparse
     @tensor L[nb, nc, nt] := LE[nb, oc, nt] * iM[oc, nc]
     L
 end
 
 
-function update_env_right(RE, T, M, B)  # same tensory bez wymiernych indeksow
+function update_env_right(RE::S, T::S, M::S, B::S)  where S <: AbstractMatrix # same tensory bez wymiernych indeksow
     @tensor R[nt, nc, nb] := RE[ot, oc, ob] * T[nt, α, ot] * M[nc, α, oc, β] * B[nb, β, ob] order = (ot, α, oc, β, ob)
     # for real there is no conjugate, otherwise conj(T)
     R
+end
+
+function update_env_right(RE::S, T::S, M::Dict, B::S) where S <: AbstractMatrix # same tensory bez wymiernych indeksow;  multiple dispatch for M sparse
+    vertical_sites = collect(sort(keys(M)))
+    M0 = M[0]
+    T1 = T
+    B1 = B
+    for i in vertical_sites
+        if i == 0 break end
+        A = M[i]
+        @tensor T1[l, x, r] := T1[l, y, r] * A[y, x]
+    end
+    for i in reverse(vertical_sites)
+        if i == 0 break end
+        A = M[i]
+        @tensor B1[l, x, r] := B1[l, y, r] * A[x, y]
+    end
+    update_env_right(RE, T1, M0, B1)
 end
 
 #=
@@ -222,7 +258,7 @@ function update_env_right(RE, T, M, B, :transposed)  # same tensory bez wymierny
 end
 =#
 
-function update_env_right(RE, iM)  # same tensory bez wymiernych indeksow;  multiple dispatch for M sparse
+function update_env_right(RE::S, iM::S) where S <: AbstractMatrix # same tensory bez wymiernych indeksow;  multiple dispatch for M sparse
     @tensor R[nt, nc, nb] := iM[nc, oc] * RE[nt, oc, nb]
     R
 end
@@ -237,10 +273,28 @@ function project_ket_on_bra(env::Environment, site)
 end
 
 
-function project_ket_on_bra(LE, B, M, RE)
+function project_ket_on_bra(LE::S, B::S, M::S, RE::S) where S <: AbstractMatrix
     @tensor T[x, y, z] := LE[k, l, x] * B[k, m, o] * 
                           M[l, y, n, m] * RE[z, n, o] order = (k, l, m, n, o)
     T
+end
+
+function project_ket_on_bra(LE::S, B::S, M::Dict, RE::S) where S <: AbstractMatrix
+    vertical_sites = collect(sort(keys(M)))
+    M0 = M[0]
+    B1 = B
+    for i in reverse(vertical_sites)
+        if i == 0 break end
+        A = M[i]
+        @tensor B1[l, x, r] := B1[l, y, r] * A[x, y]
+    end
+    T1 = project_ket_on_bra(LE, B1, M0, RE)
+    for i in vertical_sites
+        if i == 0 break end
+        A = M[i]
+        @tensor T1[l, x, r] := T1[l, y, r] * A[x, y]
+    end
+    T1
 end
 
 #=

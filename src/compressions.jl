@@ -108,7 +108,6 @@ function _left_sweep_var!(env::Environment, args...)
         @cast C[x, σ, y] := Q[x, (σ, y)] (σ ∈ 1:size(A, 2))
         env.bra[site] = C
         clear_env_site!(env, site) 
-        
     end
 end
 
@@ -134,7 +133,6 @@ function _neighbouring_site_to_left(site, sites)
         ind = x
     end
     ind  
-    
 end
 
 
@@ -203,22 +201,23 @@ function update_env_left(LE::S, T::S, M::S, B::S) where S <: AbstractMatrix
 end
 
 
-function update_env_left(LE::S, T::S, M::Dict, B::S) where S <: AbstractMatrix 
-    vertical_sites = collect(sort(keys(M)))
-    M0 = M[0]
-    T1 = T
-    B1 = B
-    for i in vertical_sites
+function update_env_left(LE::S, T0::S, M::Dict, B0::S) where S <: AbstractMatrix 
+    ver_sites = collect(sort(keys(M)))
+
+    T = T0
+    for i ∈ ver_sites
         if i == 0 break end
         A = M[i]
-        @tensor T1[l, x, r] := T1[l, y, r] * A[y, x]
+        @tensor T[l, x, r] := T[l, y, r] * A[y, x]
     end
-    for i in reverse(vertical_sites)
+
+    B = B0
+    for i ∈ reverse(ver_sites)
         if i == 0 break end
         A = M[i]
-        @tensor B1[l, x, r] := B1[l, y, r] * A[x, y]
+        @tensor B[l, x, r] := B[l, y, r] * A[x, y]
     end
-    update_env_left(LE, T1, M0, B1)
+    update_env_left(LE, T, M[0], B)
 end
 
 #=
@@ -242,22 +241,24 @@ function update_env_right(RE::S, T::S, M::S, B::S)  where S <: AbstractMatrix # 
     R
 end
 
-function update_env_right(RE::S, T::S, M::Dict, B::S) where S <: AbstractMatrix # same tensory bez wymiernych indeksow;  multiple dispatch for M sparse
-    vertical_sites = collect(sort(keys(M)))
-    M0 = M[0]
-    T1 = T
-    B1 = B
-    for i in vertical_sites
+
+function update_env_right(RE::S, T0::S, M::Dict, B0::S) where S <: AbstractMatrix # same tensory bez wymiernych indeksow;  multiple dispatch for M sparse
+    ver_sites = collect(sort(keys(M)))
+ 
+    T = T0
+    for i in ver_sites
         if i == 0 break end
         A = M[i]
-        @tensor T1[l, x, r] := T1[l, y, r] * A[y, x]
+        @tensor T[l, x, r] := T[l, y, r] * A[y, x]
     end
-    for i in reverse(vertical_sites)
+
+    B = B0
+    for i in reverse(ver_sites)
         if i == 0 break end
         A = M[i]
-        @tensor B1[l, x, r] := B1[l, y, r] * A[x, y]
+        @tensor B[l, x, r] := B[l, y, r] * A[x, y]
     end
-    update_env_right(RE, T1, M0, B1)
+    update_env_right(RE, T, M[0], B)
 end
 
 #=
@@ -289,22 +290,23 @@ function project_ket_on_bra(LE::S, B::S, M::S, RE::S) where S <: AbstractMatrix
     T
 end
 
-function project_ket_on_bra(LE::S, B::S, M::Dict, RE::S) where S <: AbstractMatrix
-    vertical_sites = collect(sort(keys(M)))
-    M0 = M[0]
-    B1 = B
-    for i in reverse(vertical_sites)
+function project_ket_on_bra(LE::S, B0::S, M::Dict, RE::S) where S <: AbstractMatrix
+    ver_sites = collect(sort(keys(M)))
+
+    B = B0
+    for i in reverse(ver_sites)
         if i == 0 break end
         A = M[i]
-        @tensor B1[l, x, r] := B1[l, y, r] * A[x, y]
+        @tensor B[l, x, r] := B[l, y, r] * A[x, y]
     end
-    T1 = project_ket_on_bra(LE, B1, M0, RE)
-    for i in vertical_sites
+
+    T = project_ket_on_bra(LE, B, M[0], RE)
+    for i in ver_sites
         if i == 0 break end
         A = M[i]
-        @tensor T1[l, x, r] := T1[l, y, r] * A[x, y]
+        @tensor T[l, x, r] := T[l, y, r] * A[x, y]
     end
-    T1
+    T
 end
 
 #=
@@ -327,22 +329,6 @@ function measure_env(env::Environment, site)
 end
 
 
-"""
-Calculates the norm of an MPS \$\\ket{\\phi}\$
-"""
-LinearAlgebra.norm(ψ::Mps) = sqrt(abs(dot(ψ, ψ)))
-
-function LinearAlgebra.dot(ψ::Mps, ϕ::Mps)
-    T = promote_type(eltype(ψ.ket[1]), eltype(ϕ.ket[1]))
-    C = ones(T, 1, 1)
-
-    for i ∈ ψ.sites_ket
-        A, B = ψ.ket[i], ϕ.ket[i]
-        @tensor C[x, y] := conj(B)[β, σ, x] * C[β, α] * A[α, σ, y] order = (α, β, σ)
-    end
-    tr(C)
-end
-
 #=
 is_left_normalized(ψ::Mps) = all(
     I(size(A, 3)) ≈ @tensor Id[x, y] := conj(A[α, σ, x]) * A[α, σ, y] order = (α, σ) for A ∈ values(ψ.ket)
@@ -353,58 +339,7 @@ is_right_normalized(ϕ::Mps) = all(
 )
 =#
 
-function canonise(ψ::Mps, s::Symbol, Dcut::Int=typemax(Int))
-    @assert s ∈ (:left, :right)
-    if s == :right
-        nrm = _right_sweep!(ψ, typemax(Int))
-        _left_sweep!(ψ, Dcut)
-    else
-        nrm = _left_sweep!(ψ, typemax(Int))
-        _right_sweep!(ψ, Dcut)
-    end
-    abs(nrm)
-end
 
 
-function _right_sweep!(ψ::Mps, Dcut::Int=typemax(Int))
-    R = ones(eltype(ψ.ket[1]), 1, 1)
-
-    for i ∈ ψ.sites_ket
-        A = ψ.ket[i]
-        # attach
-        @matmul M̃[(x, σ), y] := sum(α) R[x, α] * A[α, σ, y]
-
-        # decompose
-        #Q, R = qr_fact(M̃, Dcut)
-        Q, S, V = svd(M̃, Dcut)
-        R = Diagonal(S) * V'
-
-        # create new
-        @cast A[x, σ, y] := Q[(x, σ), y] (σ ∈ 1:size(A, 2))
-        ψ.ket[i] = A
-    end
-    R[1] 
-end
 
 
-function _left_sweep!(ψ::Mps, Dcut::Int=typemax(Int))
-    R = ones(eltype(ψ.ket[1]), 1, 1)
-
-    for i ∈ length(ψ.sites_ket):-1:1
-        B = ψ.ket[i]
-
-        # attach    
-        @matmul M̃[x, (σ, y)] := sum(α) B[x, σ, α] * R[α, y]
-
-        # decompose
-        #R, Q = rq_fact(M̃, Dcut)
-        U, Σ, V = svd(M̃, Dcut) 
-        R = U * Diagonal(Σ)
-        Q = V'
-
-        # create new
-        @cast B[x, σ, y] := Q[x, (σ, y)] (σ ∈ 1:size(B, 2))
-        ψ.ket[i] = B
-    end
-    R[1]
-end

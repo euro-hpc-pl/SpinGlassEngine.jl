@@ -1,12 +1,5 @@
 export 
     Mps, Mpo
-    compress!, 
-    dot, 
-    canonise, 
-    norm, 
-    is_left_normalized, 
-    is_right_normalized
-
 
 abstract type AbstractEnvironment end
 
@@ -14,21 +7,14 @@ abstract type AbstractEnvironment end
 mutable struct Mps
     ket::Dict
     sites
-    function Mps(ket::Dict)
-        sites = sort(collect(keys(ket)))
-        mps = new(ket, sites)
-        mps
-    end
+    Mps(ket::Dict) = new(ket, sort(collect(keys(ket))))
 end
 
 
 mutable struct Mpo 
     op::Dict
     sites
-    function Mpo(op::Dict)
-        sites = sort(collect(keys(op)))
-        new(op, sites)
-    end
+    Mpo(op::Dict) = new(op, sort(collect(keys(op))))
 end
 
 

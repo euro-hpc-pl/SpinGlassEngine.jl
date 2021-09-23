@@ -97,7 +97,8 @@ function _left_sweep_var!(env::Environment, args...)
         _, Q = rq_fact(B, args...)
         @cast C[x, σ, y] := Q[x, (σ, y)] (σ ∈ 1:size(A, 2))
         env.bra[site] = C
-        clear_env_site!(env, site)
+        clear_env_site!(env, site) 
+        
     end
 end
 

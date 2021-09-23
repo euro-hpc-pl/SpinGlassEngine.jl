@@ -5,12 +5,20 @@ abstract type AbstractEnvironment end
 
 mutable struct Mps
     ket::Dict
-    sites_ket
+    sites
     function Mps(ket::Dict)
-        sites_ket = sort(collect(keys(ket)))
-        #ket = sort(collect(ket), by = x->x[1])
-        mps = new(ket, sites_ket)
+        sites = sort(collect(keys(ket)))
+        mps = new(ket, sites)
         mps
+    end
+end
+
+mutable struct Mpo 
+    op::Dict
+    sites
+    function Mpo(op::Dict)
+        sites = sort(collect(keys(op)))
+        new(op, sites)
     end
 end
 
@@ -109,7 +117,7 @@ end
 # maximum(filter(x -> x < site, sites))
 function _neighbouring_site_to_left(site, sites)
     # largest x in sites: x < site
-    ind = first(sites)
+    ind = -Inf
     for x ∈ sites
         if x >= site break end
         ind = x
@@ -121,7 +129,7 @@ end
 # minimum(filter(x -> x > site, sites))
 function _neighbouring_site_to_right(site, sites)
     # smallest x in sites: x > site
-    ind = last(sites)
+    ind = Inf
     for x ∈ reverse(sites)
         if x <= site break end
         ind = x

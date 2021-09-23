@@ -140,20 +140,20 @@ end
 function update_env_left!(env::Environment, site::Site)
     if site <= first(env.bra.sites) return end
 
-    lsite = _left_nbrs_site(site, env.bra.sites)
+    ls = _left_nbrs_site(site, env.bra.sites)
     LL = update_env_left(
-            env.env[(lsite, :left)],
-            env.bra[lsite],
-            env.mpo[lsite],
-            env.ket[lsite]
+            env.env[(ls, :left)],
+            env.bra[ls],
+            env.mpo[ls],
+            env.ket[ls]
     )
 
-    isite = _right_nbrs_site(lsite, env.mpo.sites)
+    rs = _right_nbrs_site(ls, env.mpo.sites)
 
-    while isite < site
-        M = env.mpo[isite]
+    while rs < site
+        M = env.mpo[rs]
         LL = update_env_left(LL, M)
-        isite = _right_nbrs_site(isite, env.mpo.sites)
+        rs = _right_nbrs_site(rs, env.mpo.sites)
     end
     push!(env.env, (site, :left) => LL)
 end
@@ -162,19 +162,19 @@ end
 function update_env_right!(env::Environment, site::Site)
     if site >= last(env.bra.sites) return end
 
-    rsite = _right_nbrs_site(site, env.bra.sites)
+    rs = _right_nbrs_site(site, env.bra.sites)
     RR = update_env_right(  
-            env.env[(rsite, :right)],
-            env.bra[rsite],
-            env.mpo[rsite],
-            env.ket[rsite]
+            env.env[(rs, :right)],
+            env.bra[rs],
+            env.mpo[rs],
+            env.ket[rs]
     )
 
-    isite = _left_nbrs_site(rsite, env.mpo.sites)
-    while isite > site
-        M = env.mpo[isite]
+    ls = _left_nbrs_site(rs, env.mpo.sites)
+    while ls > site
+        M = env.mpo[ls]
         RR = update_env_right(RR, M)
-        isite = _left_nbrs_site(isite, env.mpo.sites)
+        ls = _left_nbrs_site(ls, env.mpo.sites)
     end
     push!(env.env, (site, :right) => RR)
 end

@@ -7,7 +7,7 @@ function bench()
     n = 16
     t = 8
 
-    β = 1.
+    β = 3.
 
     L = n * m * t
     num_states = 100

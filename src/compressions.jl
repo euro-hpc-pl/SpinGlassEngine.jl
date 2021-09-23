@@ -48,42 +48,23 @@ mutable struct Environment <: AbstractEnvironment
 end
 
 
-function compress!(
+function SpinGlassTensors.compress!(
     bra::Dict,
     mpo::Dict,
     ket::Dict,
     Dcut::Int,
     tol::Number=1E-8,
-    max_sweeps::Int=4
+    max_sweeps::Int=4,
+    args...
 )
     env = Environment(bra, mpo, ket, true)
+    overlap = Inf
     overlap_before = measure_env(env, last(env.sites_bra))
 
     for sweep ∈ 1:max_sweeps
-        # left sweep
-        for site ∈ reverse(env.sites_bra)
-            update_env_right!(env, site)
-            A = project_ket_on_bra(env, site)
-            @cast B[x, (y, z)] := A[x, y, z]
-            #_, Q = rq(B, typemax(Int))
-            _, _, V = svd(B, typemax(Int)) 
-            Q = V'
-            @cast C[x, σ, y] := Q[x, (σ, y)] (σ ∈ 1:size(A, 2))
-            env.bra[site] = C
-            clear_env_site!(env, site)
-        end
-        
-        # right sweep
-        for site ∈ env.sites_bra
-            update_env_left!(env, site)
-            A = project_ket_on_bra(env, site)
-            @cast B[(x, y), z] := A[x, y, z]
-            #Q, _ = qr(B, typemax(Int))
-            Q, _, _ = svd(B, typemax(Int))
-            @cast C[x, σ, y] := Q[(x, σ), y] (σ ∈ 1:size(A, 2))
-            env.bra[site] = C
-            clear_env_site!(env, site)
-        end
+        _left_sweep_var!(env, args...)
+        _right_sweep_var!(env, args...)
+
         overlap = measure_env(env, last(env.sites_bra))
 
         Δ = abs(overlap_before - abs(overlap))
@@ -91,10 +72,37 @@ function compress!(
 
         if Δ < tol
             @info "Finished in $sweep sweeps of $(max_sweeps)."
-            return 
+            return overlap
         else
             overlap_before = overlap
         end
+    end
+    overlap
+end
+
+
+function _left_sweep_var!(env::Environment, args...)
+    for site ∈ reverse(env.sites_bra)
+        update_env_right!(env, site)
+        A = project_ket_on_bra(env, site)
+        @cast B[x, (y, z)] := A[x, y, z]
+        _, Q = rq_fact(B, args...)
+        @cast C[x, σ, y] := Q[x, (σ, y)] (σ ∈ 1:size(A, 2))
+        env.bra[site] = C
+        clear_env_site!(env, site)
+    end
+end
+
+
+function _right_sweep_var!(env::Environment, args...)
+    for site ∈ env.sites_bra
+        update_env_left!(env, site)
+        A = project_ket_on_bra(env, site)
+        @cast B[(x, y), z] := A[x, y, z]
+        Q, _ = qr_fact(B, args...)
+        @cast C[x, σ, y] := Q[(x, σ), y] (σ ∈ 1:size(A, 2))
+        env.bra[site] = C
+        clear_env_site!(env, site)
     end
 end
 

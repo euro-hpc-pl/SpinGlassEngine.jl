@@ -17,7 +17,7 @@ Base.Dict(
     T = Float64
     
     Dcut = 8
-    max_sweeps = 10
+    max_sweeps = 100
     tol = 1E-10
 
     ψ = randn(MPS{T}, sites, D, d)
@@ -27,16 +27,19 @@ Base.Dict(
     mpo = Dict(W)
 
     @testset "Two mps representations are compressed to the same state" begin 
-        @time χ = compress(W * ψ, Dcut, tol, max_sweeps)
-        @time is_right_normalized(χ)
+        χ = W * ψ
+        @time overlap = compress!(χ, Dcut, tol, max_sweeps)
+        @test is_left_normalized(χ)
+        println(overlap)
 
         #ϕ = copy(ψ)
-        #canonise!(ϕ, :right)
+        #canonise!(ϕ, :left)
         #bra = Dict(ϕ)
 
         bra = copy(Dict(χ))
-        @time compress!(bra, mpo, ket, Dcut, tol, max_sweeps)
-
+        @time overlap = compress!(bra, mpo, ket, Dcut, tol, max_sweeps)
+        println(overlap)
+        
         ϕ = MPS(bra)
         @time is_right_normalized(ϕ)
         @test norm(χ) ≈ norm(ϕ) ≈ 1

@@ -1,5 +1,5 @@
 export Mps
-export compress!, dot, canonise, norm
+export compress!, dot, canonise, norm, is_left_normalized, is_right_normalized
 
 abstract type AbstractEnvironment end
 
@@ -262,6 +262,15 @@ function LinearAlgebra.dot(ψ::Mps, ϕ::Mps)
     tr(C)
 end
 
+#=
+is_left_normalized(ψ::Mps) = all(
+    I(size(A, 3)) ≈ @tensor Id[x, y] := conj(A[α, σ, x]) * A[α, σ, y] order = (α, σ) for A ∈ values(ψ.ket)
+)
+
+is_right_normalized(ϕ::Mps) = all(
+    I(size(B, 1)) ≈ @tensor Id[x, y] := B[x, σ, α] * conj(B[y, σ, α]) order = (α, σ) for B in values(ϕ.ket)
+)
+=#
 
 function canonise(ψ::Mps, s::Symbol, Dcut::Int=typemax(Int))
     @assert s ∈ (:left, :right)
@@ -285,7 +294,7 @@ function _right_sweep!(ψ::Mps, Dcut::Int=typemax(Int))
         @matmul M̃[(x, σ), y] := sum(α) R[x, α] * A[α, σ, y]
 
         # decompose
-        #Q, R = qr(M̃, Dcut)
+        #Q, R = qr_fact(M̃, Dcut)
         Q, S, V = svd(M̃, Dcut)
         R = Diagonal(S) * V'
 
@@ -307,7 +316,7 @@ function _left_sweep!(ψ::Mps, Dcut::Int=typemax(Int))
         @matmul M̃[x, (σ, y)] := sum(α) B[x, σ, α] * R[α, y]
 
         # decompose
-        #R, Q = rq(M̃, Dcut)
+        #R, Q = rq_fact(M̃, Dcut)
         U, Σ, V = svd(M̃, Dcut) 
         R = U * Diagonal(Σ)
         Q = V'

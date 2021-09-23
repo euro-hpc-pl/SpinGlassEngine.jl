@@ -46,9 +46,9 @@ end
 =#
 
 @testset "Contraction" begin
-    D = 3
+    D = 16
     d = 2
-    sites = 5
+    sites = 100
     T = Float64
     
     #Dcut = 8
@@ -104,6 +104,7 @@ end
         a = norm(ψ)
         b = canonise(ψ, :left, Dcut)
         @test a ≈ b
+        #println(a, b)
         #@test is_left_normalized(ψ)
         @test dot(ψ, ψ) ≈ 1
     end
@@ -112,6 +113,7 @@ end
         a = norm(ϕ)
         b = canonise(ϕ, :right, Dcut)
         @test a ≈ b 
+        #println(a, b)
         #@test is_right_normalized(ϕ)
         @test dot(ϕ, ϕ) ≈ 1
     end

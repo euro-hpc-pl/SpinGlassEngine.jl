@@ -1,7 +1,15 @@
-export Mps, Mpo
-export compress!, dot, canonise, norm, is_left_normalized, is_right_normalized
+export 
+    Mps, Mpo
+    compress!, 
+    dot, 
+    canonise, 
+    norm, 
+    is_left_normalized, 
+    is_right_normalized
+
 
 abstract type AbstractEnvironment end
+
 
 mutable struct Mps
     ket::Dict
@@ -13,6 +21,7 @@ mutable struct Mps
     end
 end
 
+
 mutable struct Mpo 
     op::Dict
     sites
@@ -21,6 +30,7 @@ mutable struct Mpo
         new(op, sites)
     end
 end
+
 
 mutable struct Environment <: AbstractEnvironment
     bra::Dict  # to be optimized
@@ -115,7 +125,7 @@ function _right_sweep_var!(env::Environment, args...)
     end
 end
 
-# maximum(filter(x -> x < site, sites))
+
 function _neighbouring_site_to_left(site, sites)
     # largest x in sites: x < site
     ind = -Inf
@@ -123,11 +133,11 @@ function _neighbouring_site_to_left(site, sites)
         if x >= site break end
         ind = x
     end
-    ind  # what should it return if there  is nothigh to the left?
+    ind  
+    
 end
 
 
-# minimum(filter(x -> x > site, sites))
 function _neighbouring_site_to_right(site, sites)
     # smallest x in sites: x > site
     ind = Inf
@@ -135,7 +145,7 @@ function _neighbouring_site_to_right(site, sites)
         if x <= site break end
         ind = x
     end
-    ind  # what should it return if there  is nothigh to the right
+    ind  
 end
 
 
@@ -185,7 +195,7 @@ function clear_env_site!(env::Environment, site)
 end
 
 
-function update_env_left(LE::S, T::S, M::S, B::S) where S <: AbstractMatrix # same tensory bez wymiernych indeksow;  multiple dispatch for M sparse
+function update_env_left(LE::S, T::S, M::S, B::S) where S <: AbstractMatrix 
     @tensor L[nb, nc, nt] := LE[ob, oc, ot] * T[ot, α, nt] * 
                              M[oc, α, nc, β] * B[ob, β, nb] order = (ot, α, oc, β, ob)  
     # for real there is no conjugate, otherwise conj(T)
@@ -193,7 +203,7 @@ function update_env_left(LE::S, T::S, M::S, B::S) where S <: AbstractMatrix # sa
 end
 
 
-function update_env_left(LE::S, T::S, M::Dict, B::S) where S <: AbstractMatrix # same tensory bez wymiernych indeksow;  multiple dispatch for M sparse
+function update_env_left(LE::S, T::S, M::Dict, B::S) where S <: AbstractMatrix 
     vertical_sites = collect(sort(keys(M)))
     M0 = M[0]
     T1 = T

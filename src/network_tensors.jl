@@ -18,7 +18,7 @@ tensor_assignment(
 
 tensor_assignment(
     network::AbstractGibbsNetwork{S, T},
-    ::Val{:site} 
+    ::Val{:site}
 ) where {S, T} = Dict(
     (i, j) => :site for i ∈ 1:network.nrows, j ∈ 1:network.ncols
 )
@@ -26,15 +26,15 @@ tensor_assignment(
 
 tensor_assignment(
     network::AbstractGibbsNetwork{S, T},
-    ::Val{:central_h} 
+    ::Val{:central_h}
 ) where {S, T} = Dict(
     (i, j + 1//2) => :central_h for i ∈ 1:network.nrows, j ∈ 1:network.ncols
 )
 
- 
+
 tensor_assignment(
     network::AbstractGibbsNetwork{S, T},
-    ::Val{:central_v} 
+    ::Val{:central_v}
 ) where {S, T} = Dict(
     (i + 1//2, j) => :central_v for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols
 )
@@ -42,23 +42,23 @@ tensor_assignment(
 
 tensor_assignment(
     network::PEPSNetwork,
-    ::Val{:gauge_h} 
-) = Dict((i + δ, j) => :gauge_h 
+    ::Val{:gauge_h}
+) = Dict((i + δ, j) => :gauge_h
     for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols, δ ∈ (1//6, 2//6, 4//6, 5//6)
 )
 
 
 tensor_assignment(
     network::FusedNetwork,
-    ::Val{:gauge_h} 
-) = Dict((i + δ, r) => :gauge_h 
+    ::Val{:gauge_h}
+) = Dict((i + δ, r) => :gauge_h
     for i ∈ 1:network.nrows-1, r ∈ 1:1//2:network.ncols, δ ∈ (1//6, 2//6, 4//6, 5//6)
 )
 
 
 tensor_assignment(
     network::FusedNetwork,
-    ::Val{:virtual} 
+    ::Val{:virtual}
 ) = Dict(
     (i, j + 1//2) => :virtual for i ∈ 1:network.nrows, j ∈ 1:network.ncols-1
 )
@@ -66,7 +66,7 @@ tensor_assignment(
 
 tensor_assignment(
     network::FusedNetwork,
-    ::Val{:central_d} 
+    ::Val{:central_d}
 ) = Dict(
     (i + 1//2, j + 1//2) => :central_d for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols-1
 )
@@ -74,12 +74,12 @@ tensor_assignment(
 
 
 function tensor_species_map!(
-    network::AbstractGibbsNetwork{S, T}, 
+    network::AbstractGibbsNetwork{S, T},
     tensor_types::NTuple{N, Symbol}
 ) where {S, T, N}
     for type ∈ tensor_types
-        push!(network.tensor_spiecies, tensor_assignment(network, type)...) 
-    end 
+        push!(network.tensor_spiecies, tensor_assignment(network, type)...)
+    end
 end
 
 
@@ -96,7 +96,7 @@ end
 
 
 function tensor_size(
-    network::AbstractGibbsNetwork{S, T}, 
+    network::AbstractGibbsNetwork{S, T},
     v::R
 ) where {S, T, R}
     if v ∈ keys(network.tensor_spiecies)
@@ -108,21 +108,21 @@ end
 
 
 function tensor(
-    network::AbstractGibbsNetwork{S, T}, 
+    network::AbstractGibbsNetwork{S, T},
     v::S,
     ::Val{:site}
 ) where {S, T}
     loc_exp = exp.(-network.β .* local_energy(network, v))
     projs = projectors(network, v)
     @cast A[σ, _] := loc_exp[σ]
-    for pv ∈ projs @cast A[σ, (c, γ)] |= A[σ, c] * pv[σ, γ] end 
+    for pv ∈ projs @cast A[σ, (c, γ)] |= A[σ, c] * pv[σ, γ] end
     B = dropdims(sum(A, dims=1), dims=1)
     reshape(B, size.(projs, 2))
 end
- 
+
 
 function tensor_size(
-    network::AbstractGibbsNetwork{S, T}, 
+    network::AbstractGibbsNetwork{S, T},
     v::S,
     ::Val{:site}
 ) where {S, T}
@@ -193,7 +193,7 @@ function tensor(
     j = floor(Int, s)
     NW = connecting_tensor(network, (i, j), (i + 1, j + 1))
     NE = connecting_tensor(network, (i, j + 1), (i + 1, j))
-    @cast A[_, (u, ũ), _, (d, d̃)] := NW[u, d] * NE[ũ, d̃] 
+    @cast A[_, (u, ũ), _, (d, d̃)] := NW[u, d] * NE[ũ, d̃]
     A
 end
 
@@ -208,7 +208,7 @@ function tensor_size(
     j = floor(Int, s)
     u, d = size(interaction_energy(network, (i, j), (i + 1, j + 1)))
     ũ, d̃ = size(interaction_energy(network, (i, j + 1), (i + 1, j)))
-    (1, u*ũ, 1, d*d̃) 
+    (1, u*ũ, 1, d*d̃)
 end
 
 
@@ -226,7 +226,7 @@ function _all_fused_projectors(
     right_nbrs = ((i+1, j), (i, j), (i-1, j))
     prr = projector.(Ref(network), Ref((i, j+1)), right_nbrs)
     p_rb, p_r, p_rt = last(fuse_projectors(prr))
-                
+
     p_lb, p_l, p_lt, p_rb, p_r, p_rt
 end
 
@@ -236,16 +236,16 @@ function tensor(
     v::Tuple{Int, Rational{Int}},
     ::Val{:virtual}
 ) where {S, T}
-    p_lb, p_l, p_lt, 
+    p_lb, p_l, p_lt,
     p_rb, p_r, p_rt = _all_fused_projectors(network, v)
 
     h = connecting_tensor(network, floor.(Int, v), ceil.(Int, v))
 
-    @tensor B[l, r] := p_l[l, x] * h[x, y] * p_r[r, y]    
-    @cast A[l, (ũ, u), r, (d̃, d)] |= B[l, r] * p_lt[l, u] * p_rb[r, d] * 
+    @tensor B[l, r] := p_l[l, x] * h[x, y] * p_r[r, y]
+    @cast A[l, (ũ, u), r, (d̃, d)] |= B[l, r] * p_lt[l, u] * p_rb[r, d] *
                                      p_rt[r, ũ] * p_lb[l, d̃]
     A
-end 
+end
 
 
 function tensor_size(
@@ -253,7 +253,7 @@ function tensor_size(
     v::Tuple{Int, Rational{Int}},
     ::Val{:virtual}
 ) where {S, T}
-    p_lb, p_l, p_lt, 
+    p_lb, p_l, p_lt,
     p_rb, p_r, p_rt = _all_fused_projectors(network, v)
     (size(p_l, 1), size(p_lt, 2) * size(p_rt, 2),
      size(p_r, 1), size(p_rb, 2) * size(p_lb, 2))
@@ -261,7 +261,7 @@ end
 
 
 function tensor(
-    network::AbstractGibbsNetwork{S, T}, 
+    network::AbstractGibbsNetwork{S, T},
     v::R,
     ::Val{:gauge_h}
 ) where {S, T, R}
@@ -272,7 +272,7 @@ end
 
 
 function tensor_size(
-    network::AbstractGibbsNetwork{S, T}, 
+    network::AbstractGibbsNetwork{S, T},
     v::R,
     ::Val{:gauge_h}
 ) where {S, T, R}
@@ -289,7 +289,7 @@ function connecting_tensor(
 ) where {S, T}
     en = interaction_energy(network, v, w)
     exp.(-network.β .* (en .- minimum(en)))
-end 
+end
 
 
 function reduced_site_tensor(
@@ -303,7 +303,7 @@ function reduced_site_tensor(
     pl = projector(network, v, (i, j-1))
     eng_pl = interaction_energy(network, v, (i, j-1))
     @matmul eng_left[x] := sum(y) pl[x, y] * eng_pl[y, $l]
-    
+
     pu = projector(network, v, (i-1, j))
     eng_pu = interaction_energy(network, v, (i-1, j))
     @matmul eng_up[x] := sum(y) pu[x, y] * eng_pu[y, $u]
@@ -336,7 +336,7 @@ function reduced_site_tensor(
     pd = projector(network, v, (i-1, j-1))
     eng_pd = interaction_energy(network, v, (i-1, j-1))
     @matmul eng_diag[x] := sum(y) pd[x, y] * eng_pd[y, $d]
-    
+
     pu = projector(network, v, (i-1, j))
     eng_pu = interaction_energy(network, v, (i-1, j))
     @matmul eng_up[x] := sum(y) pu[x, y] * eng_pu[y, $u]
@@ -349,7 +349,7 @@ function reduced_site_tensor(
     pr = projector(network, v, ((i+1, j+1), (i, j+1), (i-1, j+1)))
     pd = projector(network, v, (i+1, j))
 
-    @cast A[r, d, (k̃, k), σ] := p_rb[σ, k] * p_lb[$ld, k̃] * pr[σ, r] * 
+    @cast A[r, d, (k̃, k), σ] := p_rb[σ, k] * p_lb[$ld, k̃] * pr[σ, r] *
                                 pd[σ, d] * loc_exp[σ]
     A
 end
@@ -364,8 +364,8 @@ function tensor_size(
     pr = projector(network, v, (i, j+1))
     pd = projector(network, v, (i+1, j))
     @assert size(pr, 1) == size(pr, 1)
-    (size(pr, 2), size(pd, 2), size(pd, 1)) 
-end 
+    (size(pr, 2), size(pd, 2), size(pd, 1))
+end
 
 
 function mpo(::Type{T},
@@ -373,12 +373,11 @@ function mpo(::Type{T},
     r::Union{Rational{Int}, Int}
 ) where {T <: Number}
     W = MPO(T, length(peps.columns_MPO) * peps.ncols)
-    layers = collect(Iterators.product(peps.columns_MPO, 1:peps.ncols))
-    Threads.@threads for k=1:length(layers)
-        d, j = layers[k]
-        W[k] = tensor(peps, (r, j + d)) 
+    layers = Iterators.product(peps.columns_MPO, 1:peps.ncols)
+    Threads.@threads for (k, (d, j)) ∈ collect(enumerate(layers))
+        W[k] = tensor(peps, (r, j + d))
     end
-    W 
+    W
 end
 
 
@@ -396,7 +395,7 @@ function mps(::Type{T},
     if i > peps.nrows return IdentityMPS() end
     ψ = mps(peps, i+1)
     for r ∈ peps.layers_MPS ψ = mpo(peps, i+r) * ψ end
-    compress(ψ, peps) 
+    compress(ψ, peps)
 end
 
 
@@ -427,7 +426,7 @@ end
 end
 
 
-@memoize Dict function right_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int}) 
+@memoize Dict function right_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int})
     l = length(∂v)
     if l == 0 return ones(1, 1) end
     R̃ = right_env(peps, i, ∂v[2:l])
@@ -452,4 +451,3 @@ end
     @matmul L[x] := sum(α) L̃[α] * M[α, $m, x]
     L
 end
-

@@ -64,7 +64,10 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
                       var_tol, sweeps, _gauges, _tensor_spiecies,
                       columns_MPO, layers_MPS, layers_left_env, layers_right_env
                 )
-        tensor_species_map!(network, _types)
+        for type ∈ _types
+            push!(network.tensor_spiecies, tensor_assignment(network, type)...)
+        end
+
         update_gauges!(network, :id)
         network
     end

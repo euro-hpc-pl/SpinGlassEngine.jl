@@ -72,17 +72,6 @@ tensor_assignment(
 )
 
 
-
-function tensor_species_map!(
-    network::AbstractGibbsNetwork{S, T},
-    tensor_types::NTuple{N, Symbol}
-) where {S, T, N}
-    for type ∈ tensor_types
-        push!(network.tensor_spiecies, tensor_assignment(network, type)...)
-    end
-end
-
-
 function tensor(
     network::AbstractGibbsNetwork{S, T},
     v::R

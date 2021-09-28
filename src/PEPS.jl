@@ -1,7 +1,7 @@
-export 
-    PEPSNetwork, 
-    generate_boundary, 
-    node_from_index, 
+export
+    PEPSNetwork,
+    generate_boundary,
+    node_from_index,
     conditional_probability
 
 
@@ -22,7 +22,6 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     bond_dim::Int
     var_tol::Real
     sweeps::Int
-    tensor_types
     gauges
     tensor_spiecies
     columns_MPO::NTuple{N, Union{Rational{Int}, Int}} where N
@@ -52,7 +51,7 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         vmap = vertex_map(transformation, m, n)
         ng = peps_lattice(m, n)
         nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
-        
+
         if !is_compatible(factor_graph, ng)
             throw(ArgumentError("Factor graph not compatible with given network."))
         end
@@ -60,12 +59,12 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         _types = (:site, :central_h, :central_v, :gauge_h)
         _gauges = Dict()
         _tensor_spiecies = Dict()
-        
+
         network = new(factor_graph, ng, vmap, m, n, nrows, ncols, β, bond_dim,
-                      var_tol, sweeps, _types, _gauges, _tensor_spiecies,
+                      var_tol, sweeps, _gauges, _tensor_spiecies,
                       columns_MPO, layers_MPS, layers_left_env, layers_right_env
                 )
-        tensor_species_map!(network, network.tensor_types)
+        tensor_species_map!(network, _types)
         update_gauges!(network, :id)
         network
     end
@@ -121,9 +120,9 @@ end
 
 
 function bond_energy(
-    network::AbstractGibbsNetwork, 
-    u::NTuple{2, Int}, 
-    v::NTuple{2, Int}, 
+    network::AbstractGibbsNetwork,
+    u::NTuple{2, Int},
+    v::NTuple{2, Int},
     σ::Int
 )
     fg_u, fg_v = network.vertex_map(u), network.vertex_map(v)

@@ -3,7 +3,7 @@ export FusedNetwork, boundary,
     update_energy,
     projectors
 
-    
+
 function cross_lattice(m::Int, n::Int)
     labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
     lg = LabelledGraph(labels, grid((m, n)))
@@ -27,7 +27,6 @@ struct FusedNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     bond_dim::Int
     var_tol::Real
     sweeps::Int
-    tensor_types
     gauges
     tensor_spiecies
     columns_MPO::NTuple{N, Union{Rational{Int}, Int}} where N
@@ -46,11 +45,11 @@ struct FusedNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         sweeps::Int=4,
         columns_MPO = (-1//2, 0),  # from left to right
         # with gauges
-        # layers_MPS=(1//6, 0, -3//6, -4//6),  # from bottom to top 
+        # layers_MPS=(1//6, 0, -3//6, -4//6),  # from bottom to top
         # layers_left_env=(1//6,),
         # layers_right_env=(0, -3//6)
-        # with gauges 
-         layers_MPS=(4//6, 3//6, 0, -1//6),  # from bottom to top 
+        # with gauges
+         layers_MPS=(4//6, 3//6, 0, -1//6),  # from bottom to top
          layers_left_env=(4//6, 3//6),
          layers_right_env=(0, -3//6)
         # without gauges
@@ -65,7 +64,7 @@ struct FusedNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     vmap = vertex_map(transformation, m, n)
     ng = cross_lattice(m, n)
     nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
-    
+
     if !is_compatible(factor_graph, ng)
         throw(ArgumentError("Factor graph not compatible with given network."))
     end
@@ -75,10 +74,10 @@ struct FusedNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     _tensor_spiecies = Dict()
 
     network = new(factor_graph, ng, vmap, m, n, nrows, ncols, β, bond_dim,
-                  var_tol, sweeps, _types, _gauges, _tensor_spiecies,
+                  var_tol, sweeps, _gauges, _tensor_spiecies,
                   columns_MPO, layers_MPS, layers_left_env, layers_right_env
             )
-    tensor_species_map!(network, network.tensor_types)
+    tensor_species_map!(network, _types)
     update_gauges!(network, :id)
     network
     end
@@ -90,7 +89,7 @@ function projectors(network::FusedNetwork, vertex::NTuple{2, Int})
     neighbours = (
                     (
                         (i+1, j-1), (i, j-1), (i-1, j-1)
-                    ), 
+                    ),
                     (i-1, j),
                     (
                         (i+1, j+1), (i, j+1), (i-1, j+1)
@@ -139,7 +138,7 @@ function conditional_probability(peps::FusedNetwork, w::Vector{Int})
 
     @tensor prob[σ] := L[x] * MX[x, m, y] * M[y, l, z] * R[z, k] *
                         A[k, l, m, σ] order = (x, y, z, k, l, m)
-                        
+
     normalize_probability(prob)
 end
 

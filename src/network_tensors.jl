@@ -7,7 +7,7 @@ export
     right_env,
     left_env,
     dressed_mps,
-    mpo, mps
+    mpo, mps 
 
 
 tensor_assignment(
@@ -381,6 +381,26 @@ function mpo(::Type{T},
     W 
 end
 
+
+
+function mpo(::Type{T},
+    peps::AbstractGibbsNetwork,
+    r::Int
+) where {T <: Number}
+    temp = Dict()
+    for (x, dys) ∈ peps.mpo_structure
+        if dys == 0:
+            push!(temp, x => tensor(peps, (r, x)))
+        else
+            dict_x = Dict()
+            for dy ∈ dys
+                push!(dict_x, dy => tensor(peps, (r + dy, x)))
+            end
+            push!(temp, x => dict_x))
+        end
+    end
+    Mpo(temp)
+end
 
 @memoize Dict mpo(
     peps::AbstractGibbsNetwork,

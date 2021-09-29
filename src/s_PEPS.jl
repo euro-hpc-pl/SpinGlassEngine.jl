@@ -10,6 +10,7 @@ function peps_lattice(m::Int, n::Int)
     LabelledGraph(labels, grid((m, n)))
 end
 
+
 struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     factor_graph::LabelledGraph{T, NTuple{2, Int}} where T
     network_graph::LabelledGraph{S, NTuple{2, Int}} where S

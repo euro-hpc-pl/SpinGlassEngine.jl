@@ -202,7 +202,7 @@ function tensor_size(
     j = floor(Int, s)
     u, d = size(interaction_energy(network, (i, j), (i + 1, j + 1)))
     ũ, d̃ = size(interaction_energy(network, (i, j + 1), (i + 1, j)))
-    u*ũ, d*d̃
+    u * ũ, d * d̃
 end
 
 
@@ -359,11 +359,7 @@ function tensor_size(
 end 
 
 
-function mpo(::Type{T},
-    peps::AbstractGibbsNetwork,
-    layers,
-    r::Int
-) where {T <: Number}
+@memoize function mpo(peps::AbstractGibbsNetwork, layers, r::Int) where {T <: Number}
     W = Dict()
     Threads.@threads for (j, coor) ∈ layers
         push!(W, 
@@ -374,23 +370,12 @@ function mpo(::Type{T},
 end
 
 
-@memoize Dict mpo(
-    peps::AbstractGibbsNetwork,
-    layers,
-    r::Int
-) = mpo(Float64, peps, layers, r)
-
-
 IdentityMps(peps::AbstractGibbsNetwork) = Mps(
     Dict(j => ones(1, 1, 1) for j ∈ 1:peps.cols)
 ) 
 
 
-
-function mps(::Type{T},
-    peps::AbstractGibbsNetwork,
-    i::Int
-) where {T <: Number}
+@memoize function mps(peps::AbstractGibbsNetwork, i::Int) where {T <: Number}
     if i > peps.nrows return IdentityMps(peps) end  
     ψ = mps(peps, i+1)
     W = mpo(peps, peps.mpo_main, i)
@@ -401,24 +386,17 @@ function mps(::Type{T},
 end
 
 
-@memoize Dict mps(
-    peps::AbstractGibbsNetwork,
-    i::Int
-) = mps(Float64, peps, i)
-
-
-@memoize Dict function dressed_mps(
-    peps::AbstractGibbsNetwork,
-    i::Int
-)
-    mps(peps, i+1) * mpo(peps, peps.mpo_dress, i)
+@memoize Dict function dressed_mps(peps::AbstractGibbsNetwork, i::Int)
+    ψ = mps(peps, i+1) 
+    W = mpo(peps, peps.mpo_dress, i)
+    W * ψ
 end
 
 
 @memoize Dict function right_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int}) 
     l = length(∂v)
     if l == 0 return ones(1, 1) end
-    
+
     R̃ = right_env(peps, i, ∂v[2:l])
     ϕ = dressed_mps(peps, i)
     W = mpo(peps, peps.mpo_right, i)

@@ -90,7 +90,7 @@ function tensor(
     if v ∈ keys(network.tensor_spiecies)
         tensor(network, v, Val(network.tensor_spiecies[v]))
     else
-        ones(1, 1, 1, 1)
+        ones(1, 1)
     end
 end
 
@@ -102,7 +102,7 @@ function tensor_size(
     if v ∈ keys(network.tensor_spiecies)
         tensor_size(network, v, Val(network.tensor_spiecies[v]))
     else
-        (1, 1, 1, 1)
+        (1, 1)
     end
 end
 
@@ -140,9 +140,7 @@ function tensor(
 ) where {S, T}
     r, j = v
     i = floor(Int, r)
-    h = connecting_tensor(network, (i, j), (i+1, j))
-    @cast A[_, u, _, d] := h[u, d]
-    A
+    connecting_tensor(network, (i, j), (i+1, j))
 end
 
 
@@ -153,8 +151,7 @@ function tensor_size(
 ) where {S, T}
     r, j = v
     i = floor(Int, r)
-    u, d = size(interaction_energy(network, (i, j), (i+1, j)))
-    (1, u, 1, d)
+    size(interaction_energy(network, (i, j), (i+1, j)))
 end
 
 
@@ -165,9 +162,7 @@ function tensor(
 ) where {S, T}
     i, r = w
     j = floor(Int, r)
-    v = connecting_tensor(network, (i, j), (i, j+1))
-    @cast A[l, _, r, _] := v[l, r]
-    A
+    connecting_tensor(network, (i, j), (i, j+1))
 end
 
 
@@ -178,8 +173,7 @@ function tensor_size(
 ) where {S, T}
     i, r = w
     j = floor(Int, r)
-    l, r = size(interaction_energy(network, (i, j), (i, j+1)))
-    (l, 1, r, 1)
+    size(interaction_energy(network, (i, j), (i, j+1)))
 end
 
 
@@ -193,7 +187,7 @@ function tensor(
     j = floor(Int, s)
     NW = connecting_tensor(network, (i, j), (i + 1, j + 1))
     NE = connecting_tensor(network, (i, j + 1), (i + 1, j))
-    @cast A[_, (u, ũ), _, (d, d̃)] := NW[u, d] * NE[ũ, d̃] 
+    @cast A[(u, ũ), (d, d̃)] := NW[u, d] * NE[ũ, d̃] 
     A
 end
 
@@ -208,7 +202,7 @@ function tensor_size(
     j = floor(Int, s)
     u, d = size(interaction_energy(network, (i, j), (i + 1, j + 1)))
     ũ, d̃ = size(interaction_energy(network, (i, j + 1), (i + 1, j)))
-    (1, u*ũ, 1, d*d̃) 
+    u*ũ, d*d̃
 end
 
 
@@ -265,9 +259,7 @@ function tensor(
     v::R,
     ::Val{:gauge_h}
 ) where {S, T, R}
-    X = network.gauges[v]
-    @cast A[_, u, _, d] := Diagonal(X)[u, d]
-    A
+    Diagonal(network.gauges[v])
 end
 
 
@@ -276,9 +268,8 @@ function tensor_size(
     v::R,
     ::Val{:gauge_h}
 ) where {S, T, R}
-    X = network.gauges[v]
-    u = size(X, 1)
-    (1, u, 1, u)
+    u = size(network.gauges[v], 1)
+    u, u
 end
 
 
@@ -364,82 +355,50 @@ function tensor_size(
     pr = projector(network, v, (i, j+1))
     pd = projector(network, v, (i+1, j))
     @assert size(pr, 1) == size(pr, 1)
-    (size(pr, 2), size(pd, 2), size(pd, 1)) 
+    size(pr, 2), size(pd, 2), size(pd, 1)
 end 
 
 
 function mpo(::Type{T},
     peps::AbstractGibbsNetwork,
+    layers,
     r::Int
 ) where {T <: Number}
-    temp = Dict()
-    for (x, dys) ∈ peps.mpo_main
-        if dys == 0:
-            push!(temp, x => tensor(peps, (r, x)))
-        else
-            dict_x = Dict()
-            for dy ∈ dys
-                push!(dict_x, dy => tensor(peps, (r + dy, x)))
-            end
-            push!(temp, x => dict_x))
-        end
+    W = Dict()
+    Threads.@threads for (j, coor) ∈ layers
+        push!(W, 
+            j => Dict(j => tensor(peps, (r + i, j)) for i ∈ coor)
+        )
     end
-    Mpo(temp)
+    Mpo(W)
 end
 
 
-function mpo_dress(::Type{T},
+@memoize Dict mpo(
     peps::AbstractGibbsNetwork,
+    layers,
     r::Int
-) where {T <: Number}
-    temp = Dict()
-    for (x, dys) ∈ peps.mpo_dress
-        if dys == 0:
-            push!(temp, x => tensor(peps, (r, x)))
-        else
-            dict_x = Dict()
-            for dy ∈ dys
-                push!(dict_x, dy => tensor(peps, (r + dy, x)))
-            end
-            push!(temp, x => dict_x))
-        end
-    end
-    Mpo(temp)
-end
+) = mpo(Float64, peps, layers, r)
 
 
-function mpo_right(::Type{T},
-    peps::AbstractGibbsNetwork,
-    r::Int
-) where {T <: Number}
-    temp = Dict()
-    for (x, dys) ∈ peps.mpo_right
-        if dys == 0:
-            push!(temp, x => tensor(peps, (r, x)))
-        else
-            dict_x = Dict()
-            for dy ∈ dys
-                push!(dict_x, dy => tensor(peps, (r + dy, x)))
-            end
-            push!(temp, x => dict_x))
-        end
-    end
-    Mpo(temp)
-end
+IdentityMps(peps::AbstractGibbsNetwork) = Mps(
+    Dict(j => ones(1, 1, 1) for j ∈ 1:peps.cols)
+) 
+
 
 
 function mps(::Type{T},
     peps::AbstractGibbsNetwork,
     i::Int
 ) where {T <: Number}
-    if i > peps.nrows return IdentityMPS() end  # wygenerowanie productowego mps
+    if i > peps.nrows return IdentityMps(peps) end  
     ψ = mps(peps, i+1)
-    W = mpo(peps, i)
+    W = mpo(peps, peps.mpo_main, i)
     # ψ0 = copy(initial guess)
+    # when to compress?
     compress!(ψ0, W, ψ, peps.Dcut, peps.tol, peps.max_sweeps) 
     # compress biorace tylko W i psi0
 end
-
 
 
 @memoize Dict mps(
@@ -452,32 +411,26 @@ end
     peps::AbstractGibbsNetwork,
     i::Int
 )
-    ψ = mps(peps, i+1)
-    W = mpo_dress(peps, i)
-    W * ψ
+    mps(peps, i+1) * mpo(peps, peps.mpo_dress, i)
 end
-
-
-function compress(ψ::AbstractMPS, peps::AbstractGibbsNetwork)
-    if bond_dimension(ψ) < peps.bond_dim return ψ end
-    SpinGlassTensors.compress(ψ, peps.bond_dim, peps.var_tol, peps.sweeps)
-end
-
 
 
 @memoize Dict function right_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int}) 
     l = length(∂v)
     if l == 0 return ones(1, 1) end
+    
     R̃ = right_env(peps, i, ∂v[2:l])
     ϕ = dressed_mps(peps, i)
-    W = mpo_right(peps, i)
+    W = mpo(peps, peps.mpo_right, i)
     k = length(ϕ.sites)
     site = ϕ.sites[k-l+1]
     M̃ = W[site]
     M = ϕ[site]
+
     RR = _update_reduced_env_right(R̃, ∂v[1], M̃, M)
     ls_mps = _left_nbrs_site(site, ϕ.sites)
     ls = _left_nbrs_site(site, W.sites)
+
     while ls > ls_mps
         M = W[ls]
         @tensor RR[x, y] := M0[y, z] * RR[x, z]
@@ -488,14 +441,13 @@ end
 
 
 function _update_reduced_env_right(RE::S, m::Int, M::Dict, B::S) where {T, S <: AbstractArray} 
-    sites = collect(sort(keys(M)))
     M0 = M[0]
     Mt = M[-1//2]
     K = @view Mt[m, :]
-    @tensor R[x, y] := K[d] * M0[y, d, β, γ] * B[x, γ, α] * RE[α, β] order = (d, β, γ, α)
+    @tensor R[x, y] := K[d] * M0[y, d, β, γ] * 
+                       B[x, γ, α] * RE[α, β] order = (d, β, γ, α)
     R
 end
-
 
 
 @memoize Dict function left_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int})

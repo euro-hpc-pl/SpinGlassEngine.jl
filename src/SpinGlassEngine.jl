@@ -23,11 +23,10 @@ end
 
 include("network_operations.jl")
 include("network_interface.jl")
-include("compressions.jl")
 include("MPS_search.jl")
-include("PEPS.jl")
+include("s_PEPS.jl")
 include("PEPS_fused.jl")
-include("network_tensors.jl")
+include("s_network_tensors.jl")
 include("search.jl")
 
 end # module

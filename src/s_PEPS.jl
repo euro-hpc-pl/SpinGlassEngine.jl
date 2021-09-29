@@ -50,23 +50,12 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         _types = (:site, :central_h, :central_v, :gauge_h)
         _gauges = Dict()
         _tensor_spiecies = Dict()
-        _mpo_main = Dict()
-        for i ∈ 1:network.ncolumns
-            push!(_mpo_main, i => (-1//6, 0, 3//6, 4//6))
-        end
-        for i ∈ 1:network.ncolumns - 1
-            push!(_mpo_main, i + 1//2 => 0)
-        end
 
-        _mpo_dress = Dict()
-        for i ∈ 1:network.ncolumns
-            push!(_mpo_dress, i => (3//6, 4//6))
-        end
+        _mpo_main = Dict(i => (-1//6, 0, 3//6, 4//6) for i ∈ 1:ncols)
+        for i ∈ 1:ncols - 1 push!(_mpo_main, i + 1//2 => (0,)) end
 
-        _mpo_right = Dict()
-        for i ∈ 1:network.ncolumns
-            push!(_mpo_right, i => (-3//6, 0))
-        end
+        _mpo_dress = Dict(i => (3//6, 4//6) for i ∈ 1:ncols)
+        _mpo_right = Dict(i => (-3//6, 0) for i ∈ 1:ncols)
 
         network = new(factor_graph, ng, vmap, m, n, nrows, ncols, β, bond_dim,
                       var_tol, sweeps, _types, _gauges, _tensor_spiecies,

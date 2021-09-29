@@ -11,6 +11,20 @@ function peps_lattice(m::Int, n::Int)
 end
 
 
+struct Contraction
+    bond_dim::Int
+    var_tol::Real
+    sweeps::Int
+end
+
+
+struct MpoLayers
+    main::Dict
+    dress::Dict
+    right::Dict
+end
+
+
 struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     factor_graph::LabelledGraph{T, NTuple{2, Int}} where T
     network_graph::LabelledGraph{S, NTuple{2, Int}} where S
@@ -20,12 +34,15 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     nrows::Int
     ncols::Int
     β::Real
+    #
     bond_dim::Int
     var_tol::Real
     sweeps::Int
+    #
     tensor_types
     gauges
     tensor_spiecies
+    #
     mpo_main::Dict
     mpo_dress::Dict
     mpo_right::Dict

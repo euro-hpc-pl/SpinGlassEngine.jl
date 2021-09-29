@@ -382,6 +382,26 @@ function mpo(::Type{T},
 end
 
 
+
+function mpo(::Type{T},
+    peps::AbstractGibbsNetwork,
+    r::Int
+) where {T <: Number}
+    temp = Dict()
+    for (x, dys) ∈ peps.mpo_structure
+        if dys == 0:
+            push!(temp, x => tensor(peps, (r, x)))
+        else
+            dict_x = Dict()
+            for dy ∈ dys
+                push!(dict_x, dy => tensor(peps, (r + dy, x)))
+            end
+            push!(temp, x => dict_x))
+        end
+    end
+    Mpo(temp)
+end
+
 @memoize Dict mpo(
     peps::AbstractGibbsNetwork,
     r::Union{Rational{Int}, Int}

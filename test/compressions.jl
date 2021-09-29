@@ -1,4 +1,4 @@
-function SpinGlassTensors.MPS(ket::Dict)
+function SpinGlassTensors.MPS(ket::Mps)
     L = length(ket)
     ϕ = MPS(eltype(ket[1]), L) 
     for i ∈ 1:L ϕ[i] = ket[i] end
@@ -7,7 +7,7 @@ end
 
 Base.Dict(
     ϕ::SpinGlassTensors.AbstractTensorNetwork
-) = Dict(i => A for (i, A) ∈ enumerate(ϕ))
+) = Mps(Dict(i => A for (i, A) ∈ enumerate(ϕ)))
 
 
 @testset "Compressions for sparse mps and mpo works" begin
@@ -23,8 +23,8 @@ Base.Dict(
     ψ = randn(MPS{T}, sites, D, d)
     W = randn(MPO{T}, sites, D, d)
 
-    ket = Dict(ψ)
-    mpo = Dict(W)
+    ket = Mps(ψ)
+    mpo = Mpo(W)
 
     @testset "Two mps representations are compressed to the same state" begin 
         χ = W * ψ
@@ -32,17 +32,12 @@ Base.Dict(
         @test is_left_normalized(χ)
         println(overlap)
 
-        #ϕ = copy(ψ)
-        #canonise!(ϕ, :left)
-        #bra = Dict(ϕ)
-
-        bra = copy(Dict(χ))
+        bra = Mps(χ)
         @time overlap = compress!(bra, mpo, ket, Dcut, tol, max_sweeps)
         println(overlap)
         
         ϕ = MPS(bra)
         @time is_right_normalized(ϕ)
         @test norm(χ) ≈ norm(ϕ) ≈ 1
-        @test dot(ϕ, χ) ≈ dot(χ, ϕ) ≈ 1 
     end
 end

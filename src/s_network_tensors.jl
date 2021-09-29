@@ -370,25 +370,10 @@ end
 
 function mpo(::Type{T},
     peps::AbstractGibbsNetwork,
-    r::Union{Rational{Int}, Int}
-) where {T <: Number}
-    W = MPO(T, length(peps.columns_MPO) * peps.ncols)
-    layers = collect(Iterators.product(peps.columns_MPO, 1:peps.ncols))
-    Threads.@threads for k=1:length(layers)
-        d, j = layers[k]
-        W[k] = tensor(peps, (r, j + d)) 
-    end
-    W 
-end
-
-
-
-function mpo(::Type{T},
-    peps::AbstractGibbsNetwork,
     r::Int
 ) where {T <: Number}
     temp = Dict()
-    for (x, dys) ∈ peps.mpo_structure
+    for (x, dys) ∈ peps.mpo_main
         if dys == 0:
             push!(temp, x => tensor(peps, (r, x)))
         else
@@ -402,23 +387,59 @@ function mpo(::Type{T},
     Mpo(temp)
 end
 
-@memoize Dict mpo(
-    peps::AbstractGibbsNetwork,
-    r::Union{Rational{Int}, Int}
-) = mpo(Float64, peps, r)
 
+function mpo_dress(::Type{T},
+    peps::AbstractGibbsNetwork,
+    r::Int
+) where {T <: Number}
+    temp = Dict()
+    for (x, dys) ∈ peps.mpo_dress
+        if dys == 0:
+            push!(temp, x => tensor(peps, (r, x)))
+        else
+            dict_x = Dict()
+            for dy ∈ dys
+                push!(dict_x, dy => tensor(peps, (r + dy, x)))
+            end
+            push!(temp, x => dict_x))
+        end
+    end
+    Mpo(temp)
+end
+
+
+function mpo_right(::Type{T},
+    peps::AbstractGibbsNetwork,
+    r::Int
+) where {T <: Number}
+    temp = Dict()
+    for (x, dys) ∈ peps.mpo_right
+        if dys == 0:
+            push!(temp, x => tensor(peps, (r, x)))
+        else
+            dict_x = Dict()
+            for dy ∈ dys
+                push!(dict_x, dy => tensor(peps, (r + dy, x)))
+            end
+            push!(temp, x => dict_x))
+        end
+    end
+    Mpo(temp)
+end
 
 
 function mps(::Type{T},
     peps::AbstractGibbsNetwork,
     i::Int
 ) where {T <: Number}
-    if i > peps.nrows return IdentityMPS() end
+    if i > peps.nrows return IdentityMPS() end  # wygenerowanie productowego mps
     ψ = mps(peps, i+1)
-    for r ∈ peps.layers_MPS ψ = mpo(peps, i+r) * ψ end
-    compress!(ψ, peps) 
-    ψ
+    W = mpo(peps, i)
+    # ψ0 = copy(initial guess)
+    compress!(ψ0, W, ψ, peps.Dcut, peps.tol, peps.max_sweeps) 
+    # compress biorace tylko W i psi0
 end
+
 
 
 @memoize Dict mps(
@@ -432,20 +453,16 @@ end
     i::Int
 )
     ψ = mps(peps, i+1)
-    for r ∈ peps.layers_left_env ψ = mpo(peps, i+r) * ψ end
-    ψ
+    W = mpo_dress(peps, i)
+    W * ψ
 end
 
 
-function SpinGlassTensors.compress!(ψ::AbstractMPS, peps::AbstractGibbsNetwork)
+function compress(ψ::AbstractMPS, peps::AbstractGibbsNetwork)
     if bond_dimension(ψ) < peps.bond_dim return ψ end
-    compress!(ψ, peps.bond_dim, peps.var_tol, peps.sweeps)
+    SpinGlassTensors.compress(ψ, peps.bond_dim, peps.var_tol, peps.sweeps)
 end
 
-
-@memoize Dict function _mpo(peps::AbstractGibbsNetwork, i::Int)
-    prod(mpo.(Ref(peps), i .+ reverse(peps.layers_right_env)))
-end
 
 
 @memoize Dict function right_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int}) 
@@ -453,14 +470,32 @@ end
     if l == 0 return ones(1, 1) end
     R̃ = right_env(peps, i, ∂v[2:l])
     ϕ = dressed_mps(peps, i)
-    W = _mpo(peps, i)
-    k = length(W)
-    M = ϕ[k-l+1]
-    M̃ = W[k-l+1]
-    K = @view M̃[:, ∂v[1], :, :]
-    @tensor R[x, y] := K[y, β, γ] * M[x, γ, α] * R̃[α, β] order = (β, γ, α)
+    W = mpo_right(peps, i)
+    k = length(ϕ.sites)
+    site = ϕ.sites[k-l+1]
+    M̃ = W[site]
+    M = ϕ[site]
+    RR = _update_reduced_env_right(R̃, ∂v[1], M̃, M)
+    ls_mps = _left_nbrs_site(site, ϕ.sites)
+    ls = _left_nbrs_site(site, W.sites)
+    while ls > ls_mps
+        M = W[ls]
+        @tensor RR[x, y] := M0[y, z] * RR[x, z]
+        ls = _left_nbrs_site(ls, W.sites)
+    end
+    RR
+end
+
+
+function _update_reduced_env_right(RE::S, m::Int, M::Dict, B::S) where {T, S <: AbstractArray} 
+    sites = collect(sort(keys(M)))
+    M0 = M[0]
+    Mt = M[-1//2]
+    K = @view Mt[m, :]
+    @tensor R[x, y] := K[d] * M0[y, d, β, γ] * B[x, γ, α] * RE[α, β] order = (d, β, γ, α)
     R
 end
+
 
 
 @memoize Dict function left_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int})

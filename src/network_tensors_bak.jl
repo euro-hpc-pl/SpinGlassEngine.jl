@@ -382,26 +382,6 @@ function mpo(::Type{T},
 end
 
 
-
-function mpo(::Type{T},
-    peps::AbstractGibbsNetwork,
-    r::Int
-) where {T <: Number}
-    temp = Dict()
-    for (x, dys) ∈ peps.mpo_structure
-        if dys == 0:
-            push!(temp, x => tensor(peps, (r, x)))
-        else
-            dict_x = Dict()
-            for dy ∈ dys
-                push!(dict_x, dy => tensor(peps, (r + dy, x)))
-            end
-            push!(temp, x => dict_x))
-        end
-    end
-    Mpo(temp)
-end
-
 @memoize Dict mpo(
     peps::AbstractGibbsNetwork,
     r::Union{Rational{Int}, Int}
@@ -416,8 +396,7 @@ function mps(::Type{T},
     if i > peps.nrows return IdentityMPS() end
     ψ = mps(peps, i+1)
     for r ∈ peps.layers_MPS ψ = mpo(peps, i+r) * ψ end
-    compress!(ψ, peps) 
-    ψ
+    compress(ψ, peps) 
 end
 
 
@@ -437,9 +416,9 @@ end
 end
 
 
-function SpinGlassTensors.compress!(ψ::AbstractMPS, peps::AbstractGibbsNetwork)
+function compress(ψ::AbstractMPS, peps::AbstractGibbsNetwork)
     if bond_dimension(ψ) < peps.bond_dim return ψ end
-    compress!(ψ, peps.bond_dim, peps.var_tol, peps.sweeps)
+    SpinGlassTensors.compress(ψ, peps.bond_dim, peps.var_tol, peps.sweeps)
 end
 
 

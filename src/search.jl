@@ -16,20 +16,6 @@ struct Solution
 end
 
 
-function _clear_cache(network::AbstractGibbsNetwork, sol::Solution)
-    i, j = node_from_index(network, length(first(sol.states))+1)
-    if j != network.ncols return end
-    delete!(memoize_cache(mps), (network, i))
-    delete!(memoize_cache(dressed_mps), (network, i))
-    delete!(memoize_cache(mpo), (network, i-1))
-    delete!(memoize_cache(_mpo), (network, i-1))
-    lec = memoize_cache(left_env)
-    delete!.(Ref(lec), filter(k->k[2]==i, keys(lec)))
-    rec = memoize_cache(right_env)
-    delete!.(Ref(rec), filter(k->k[2]==i, keys(rec)))
-end
-
-
 empty_solution() = Solution([0.], [[]], [1.], [1], -Inf)
 
 
@@ -41,31 +27,30 @@ end
 
 
 function branch_solution(partial_sol::Solution, network::AbstractGibbsNetwork)
-    local_dim = length(local_energy(network, node_from_index(network, length(partial_sol.states[1])+1)))
-    Solution(
-        vcat(
+    local_dim = length(local_energy(network, node_from_index(network, length(partial_sol.states[1])+1))) 
+    new_energies = vcat(
             [
                 (en .+ update_energy(network, state))
                 for (en, state) ∈ zip(partial_sol.energies, partial_sol.states)
             ]
             ...
-        ),
-        vcat(branch_state.(Ref(network), partial_sol.states)...),
-        vcat(
-            partial_sol.probabilities .* conditional_probability.(Ref(network), partial_sol.states)
+        )
+    new_states = vcat(branch_state.(Ref(network), partial_sol.states)...)
+    new_probabilities = vcat(
+            [
+                partial_sol.probabilities[i] .+ log.(p) 
+                for (i,p) ∈ enumerate(conditional_probability.(Ref(network), partial_sol.states))
+                    ]
             ...
-        ),
-        repeat(partial_sol.degeneracy, inner=local_dim),
-        partial_sol.largest_discarded_probability
+        )
+    degeneracies = repeat(partial_sol.degeneracy, inner=local_dim)
+    ldp = partial_sol.largest_discarded_probability
+    Solution(
+        new_energies, new_states, new_probabilities, degeneracies, ldp
     )
 end
 
-# TODO: convert probabilities to logarithms
-
-function merge_branches(
-    network::AbstractGibbsNetwork{S, T}, 
-    energy_atol::Float64
-) where {S, T}
+function merge_branches(network::AbstractGibbsNetwork{S, T}) where {S, T}
     function _merge(partial_sol::Solution)
         node = node_from_index(network, length(partial_sol.states[1])+1)
         boundaries = hcat(boundary_state.(Ref(network), partial_sol.states, Ref(node))...)'  
@@ -105,9 +90,7 @@ function merge_branches(
     _merge
 end
 
-function no_merge(partial_sol::Solution)
-    partial_sol
-end
+no_merge(partial_sol::Solution) = partial_sol
 
 function bound_solution(partial_sol::Solution, max_states::Int, merge_strategy=no_merge)
     if length(partial_sol.probabilities) <= max_states
@@ -143,7 +126,7 @@ function low_energy_spectrum(network::AbstractGibbsNetwork, max_states::Int, mer
     @showprogress "Search: " for _ ∈ 1:nv(network_graph(network))
         sol = branch_solution(sol, network)
         sol = bound_solution(sol, max_states, merge_strategy)
-        _clear_cache(network, sol) 
+        # _clear_cache(network, sol)
     end
 
     # Translate variable order (from network to factor graph)

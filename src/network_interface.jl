@@ -189,18 +189,22 @@ function update_gauges!(
     for i ∈ 1:network.nrows-1, k ∈ 1:1//2:network.ncols
         j = denominator(k) == 1 ? numerator(k) : k
         _, u, _, d = tensor_size(network, (i+1//2, j))
-        Y = type == :id ? ones(u) : rand(u) .+ 0.1
+        Y = type == :id ? ones(u) : rand(u) .+ 0.42
         push!(network.gauges, (i + 1//6, j) => Y, (i + 2//6, j) => 1 ./ Y)
-        Z = type == :id ? ones(d) : rand(d) .+ 0.1
+        Z = type == :id ? ones(d) : rand(d) .+ 0.42
         push!(network.gauges, (i + 4//6, j) => Z, (i + 5//6, j) => 1 ./ Z)
     end
 end
 
 
-function normalize_probability(
-    network::AbstractGibbsNetwork{S, T}, 
-    prob::Vector{R}
-) where {S, T, R<:Number}
+function normalize_probability(values::Vector{R}) where {R<:Number}
     # exceptions (negative pdo, etc)
-    prob / sum(prob)
+    minp = minimum(values)
+    if minp < 0
+        amp = abs(minp)
+        for (i, p) ∈ enumerate(values)
+            p < amp ? values[i] = amp : values[i]
+        end
+    end
+    values / sum(values)
 end

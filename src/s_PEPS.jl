@@ -4,6 +4,7 @@ export
     node_from_index, 
     conditional_probability
 
+#TODO : organize this into structures
 
 function peps_lattice(m::Int, n::Int)
     labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]

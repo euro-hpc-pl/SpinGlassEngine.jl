@@ -10,6 +10,8 @@ export
     mpo, mps 
 
 
+#TODO : organize this into structures
+
 tensor_assignment(
     network::AbstractGibbsNetwork{S, T},
     s::Symbol

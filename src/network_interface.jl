@@ -188,7 +188,7 @@ function update_gauges!(
     @assert type ∈ (:id, :rand)
     for i ∈ 1:network.nrows-1, k ∈ 1:1//2:network.ncols
         j = denominator(k) == 1 ? numerator(k) : k
-        _, u, _, d = tensor_size(network, (i+1//2, j))
+        u, d = tensor_size(network, (i+1//2, j))
         Y = type == :id ? ones(u) : rand(u) .+ 0.42
         push!(network.gauges, (i + 1//6, j) => Y, (i + 2//6, j) => 1 ./ Y)
         Z = type == :id ? ones(d) : rand(d) .+ 0.42

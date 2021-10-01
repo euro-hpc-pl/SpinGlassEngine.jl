@@ -80,8 +80,8 @@ function tensor_species_map!(
     tensor_types::NTuple{N, Symbol}
 ) where {S, T, N}
     for type ∈ tensor_types
-        push!(network.tensor_spiecies, tensor_assignment(network, type)...) 
-    end 
+        push!(network.tensor_spiecies, tensor_assignment(network, type)...)
+    end
 end
 
 
@@ -363,17 +363,18 @@ end
 
 @memoize function mpo(peps::AbstractGibbsNetwork, layers, r::Int) where {T <: Number}
     W = Dict()
-    Threads.@threads for (j, coor) ∈ layers
+    # Threads.@threads for (j, coor) ∈ layers
+    for (j, coor) ∈ layers
         push!(W, 
-            j => Dict(j => tensor(peps, (r + i, j)) for i ∈ coor)
+            j => Dict(dr => tensor(peps, (r + dr, j)) for dr ∈ coor)
         )
     end
     Mpo(W)
 end
 
 
-IdentityMps(peps::AbstractGibbsNetwork) = Mps(
-    Dict(j => ones(1, 1, 1) for j ∈ 1:peps.cols)
+IdentityMps(peps::AbstractGibbsNetwork) = Mps(   ## change for pegazus
+    Dict(j => ones(1, 1, 1) for j ∈ 1:peps.ncols)
 ) 
 
 
@@ -381,10 +382,10 @@ IdentityMps(peps::AbstractGibbsNetwork) = Mps(
     if i > peps.nrows return IdentityMps(peps) end  
     ψ = mps(peps, i+1)
     W = mpo(peps, peps.mpo_main, i)
-    # ψ0 = copy(initial guess)
+    ψ0 = copy(ψ)
     # when to compress?
-    compress!(ψ0, W, ψ, peps.Dcut, peps.tol, peps.max_sweeps) 
-    # compress biorace tylko W i psi0
+    compress!(ψ0, W, ψ, peps.bond_dim, peps.var_tol, peps.sweeps) 
+    ψ0
 end
 
 

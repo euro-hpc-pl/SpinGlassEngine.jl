@@ -24,12 +24,6 @@ export
     node_from_index,
     conditional_probability
 
-
-function peps_lattice(m::Int, n::Int)
-    labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
-    LabelledGraph(labels, grid((m, n)))
-end
-
 struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     factor_graph::LabelledGraph{T, NTuple{2, Int}} where T
     network_graph::LabelledGraph{S, NTuple{2, Int}} where S
@@ -183,17 +177,6 @@ export FusedNetwork, boundary,
     conditional_probability,
     update_energy,
     projectors
-
-
-function cross_lattice(m::Int, n::Int)
-    labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
-    lg = LabelledGraph(labels, grid((m, n)))
-    for i ∈ 1:m-1, j ∈ 1:n-1
-        add_edge!(lg, (i, j), (i+1, j+1))
-        add_edge!(lg, (i+1, j), (i, j+1))
-    end
-    lg
-end
 
 
 struct FusedNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}

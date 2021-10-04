@@ -18,7 +18,7 @@ struct PEPSNetwork{F} <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}} wh
     bond_dim::Int
     var_tol::Real
     sweeps::Int
-    gauges::Dict{Tuple{Rational, Int}, Vector{Float64}}
+    gauges::Dict{Tuple{Rational, IntOrRational}, Vector{Float64}}
     tensor_spiecies::Dict{NTuple{2, IntOrRational}, Symbol}
     columns_MPO::NTuple{N, IntOrRational} where N
     layers_MPS::NTuple{M, IntOrRational} where M
@@ -75,6 +75,21 @@ struct PEPSNetwork{F} <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}} wh
         update_gauges!(network, :id)
         network
     end
+end
+
+function peps_lattice(m::Int, n::Int)
+    labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
+    LabelledGraph(labels, grid((m, n)))
+end
+
+function cross_lattice(m::Int, n::Int)
+    labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
+    lg = LabelledGraph(labels, grid((m, n)))
+    for i ∈ 1:m-1, j ∈ 1:n-1
+        add_edge!(lg, (i, j), (i+1, j+1))
+        add_edge!(lg, (i+1, j), (i, j+1))
+    end
+    lg
 end
 
 function projectors(network::PEPSNetwork{false}, vertex::NTuple{2, Int})

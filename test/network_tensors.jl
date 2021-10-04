@@ -36,7 +36,7 @@
         cluster_assignment_rule=super_square_lattice((m, n, t)), 
     )
 
-    peps = FusedNetwork(m, n, fg, rotation(0), β=β)
+    peps = PEPSNetwork{true}(m, n, fg, rotation(0), β=β)
     update_gauges!(peps, :rand)
 
     @testset "for site tensors" begin
@@ -113,7 +113,7 @@ end
         cluster_assignment_rule=super_square_lattice((m, n, t)) 
     )
 
-    peps = FusedNetwork(m, n, fg, rotation(0), β=β)
+    peps = PEPSNetwork{true}(m, n, fg, rotation(0), β=β)
     update_gauges!(peps, :rand)
 
     expected_site = [

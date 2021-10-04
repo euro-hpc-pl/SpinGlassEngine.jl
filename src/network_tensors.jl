@@ -9,6 +9,19 @@ export
     dressed_mps,
     mpo, mps
 
+function assign_tensors!(network::PEPSNetwork{false})
+    _types = (:site, :central_h, :central_v, :gauge_h)
+    for type ∈ _types
+        push!(network.tensor_spiecies, tensor_assignment(network, type)...)
+    end 
+end
+
+function assign_tensors!(network::PEPSNetwork{true})
+    _types = (:site, :central_h, :central_v, :virtual, :central_d, :gauge_h)
+    for type ∈ _types
+        push!(network.tensor_spiecies, tensor_assignment(network, type)...)
+    end 
+end
 
 tensor_assignment(
     network::AbstractGibbsNetwork{S, T},
@@ -41,7 +54,7 @@ tensor_assignment(
 
 
 tensor_assignment(
-    network::PEPSNetwork,
+    network::PEPSNetwork{false},
     ::Val{:gauge_h}
 ) = Dict((i + δ, j) => :gauge_h
     for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols, δ ∈ (1//6, 2//6, 4//6, 5//6)
@@ -49,7 +62,7 @@ tensor_assignment(
 
 
 tensor_assignment(
-    network::FusedNetwork,
+    network::PEPSNetwork{true},
     ::Val{:gauge_h}
 ) = Dict((i + δ, r) => :gauge_h
     for i ∈ 1:network.nrows-1, r ∈ 1:1//2:network.ncols, δ ∈ (1//6, 2//6, 4//6, 5//6)
@@ -57,7 +70,7 @@ tensor_assignment(
 
 
 tensor_assignment(
-    network::FusedNetwork,
+    network::PEPSNetwork{true},
     ::Val{:virtual}
 ) = Dict(
     (i, j + 1//2) => :virtual for i ∈ 1:network.nrows, j ∈ 1:network.ncols-1
@@ -65,7 +78,7 @@ tensor_assignment(
 
 
 tensor_assignment(
-    network::FusedNetwork,
+    network::PEPSNetwork{true},
     ::Val{:central_d}
 ) = Dict(
     (i + 1//2, j + 1//2) => :central_d for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols-1
@@ -262,7 +275,7 @@ end
 
 
 function reduced_site_tensor(
-    network::PEPSNetwork, v::Tuple{Int, Int}, l::Int, u::Int
+    network::PEPSNetwork{false}, v::Tuple{Int, Int}, l::Int, u::Int
 )
     i, j = v
     eng_local = local_energy(network, v)
@@ -285,7 +298,7 @@ end
 
 
 function reduced_site_tensor(
-    network::FusedNetwork, v::Tuple{Int, Int}, ld::Int, l::Int, d::Int, u::Int
+    network::PEPSNetwork{true}, v::Tuple{Int, Int}, ld::Int, l::Int, d::Int, u::Int
 )
     i, j = v
     eng_local = local_energy(network, v)
@@ -317,7 +330,7 @@ end
 
 
 function tensor_size(
-    network::PEPSNetwork, v::Tuple{Int, Int}, ::Val{:reduced}
+    network::PEPSNetwork{false}, v::Tuple{Int, Int}, ::Val{:reduced}
 )
     i, j = v
     pr = projector(network, v, (i, j+1))

@@ -6,7 +6,7 @@ export
 
 const IntOrRational = Union{Int, Rational{Int}}
 
-struct PEPSNetwork{F} <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
+struct PEPSNetwork{F} <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}} where F
     factor_graph::LabelledGraph{T, NTuple{2, Int}} where T
     network_graph::LabelledGraph{S, NTuple{2, Int}} where S
     vertex_map::Function
@@ -38,7 +38,7 @@ struct PEPSNetwork{F} <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         layers_MPS=(4//6, 3//6, 0, -1//6),  # from bottom to top
         layers_left_env=(4//6, 3//6),
         layers_right_env=(0, -3//6)
-    )
+    )  where F
         vmap = vertex_map(transformation, m, n)
         ng = F ? cross_lattice(m, n) : peps_lattice(m, n)
         nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
@@ -118,7 +118,7 @@ function boundary(peps::PEPSNetwork{false}, node::NTuple{2, Int})
     )
 end
 
-function boundary(peps::FusedNetwork{true}, node::NTuple{2, Int})
+function boundary(peps::PEPSNetwork{true}, node::NTuple{2, Int})
     i, j = node
     vcat(
         [

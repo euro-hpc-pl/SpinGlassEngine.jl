@@ -72,7 +72,7 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
 
         _mpo_main = Dict()
         for i ∈ 1:ncols push!(_mpo_main, i => (-1//6, 0, 3//6, 4//6)) end
-        for i ∈ 1:ncols - 1 push!(_mpo_main, i + 1//2 => (0,)) end
+        for i ∈ 1:ncols - 1 push!(_mpo_main, i + 1//2 => (0,)) end  # consier changing (0,) to 0
 
         _mpo_dress = Dict(i => (3//6, 4//6) for i ∈ 1:ncols)
         _mpo_right = Dict(i => (-3//6, 0) for i ∈ 1:ncols)

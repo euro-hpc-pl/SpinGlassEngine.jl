@@ -1,4 +1,4 @@
-@testset "MPS-based search produces correctely results for small instances" for L ∈[2, 3]
+@testset "MPS-based search produces correctly results for small instances" for L ∈[2, 3]
     N = L^2
     instance = "$(@__DIR__)/instances/basic/$(N)_001.txt"
     ig = ising_graph(instance)

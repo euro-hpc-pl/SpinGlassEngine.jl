@@ -74,7 +74,7 @@ function vertex_map(vert_permutation::NTuple{4, Int}, nrows, ncols)
     elseif vert_permutation == (1, 4, 3, 2) # :diag reflection
         f = (i, j) -> (j, i)
     elseif vert_permutation == (3, 2, 1, 4) # :antydiag reflection
-        f = (i, j) -> (nrows -j + 1, ncols - i + 1)
+        f = (i, j) -> (nrows - j + 1, ncols - i + 1)
     else
         ArgumentError("$(vert_permutation) does not define square isometry.")
     end

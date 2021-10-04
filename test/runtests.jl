@@ -4,6 +4,7 @@ using SpinGlassNetworks, SpinGlassTensors
 using LightGraphs
 using LinearAlgebra
 using TensorCast
+using MetaGraphs
 
 disable_logging(LogLevel(1))
 
@@ -19,7 +20,7 @@ function proj(state, dims::Union{Vector, NTuple})
     P
 end
 
-function tensor(ψ::AbstractMPS, state::State)
+function SpinGlassEngine.tensor(ψ::AbstractMPS, state::State)
     C = I
     for (A, σ) ∈ zip(ψ, state)
         C *= A[:, idx(σ), :]
@@ -27,7 +28,7 @@ function tensor(ψ::AbstractMPS, state::State)
     tr(C)
 end
 
-function tensor(ψ::MPS)
+function SpinGlassEngine.tensor(ψ::MPS)
     dims = rank(ψ)
     Θ = Array{eltype(ψ)}(undef, dims)
 
@@ -37,18 +38,17 @@ function tensor(ψ::MPS)
     Θ
 end
 
-
-my_tests = []
-
-push!(my_tests,
-      "MPS_search.jl",
-      "PEPS.jl",
-      "contract.jl",
-      "search.jl",
-      "search_2.jl",
-      "network_operations.jl",
-      "branch_and_bound.jl"
-)
+my_tests = [
+    "network_operations.jl",
+    "branch_and_bound.jl",
+    "network_interface.jl",
+    "ising_MPS.jl",
+    "search_MPS.jl",
+    "search_chimera.jl",
+    "search_cross.jl",
+    "network_tensors.jl",
+    "search_full_chimera.jl",
+]
 
 for my_test in my_tests
     include(my_test)

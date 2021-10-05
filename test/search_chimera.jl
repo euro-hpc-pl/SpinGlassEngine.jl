@@ -77,8 +77,8 @@
             #println(W.sites)
             #println(W.tensors)
         end
-        # update_gauges!(peps, :id)
-        # sol = low_energy_spectrum(peps, num_states)
+         #update_gauges!(peps, :id)
+         #sol = low_energy_spectrum(peps, num_states)
 
         # @test sol.energies ≈ exact_energies
         # for (i, σ) ∈ enumerate(sol.states)

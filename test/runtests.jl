@@ -54,7 +54,8 @@ push!(my_tests,
         "compressions.jl"
         "search_full_chimera.jl",
 =#
-      "search_chimera.jl",
+        #"search_chimera.jl",
+        "contractions.jl"
 )
 
 for my_test in my_tests

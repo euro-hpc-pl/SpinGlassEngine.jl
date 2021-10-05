@@ -383,9 +383,9 @@ IdentityMps(peps::AbstractGibbsNetwork) = Mps(   ## change for pegazus
     ψ = mps(peps, i+1)
     W = mpo(peps, peps.mpo_main, i)
     ψ0 = dot(W, ψ)
-    for (jj, TTT) in ψ0.tensors
-        println("site = ", jj, " tensor = ", size(TTT))
-    end
+    # for (jj, TTT) in ψ0.tensors
+    #     println("site = ", jj, " tensor = ", size(TTT))
+    # end
     # when to compress?
     compress!(ψ0, W, ψ, peps.bond_dim, peps.var_tol, peps.sweeps) 
     ψ0

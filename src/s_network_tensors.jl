@@ -424,7 +424,7 @@ end
 end
 
 
-function _update_reduced_env_right(RE::S, m::Int, M::Dict, B::S) where {T, S <: AbstractArray} 
+function _update_reduced_env_right(RE, m::Int, M::Dict, B) 
     M0 = M[0]
     Mt = M[-1//2]
     K = @view Mt[m, :]

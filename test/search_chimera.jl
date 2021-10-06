@@ -69,21 +69,16 @@
     )
 
     for transform ∈ all_lattice_transformations
+        println("Transformacja", transform)
         peps = PEPSNetwork(m, n, fg, transform, β=β)
         for i in reverse(1:peps.nrows)
-            
             println("row = ", i)
-            W = mpo(peps, peps.mpo_main, i)
-            for (j, dict) in W
-                println(size.(values(dict)))
-            end
             W = mps(peps, i)
-
             #println(W.sites)
             #println(W.tensors)
         end
-        # update_gauges!(peps, :id)
-        # sol = low_energy_spectrum(peps, num_states)
+         #update_gauges!(peps, :id)
+         #sol = low_energy_spectrum(peps, num_states)
 
         # @test sol.energies ≈ exact_energies
         # for (i, σ) ∈ enumerate(sol.states)

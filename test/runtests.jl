@@ -55,7 +55,7 @@ push!(my_tests,
         "search_full_chimera.jl",
 =#
         #"search_chimera.jl",
-        "contractions.jl"
+        "canonise.jl"
 )
 
 for my_test in my_tests

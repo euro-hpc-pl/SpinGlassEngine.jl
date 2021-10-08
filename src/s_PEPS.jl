@@ -74,6 +74,9 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         for i ∈ 1:ncols push!(_mpo_main, i => (-1//6, 0, 3//6, 4//6)) end
         for i ∈ 1:ncols - 1 push!(_mpo_main, i + 1//2 => (0,)) end  # consier changing (0,) to 0
 
+        # MPO : Dict(Q => tensor, Q => lista tensorow)
+        # gdzie sie da to w 2gim przypadku iteracja po liscie da dispatch do operacji na pojedynczym tensor_size
+
         _mpo_dress = Dict(i => (3//6, 4//6) for i ∈ 1:ncols)
 
         _mpo_right = Dict()
@@ -89,6 +92,10 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         network
     end
 end
+
+
+# network_map = Dict(  (x, y) => typ_tensora)
+# mpo_main --->  pattern_main_mpo
 
 
 function projectors(network::PEPSNetwork, vertex::NTuple{2, Int})

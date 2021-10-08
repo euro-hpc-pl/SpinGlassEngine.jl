@@ -382,7 +382,8 @@ IdentityMps(peps::AbstractGibbsNetwork) = Mps(   ## change for pegazus
     if i > peps.nrows return IdentityMps(peps) end  
     ψ = mps(peps, i+1)
     W = mpo(peps, peps.mpo_main, i)
-    ψ0 = dot(W, ψ)
+    ψ0 = dot(W, ψ)   # dla rzadkosci nie mozemy tworzyc dot(W, ψ)
+    # jako initial guess mozemy probowac wykorzystac mpsy z innych temperatur
     println(" ROW = ", i)
     println(" AFTER DOT ")
     for kk in ψ0.sites
@@ -409,6 +410,7 @@ end
 end
 
 
+# move contractio to SGTensor ???
 @memoize Dict function right_env(peps::AbstractGibbsNetwork, i::Int, ∂v::Vector{Int}) 
     l = length(∂v)
     if l == 0 return ones(1, 1) end
@@ -427,7 +429,7 @@ end
     ls = _left_nbrs_site(site, W.sites)
 
     while ls > ls_mps
-        M0 = W[ls][0]
+        M0 = W[ls][0]  ## struktura danych w mpo ???
         @tensor RR[x, y] := M0[y, z] * RR[x, z]
         ls = _left_nbrs_site(ls, W.sites)
     end

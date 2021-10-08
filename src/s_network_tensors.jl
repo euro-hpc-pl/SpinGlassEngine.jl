@@ -411,12 +411,24 @@ end
     M̃ = W[site]
     M = ϕ[site]
 
+    println("Update_env_right")
+    println("Size M ", size(M))
+    println("Size R̃ ", size(R̃))
+
+
     RR = _update_reduced_env_right(R̃, ∂v[1], M̃, M)
+
+    println("Size RR ", size(RR))
+
     ls_mps = _left_nbrs_site(site, ϕ.sites)
     ls = _left_nbrs_site(site, W.sites)
 
+    println("ls_mps ", ls_mps)
+    println("ls ", ls)
+
     while ls > ls_mps
-        M = W[ls]
+        M0 = W[ls][0]
+        println("size M ", size(M0))
         @tensor RR[x, y] := M0[y, z] * RR[x, z]
         ls = _left_nbrs_site(ls, W.sites)
     end

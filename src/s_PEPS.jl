@@ -75,7 +75,10 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         for i ∈ 1:ncols - 1 push!(_mpo_main, i + 1//2 => (0,)) end  # consier changing (0,) to 0
 
         _mpo_dress = Dict(i => (3//6, 4//6) for i ∈ 1:ncols)
-        _mpo_right = Dict(i => (-3//6, 0) for i ∈ 1:ncols)
+
+        _mpo_right = Dict()
+        for i ∈ 1:ncols push!(_mpo_right, i => (-3//6, 0)) end
+        for i ∈ 1:ncols - 1 push!(_mpo_right, i + 1//2 => (0,)) end  # consier changing (0,) to 0
 
         network = new(factor_graph, ng, vmap, m, n, nrows, ncols, β, bond_dim,
                       var_tol, sweeps, _types, _gauges, _tensor_spiecies,
@@ -105,14 +108,13 @@ node_from_index(peps::AbstractGibbsNetwork, index::Int) =
 
 function boundary(peps::PEPSNetwork, node::NTuple{2, Int})
     i, j = node
-    x = (-4, -2)
     vcat(
         [
-            [(x, x), ((i, k), (i+1, k))] for k ∈ 1:j-1
+            ((i, k), (i+1, k)) for k ∈ 1:j-1
         ]...,
-            (x, x), ((i, j-1), (i, j)),
+            ((i, j-1), (i, j)),
         [
-            [(x, x), ((i-1, k), (i, k))] for k ∈ j:peps.ncols
+            ((i-1, k), (i, k)) for k ∈ j:peps.ncols
         ]...
     )
 end
@@ -122,17 +124,23 @@ function conditional_probability(peps::PEPSNetwork, w::Vector{Int})
     i, j = node_from_index(peps, length(w)+1)
     ∂v = boundary_state(peps, w, (i, j))
 
-    L = left_env(peps, i, ∂v[1:2*j-1])
-    R = right_env(peps, i, ∂v[2*j+3 : 2*peps.ncols+2])
-    A = reduced_site_tensor(peps, (i, j), ∂v[2*j], ∂v[2*j+2])
+    L = left_env(peps, i, ∂v[1:j-1])
+    R = right_env(peps, i, ∂v[j+2 : peps.ncols+1])
+    A = reduced_site_tensor(peps, (i, j), ∂v[j], ∂v[j+1])
 
     ψ = dressed_mps(peps, i)
-    M = ψ[2 * j]
+    M = ψ.tensors[j]
+
+    println("Position", i, " ", j)
+    println("Size M ", size(M))
+    println("Size L ", size(L))
+    println("Size R ", size(R))
+    println("Size A ", size(A))
 
     @tensor prob[σ] := L[x] * M[x, d, y] * A[r, d, σ] *
                        R[y, r] order = (x, d, r, y)
 
-    normalize_probability(peps, prob)
+    normalize_probability(prob)
 end
 
 

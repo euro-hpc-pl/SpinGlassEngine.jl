@@ -131,12 +131,6 @@ function conditional_probability(peps::PEPSNetwork, w::Vector{Int})
     ψ = dressed_mps(peps, i)
     M = ψ.tensors[j]
 
-    println("Position", i, " ", j)
-    println("Size M ", size(M))
-    println("Size L ", size(L))
-    println("Size R ", size(R))
-    println("Size A ", size(A))
-
     @tensor prob[σ] := L[x] * M[x, d, y] * A[r, d, σ] *
                        R[y, r] order = (x, d, r, y)
 

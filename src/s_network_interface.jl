@@ -186,7 +186,7 @@ function update_gauges!(
     type::Symbol=:rand
 ) where {S, T}
     @assert type ∈ (:id, :rand)
-    for i ∈ 1:network.nrows-1, k ∈ 1:1//2:network.ncols
+    for i ∈ 1:network.nrows-1, k ∈ 1//2 : 1//2 : network.ncols
         j = denominator(k) == 1 ? numerator(k) : k
         u, d = tensor_size(network, (i+1//2, j))
         Y = type == :id ? ones(u) : rand(u) .+ 0.42

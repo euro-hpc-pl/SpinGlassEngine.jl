@@ -373,10 +373,18 @@ end
 end
 
 
-IdentityMps(peps::AbstractGibbsNetwork) = Mps(   ## change for pegazus
+IdentityMps(peps::PEPSNetwork) = Mps(   ## change for pegazus
     Dict(j => ones(1, 1, 1) for j ∈ 1:peps.ncols)
-) 
+)
 
+function IdentityMps(peps::FusedNetwork)
+    id = Dict()
+    for i ∈ 1//2 : 1//2 : peps.ncols
+        ii = denominator(i) == 1 ? numerator(i) : i
+        push!(id, ii => ones(1, 1, 1))
+    end
+    Mps(id)
+end
 
 @memoize function mps(peps::AbstractGibbsNetwork, i::Int) where {T <: Number}
     if i > peps.nrows return IdentityMps(peps) end  
@@ -384,21 +392,16 @@ IdentityMps(peps::AbstractGibbsNetwork) = Mps(   ## change for pegazus
     W = mpo(peps, peps.mpo_main, i)
     ψ0 = dot(W, ψ)   # dla rzadkosci nie mozemy tworzyc dot(W, ψ)
     # jako initial guess mozemy probowac wykorzystac mpsy z innych temperatur
-    println(" ROW = ", i)
-    println(" AFTER DOT ")
-    for kk in ψ0.sites
-        println(kk, " ", size(ψ0.tensors[kk]))
-    end
+
     truncate!(ψ0, :left, peps.bond_dim)
-    println(" AFTER TRUNCATE ")
-    for kk in ψ0.sites
-        println(kk, " ", size(ψ0.tensors[kk]))
-    end
+    println("=============================")
+    println("ROW = ", i)
+    println("psi sites", ψ.sites)
+    println("psi0 sites", ψ0.sites)
+    println("mpo sites", W.sites)
     compress!(ψ0, W, ψ, peps.bond_dim, peps.var_tol, peps.sweeps) 
-    println(" AFTER COMPRESS ")
-    for kk in ψ0.sites
-        println(kk, " ", size(ψ0.tensors[kk]))
-    end
+    println("psi0 sites", ψ0.sites)
+    println("=============================")
     ψ0
 end
 
@@ -453,7 +456,8 @@ end
     L̃ = left_env(peps, i, ∂v[1:l-1])
     ϕ = dressed_mps(peps, i)
     m = ∂v[l]
-    M = ϕ[l]
+    site = ϕ.sites[l]
+    M = ϕ[site]
     @matmul L[x] := sum(α) L̃[α] * M[α, $m, x]
     L
 end

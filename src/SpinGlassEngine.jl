@@ -25,7 +25,7 @@ include("network_operations.jl")
 include("network_interface.jl")
 include("MPS_search.jl")
 include("s_PEPS.jl")
-include("PEPS_fused.jl")
+include("s_PEPS_fused.jl")
 include("s_network_tensors.jl")
 include("search.jl")
 

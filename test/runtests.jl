@@ -49,11 +49,11 @@ push!(my_tests,
         "ising_MPS.jl",
         "search_MPS.jl",
         "search_chimera.jl",
-        "search_cross.jl",
         "network_tensors.jl",
         "compressions.jl" =#
-        "search_full_chimera.jl",
-        "search_chimera.jl",
+        #"search_full_chimera.jl",
+        #"search_chimera.jl",
+        "search_cross.jl",
         #"canonise.jl"
 )
 

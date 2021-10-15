@@ -12,17 +12,55 @@ function peps_lattice(m::Int, n::Int)
 end
 
 
-struct Contraction
-    bond_dim::Int
-    var_tol::Real
-    sweeps::Int
+struct ChimeraTensors
+    nrows::Int
+    ncols::Int
+    map::Dict
+
+    function ChimeraTensors(n::Int, m::Int, map::Dict=Dict())
+        ct = new(nrows, ncols)
+        for i ∈ 1:nrows, j ∈ 1:ncols
+            push!(ct.map, (i, j) => :site)
+            push!(ct.map, (i, j + 1//2) => :central_h)
+            push!(ct.map, (i, j + 1//2) => :central_v)
+        end
+        for i ∈ 1:nrows-1, j ∈ 1:ncols
+            push!(ct.map, (i + 4//6, j) => :gauge_h)
+            push!(ct.map, (i + 5//6, j) => :gauge_h)
+        end
+    end
 end
 
 
 struct MpoLayers
+    ncols::Int
     main::Dict
     dress::Dict
     right::Dict
+
+    function MpoLayers(
+        ncols::Int, 
+        main::Dict=Dict(), 
+        dress::Dict=Dict(), 
+        right::Dict=Dict()
+    )
+        ml = new(ncols)
+        
+        for i ∈ 1:ncols push!(ml.main, i => (-1//6, 0, 3//6, 4//6)) end
+        for i ∈ 1:ncols - 1 push!(ml.main, i + 1//2 => (0,)) end  
+
+        ml.dress = Dict(i => (3//6, 4//6) for i ∈ 1:ncols)
+
+        for i ∈ 1:ncols push!(ml.right, i => (-3//6, 0)) end
+        for i ∈ 1:ncols - 1 push!(ml.right, i + 1//2 => (0,)) end  
+    end
+end
+
+
+struct Contraction
+    bond_dim::Int
+    var_tol::Real
+    sweeps::Int
 end
 
 
@@ -65,8 +103,6 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
             throw(ArgumentError("Factor graph not compatible with given network."))
         end
 
-        #_types = (:site, :central_h, :central_v, :gauge_h)
-        _gauges = Dict()
         _tensors_map = Dict()
         for i ∈ 1:nrows, j ∈ 1:ncols
             push!(_tensors_map, (i, j) => :site)
@@ -90,6 +126,8 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         _mpo_right = Dict()
         for i ∈ 1:ncols push!(_mpo_right, i => (-3//6, 0)) end
         for i ∈ 1:ncols - 1 push!(_mpo_right, i + 1//2 => (0,)) end  # consier changing (0,) to 0
+
+        _gauges = Dict()
 
         network = new(factor_graph, ng, vmap, m, n, nrows, ncols, β, bond_dim,
                       var_tol, sweeps, _gauges, _tensors_map,

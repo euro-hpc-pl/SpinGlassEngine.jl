@@ -315,16 +315,8 @@ end
     W = mpo(peps, peps.mpo_main, i)
     ψ0 = dot(W, ψ)   # dla rzadkosci nie mozemy tworzyc dot(W, ψ)
     # jako initial guess mozemy probowac wykorzystac mpsy z innych temperatur
-
     truncate!(ψ0, :left, peps.bond_dim)
-    println("=============================")
-    println("ROW = ", i)
-    println("psi sites", ψ.sites)
-    println("psi0 sites", ψ0.sites)
-    println("mpo sites", W.sites)
     compress!(ψ0, W, ψ, peps.bond_dim, peps.var_tol, peps.sweeps) 
-    println("psi0 sites", ψ0.sites)
-    println("=============================")
     ψ0
 end
 

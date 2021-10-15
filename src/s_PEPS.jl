@@ -1,6 +1,5 @@
 export 
     PEPSNetwork, 
-    generate_boundary, 
     node_from_index, 
     conditional_probability
 
@@ -88,26 +87,21 @@ struct _PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         gauges::Dict=Dict() 
     )
         vmap = vertex_map(transformation, m, n)
-        ng = peps_lattice(m, n)
+        network_graph = peps_lattice(m, n)
         nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
 
-        if !is_compatible(factor_graph, ng)
+        if !is_compatible(factor_graph, network_graph)
             throw(ArgumentError("Factor graph not compatible with given network."))
         end
 
-        net = new(
-            factor_graph,
-            ng,
-            vmap, 
-            m, n, 
-            nrows, 
-            ncols, 
-            β, 
-            ChimeraTensors(nrows, ncols),
-            MpoLayers(ncols)
-        )
+        net = new(factor_graph, network_graph, vmap, m, n, nrows, ncols, β)
 
+        net.gauges = gauges
+        net.contraction_parmas = contraction_parmas
+        net.tensors_map = ChimeraTensors(nrows, ncols)
+        net.mpo_layers = MpoLayers(ncols)
         update_gauges!(net, :id)
+
         net
     end
 end

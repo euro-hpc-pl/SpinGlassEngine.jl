@@ -62,7 +62,7 @@ tensor_assignment(
     network::FusedNetwork,
     ::Val{:virtual} 
 ) = Dict(
-    (i, j + 1//2) => :virtual for i ∈ 1:network.nrows, j ∈ 1:network.ncols-1
+    (i, j + 1//2) => :virtual for i ∈ 1:network.nrows, j ∈ 0:network.ncols-1
 )
 
 

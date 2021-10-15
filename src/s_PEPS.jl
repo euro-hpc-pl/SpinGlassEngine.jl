@@ -40,7 +40,6 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     var_tol::Real
     sweeps::Int
     #
-    tensor_types
     gauges
     tensor_spiecies
     #
@@ -66,9 +65,18 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
             throw(ArgumentError("Factor graph not compatible with given network."))
         end
 
-        _types = (:site, :central_h, :central_v, :gauge_h)
+        #_types = (:site, :central_h, :central_v, :gauge_h)
         _gauges = Dict()
-        _tensor_spiecies = Dict()
+        _tensor_map = Dict()
+        for i ∈ 1:nrows, j ∈ 1:ncols
+            push!(_tensor_map, (i, j) => :site)
+            push!(_tensor_map, (i, j + 1//2) => :central_h)
+            push!(_tensor_map, (i + 1//2, j) => :central_v)
+        end
+        for i ∈ 1:nrows-1, j ∈ 1:ncols
+            push!(_tensor_map, (i + 4//6, j) => :gauge_h)
+            push!(_tensor_map, (i + 5//6, j) => :gauge_h)
+        end
 
         _mpo_main = Dict()
         for i ∈ 1:ncols push!(_mpo_main, i => (-1//6, 0, 3//6, 4//6)) end
@@ -84,10 +92,9 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         for i ∈ 1:ncols - 1 push!(_mpo_right, i + 1//2 => (0,)) end  # consier changing (0,) to 0
 
         network = new(factor_graph, ng, vmap, m, n, nrows, ncols, β, bond_dim,
-                      var_tol, sweeps, _types, _gauges, _tensor_spiecies,
+                      var_tol, sweeps, _gauges, _tensor_map,
                       _mpo_main, _mpo_dress, _mpo_right
                 )
-        tensor_species_map!(network, network.tensor_types)
         update_gauges!(network, :id)
         network
     end

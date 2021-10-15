@@ -45,7 +45,7 @@ struct MpoLayers
         right::Dict=Dict()
     )
         ml = new(ncols)
-        
+
         for i ∈ 1:ncols push!(ml.main, i => (-1//6, 0, 3//6, 4//6)) end
         for i ∈ 1:ncols - 1 push!(ml.main, i + 1//2 => (0,)) end  
 
@@ -61,6 +61,55 @@ struct Contraction
     bond_dim::Int
     var_tol::Real
     sweeps::Int
+end
+
+
+struct _PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
+    factor_graph::LabelledGraph{T, NTuple{2, Int}} where T
+    network_graph::LabelledGraph{S, NTuple{2, Int}} where S
+    vertex_map::Function
+    m::Int
+    n::Int
+    nrows::Int
+    ncols::Int
+    β::Real
+    contraction_parmas::Contraction
+    chimera_tensors::ChimeraTensors
+    mpo_layers::MpoLayers
+    gauges
+
+    function _PEPSNetwork(
+        m::Int,
+        n::Int,
+        factor_graph::LabelledGraph,
+        transformation::LatticeTransformation;
+        β::Real,
+        contraction_parmas::Contraction=Contraction(typemax(Int), 1E-8, 4)
+    )
+        vmap = vertex_map(transformation, m, n)
+        ng = peps_lattice(m, n)
+        nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
+
+        if !is_compatible(factor_graph, ng)
+            throw(ArgumentError("Factor graph not compatible with given network."))
+        end
+
+        network = new(
+            factor_graph,
+            ng,
+            vmap, 
+            m, n, 
+            nrows, 
+            ncols, 
+            β, 
+            ChimeraTensors(nrows, ncols),
+            MpoLayers(ncols),
+            Dict()
+        )
+
+        update_gauges!(network, :id)
+        network
+    end
 end
 
 
@@ -137,10 +186,6 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         network
     end
 end
-
-
-# network_map = Dict(  (x, y) => typ_tensora)
-# mpo_main --->  pattern_main_mpo
 
 
 function projectors(network::PEPSNetwork, vertex::NTuple{2, Int})

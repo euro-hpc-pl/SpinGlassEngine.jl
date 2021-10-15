@@ -52,8 +52,8 @@ push!(my_tests,
         "network_tensors.jl",
         "compressions.jl" =#
         #"search_full_chimera.jl",
-        "search_chimera.jl",
-        #"search_cross.jl",
+        #"search_chimera.jl",
+        "search_cross.jl",
         #"canonise.jl"
 )
 

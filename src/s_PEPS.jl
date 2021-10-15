@@ -74,9 +74,9 @@ struct _PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     ncols::Int
     β::Real
     contraction_parmas::Contraction
-    chimera_tensors::ChimeraTensors
+    tensors_map::ChimeraTensors
     mpo_layers::MpoLayers
-    gauges
+    gauges::Dict
 
     function _PEPSNetwork(
         m::Int,
@@ -84,7 +84,8 @@ struct _PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         factor_graph::LabelledGraph,
         transformation::LatticeTransformation;
         β::Real,
-        contraction_parmas::Contraction=Contraction(typemax(Int), 1E-8, 4)
+        contraction_parmas::Contraction=Contraction(typemax(Int), 1E-8, 4),
+        gauges::Dict=Dict() 
     )
         vmap = vertex_map(transformation, m, n)
         ng = peps_lattice(m, n)
@@ -94,7 +95,7 @@ struct _PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
             throw(ArgumentError("Factor graph not compatible with given network."))
         end
 
-        network = new(
+        net = new(
             factor_graph,
             ng,
             vmap, 
@@ -103,12 +104,11 @@ struct _PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
             ncols, 
             β, 
             ChimeraTensors(nrows, ncols),
-            MpoLayers(ncols),
-            Dict()
+            MpoLayers(ncols)
         )
 
-        update_gauges!(network, :id)
-        network
+        update_gauges!(net, :id)
+        net
     end
 end
 

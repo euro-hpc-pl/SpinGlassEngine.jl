@@ -41,7 +41,7 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     sweeps::Int
     #
     gauges
-    tensor_spiecies
+    tensors_map
     #
     mpo_main::Dict
     mpo_dress::Dict
@@ -67,15 +67,15 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
 
         #_types = (:site, :central_h, :central_v, :gauge_h)
         _gauges = Dict()
-        _tensor_map = Dict()
+        _tensors_map = Dict()
         for i ∈ 1:nrows, j ∈ 1:ncols
-            push!(_tensor_map, (i, j) => :site)
-            push!(_tensor_map, (i, j + 1//2) => :central_h)
-            push!(_tensor_map, (i + 1//2, j) => :central_v)
+            push!(_tensors_map, (i, j) => :site)
+            push!(_tensors_map, (i, j + 1//2) => :central_h)
+            push!(_tensors_map, (i + 1//2, j) => :central_v)
         end
         for i ∈ 1:nrows-1, j ∈ 1:ncols
-            push!(_tensor_map, (i + 4//6, j) => :gauge_h)
-            push!(_tensor_map, (i + 5//6, j) => :gauge_h)
+            push!(_tensors_map, (i + 4//6, j) => :gauge_h)
+            push!(_tensors_map, (i + 5//6, j) => :gauge_h)
         end
 
         _mpo_main = Dict()
@@ -92,7 +92,7 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         for i ∈ 1:ncols - 1 push!(_mpo_right, i + 1//2 => (0,)) end  # consier changing (0,) to 0
 
         network = new(factor_graph, ng, vmap, m, n, nrows, ncols, β, bond_dim,
-                      var_tol, sweeps, _gauges, _tensor_map,
+                      var_tol, sweeps, _gauges, _tensors_map,
                       _mpo_main, _mpo_dress, _mpo_right
                 )
         update_gauges!(network, :id)

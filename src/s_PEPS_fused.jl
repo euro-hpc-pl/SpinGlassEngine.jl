@@ -30,9 +30,8 @@ struct FusedNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     var_tol::Real
     sweeps::Int
     #
-    tensor_types
     gauges
-    tensor_spiecies
+    tensors_map
     #
     mpo_main::Dict
     mpo_dress::Dict
@@ -56,9 +55,21 @@ struct FusedNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         throw(ArgumentError("Factor graph not compatible with given network."))
     end
 
-    _types = (:site, :central_h, :central_v, :virtual, :central_d, :gauge_h)
     _gauges = Dict()
-    _tensor_spiecies = Dict()
+    _tensors_map = Dict()
+    for i ∈ 1:nrows, j ∈ 1:ncols
+        push!(_tensors_map, (i, j) => :site)
+        push!(_tensors_map, (i, j - 1//2) => :virtual)
+        push!(_tensors_map, (i + 1//2, j) => :central_v)
+    end
+    for i ∈ 1:nrows-1, j ∈ 0:ncols-1
+        push!(_tensors_map, (i + 1//2, j + 1//2) => :central_d)
+    end
+    for i ∈ 1 : nrows - 1, j ∈ 1//2 : 1//2 : ncols
+        jj = denominator(j) == 1 ? numerator(j) : j
+        push!(_tensors_map, (i + 4//6, jj) => :gauge_h)
+        push!(_tensors_map, (i + 5//6, jj) => :gauge_h)
+    end
 
     _mpo_main = Dict()
     _mpo_right = Dict()
@@ -71,10 +82,9 @@ struct FusedNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     end
 
     network = new(factor_graph, ng, vmap, m, n, nrows, ncols, β, bond_dim,
-                  var_tol, sweeps, _types, _gauges, _tensor_spiecies,
+                  var_tol, sweeps, _gauges, _tensors_map,
                   _mpo_main, _mpo_dress, _mpo_right
             )
-    tensor_species_map!(network, network.tensor_types)
     update_gauges!(network, :id)
     network
     end
@@ -99,18 +109,10 @@ function boundary(peps::FusedNetwork, node::NTuple{2, Int})
         [
             [((i, k-1), (i+1, k), (i, k), (i+1, k-1)), ((i, k), (i+1, k))] for k ∈ 1:j-1
         ]...,
-        (
-            (i, j-1), (i+1, j)
-        ),
-        (
-            (i, j-1), (i, j)
-        ),
-        (
-            (i-1, j-1), (i, j)
-        ),
-        (
-            (i-1, j), (i, j)
-        ),
+        ((i, j-1), (i+1, j)),
+        ((i, j-1), (i, j)),
+        ((i-1, j-1), (i, j)),
+        ((i-1, j), (i, j)),
         [
             [((i-1, k-1), (i, k), (i-1, k), (i, k-1)), ((i-1, k), (i, k))] for k ∈ j+1:peps.ncols
         ]...

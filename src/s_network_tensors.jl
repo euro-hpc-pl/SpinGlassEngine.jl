@@ -1,6 +1,4 @@
 export
-    tensor_assignment,
-    tensor_species_map!,
     reduced_site_tensor,
     tensor_size,
     tensor,
@@ -10,87 +8,12 @@ export
     mpo, mps 
 
 
-#TODO : organize this into structures
-
-tensor_assignment(
-    network::AbstractGibbsNetwork{S, T},
-    s::Symbol
-) where {S, T} = tensor_assignment(network, Val(s))
-
-
-tensor_assignment(
-    network::AbstractGibbsNetwork{S, T},
-    ::Val{:site} 
-) where {S, T} = Dict(
-    (i, j) => :site for i ∈ 1:network.nrows, j ∈ 1:network.ncols
-)
-
-
-tensor_assignment(
-    network::AbstractGibbsNetwork{S, T},
-    ::Val{:central_h} 
-) where {S, T} = Dict(
-    (i, j + 1//2) => :central_h for i ∈ 1:network.nrows, j ∈ 1:network.ncols
-)
-
- 
-tensor_assignment(
-    network::AbstractGibbsNetwork{S, T},
-    ::Val{:central_v} 
-) where {S, T} = Dict(
-    (i + 1//2, j) => :central_v for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols
-)
-
-
-tensor_assignment(
-    network::PEPSNetwork,
-    ::Val{:gauge_h} 
-) = Dict((i + δ, j) => :gauge_h 
-    for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols, δ ∈ (1//6, 2//6, 4//6, 5//6)
-)
-
-
-tensor_assignment(
-    network::FusedNetwork,
-    ::Val{:gauge_h} 
-) = Dict((i + δ, r) => :gauge_h 
-    for i ∈ 1:network.nrows-1, r ∈ 1:1//2:network.ncols, δ ∈ (1//6, 2//6, 4//6, 5//6)
-)
-
-
-tensor_assignment(
-    network::FusedNetwork,
-    ::Val{:virtual} 
-) = Dict(
-    (i, j + 1//2) => :virtual for i ∈ 1:network.nrows, j ∈ 0:network.ncols-1
-)
-
-
-tensor_assignment(
-    network::FusedNetwork,
-    ::Val{:central_d} 
-) = Dict(
-    (i + 1//2, j + 1//2) => :central_d for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols-1
-)
-
-
-
-function tensor_species_map!(
-    network::AbstractGibbsNetwork{S, T}, 
-    tensor_types::NTuple{N, Symbol}
-) where {S, T, N}
-    for type ∈ tensor_types
-        push!(network.tensor_spiecies, tensor_assignment(network, type)...)
-    end
-end
-
-
 function tensor(
     network::AbstractGibbsNetwork{S, T},
     v::R
 ) where {S, T, R}
-    if v ∈ keys(network.tensor_spiecies)
-        tensor(network, v, Val(network.tensor_spiecies[v]))
+    if v ∈ keys(network.tensors_map)
+        tensor(network, v, Val(network.tensors_map[v]))
     else
         ones(1, 1)
     end
@@ -101,8 +24,8 @@ function tensor_size(
     network::AbstractGibbsNetwork{S, T}, 
     v::R
 ) where {S, T, R}
-    if v ∈ keys(network.tensor_spiecies)
-        tensor_size(network, v, Val(network.tensor_spiecies[v]))
+    if v ∈ keys(network.tensors_map)
+        tensor_size(network, v, Val(network.tensors_map[v]))
     else
         (1, 1)
     end
@@ -222,7 +145,7 @@ function _all_fused_projectors(
     right_nbrs = ((i+1, j), (i, j), (i-1, j))
     prr = projector.(Ref(network), Ref((i, j+1)), right_nbrs)
     p_rb, p_r, p_rt = last(fuse_projectors(prr))
-                
+
     p_lb, p_l, p_lt, p_rb, p_r, p_rt
 end
 
@@ -365,7 +288,7 @@ end
     W = Dict()
     # Threads.@threads for (j, coor) ∈ layers
     for (j, coor) ∈ layers
-        push!(W, 
+        push!(W,
             j => Dict(dr => tensor(peps, (r + dr, j)) for dr ∈ coor)
         )
     end
@@ -407,7 +330,7 @@ end
 
 
 @memoize Dict function dressed_mps(peps::AbstractGibbsNetwork, i::Int)
-    ψ = mps(peps, i+1) 
+    ψ = mps(peps, i+1)
     W = mpo(peps, peps.mpo_dress, i)
     W * ψ
 end

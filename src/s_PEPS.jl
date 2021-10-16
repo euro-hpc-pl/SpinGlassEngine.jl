@@ -94,9 +94,8 @@ struct _PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
             throw(ArgumentError("Factor graph not compatible with given network."))
         end
 
-        net = new(factor_graph, network_graph, vmap, m, n, nrows, ncols, β)
+        net = new(factor_graph, network_graph, vmap, m, n, nrows, ncols, β, gauges)
 
-        net.gauges = gauges
         net.contraction_parmas = contraction_parmas
         net.tensors_map = ChimeraTensors(nrows, ncols)
         net.mpo_layers = MpoLayers(ncols)

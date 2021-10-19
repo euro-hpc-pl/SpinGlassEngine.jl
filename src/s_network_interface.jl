@@ -54,9 +54,11 @@ function projector(
     fg_v, fg_w = vmap(v), vmap(w)
     
     if has_edge(fg, fg_w, fg_v)
-        get_prop(fg, fg_w, fg_v, :pr)'
+        P = get_prop(fg, fg_w, fg_v, :pr)#'
+        decode_projector(P, :EP)'
     elseif has_edge(fg, fg_v, fg_w)
-        get_prop(fg, fg_v, fg_w, :pl)
+        P = get_prop(fg, fg_v, fg_w, :pl)
+        decode_projector(P, :PE)
     else
         loc_dim = fg_v ∈ vertices(fg) ? length(local_energy(network, v)) : 1 
         ones(loc_dim, 1)
@@ -77,6 +79,7 @@ end
 
 function fuse_projectors(projectors::Union{Vector{T}, NTuple{N, T}}) where {N, T}
     fused, energy = rank_reveal(hcat(projectors...), :PE)
+    fused = decode_projector(fused)
     i₀ = 1
     transitions = []
     for proj ∈ projectors

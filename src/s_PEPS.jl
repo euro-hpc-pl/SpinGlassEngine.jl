@@ -3,6 +3,9 @@ export
     node_from_index, 
     conditional_probability
 
+
+struct AbstractTensors end
+
 #TODO : organize this into structures
 
 function peps_lattice(m::Int, n::Int)
@@ -11,6 +14,7 @@ function peps_lattice(m::Int, n::Int)
 end
 
 
+#=
 struct SquareGeometry
     nrows::Int
     ncols::Int
@@ -26,7 +30,8 @@ struct SquareGeometry
         end
     end
 end
-
+=#
+#=
 struct SquareGeometry_sparse
     nrows::Int
     ncols::Int
@@ -41,7 +46,7 @@ struct SquareGeometry_sparse
         end
     end
 end
-
+=#
 #=
 struct Chimera_contraction_strategy_no_1  #zwezanie przy pomocy boundary mps
     ncols::Int
@@ -119,13 +124,13 @@ for i ∈ 1:nrows-1, j ∈ 1:ncols
 
 
 
-
+#=
 struct DiagonalGeometry{sparsity::Bool}
     nrows::Int
     ncols::Int
     map::Dict
 
-    function DiagonalGeometry(n::Int, m::Int, map::Dict=Dict())
+    function DiagonalGeometry{sparsity}(n::Int, m::Int, map::Dict=Dict())
         ct = new(nrows, ncols)
         site_type = sparsity ? :site_sparse : :site
         virtual_type = sparsity ? :virtual_sparse : :virtual
@@ -140,7 +145,7 @@ struct DiagonalGeometry{sparsity::Bool}
         end
     end
 end
-
+=#
 
 
 
@@ -182,7 +187,8 @@ struct Contraction
 end
 
 
-struct _PEPSNetwork{network_layout} # ROBI: pozwala wygenerowac tensor ze wzgledu na wspolrzedne w tensor_map i podany parametr beta
+struct _PEPSNetwork{network_layout} 
+    # ROBI: pozwala wygenerowac tensor ze wzgledu na wspolrzedne w tensor_map i podany parametr beta
     factor_graph::LabelledGraph{T, NTuple{2, Int}} where T
     network_graph::LabelledGraph{S, NTuple{2, Int}} where S
     vertex_map::Function
@@ -193,7 +199,7 @@ struct _PEPSNetwork{network_layout} # ROBI: pozwala wygenerowac tensor ze wzgled
     tensors_map::AbstractTensors
     gauges::Dict
 
-    function _PEPSNetwork(
+    function _PEPSNetwork{network_layout}(
         m::Int,
         n::Int,
         factor_graph::LabelledGraph,
@@ -213,11 +219,13 @@ struct _PEPSNetwork{network_layout} # ROBI: pozwala wygenerowac tensor ze wzgled
         initialize_gauges(net, :id)
 
         net
+    end
 end
+
 # moze sie zmienic gauge
 # β::Real jako parametr w generacji tensora
 
-struct MpsContractor::AbstractContractor
+struct MpsContractor <: AbstractContractor
     peps::_PEPSNetwork
     MpoLayers
     betas::Real
@@ -244,17 +252,17 @@ end
 
 
 function optimize_gauges(temp::MpsContractor)
-    for beta in betas
+    #for beta in betas
     
     # 1) psi_bottom =  mps  ;  psi_top = mps ( :top)
     # 2) bazujac na psi_bottom i psi_top zmienia gauge
     #    sweep left and right
         
 
-    end
+    #end
 end
 
-
+#=
 struct _PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     factor_graph::LabelledGraph{T, NTuple{2, Int}} where T
     network_graph::LabelledGraph{S, NTuple{2, Int}} where S
@@ -296,7 +304,7 @@ struct _PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
         net
     end
 end
-
+=#
 
 struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     factor_graph::LabelledGraph{T, NTuple{2, Int}} where T

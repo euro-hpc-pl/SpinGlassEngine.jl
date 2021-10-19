@@ -80,4 +80,20 @@
     end
 end
 
+#= 
 
+type of network (chimera lub pegaz, ewentualnie informacja )
+
+
+contraction_strategy 
+(beta_target; 
+rozne sposoby odpalenia compress w mps;  (svd, lub initial guess dla roznych beta) lub nawet wyjscie na ctm
+)
+
+
+
+for transform ∈ all_lattice_transformations
+    peps = PEPSNetwork(m, n, fg, transform, β=β)
+    optimize_gauges!(peps, optimization_parameters or strategy)
+    sol = low_energy_spectrum(peps, num_states)
+end

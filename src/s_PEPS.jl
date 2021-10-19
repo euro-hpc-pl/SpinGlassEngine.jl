@@ -237,14 +237,10 @@ function bond_energy(
     fg_u, fg_v = network.vertex_map(u), network.vertex_map(v)
     if has_edge(network.factor_graph, fg_u, fg_v)
         pu, en, pv = get_prop.(Ref(network.factor_graph), Ref(fg_u), Ref(fg_v), (:pl, :en, :pr))
-        pu = decode_projector(pu)
-        pv = decode_projector(pv, :EP)
-        energies = (pu * (en * pv[:, σ:σ]))'
+        energies = en[pu, pv[σ:σ, :]]
     elseif has_edge(network.factor_graph, fg_v, fg_u)
         pv, en, pu = get_prop.(Ref(network.factor_graph), Ref(fg_v), Ref(fg_u), (:pl, :en, :pr))
-        pu = decode_projector(pu, :EP)
-        pv = decode_projector(pv)
-        energies = (pv[σ:σ, :] * en) * pu
+        energies = en[pv[σ:σ, :], pu]
     else
         energies = zeros(length(local_energy(network, u)))
     end

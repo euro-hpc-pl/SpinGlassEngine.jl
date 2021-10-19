@@ -20,6 +20,7 @@ struct SquareGeometry
         ct = new(nrows, ncols)
         for i ∈ 1:nrows, j ∈ 1:ncols
             push!(ct.map, (i, j) => :site)
+            # why if?
             if j < ncols push!(ct.map, (i, j + 1//2) => :central_h) end
             if i < nrows push!(ct.map, (i + 1//2, j) => :central_v) end
         end
@@ -119,7 +120,7 @@ for i ∈ 1:nrows-1, j ∈ 1:ncols
 
 
 
-struct DiagonalGeometry(sparsity::bool)
+struct DiagonalGeometry{sparsity::Bool}
     nrows::Int
     ncols::Int
     map::Dict
@@ -130,12 +131,12 @@ struct DiagonalGeometry(sparsity::bool)
         virtual_type = sparsity ? :virtual_sparse : :virtual
 
         for i ∈ 1:nrows, j ∈ 1:ncols
-            push!(_tensors_map, (i, j) => site_type)
-            push!(_tensors_map, (i, j - 1//2) => :virtual_type)
-            push!(_tensors_map, (i + 1//2, j) => :central_v)
+            push!(ct.map, (i, j) => site_type)
+            push!(ct.map, (i, j - 1//2) => :virtual_type)
+            push!(ct.map, (i + 1//2, j) => :central_v)
         end
         for i ∈ 1:nrows-1, j ∈ 0:ncols-1
-            push!(_tensors_map, (i + 1//2, j + 1//2) => :central_d)
+            push!(ct.map, (i + 1//2, j + 1//2) => :central_d)
         end
     end
 end
@@ -216,19 +217,19 @@ end
 # moze sie zmienic gauge
 # β::Real jako parametr w generacji tensora
 
-struct mps_contractor::AbstractContractor
+struct MpsContractor::AbstractContractor
     peps::_PEPSNetwork
     MpoLayers
     betas::Real
     contraction_scheme # -- struktura ktora nam powie jak ograc compress
 end
 
-function conditional_probability(temp::mps_contractor, ii, jj)
+function conditional_probability(temp::MpsContractor, ii, jj)
     #wola mps
 end
 
 
-function mps(temp::mps_contractor, beta_index::Int)
+function mps(temp::MpsContractor, beta_index::Int)
     # wola mpo
     ## mps initial guess = mps(temp, beta_index-1) if beta_index > 1 else ....
     ## or
@@ -242,7 +243,7 @@ function mpo(layer::dict, beta::Real)
 end
 
 
-function optimize_gauges(temp::mps_contractor)
+function optimize_gauges(temp::MpsContractor)
     for beta in betas
     
     # 1) psi_bottom =  mps  ;  psi_top = mps ( :top)

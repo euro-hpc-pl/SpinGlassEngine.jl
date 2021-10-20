@@ -4,7 +4,7 @@ export FusedNetwork, boundary,
     projectors
 
     
-function cross_lattice(m::Int, n::Int)
+function cross_lattice(m::Int, n::Int)   # star lattice do sprawdzenia konsystencji fg
     labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
     lg = LabelledGraph(labels, grid((m, n)))
     for i ∈ 1:m-1, j ∈ 1:n-1
@@ -91,7 +91,7 @@ struct FusedNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
 end
 
 
-function projectors(network::FusedNetwork, vertex::NTuple{2, Int})
+function projectors(network::FusedNetwork, vertex::NTuple{2, Int})  # wspolne dla wszystkich stargeometry
     i, j = vertex
     neighbours = (
                     ((i+1, j-1), (i, j-1), (i-1, j-1)), 
@@ -102,9 +102,9 @@ function projectors(network::FusedNetwork, vertex::NTuple{2, Int})
     projector.(Ref(network), Ref(vertex), neighbours)
 end
 
-
-function boundary(peps::FusedNetwork, node::NTuple{2, Int})
-    i, j = node
+ 
+function boundary(peps::FusedNetwork, node::NTuple{2, Int})    # wspolne dla wszystkich stargeometry
+    i, j = node  # ale to jest zwiazane ze sposobem przeszukiwania
     vcat(
         [
             [((i, k-1), (i+1, k), (i, k), (i+1, k-1)), ((i, k), (i+1, k))] for k ∈ 1:j-1
@@ -120,7 +120,7 @@ function boundary(peps::FusedNetwork, node::NTuple{2, Int})
 end
 
 
-function conditional_probability(peps::FusedNetwork, w::Vector{Int})
+function conditional_probability(peps::FusedNetwork, w::Vector{Int})  # wspolne dla star geometry ale zwiazane z kolejnoscia przeszukiwania
     i, j = node_from_index(peps, length(w)+1)
     ∂v = boundary_state(peps, w, (i, j))
 
@@ -138,7 +138,7 @@ function conditional_probability(peps::FusedNetwork, w::Vector{Int})
 end
 
 
-function update_energy(network::FusedNetwork, σ::Vector{Int})
+function update_energy(network::FusedNetwork, σ::Vector{Int})  # wspolne dla star geometry ale zwiazane z kolejnoscia przeszukiwania
     i, j = node_from_index(network, length(σ)+1)
     bond_energy(network, (i, j), (i, j-1), local_state_for_node(network, σ, (i, j-1))) +
     bond_energy(network, (i, j), (i-1, j), local_state_for_node(network, σ, (i-1, j))) +

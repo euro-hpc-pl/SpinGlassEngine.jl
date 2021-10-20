@@ -22,6 +22,7 @@ function LinearAlgebra.dot(ψ::AbstractMPS, state::Union{Vector, NTuple})
 end
 
 include("network_operations.jl")
+include("geometry.jl")
 include("s_network_interface.jl")
 include("MPS_search.jl")
 include("s_PEPS.jl")

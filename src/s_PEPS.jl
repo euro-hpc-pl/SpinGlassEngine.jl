@@ -4,100 +4,41 @@ export
     conditional_probability
 
 
-    # :Square = Union(:Square1, :Square2, :Square3) [default Square1]
-    # :Star = Union(:Star1, :Star2, :Star3)
+abstract type AbstractContractor end
 
 
-    # struct GibbsNetwork{geometry}
-    #     factor_graph::LabelledGraph{T, NTuple{2, Int}} where T
-    #     network_graph::LabelledGraph{S, NTuple{2, Int}} where S  # jak do testu to nie trzymamy
-    #     vertex_map::Function
-    #     m::Int
-    #     n::Int
-    #     nrows::Int
-    #     ncols::Int
-    #     tensors_map
-    #     gauges
-    #     #
-
-    #     function GibbsNetwork{geometry}(
-    #         m::Int,
-    #         n::Int,
-    #         factor_graph::LabelledGraph,
-    #         transformation::LatticeTransformation;
-    #     )
-    #         vmap = vertex_map(transformation, m, n)
-    #         ng = network_lattice{geometry}(m, n)
-    #         nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
-
-    #         if !is_compatible(factor_graph, ng)
-    #             throw(ArgumentError("Factor graph not compatible with given network."))
-    #         end
-
-    #         tm = tensor_map{geometry}(nrows, ncols)
-    #         ga = initialize_gauges{geometry}(nrows, ncols)
-
-    #         network = new(factor_graph, ng, vmap, m, n, nrows, ncols, β, bond_dim,
-    #                       var_tol, sweeps, _gauges, _tensors_map,
-    #                       _mpo_main, _mpo_dress, _mpo_right
-    #                 )
-    #         network
-    #     end
-    # end
-
-    # function MPO_layers{geometry, nrows}
-    #  mpo_main, mpo_right_env, mpo_dressed
-    # end
-
-struct AbstractTensors end
-struct AbstractContractor end
-
-
-
-
-
-#TODO : organize this into structures
-
-function peps_lattice(m::Int, n::Int)  # siatka kwadratowa do przetestowania czy konsystentne z fg
-    labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
-    LabelledGraph(labels, grid((m, n)))
-end
-
-
-
-#=
-struct SquareGeometry
+struct GibbsNetwork{T <: AbstractGeometry}
+    factor_graph::LabelledGraph{S, NTuple{2, Int}} where S
+    vertex_map::Function
+    m::Int
+    n::Int
     nrows::Int
     ncols::Int
-    map::Dict
+    tensor_map::Dict
+    gauges::Dict
 
-    function SquareGeometry(n::Int, m::Int, map::Dict=Dict())
-        ct = new(nrows, ncols)
-        for i ∈ 1:nrows, j ∈ 1:ncols
-            push!(ct.map, (i, j) => :site)
-            # why if?
-            if j < ncols push!(ct.map, (i, j + 1//2) => :central_h) end
-            if i < nrows push!(ct.map, (i + 1//2, j) => :central_v) end
-        end5
-    end
-end
-=#
-#=
-struct SquareGeometry_sparse
-    nrows::Int
-    ncols::Int
-    map::Dict
+    function GibbsNetwork{T}(
+        m::Int,
+        n::Int,
+        factor_graph::LabelledGraph,
+        transformation::LatticeTransformation;
+    ) where T <: AbstractGeometry
 
-    function SquareGeometry(n::Int, m::Int, map::Dict=Dict())
-        ct = new(nrows, ncols)
-        for i ∈ 1:nrows, j ∈ 1:ncols
-            push!(ct.map, (i, j) => :site_sparse)
-            if j < ncols push!(ct.map, (i, j + 1//2) => :central_h) end
-            if i < nrows push!(ct.map, (i + 1//2, j) => :central_v) end
+        vmap = vertex_map(transformation, m, n)
+        nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
+
+        if !is_compatible(factor_graph, network_graph(T, m, n))
+            throw(ArgumentError("Factor graph not compatible with given network."))
         end
+
+        tm = tensor_map(T, nrows, ncols)
+        ga = initialize_gauges(T, nrows, ncols)
+
+        new(factor_graph, vmap, m, n, nrows, ncols, tm, ga)
     end
 end
-=#
+
+
 #=
 struct Chimera_contraction_strategy_no_1  #zwezanie przy pomocy boundary mps
     ncols::Int
@@ -123,16 +64,6 @@ struct Chimera_contraction_strategy_no_1  #zwezanie przy pomocy boundary mps
     end
 end
 
-dla square lattice
-for i ∈ 1:nrows-1, j ∈ 1:ncols
-            push!(ct.map, (i + 4//6, j) => :gauge_h)
-            push!(ct.map, (i + 5//6, j) => :gauge_h)
-        end
-
-        for i ∈ 1:nrows-1, j ∈ 1:ncols
-            push!(ct.map, (i + 1//6, j) => :gauge_h)
-            push!(ct.map, (i + 2//6, j) => :gauge_h)
-        end
 =#
 
 
@@ -161,43 +92,6 @@ struct Chimera_contraction_strategy_no_2   #zwezanie przy pomocy boundary mps
     end
 end
 
-dla square lattice
-for i ∈ 1:nrows-1, j ∈ 1:ncols
-            push!(ct.map, (i + 1//6, j) => :gauge_h)
-            push!(ct.map, (i + 2//6, j) => :gauge_h)
-        end
-
-        for i ∈ 1:nrows-1, j ∈ 1:ncols
-            push!(ct.map, (i + 1//6, j) => :gauge_h)
-            push!(ct.map, (i + 2//6, j) => :gauge_h)
-        end
-=#
-
-
-
-#=
-struct DiagonalGeometry{sparsity::Bool}
-    nrows::Int
-    ncols::Int
-    map::Dict
-
-    function DiagonalGeometry{sparsity}(n::Int, m::Int, map::Dict=Dict())
-        ct = new(nrows, ncols)
-        site_type = sparsity ? :site_sparse : :site
-        virtual_type = sparsity ? :virtual_sparse : :virtual
-
-        for i ∈ 1:nrows, j ∈ 1:ncols
-            push!(ct.map, (i, j) => site_type)
-            push!(ct.map, (i, j - 1//2) => :virtual_type)
-            push!(ct.map, (i + 1//2, j) => :central_v)
-        end
-        for i ∈ 1:nrows-1, j ∈ 0:ncols-1
-            push!(ct.map, (i + 1//2, j + 1//2) => :central_d)
-        end
-    end
-end
-=#
-
 
 
 #=
@@ -207,28 +101,6 @@ end
         push!(_tensors_map, (i + 5//6, jj) => :gauge_h)
     end
 =#
-#=
-struct SquareGeometry
-    nrows::Int
-    ncols::Int
-    map::Dict
-
-    function SquareGeometry(n::Int, m::Int, map::Dict=Dict())
-        ct = new(nrows, ncols)
-        for i ∈ 1:nrows, j ∈ 1:ncols
-            push!(ct.map, (i, j) => :site)
-            push!(ct.map, (i, j + 1//2) => :central_h)
-            push!(ct.map, (i, j + 1//2) => :central_v)
-        end
-        for i ∈ 1:nrows-1, j ∈ 1:ncols
-            push!(ct.map, (i + 4//6, j) => :gauge_h)
-            push!(ct.map, (i + 5//6, j) => :gauge_h)
-        end
-    end
-end
-
-
-
 
 
 struct Contraction
@@ -237,48 +109,11 @@ struct Contraction
     sweeps::Int
 end
 
-struct network_layout
-end
-
-struct _PEPSNetwork{network_layout} 
-    # ROBI: pozwala wygenerowac tensor ze wzgledu na wspolrzedne w tensor_map i podany parametr beta
-    factor_graph::LabelledGraph{T, NTuple{2, Int}} where T
-    network_graph::LabelledGraph{S, NTuple{2, Int}} where S
-    vertex_map::Function
-    m::Int
-    n::Int
-    nrows::Int
-    ncols::Int
-    tensors_map::AbstractTensors
-    gauges::Dict
-
-    function _PEPSNetwork{network_layout}(
-        m::Int,
-        n::Int,
-        factor_graph::LabelledGraph,
-        transformation::LatticeTransformation;
-        network_layout #typ sieci (chimera_v1 chimera_v2_, chimera_v3, diagonal_v1, etc.)
-    )
-        vmap = vertex_map(transformation, m, n)
-        network_graph = peps_lattice(m, n)
-        nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
-
-        if !is_compatible(factor_graph, network_graph)
-            throw(ArgumentError("Factor graph not compatible with given network."))
-        end
-
-        net = new(factor_graph, network_graph, vmap, m, n, nrows, ncols)
-        net.tensors_map = setup_layout(network_layout, nrows, ncols)  # network_layout sluzy do wygenerowania konkretnego tensor map
-        initialize_gauges(net, :id)
-
-        net
-    end
-end
 
 # moze sie zmienic gauge
 # β::Real jako parametr w generacji tensora
 
-struct MpsContractor #<: AbstractContractor
+struct MpsContractor <: AbstractContractor
     peps::_PEPSNetwork
     MpoLayers
     betas::Real
@@ -311,53 +146,16 @@ function optimize_gauges(temp::MpsContractor)
     # 2) bazujac na psi_bottom i psi_top zmienia gauge
     #    sweep left and right
         
-
     #end
 end
 =#
-#=
-struct _PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
-    factor_graph::LabelledGraph{T, NTuple{2, Int}} where T
-    network_graph::LabelledGraph{S, NTuple{2, Int}} where S
-    vertex_map::Function
-    m::Int
-    n::Int
-    nrows::Int
-    ncols::Int
-    β::Real
-    contraction_parmas::Contraction
-    tensors_map::ChimeraTensors
-    mpo_layers::MpoLayers
-    gauges::Dict
 
-    function _PEPSNetwork(
-        m::Int,
-        n::Int,
-        factor_graph::LabelledGraph,
-        transformation::LatticeTransformation;
-        β::Real,
-        contraction_parmas::Contraction=Contraction(typemax(Int), 1E-8, 4),
-        gauges::Dict=Dict() 
-    )
-        vmap = vertex_map(transformation, m, n)
-        network_graph = peps_lattice(m, n)
-        nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
 
-        if !is_compatible(factor_graph, network_graph)
-            throw(ArgumentError("Factor graph not compatible with given network."))
-        end
-
-        net = new(factor_graph, network_graph, vmap, m, n, nrows, ncols, β, gauges)
-
-        net.contraction_parmas = contraction_parmas
-        net.tensors_map = ChimeraTensors(nrows, ncols)
-        net.mpo_layers = MpoLayers(ncols)
-        update_gauges!(net, :id)
-
-        net
-    end
+# to be removed
+function peps_lattice(m::Int, n::Int)
+    labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
+    LabelledGraph(labels, grid((m, n)))
 end
-=#
 
 struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     factor_graph::LabelledGraph{T, NTuple{2, Int}} where T

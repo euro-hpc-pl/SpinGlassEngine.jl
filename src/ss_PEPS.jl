@@ -4,83 +4,95 @@ export
     conditional_probability
 
 
-    # :Square = Union(:Square1, :Square2, :Square3) [default Square1]
-    # :Star = Union(:Star1, :Star2, :Star3)
-
-
-    # struct GibbsNetwork{geometry}
-    #     factor_graph::LabelledGraph{T, NTuple{2, Int}} where T
-    #     network_graph::LabelledGraph{S, NTuple{2, Int}} where S  # jak do testu to nie trzymamy
-    #     vertex_map::Function
-    #     m::Int
-    #     n::Int
-    #     nrows::Int
-    #     ncols::Int
-    #     tensors_map
-    #     gauges
-    #     #
-
-    #     function GibbsNetwork{geometry}(
-    #         m::Int,
-    #         n::Int,
-    #         factor_graph::LabelledGraph,
-    #         transformation::LatticeTransformation;
-    #     )
-    #         vmap = vertex_map(transformation, m, n)
-    #         ng = network_lattice{geometry}(m, n)
-    #         nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
-
-    #         if !is_compatible(factor_graph, ng)
-    #             throw(ArgumentError("Factor graph not compatible with given network."))
-    #         end
-
-    #         tm = tensor_map{geometry}(nrows, ncols)
-    #         ga = initialize_gauges{geometry}(nrows, ncols)
-
-    #         network = new(factor_graph, ng, vmap, m, n, nrows, ncols, β, bond_dim,
-    #                       var_tol, sweeps, _gauges, _tensors_map,
-    #                       _mpo_main, _mpo_dress, _mpo_right
-    #                 )
-    #         network
-    #     end
-    # end
-
-    # function MPO_layers{geometry, nrows}
-    #  mpo_main, mpo_right_env, mpo_dressed
-    # end
-
 struct AbstractTensors end
-
-
-
-
 
 #TODO : organize this into structures
 
-function peps_lattice(m::Int, n::Int)  # siatka kwadratowa do przetestowania czy konsystentne z fg
+function peps_lattice(m::Int, n::Int)
     labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
     LabelledGraph(labels, grid((m, n)))
 end
 
 
-
-#=
-struct SquareGeometry
+struct SquareGeometry  # generuje tensor(wspolrzedne na siatce kwadratowe, beta)
+    network_graph::LabelledGraph{S, NTuple{2, Int}} where S
+    vertex_map::Function
+    m::Int
+    n::Int
     nrows::Int
     ncols::Int
-    map::Dict
+    tensors_map::Dict
 
-    function SquareGeometry(n::Int, m::Int, map::Dict=Dict())
-        ct = new(nrows, ncols)
+    function SquareGeometry(n::Int, m::Int)
+        ng = LabelledGraph([(i, j) for j ∈ 1:n for i ∈ 1:m], grid((m, n)))
+        vmap = vertex_map(transformation, m, n)
+        nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
+        tm = Dict()
+
+        ct = new(ng, vmap, m, n, nrows, ncols, tm)
+
         for i ∈ 1:nrows, j ∈ 1:ncols
             push!(ct.map, (i, j) => :site)
-            # why if?
-            if j < ncols push!(ct.map, (i, j + 1//2) => :central_h) end
+            if j < ncols push!(ct.map, (i, j + 1//2) => :central_h) end  # if: do not generate tensor outside of the lattice
             if i < nrows push!(ct.map, (i + 1//2, j) => :central_v) end
         end
     end
 end
-=#
+
+
+struct SquareGeometry2 # generuje tensor(wspolrzedne na siatce kwadratowe, beta)
+    network_graph::LabelledGraph{S, NTuple{2, Int}} where S
+    vertex_map::Function
+    m::Int
+    n::Int
+    nrows::Int
+    ncols::Int
+    tensors_map::Dict
+
+    function SquareGeometry(n::Int, m::Int)
+        ng = LabelledGraph([(i, j) for j ∈ 1:n for i ∈ 1:m], grid((m, n)))
+        vmap = vertex_map(transformation, m, n)
+        nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
+        tm = Dict()
+
+        ct = new(ng, vmap, m, n, nrows, ncols, tm)
+
+        for i ∈ 1:nrows, j ∈ 1:ncols
+            push!(ct.map, (i, j) => :site)
+            if j < ncols push!(ct.map, (i, j + 1//4) => :central_h2) end  # if: do not generate tensor outside of the lattice
+            if j < ncols push!(ct.map, (i, j + 3//4) => :central_h2) end  # if: do not generate tensor outside of the lattice
+
+            if i < nrows push!(ct.map, (i + 1//2, j) => :central_v2) end
+        end
+    end
+end
+
+
+struct StarGeometry  # generuje tensor(wspolrzedne na siatce kwadratowe, beta)
+    network_graph::LabelledGraph{S, NTuple{2, Int}} where S
+    vertex_map::Function
+    m::Int
+    n::Int
+    nrows::Int
+    ncols::Int
+    tensors_map::Dict
+
+    function SquareGeometry(n::Int, m::Int)
+        ng = LabelledGraph([(i, j) for j ∈ 1:n for i ∈ 1:m], grid((m, n)))
+        vmap = vertex_map(transformation, m, n)
+        nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
+        tm = Dict()
+
+        ct = new(ng, vmap, m, n, nrows, ncols, tm)
+
+        for i ∈ 1:nrows, j ∈ 1:ncols
+            push!(ct.map, (i, j) => :site)
+            if j < ncols push!(ct.map, (i, j + 1//2) => :central_h) end  # if: do not generate tensor outside of the lattice
+            if i < nrows push!(ct.map, (i + 1//2, j) => :central_v) end
+        end
+    end
+end
+
 #=
 struct SquareGeometry_sparse
     nrows::Int
@@ -431,7 +443,7 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
 end
 
 
-function projectors(network::PEPSNetwork, vertex::NTuple{2, Int})  # wspolne dla siatek dradratowych
+function projectors(network::PEPSNetwork, vertex::NTuple{2, Int})
     i, j = vertex
     neighbours = ((i, j-1), (i-1, j), (i, j+1), (i+1, j))
     projector.(Ref(network), Ref(vertex), neighbours)
@@ -446,7 +458,7 @@ node_from_index(peps::AbstractGibbsNetwork, index::Int) =
     ((index-1) ÷ peps.ncols + 1, _mod_wo_zero(index, peps.ncols))
 
 
-function boundary(peps::PEPSNetwork, node::NTuple{2, Int})   # ale zwiazane z kolejnoscia szukania przez node_from_index
+function boundary(peps::PEPSNetwork, node::NTuple{2, Int})
     i, j = node
     vcat(
         [
@@ -461,7 +473,7 @@ end
 
 
 function conditional_probability(peps::PEPSNetwork, w::Vector{Int})
-    i, j = node_from_index(peps, length(w)+1)   # ale zwiazane z kolejnoscia szukania przez node_from_index
+    i, j = node_from_index(peps, length(w)+1)
     ∂v = boundary_state(peps, w, (i, j))
 
     L = left_env(peps, i, ∂v[1:j-1])
@@ -498,8 +510,8 @@ function bond_energy(
 end
 
 
-function update_energy(network::PEPSNetwork, σ::Vector{Int})  #siatka kwadratowa niezaleznie od sposobu zwezania
-    i, j = node_from_index(network, length(σ)+1)  # ale zwiazane z kolejnoscia szukania przez node_from_index
+function update_energy(network::PEPSNetwork, σ::Vector{Int})
+    i, j = node_from_index(network, length(σ)+1)
     bond_energy(network, (i, j), (i, j-1), local_state_for_node(network, σ, (i, j-1))) +
     bond_energy(network, (i, j), (i-1, j), local_state_for_node(network, σ, (i-1, j))) +
     local_energy(network, (i, j))

@@ -5,6 +5,7 @@ export
 
 
 struct AbstractTensors end
+struct AbstractContractor end
 
 #TODO : organize this into structures
 
@@ -27,7 +28,7 @@ struct SquareGeometry
             # why if?
             if j < ncols push!(ct.map, (i, j + 1//2) => :central_h) end
             if i < nrows push!(ct.map, (i + 1//2, j) => :central_v) end
-        end
+        end5
     end
 end
 =#
@@ -186,6 +187,8 @@ struct Contraction
     sweeps::Int
 end
 
+struct network_layout
+end
 
 struct _PEPSNetwork{network_layout} 
     # ROBI: pozwala wygenerowac tensor ze wzgledu na wspolrzedne w tensor_map i podany parametr beta
@@ -225,7 +228,7 @@ end
 # moze sie zmienic gauge
 # β::Real jako parametr w generacji tensora
 
-struct MpsContractor <: AbstractContractor
+struct MpsContractor #<: AbstractContractor
     peps::_PEPSNetwork
     MpoLayers
     betas::Real
@@ -246,7 +249,7 @@ function mps(temp::MpsContractor, beta_index::Int)
     ## trzeba przekazac opcje ktore wybiora jak robimy compress
 end
 
-function mpo(layer::dict, beta::Real)
+function mpo(layer::Dict, beta::Real)
     #wola tensor(...., beta)
 end
 

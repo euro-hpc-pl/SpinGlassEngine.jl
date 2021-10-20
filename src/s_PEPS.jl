@@ -156,7 +156,7 @@ end
         push!(_tensors_map, (i + 5//6, jj) => :gauge_h)
     end
 =#
-
+#=
 struct SquareGeometry
     nrows::Int
     ncols::Int
@@ -261,7 +261,7 @@ function optimize_gauges(temp::MpsContractor)
 
     #end
 end
-
+=#
 #=
 struct _PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     factor_graph::LabelledGraph{T, NTuple{2, Int}} where T

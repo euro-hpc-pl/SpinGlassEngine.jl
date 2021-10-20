@@ -39,6 +39,7 @@ function tensor(
 ) where {S, T}
     loc_exp = exp.(-network.β .* local_energy(network, v))
     projs = projectors(network, v)
+    # tu ma byc decode projector
     @cast A[σ, _] := loc_exp[σ]
     for pv ∈ projs @cast A[σ, (c, γ)] |= A[σ, c] * pv[σ, γ] end 
     B = dropdims(sum(A, dims=1), dims=1)
@@ -52,6 +53,7 @@ function tensor_size(
     ::Val{:site}
 ) where {S, T}
     dims = size.(projectors(network, v))
+     # tu ma byc decode projector -> max(projecr) da ilosc elementow
     pdims = first.(dims)
     @assert all(σ -> σ == first(pdims), first.(dims))
     last.(dims)

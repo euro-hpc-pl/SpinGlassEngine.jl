@@ -97,3 +97,4 @@ for transform ∈ all_lattice_transformations
     optimize_gauges!(peps, optimization_parameters or strategy)
     sol = low_energy_spectrum(peps, num_states)
 end
+=#

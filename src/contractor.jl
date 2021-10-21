@@ -55,12 +55,12 @@ end
 
 
 
-function conditional_probability(temp::MpsContractor, ii, jj)
+function conditional_probability(crt::MpsContractor, ii, jj)
     #wola mps
 end
 
 
-function mps(temp::MpsContractor, beta_index::Int)
+function mps(crt::MpsContractor, beta_index::Int)
     # wola mpo
     ## mps initial guess = mps(temp, beta_index-1) if beta_index > 1 else ....
     ## or

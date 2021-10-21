@@ -1,10 +1,15 @@
-export LatticeTransformation, rotation, reflection, all_lattice_transformations
+export 
+    LatticeTransformation, 
+    rotation, 
+    reflection, 
+    all_lattice_transformations
 
 
 struct LatticeTransformation
     permutation::NTuple{4, Int}
     flips_dimensions::Bool
 end
+
 
 Base.:(∘)(op1::LatticeTransformation, op2::LatticeTransformation) =
     LatticeTransformation(

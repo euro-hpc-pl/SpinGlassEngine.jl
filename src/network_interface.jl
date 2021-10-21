@@ -1,3 +1,5 @@
+# This file should be clean !
+
 using LabelledGraphs
 
 export

@@ -4,7 +4,7 @@ export
 
 abstract type AbstractGeometry end
 
-struct Star <: AbstractGeometry end 
+struct SquareStar <: AbstractGeometry end 
 struct Square <: AbstractGeometry end 
 
 
@@ -14,7 +14,7 @@ function network_graph(::Type{Square}, m::Int, n::Int)
 end
 
 
-function network_graph(::Type{Star}, m::Int, n::Int) 
+function network_graph(::Type{SquareStar}, m::Int, n::Int) 
     lg = network_graph(Square, m, n)
     for i ∈ 1:m-1, j ∈ 1:n-1
         add_edge!(lg, (i, j), (i+1, j+1))
@@ -35,7 +35,7 @@ function tensor_map(::Type{Square}, nrows::Int, ncols::Int)
 end
 
 
-function tensor_map(::Type{Star}, nrows::Int, ncols::Int)
+function tensor_map(::Type{SquareStar, nrows::Int, ncols::Int)
     map = Dict()
     for i ∈ 1:nrows, j ∈ 1:ncols
         push!(map, (i, j) => :site)

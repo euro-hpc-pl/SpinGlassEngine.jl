@@ -5,7 +5,7 @@ export
 abstract type AbstractContractor end
 abstract type AbstractStrategy end
 
-struct BasicStrategy <: AbstractStrategy end
+struct BasicStrategy{T <: AbstractGeometry} <: AbstractStrategy end
 
 
 struct MpoLayers
@@ -39,7 +39,7 @@ struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
 end
 
 
-function MpoLayers(::Type{BasicStrategy}, ncols::Int)
+function MpoLayers(::Type{BasicStrategy{T}}, ncols::Int) where T <: Square
     main, dress, right = Dict(), Dict(), Dict()
 
     for i ∈ 1:ncols push!(main, i => (-1//6, 0, 3//6, 4//6)) end
@@ -52,6 +52,21 @@ function MpoLayers(::Type{BasicStrategy}, ncols::Int)
 
     MpoLayers(main, dress, right)
 end
+
+
+function MpoLayers(::Type{BasicStrategy{T}}, ncols::Int) where T <: SquareDiag
+    main, dress, right = Dict(), Dict(), Dict()
+
+    for i ∈ 1//2 : 1//2 : ncols
+        ii = denominator(i) == 1 ? numerator(i) : i
+        push!(main, ii => (-1//6, 0, 3//6, 4//6))
+        push!(dress, ii => (3//6, 4//6))
+        push!(right, ii => (-3//6, 0))
+    end
+
+    MpoLayers(main, dress, right)
+end
+
 
 
 function conditional_probability(crt::MpsContractor, i::Int, j::Int)

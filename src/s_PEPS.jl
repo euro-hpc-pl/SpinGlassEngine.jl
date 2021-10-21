@@ -4,9 +4,6 @@ export
     conditional_probability
 
 
-abstract type AbstractContractor end
-
-
 struct GibbsNetwork{T <: AbstractGeometry}
     factor_graph::LabelledGraph{S, NTuple{2, Int}} where S
     vertex_map::Function
@@ -37,118 +34,6 @@ struct GibbsNetwork{T <: AbstractGeometry}
         new(factor_graph, vmap, m, n, nrows, ncols, tm, ga)
     end
 end
-
-
-#=
-struct Chimera_contraction_strategy_no_1  #zwezanie przy pomocy boundary mps
-    ncols::Int
-    main::Dict
-    dress::Dict
-    right::Dict
-
-    function MpoLayers(
-        ncols::Int,
-        main::Dict=Dict(),
-        dress::Dict=Dict(),
-        right::Dict=Dict()
-    )
-        ml = new(ncols)
-
-        for i ∈ 1:ncols push!(ml.main, i => (-1//6, 0, 3//6, 4//6)) end
-        for i ∈ 1:ncols - 1 push!(ml.main, i + 1//2 => (0,)) end  
-
-        ml.dress = Dict(i => (3//6, 4//6) for i ∈ 1:ncols)
-
-        for i ∈ 1:ncols push!(ml.right, i => (-3//6, 0)) end
-        for i ∈ 1:ncols - 1 push!(ml.right, i + 1//2 => (0,)) end  
-    end
-end
-
-=#
-
-
-#=  
-struct Chimera_contraction_strategy_no_2   #zwezanie przy pomocy boundary mps
-    ncols::Int
-    main::Dict
-    dress::Dict
-    right::Dict
-
-    function MpoLayers(
-        ncols::Int, 
-        main::Dict=Dict(), 
-        dress::Dict=Dict(), 
-        right::Dict=Dict()
-    )
-        ml = new(ncols)
-
-        for i ∈ 1:ncols push!(ml.main, i => (-1//6, 0, 3//6, 4//6)) end
-        for i ∈ 1:ncols - 1 push!(ml.main, i + 1//2 => (0,)) end  
-
-        ml.dress = Dict(i => (3//6, 4//6) for i ∈ 1:ncols)
-
-        for i ∈ 1:ncols push!(ml.right, i => (-3//6, 0)) end
-        for i ∈ 1:ncols - 1 push!(ml.right, i + 1//2 => (0,)) end  
-    end
-end
-
-
-
-#=
- for i ∈ 1 : nrows - 1, j ∈ 1//2 : 1//2 : ncols
-        jj = denominator(j) == 1 ? numerator(j) : j
-        push!(_tensors_map, (i + 4//6, jj) => :gauge_h)
-        push!(_tensors_map, (i + 5//6, jj) => :gauge_h)
-    end
-=#
-
-
-struct Contraction
-    bond_dim::Int
-    var_tol::Real
-    sweeps::Int
-end
-
-
-# moze sie zmienic gauge
-# β::Real jako parametr w generacji tensora
-
-struct MpsContractor <: AbstractContractor
-    peps::_PEPSNetwork
-    MpoLayers
-    betas::Real
-    contraction_scheme # -- struktura ktora nam powie jak ograc compress
-end
-
-function conditional_probability(temp::MpsContractor, ii, jj)
-    #wola mps
-end
-
-
-function mps(temp::MpsContractor, beta_index::Int)
-    # wola mpo
-    ## mps initial guess = mps(temp, beta_index-1) if beta_index > 1 else ....
-    ## or
-    ## mps_initial guess = svd truncation
-    ## 2site or 1site variational ?????
-    ## trzeba przekazac opcje ktore wybiora jak robimy compress
-end
-
-function mpo(layer::Dict, beta::Real)
-    #wola tensor(...., beta)
-end
-
-
-function optimize_gauges(temp::MpsContractor)
-    #for beta in betas
-    
-    # 1) psi_bottom =  mps  ;  psi_top = mps ( :top)
-    # 2) bazujac na psi_bottom i psi_top zmienia gauge
-    #    sweep left and right
-        
-    #end
-end
-=#
 
 
 # to be removed

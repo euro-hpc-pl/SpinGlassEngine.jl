@@ -27,6 +27,7 @@ include("s_network_interface.jl")
 include("MPS_search.jl")
 include("s_PEPS.jl")
 include("s_PEPS_fused.jl")
+include("contractor.jl")
 include("s_network_tensors.jl")
 include("search.jl")
 

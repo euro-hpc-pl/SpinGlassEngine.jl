@@ -62,3 +62,12 @@ function initialize_gauges(::Type{Square}, nrows::Int, ncols::Int)
     end
     map
 end
+
+
+#=
+ for i ∈ 1 : nrows - 1, j ∈ 1//2 : 1//2 : ncols
+        jj = denominator(j) == 1 ? numerator(j) : j
+        push!(_tensors_map, (i + 4//6, jj) => :gauge_h)
+        push!(_tensors_map, (i + 5//6, jj) => :gauge_h)
+    end
+=#

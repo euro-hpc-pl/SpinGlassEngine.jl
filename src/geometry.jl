@@ -35,7 +35,7 @@ function tensor_map(::Type{Square}, nrows::Int, ncols::Int)
 end
 
 
-function tensor_map(::Type{SquareStar, nrows::Int, ncols::Int)
+function tensor_map(::Type{SquareStar}, nrows::Int, ncols::Int)
     map = Dict()
     for i ∈ 1:nrows, j ∈ 1:ncols
         push!(map, (i, j) => :site)

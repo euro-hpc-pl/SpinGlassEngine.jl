@@ -54,9 +54,11 @@ function projector(
     fg_v, fg_w = vmap(v), vmap(w)
     
     if has_edge(fg, fg_w, fg_v)
-        get_prop(fg, fg_w, fg_v, :pr)'
+        P = get_prop(fg, fg_w, fg_v, :pr)#'
+        decode_projector!(P, :EP)'  # to out
     elseif has_edge(fg, fg_v, fg_w)
-        get_prop(fg, fg_v, fg_w, :pl)
+        P = get_prop(fg, fg_v, fg_w, :pl)
+        decode_projector!(P, :PE) # to out
     else
         loc_dim = fg_v ∈ vertices(fg) ? length(local_energy(network, v)) : 1 
         ones(loc_dim, 1)
@@ -75,8 +77,18 @@ function projector(
 end
 
 
+# function fuse_projectors(projectors::Union{Vector{T}, NTuple{N, T}}) where {N, T}
+#     println(projectors)
+#     fused, transitions_matrix = rank_reveal(hcat(projectors...), :PE)
+#     println(fused)
+#     transitions = collect(eachcol(transitions_matrix))
+#     println(transitions)
+#     fused, transitions
+# end
+
 function fuse_projectors(projectors::Union{Vector{T}, NTuple{N, T}}) where {N, T}
     fused, energy = rank_reveal(hcat(projectors...), :PE)
+    fused = decode_projector!(fused)
     i₀ = 1
     transitions = []
     for proj ∈ projectors
@@ -86,7 +98,6 @@ function fuse_projectors(projectors::Union{Vector{T}, NTuple{N, T}}) where {N, T
     end
     fused, transitions
 end
-
 
 function spectrum(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T}
     get_prop(factor_graph(network), vertex_map(network)(vertex), :spectrum)
@@ -114,6 +125,7 @@ function interaction_energy(
         zeros(1, 1)
     end
 end
+
 
 ones_like(x::Number) = one(typeof(x))
 
@@ -157,9 +169,6 @@ function boundary_state(
 end
 
 
-
-
-
 function local_state_for_node(
     network::AbstractGibbsNetwork{S, T},
     σ::Vector{Int},
@@ -186,9 +195,9 @@ function update_gauges!(
     type::Symbol=:rand
 ) where {S, T}
     @assert type ∈ (:id, :rand)
-    for i ∈ 1:network.nrows-1, k ∈ 1//2:1//2:network.ncols
+    for i ∈ 1:network.nrows-1, k ∈ 1//2 : 1//2 : network.ncols
         j = denominator(k) == 1 ? numerator(k) : k
-        u, d = tensor_size(network, (i+1//2, j))
+        u, d = tensor_size(network, (i + 1//2, j))
         Y = type == :id ? ones(u) : rand(u) .+ 0.42
         push!(network.gauges, (i + 1//6, j) => Y, (i + 2//6, j) => 1 ./ Y)
         Z = type == :id ? ones(d) : rand(d) .+ 0.42
@@ -198,7 +207,6 @@ end
 
 
 function normalize_probability(values::Vector{R}) where {R<:Number}
-    # exceptions (negative pdo, etc)
     minp = minimum(values)
     if minp < 0
         amp = abs(minp)

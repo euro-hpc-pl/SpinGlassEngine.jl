@@ -28,10 +28,10 @@ struct GibbsNetwork{T <: AbstractGeometry}
             throw(ArgumentError("Factor graph not compatible with given network."))
         end
 
-        tm = tensor_map(T, nrows, ncols)
-        ga = initialize_gauges(T, nrows, ncols)
+        tmap = tensor_map(T, nrows, ncols)
+        gmap = initialize_gauges(T, nrows, ncols)
 
-        new(factor_graph, vmap, m, n, nrows, ncols, tm, ga)
+        new(factor_graph, vmap, m, n, nrows, ncols, tmap, gmap)
     end
 end
 
@@ -42,6 +42,7 @@ function peps_lattice(m::Int, n::Int)
     LabelledGraph(labels, grid((m, n)))
 end
 
+# to be removed
 struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
     factor_graph::LabelledGraph{T, NTuple{2, Int}} where T
     network_graph::LabelledGraph{S, NTuple{2, Int}} where S
@@ -117,6 +118,7 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
 end
 
 
+# function projectors(network::GibbsNetwork{T <: Square}, vertex::NTuple{2, Int}) 
 function projectors(network::PEPSNetwork, vertex::NTuple{2, Int})  # wspolne dla siatek dradratowych
     i, j = vertex
     neighbours = ((i, j-1), (i-1, j), (i, j+1), (i+1, j))
@@ -132,6 +134,7 @@ node_from_index(peps::AbstractGibbsNetwork, index::Int) =
     ((index-1) ÷ peps.ncols + 1, _mod_wo_zero(index, peps.ncols))
 
 
+# function boundary(network::GibbsNetwork{T <: Square}, node::NTuple{2, Int}) 
 function boundary(peps::PEPSNetwork, node::NTuple{2, Int})   # ale zwiazane z kolejnoscia szukania przez node_from_index
     i, j = node
     vcat(

@@ -54,9 +54,8 @@ function MpoLayers(::Type{BasicStrategy}, ncols::Int)
 end
 
 
-
-function conditional_probability(crt::MpsContractor, ii, jj)
-    #wola mps
+function conditional_probability(crt::MpsContractor, i::Int, j::Int)
+    # should call mps
 end
 
 

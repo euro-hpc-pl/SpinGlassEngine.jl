@@ -15,8 +15,7 @@ end
 
 
 function network_graph(::Type{Star}, m::Int, n::Int) 
-    labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
-    lg = LabelledGraph(labels, grid((m, n)))
+    lg = network_graph(Square, m, n)
     for i ∈ 1:m-1, j ∈ 1:n-1
         add_edge!(lg, (i, j), (i+1, j+1))
         add_edge!(lg, (i+1, j), (i, j+1))

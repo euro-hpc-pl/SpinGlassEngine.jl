@@ -5,6 +5,7 @@ export
 
 const Node = NTuple{2, Int}
 
+
 struct GibbsNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, Node}
     factor_graph::LabelledGraph{S, Node} where S
     vertex_map::Function
@@ -44,9 +45,9 @@ function peps_lattice(m::Int, n::Int)
 end
 
 # to be removed
-struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
-    factor_graph::LabelledGraph{T, NTuple{2, Int}} where T
-    network_graph::LabelledGraph{S, NTuple{2, Int}} where S
+struct PEPSNetwork <: AbstractGibbsNetwork{Node, Node}
+    factor_graph::LabelledGraph{T, Node} where T
+    network_graph::LabelledGraph{S, Node} where S
     vertex_map::Function
     m::Int
     n::Int
@@ -119,15 +120,15 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2, Int}, NTuple{2, Int}}
 end
 
 
-# function projectors(network::GibbsNetwork{T <: Square}, vertex::NTuple{2, Int}) 
-function projectors(network::PEPSNetwork, vertex::NTuple{2, Int})  # wspolne dla siatek dradratowych
+# function projectors(network::GibbsNetwork{T <: Square}, vertex::Node) 
+function projectors(network::PEPSNetwork, vertex::Node)  # wspolne dla siatek dradratowych
     i, j = vertex
     neighbours = ((i, j-1), (i-1, j), (i, j+1), (i+1, j))
     projector.(Ref(network), Ref(vertex), neighbours)
 end
 
 
-node_index(peps::AbstractGibbsNetwork, node::NTuple{2, Int}) = peps.ncols * (node[1] - 1) + node[2]
+node_index(peps::AbstractGibbsNetwork, node::Node) = peps.ncols * (node[1] - 1) + node[2]
 _mod_wo_zero(k, m) = k % m == 0 ? m : k % m
 
 
@@ -136,7 +137,7 @@ node_from_index(peps::AbstractGibbsNetwork, index::Int) =
 
 
 # function boundary(network::GibbsNetwork{T <: Square}, node::NTuple{2, Int}) 
-function boundary(peps::PEPSNetwork, node::NTuple{2, Int})   # ale zwiazane z kolejnoscia szukania przez node_from_index
+function boundary(peps::PEPSNetwork, node::Node)   # ale zwiazane z kolejnoscia szukania przez node_from_index
     i, j = node
     vcat(
         [
@@ -170,8 +171,8 @@ end
 
 function bond_energy(
     network::AbstractGibbsNetwork, 
-    u::NTuple{2, Int}, 
-    v::NTuple{2, Int}, 
+    u::Node, 
+    v::Node, 
     σ::Int
 )
     fg_u, fg_v = network.vertex_map(u), network.vertex_map(v)

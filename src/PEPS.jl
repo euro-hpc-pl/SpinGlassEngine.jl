@@ -3,9 +3,10 @@ export
     node_from_index, 
     conditional_probability
 
+const Node = NTuple{2, Int}
 
-struct GibbsNetwork{T <: AbstractGeometry}
-    factor_graph::LabelledGraph{S, NTuple{2, Int}} where S
+struct GibbsNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, Node}
+    factor_graph::LabelledGraph{S, Node} where S
     vertex_map::Function
     m::Int
     n::Int

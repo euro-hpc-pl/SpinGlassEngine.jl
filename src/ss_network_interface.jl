@@ -55,13 +55,13 @@ function projector(
     
     if has_edge(fg, fg_w, fg_v)
         P = get_prop(fg, fg_w, fg_v, :pr)#'
-        decode_projector!(P, :EP)'  # to out
+        #decode_projector!(P, :EP)'  # to out
     elseif has_edge(fg, fg_v, fg_w)
         P = get_prop(fg, fg_v, fg_w, :pl)
-        decode_projector!(P, :PE) # to out
+        #decode_projector!(P, :PE) # to out
     else
         loc_dim = fg_v ∈ vertices(fg) ? length(local_energy(network, v)) : 1 
-        ones(loc_dim, 1)
+        round.(Int, ones(loc_dim, 1))
     end
 end
 
@@ -77,15 +77,15 @@ function projector(
 end
 
 
-# function fuse_projectors(projectors::Union{Vector{T}, NTuple{N, T}}) where {N, T}
-#     println(projectors)
-#     fused, transitions_matrix = rank_reveal(hcat(projectors...), :PE)
-#     println(fused)
-#     transitions = collect(eachcol(transitions_matrix))
-#     println(transitions)
-#     fused, transitions
-# end
-
+function fuse_projectors(projectors::Union{Vector{T}, NTuple{N, T}}) where {N, T}
+    println(projectors)
+    fused, transitions_matrix = rank_reveal(hcat(projectors...), :PE)
+    println(fused)
+    transitions = collect(eachcol(transitions_matrix))
+    println(transitions)
+    fused, transitions
+end
+#=
 function fuse_projectors(projectors::Union{Vector{T}, NTuple{N, T}}) where {N, T}
     fused, energy = rank_reveal(hcat(projectors...), :PE)
     fused = decode_projector!(fused)
@@ -98,6 +98,7 @@ function fuse_projectors(projectors::Union{Vector{T}, NTuple{N, T}}) where {N, T
     end
     fused, transitions
 end
+=#
 
 function spectrum(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T}
     get_prop(factor_graph(network), vertex_map(network)(vertex), :spectrum)
@@ -141,7 +142,7 @@ function _boundary_index(
     state = local_state_for_node(network, σ, v)
     if v ∉ vertices(network.network_graph) return ones_like(state) end
     pv = projector(network, v, w) 
-    [findfirst(x -> x > 0, pv[i, :]) for i ∈ 1:size(pv)[1]][state]
+    pv[state]
 end
 
 
@@ -153,7 +154,7 @@ function _boundary_index(
     pv = projector(network, v, w)
     i = _boundary_index(network, v, w, σ)
     j = _boundary_index(network, k, l, σ)
-    (j - 1) * size(pv, 2) + i
+    (j - 1) * maximum(pv) + i
 end
 
 
@@ -162,7 +163,7 @@ function boundary_state(
     σ::Vector{Int},
     node::S
 ) where {S, T} 
-    [
+     [
         _boundary_index(network, x..., σ)
         for x ∈ boundary(network, node)
     ] 

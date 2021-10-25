@@ -61,7 +61,7 @@ function projector(
         #decode_projector!(P, :PE) # to out
     else
         loc_dim = fg_v ∈ vertices(fg) ? length(local_energy(network, v)) : 1 
-        round.(Int, ones(loc_dim, 1))
+        floor.(Int, ones(loc_dim, 1))
     end
 end
 
@@ -78,27 +78,11 @@ end
 
 
 function fuse_projectors(projectors::Union{Vector{T}, NTuple{N, T}}) where {N, T}
-    println(projectors)
     fused, transitions_matrix = rank_reveal(hcat(projectors...), :PE)
-    println(fused)
     transitions = collect(eachcol(transitions_matrix))
-    println(transitions)
     fused, transitions
 end
-#=
-function fuse_projectors(projectors::Union{Vector{T}, NTuple{N, T}}) where {N, T}
-    fused, energy = rank_reveal(hcat(projectors...), :PE)
-    fused = decode_projector!(fused)
-    i₀ = 1
-    transitions = []
-    for proj ∈ projectors
-        iₑ = i₀ + size(proj, 2) - 1
-        push!(transitions, energy[:, i₀:iₑ])
-        i₀ = iₑ + 1
-    end
-    fused, transitions
-end
-=#
+
 
 function spectrum(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T}
     get_prop(factor_graph(network), vertex_map(network)(vertex), :spectrum)

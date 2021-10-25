@@ -149,14 +149,18 @@ function _all_fused_projectors(
 
     left_nbrs = ((i+1, j+1), (i, j+1), (i-1, j+1))
     prl = projector.(Ref(network), Ref((i, j)), left_nbrs)
-    PL = decode_projector!(fuse_projectors(prl))
-    p_lb, p_l, p_lt = last(PL)
+    p_lb, p_l, p_lt = last(fuse_projectors(prl))
+    p_lb = decode_projector!(p_lb)
+    p_l = decode_projector!(p_l)
+    p_lt = decode_projector!(p_lt)
+
 
     right_nbrs = ((i+1, j), (i, j), (i-1, j))
     prr = projector.(Ref(network), Ref((i, j+1)), right_nbrs)
-    PR = decode_projector!(fuse_projectors(prr))
-    p_rb, p_r, p_rt = last(PR)
-
+    p_rb, p_r, p_rt = last(fuse_projectors(prr))
+    p_rb = decode_projector!(p_rb)
+    p_r = decode_projector!(p_r)
+    p_rt = decode_projector!(p_rt)
     p_lb, p_l, p_lt, p_rb, p_r, p_rt
 end
 

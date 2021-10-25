@@ -54,11 +54,9 @@ function projector(
     fg_v, fg_w = vmap(v), vmap(w)
     
     if has_edge(fg, fg_w, fg_v)
-        P = get_prop(fg, fg_w, fg_v, :pr)#'
-        #decode_projector!(P, :EP)'  # to out
+        P = get_prop(fg, fg_w, fg_v, :pr)
     elseif has_edge(fg, fg_v, fg_w)
         P = get_prop(fg, fg_v, fg_w, :pl)
-        #decode_projector!(P, :PE) # to out
     else
         loc_dim = fg_v ∈ vertices(fg) ? length(local_energy(network, v)) : 1 
         floor.(Int, ones(loc_dim, 1))

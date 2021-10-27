@@ -10,9 +10,10 @@ abstract type AbstractConnectivity end
 abstract type AbstractTensorsLayout end
 
 struct Star <: AbstractConnectivity end
-struct Square{R <: AbstractConnectivity, 
+struct Square{S <: AbstractConnectivity, 
               T <: AbstractTensorsLayout} <: AbstractGeometry 
 end 
+
 
 function network_graph(::Type{Square}, m::Int, n::Int)
     labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]

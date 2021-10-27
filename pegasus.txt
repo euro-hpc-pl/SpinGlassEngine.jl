@@ -1,0 +1,1 @@
+ transform LatticeTransformation((1, 2, 3, 4), false) type of tensor virtual site (1, 1//2) size (1, 1, 1, 1) site (1, 3//2) size 

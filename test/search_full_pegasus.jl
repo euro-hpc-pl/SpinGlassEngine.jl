@@ -3,16 +3,15 @@ using SpinGlassTensors
 using SpinGlassEngine
 
 function bench()
-    m = 16 
-    n = 16
-    t = 8
+    m = 2
+    n = 2
+    t = 24
 
     β = 3.
+    schedule = 1.
+    states_to_keep = 2
 
-    L = n * m * t
-    num_states = 100
-
-    instance = "$(@__DIR__)/instances/chimera_droplets/2048power/001.txt"
+    instance = "$(@__DIR__)/instances/pegasus_droplets/$(m)_$(n)_3_00.txt"
 
     ig = ising_graph(instance)
 
@@ -24,19 +23,15 @@ function bench()
 
     #for transform ∈ all_lattice_transformations
     for transform ∈ rotation.([0])
-        peps = PEPSNetwork(m, n, fg, transform, β=β, bond_dim=32)
+        peps = FusedNetwork(m, n, fg, transform, β=β)
         update_gauges!(peps, :rand)
-        @time sol = low_energy_spectrum(peps, num_states, merge_branches(peps))
-        println(sol.energies[1:1])
-
-
         map = peps.tensors_map
-
-        f = open("chimera.txt", "w") # do this once
+#=
+        f = open("pegasus.txt", "w") # do this once
         write(f, " transform ") + write(f, string(transform))
 
 
-        for j in [:virtual, :central_d, :central_v, :gauge_h, :site]
+        for j in [:virtual]#, :central_d, :central_v, :gauge_h, :site]
             write(f, " type of tensor ") + write(f, string(j))
             key_value = [k for (k,v) in map if v==j]
             for i in collect(sort(key_value))
@@ -45,7 +40,10 @@ function bench()
             write(f, "------------")
         end
         close(f)
-        #=
+=#
+        
+        map = peps.tensors_map
+
         for j in [:virtual, :central_d, :central_v, :gauge_h, :site]
             println("type of tensor ", j)
             key_value = [k for (k,v) in map if v==j]
@@ -55,7 +53,9 @@ function bench()
             println("-------------------")
             println("-------------------")
             println("-------------------")
-        end=#
+        end
+        #sol = low_energy_spectrum(peps, states_to_keep)#, merge_branches(peps))
+        #println(sol.energies[1:1])
     end
 end
 

@@ -28,5 +28,34 @@
         update_gauges!(peps, :rand)
         sol = low_energy_spectrum(peps, states_to_keep, merge_branches(peps))
         @test first(sol.energies) ≈ ground_energy
+        map = peps.tensors_map
+
+        f = open("cross.txt", "w") # do this once
+        write(f, " transform ") + write(f, string(transform))
+
+
+        for j in [:virtual, :central_d, :central_v, :gauge_h, :site]
+            write(f, " type of tensor ") + write(f, string(j))
+            key_value = [k for (k,v) in map if v==j]
+            for i in collect(sort(key_value))
+                write(f, " site ") + write(f, string(i)) + write(f, " size ") + write(f, string(size(tensor(peps, i))))
+            end
+            write(f, "------------")
+        end
+        close(f)
+#=
+        for j in [:virtual, :central_d, :central_v, :gauge_h, :site]
+            println("type of tensor ", j)
+            key_value = [k for (k,v) in map if v==j]
+            for i in collect(sort(key_value))
+                println("site ", i, " size ", size(tensor(peps, i)))
+            end
+            println("-------------------")
+            println("-------------------")
+            println("-------------------")
+        end
+        =#
+    
+            
     end
 end

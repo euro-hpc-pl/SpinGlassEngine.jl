@@ -69,7 +69,7 @@
     )
 
     for transform ∈ all_lattice_transformations
-        peps = PEPSNetwork(m, n, fg, transform, β=β)
+        peps = PEPSNetwork{Square}(m, n, fg, transform, β)
         update_gauges!(peps, :id)
         sol = low_energy_spectrum(peps, num_states)
 

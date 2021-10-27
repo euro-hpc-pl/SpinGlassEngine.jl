@@ -5,6 +5,7 @@ export
     SquareDiag
 
 abstract type AbstractGeometry end
+# abstract type AbstractTensorsLayout end
 
 struct SquareDiag <: AbstractGeometry end 
 struct Square <: AbstractGeometry end 
@@ -57,7 +58,7 @@ function tensor_map(::Type{SquareDiag}, nrows::Int, ncols::Int)
     map
 end
 
-# function initialize_gauges!(::Type{Square{EG}}, map::Dict, nrows::Int, ncols::Int)
+#= function initialize_gauges!(::Type{Square{EG}}, map::Dict, nrows::Int, ncols::Int)
 function initialize_gauges!(::Type{Square}, map::Dict, nrows::Int, ncols::Int)
     gauges = Dict()
     for i ∈ 1:nrows-1, j ∈ 1:ncols
@@ -69,7 +70,20 @@ function initialize_gauges!(::Type{Square}, map::Dict, nrows::Int, ncols::Int)
     #     push!(map, (i + 2//6, j) => :gauge_h)
     # end
 end
+=#
 
+
+
+function initialize_gauges!(::Type{Square}, map::Dict, nrows::Int, ncols::Int)
+    for i ∈ 1:nrows-1, j ∈ 1:ncols
+        push!(map, (i + 4//6, j) => :gauge_h)
+        push!(map, (i + 5//6, j) => :gauge_h)
+    end
+    for i ∈ 1:nrows-1, j ∈ 1:ncols
+        push!(map, (i + 1//6, j) => :gauge_h)
+        push!(map, (i + 2//6, j) => :gauge_h)
+    end
+end
 
 
 #  "geometria i zwezanie"
@@ -81,13 +95,11 @@ end
 #  z tego wynika rozmieszczenie niektowych tensorow
 
 
-function initialize_gauges(::Type{SquareDiag}, nrows::Int, ncols::Int)
-    map = Dict()
+function initialize_gauges!(::Type{SquareDiag}, map::Dict, nrows::Int, ncols::Int)
     for i ∈ 1 : nrows - 1, j ∈ 1//2 : 1//2 : ncols
         jj = denominator(j) == 1 ? numerator(j) : j
         push!(map, (i + 4//6, jj) => :gauge_h)
         push!(map, (i + 5//6, jj) => :gauge_h)
     end
-    map
 end
 

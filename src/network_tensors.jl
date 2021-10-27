@@ -237,13 +237,14 @@ end
 
 
 function reduced_site_tensor(
-    network::FusedNetwork,
+    network::PEPSNetwork{T},
     v::Tuple{Int, Int},
     ld::Int,
     l::Int,
     d::Int,
     u::Int
-)
+) where T <: SquareDiag
+
     i, j = v
     eng_local = local_energy(network, v)
 
@@ -274,10 +275,11 @@ end
 
 
 function tensor_size(
-    network::PEPSNetwork,
+    network::PEPSNetwork{T},
     v::Tuple{Int, Int},
     ::Val{:reduced}
-)
+) where T <: Square
+
     i, j = v
     pr = projector(network, v, (i, j+1))
     pd = projector(network, v, (i+1, j))
@@ -298,11 +300,11 @@ end
 end
 
 
-IdentityMps(peps::PEPSNetwork) = Mps(   ## change for pegazus
+IdentityMps(peps::PEPSNetwork{T}) where T <: Square = Mps(   ## change for pegazus
     Dict(j => ones(1, 1, 1) for j ∈ 1:peps.ncols)
 )
 
-function IdentityMps(peps::FusedNetwork)
+function IdentityMps(peps::PEPSNetwork{T}) where T <: SquareDiag
     id = Dict()
     for i ∈ 1//2 : 1//2 : peps.ncols
         ii = denominator(i) == 1 ? numerator(i) : i

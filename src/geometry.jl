@@ -1,17 +1,19 @@
 export 
     AbstractGeometry, 
+    AbstractTensorsLayout,
     network_graph,
     Square,
     SquareDiag
 
 abstract type AbstractGeometry end
-# abstract type AbstractTensorsLayout end
-
-struct SquareDiag <: AbstractGeometry end 
-struct Square <: AbstractGeometry end 
+abstract type AbstractTensorsLayout end
 
 
-function network_graph(::Type{Square}, m::Int, n::Int) 
+struct SquareDiag{T <: AbstractTensorsLayout} <: AbstractGeometry end 
+struct Square{T <: AbstractTensorsLayout} <: AbstractGeometry end 
+
+
+function network_graph(::Type{Square}, m::Int, n::Int)
     labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
     LabelledGraph(labels, grid((m, n)))
 end
@@ -27,7 +29,7 @@ function network_graph(::Type{SquareDiag}, m::Int, n::Int)
 end
 
 
-function tensor_map(::Type{Square}, nrows::Int, ncols::Int)
+function tensor_map(::Type{Square}, nrows::Int, ncols::Int) 
     map = Dict()
     for i ∈ 1:nrows, j ∈ 1:ncols
         push!(map, (i, j) => :site)
@@ -41,8 +43,6 @@ function tensor_map(::Type{Square}, nrows::Int, ncols::Int)
     end
     map
 end
-
-
 
 
 function tensor_map(::Type{SquareDiag}, nrows::Int, ncols::Int)

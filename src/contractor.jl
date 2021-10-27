@@ -39,6 +39,22 @@ struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
 end
 
 
+function MpoLayers(::Type{T}, ncols::Int) where T <: Square  # temporary
+    main, dress, right = Dict(), Dict(), Dict()
+
+    for i ∈ 1:ncols push!(main, i => (-1//6, 0, 3//6, 4//6)) end
+    for i ∈ 1:ncols - 1 push!(main, i + 1//2 => (0,)) end  
+
+    dress = Dict(i => (3//6, 4//6) for i ∈ 1:ncols)
+
+    for i ∈ 1:ncols push!(right, i => (-3//6, 0)) end
+    for i ∈ 1:ncols - 1 push!(right, i + 1//2 => (0,)) end 
+
+    MpoLayers(main, dress, right)
+end
+
+
+
 function MpoLayers(::Type{BasicStrategy{T}}, ncols::Int) where T <: Square
     main, dress, right = Dict(), Dict(), Dict()
 
@@ -49,6 +65,20 @@ function MpoLayers(::Type{BasicStrategy{T}}, ncols::Int) where T <: Square
 
     for i ∈ 1:ncols push!(right, i => (-3//6, 0)) end
     for i ∈ 1:ncols - 1 push!(right, i + 1//2 => (0,)) end 
+
+    MpoLayers(main, dress, right)
+end
+
+
+function MpoLayers(::Type{T}, ncols::Int) where T <: SquareDiag # temporary
+    main, dress, right = Dict(), Dict(), Dict()
+
+    for i ∈ 1//2 : 1//2 : ncols
+        ii = denominator(i) == 1 ? numerator(i) : i
+        push!(main, ii => (-1//6, 0, 3//6, 4//6))
+        push!(dress, ii => (3//6, 4//6))
+        push!(right, ii => (-3//6, 0))
+    end
 
     MpoLayers(main, dress, right)
 end

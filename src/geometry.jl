@@ -1,6 +1,8 @@
 export 
     AbstractGeometry, 
-    network_graph
+    network_graph,
+    Square,
+    SquareDiag
 
 abstract type AbstractGeometry end
 
@@ -28,11 +30,18 @@ function tensor_map(::Type{Square}, nrows::Int, ncols::Int)
     map = Dict()
     for i ∈ 1:nrows, j ∈ 1:ncols
         push!(map, (i, j) => :site)
-        if j < ncols push!(map, (i, j + 1//2) => :central_h) end
-        if i < nrows push!(map, (i + 1//2, j) => :central_v) end
+        push!(map, (i, j + 1//2) => :central_h)
+        push!(map, (i + 1//2, j) => :central_v)
+        #push!(map, (i + 1//5, j) => :central_v_sqrt)
+        #push!(map, (i + 4//5, j) => :central_v_sqrt)
+
+        # if j < ncols push!(map, (i, j + 1//2) => :central_h) end
+        # if i < nrows push!(map, (i + 1//2, j) => :central_v) end
     end
     map
 end
+
+
 
 
 function tensor_map(::Type{SquareDiag}, nrows::Int, ncols::Int)
@@ -48,19 +57,45 @@ function tensor_map(::Type{SquareDiag}, nrows::Int, ncols::Int)
     map
 end
 
-
-function initialize_gauges(::Type{Square}, nrows::Int, ncols::Int)
-    map = Dict()
+# function initialize_gauges!(::Type{Square{EG}}, map::Dict, nrows::Int, ncols::Int)
+function initialize_gauges!(::Type{Square}, map::Dict, nrows::Int, ncols::Int)
+    gauges = Dict()
     for i ∈ 1:nrows-1, j ∈ 1:ncols
         push!(map, (i + 4//6, j) => :gauge_h)
         push!(map, (i + 5//6, j) => :gauge_h)
     end
-    for i ∈ 1:nrows-1, j ∈ 1:ncols
-        push!(map, (i + 1//6, j) => :gauge_h)
-        push!(map, (i + 2//6, j) => :gauge_h)
-    end
-    map
+    # for i ∈ 1:nrows-1, j ∈ 1:ncols
+    #     push!(map, (i + 1//6, j) => :gauge_h)
+    #     push!(map, (i + 2//6, j) => :gauge_h)
+    # end
 end
+
+
+
+function initialize_gauges!(::Type{Square{GE}}, map::Dict, nrows::Int, ncols::Int)
+    gauges = Dict()
+    for i ∈ 1:nrows-1, j ∈ 1:ncols
+         push!(map, (i + 1//6, j) => :gauge_h)
+         push!(map, (i + 2//6, j) => :gauge_h)
+     end
+end
+
+function initialize_gauges!(::Type{Square{eGe}}, map::Dict, nrows::Int, ncols::Int)
+    gauges = Dict()
+    for i ∈ 1:nrows-1, j ∈ 1:ncols
+         push!(map, (i + 2//5, j) => :gauge_h)
+         push!(map, (i + 3//5, j) => :gauge_h)
+     end
+end
+
+
+#  "geometria i zwezanie"
+#     - Square or SquareDiag
+#     - gauges_SN
+#     - hipotetycznie gauges_WE
+# 
+#  z tego wynika mpo layers
+#  z tego wynika rozmieszczenie niektowych tensorow
 
 
 function initialize_gauges(::Type{SquareDiag}, nrows::Int, ncols::Int)
@@ -72,7 +107,4 @@ function initialize_gauges(::Type{SquareDiag}, nrows::Int, ncols::Int)
     end
     map
 end
-
-
-
 

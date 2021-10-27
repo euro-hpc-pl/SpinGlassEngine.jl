@@ -123,7 +123,7 @@ function low_energy_spectrum(network::AbstractGibbsNetwork, max_states::Int, mer
 
     # Start branch and bound search
     sol = empty_solution()
-    @showprogress "Search: " for _ ∈ 1:nv(network_graph(network))
+    @showprogress "Search: " for _ ∈ 1:nv(factor_graph(network))
         sol = branch_solution(sol, network)
         sol = bound_solution(sol, max_states, merge_strategy)
         # _clear_cache(network, sol)

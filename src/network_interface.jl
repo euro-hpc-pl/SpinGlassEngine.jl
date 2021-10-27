@@ -31,7 +31,8 @@ not_implmented(name) = throw(NotImplementedError(name))
  
 factor_graph(network::AbstractGibbsNetwork{S, T}) where {S, T} = network.factor_graph
 
-network_graph(network::AbstractGibbsNetwork{S, T}) where {S, T} = network.network_graph
+#remove
+#network_graph(network::AbstractGibbsNetwork{S, T}) where {S, T} = network.network_graph
 
 vertex_map(network::AbstractGibbsNetwork{S, T}) where {S, T} = network.vertex_map
 
@@ -192,7 +193,7 @@ function is_compatible(
 end
 
 
-function update_gauges!(
+function update_gauges!(  #TO BE REMOVED
     network::AbstractGibbsNetwork{S, T},
     type::Symbol=:rand
 ) where {S, T}

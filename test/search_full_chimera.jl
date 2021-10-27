@@ -8,6 +8,7 @@ function bench()
     t = 8
 
     β = 3.
+    bond_dim = 32
 
     L = n * m * t
     num_states = 100
@@ -24,9 +25,9 @@ function bench()
 
     #for transform ∈ all_lattice_transformations
     for transform ∈ rotation.([0])
-        peps = PEPSNetwork(m, n, fg, transform, β=β, bond_dim=32)
+        peps = PEPSNetwork{Square}(m, n, fg, transform, β, bond_dim)
         update_gauges!(peps, :rand)
-        @time sol = low_energy_spectrum(peps, num_states)#, merge_branches(peps, 1.0))
+        @time sol = low_energy_spectrum(peps, num_states, merge_branches(peps))
         println(sol.energies[1:1])
     end
 end

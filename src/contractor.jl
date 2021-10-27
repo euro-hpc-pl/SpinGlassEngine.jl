@@ -69,8 +69,8 @@ function MpoLayers(::Type{BasicStrategy{T}}, ncols::Int) where T <: Square
     MpoLayers(main, dress, right)
 end
 
-
-function MpoLayers(::Type{T}, ncols::Int) where T <: Square{Star} # temporary
+# to be removed
+function MpoLayers(::Type{T}, ncols::Int) where T <: Square{Star} 
     main, dress, right = Dict(), Dict(), Dict()
 
     for i ∈ 1//2 : 1//2 : ncols

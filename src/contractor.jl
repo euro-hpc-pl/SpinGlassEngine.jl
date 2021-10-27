@@ -27,7 +27,7 @@ end
 
 
 struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
-    peps::GibbsNetwork
+    peps::PEPSNetwork
     betas::Vector{Real}
     params::MpsParameters
     layers::MpoLayers
@@ -38,8 +38,8 @@ struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
     end
 end
 
-
-function MpoLayers(::Type{T}, ncols::Int) where T <: Square  # temporary
+# to be removed
+function MpoLayers(::Type{T}, ncols::Int) where T <: Square  
     main, dress, right = Dict(), Dict(), Dict()
 
     for i ∈ 1:ncols push!(main, i => (-1//6, 0, 3//6, 4//6)) end

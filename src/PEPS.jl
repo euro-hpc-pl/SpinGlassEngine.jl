@@ -5,42 +5,6 @@ export
 
 const Node = NTuple{2, Int}
 
-
-struct GibbsNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, Node}
-    factor_graph::LabelledGraph{S, Node} where S
-    vertex_map::Function
-    m::Int
-    n::Int
-    nrows::Int
-    ncols::Int
-    tensor_map::Dict
-    gauges::Dict
-
-    function GibbsNetwork{T}(
-        m::Int,
-        n::Int,
-        factor_graph::LabelledGraph,
-        transformation::LatticeTransformation;
-    ) where T <: AbstractGeometry
-
-        vmap = vertex_map(transformation, m, n)
-        nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
-
-        if !is_compatible(factor_graph, network_graph(T, m, n))
-            throw(ArgumentError("Factor graph not compatible with given network."))
-        end
-
-        tmap = tensor_map(T, nrows, ncols)
-        initialize_gauges!(T, tmap, nrows, ncols)
-
-        gmap = Dict()
-        
-        new(factor_graph, vmap, m, n, nrows, ncols, tmap, gmap)
-    end
-end
-
-
-
 struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, Node}
     factor_graph::LabelledGraph{S, Node} where S
     network_graph  #TO BE REMOVEd
@@ -100,7 +64,7 @@ function projectors(network::PEPSNetwork{T}, vertex::Node) where T <: Square
 end
 
 
-function projectors(network::PEPSNetwork{T}, vertex::NTuple{2, Int}) where T <: SquareDiag
+function projectors(network::PEPSNetwork{T}, vertex::Node) where T <: SquareDiag
     i, j = vertex
     neighbours = (
                     ((i+1, j-1), (i, j-1), (i-1, j-1)), 
@@ -120,7 +84,7 @@ node_from_index(peps::AbstractGibbsNetwork, index::Int) =
     ((index-1) ÷ peps.ncols + 1, _mod_wo_zero(index, peps.ncols))
 
 
-function boundary(peps::PEPSNetwork{T}, node::NTuple{2, Int}) where T <: Square
+function boundary(peps::PEPSNetwork{T}, node::Node) where T <: Square
     i, j = node
     vcat(
         [
@@ -134,7 +98,7 @@ function boundary(peps::PEPSNetwork{T}, node::NTuple{2, Int}) where T <: Square
 end
 
 
-function boundary(peps::PEPSNetwork{T}, node::NTuple{2, Int}) where T <: SquareDiag
+function boundary(peps::PEPSNetwork{T}, node::Node) where T <: SquareDiag
     i, j = node
     vcat(
         [

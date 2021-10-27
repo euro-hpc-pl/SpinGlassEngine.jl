@@ -243,7 +243,7 @@ function reduced_site_tensor(
     l::Int,
     d::Int,
     u::Int
-) where T <: SquareDiag
+) where T <: Square{Star}
 
     i, j = v
     eng_local = local_energy(network, v)
@@ -304,7 +304,7 @@ IdentityMps(peps::PEPSNetwork{T}) where T <: Square = Mps(   ## change for pegaz
     Dict(j => ones(1, 1, 1) for j ∈ 1:peps.ncols)
 )
 
-function IdentityMps(peps::PEPSNetwork{T}) where T <: SquareDiag
+function IdentityMps(peps::PEPSNetwork{T}) where T <: Square{Star}
     id = Dict()
     for i ∈ 1//2 : 1//2 : peps.ncols
         ii = denominator(i) == 1 ? numerator(i) : i

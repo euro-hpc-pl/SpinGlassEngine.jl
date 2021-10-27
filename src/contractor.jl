@@ -70,7 +70,7 @@ function MpoLayers(::Type{BasicStrategy{T}}, ncols::Int) where T <: Square
 end
 
 
-function MpoLayers(::Type{T}, ncols::Int) where T <: SquareDiag # temporary
+function MpoLayers(::Type{T}, ncols::Int) where T <: Square{Star} # temporary
     main, dress, right = Dict(), Dict(), Dict()
 
     for i ∈ 1//2 : 1//2 : ncols
@@ -84,7 +84,7 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: SquareDiag # temporary
 end
 
 
-function MpoLayers(::Type{BasicStrategy{T}}, ncols::Int) where T <: SquareDiag
+function MpoLayers(::Type{BasicStrategy{T}}, ncols::Int) where T <: Square{Star}
     main, dress, right = Dict(), Dict(), Dict()
 
     for i ∈ 1//2 : 1//2 : ncols

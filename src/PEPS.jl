@@ -64,7 +64,7 @@ function projectors(network::PEPSNetwork{T}, vertex::Node) where T <: Square
 end
 
 
-function projectors(network::PEPSNetwork{T}, vertex::Node) where T <: SquareDiag
+function projectors(network::PEPSNetwork{T}, vertex::Node) where T <: Square{Star}
     i, j = vertex
     neighbours = (
                     ((i+1, j-1), (i, j-1), (i-1, j-1)), 
@@ -98,7 +98,7 @@ function boundary(peps::PEPSNetwork{T}, node::Node) where T <: Square
 end
 
 
-function boundary(peps::PEPSNetwork{T}, node::Node) where T <: SquareDiag
+function boundary(peps::PEPSNetwork{T}, node::Node) where T <: Square{Star}
     i, j = node
     vcat(
         [
@@ -132,7 +132,7 @@ function conditional_probability(peps::PEPSNetwork{T}, w::Vector{Int}) where T <
 end
 
 
-function conditional_probability(peps::PEPSNetwork{T}, w::Vector{Int}) where T <: SquareDiag
+function conditional_probability(peps::PEPSNetwork{T}, w::Vector{Int}) where T <: Square{Star}
     i, j = node_from_index(peps, length(w)+1)
     ∂v = boundary_state(peps, w, (i, j))
 
@@ -178,7 +178,7 @@ function update_energy(network::PEPSNetwork{T}, σ::Vector{Int}) where T <: Squa
 end
 
 
-function update_energy(network::PEPSNetwork{T}, σ::Vector{Int}) where T <: SquareDiag
+function update_energy(network::PEPSNetwork{T}, σ::Vector{Int}) where T <: Square{Star}
     i, j = node_from_index(network, length(σ)+1)
     bond_energy(network, (i, j), (i, j-1), local_state_for_node(network, σ, (i, j-1))) +
     bond_energy(network, (i, j), (i-1, j), local_state_for_node(network, σ, (i-1, j))) +

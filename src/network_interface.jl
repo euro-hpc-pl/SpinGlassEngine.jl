@@ -3,6 +3,7 @@
 using LabelledGraphs
 
 export
+    Node,
     AbstractGibbsNetwork,
     network_graph,
     vertex_map,
@@ -15,6 +16,9 @@ export
     iteration_order,
     fuse_projectors,
     update_gauges!
+
+
+const Node = NTuple{2, Int}
 
 # S: type of the vertex of network
 # T: type of the vertex of underlying factor graph
@@ -183,8 +187,8 @@ end
 
 
 function is_compatible(
-    factor_graph::LabelledGraph{T, NTuple{2, Int}}, 
-    network_graph::LabelledGraph{S, NTuple{2, Int}}
+    factor_graph::LabelledGraph{T, Node}, 
+    network_graph::LabelledGraph{S, Node}
 ) where {T, S}
     all(
         has_edge(network_graph, src(edge), dst(edge))
@@ -209,7 +213,7 @@ function update_gauges!(  #TO BE REMOVED
 end
 
 
-function normalize_probability(values::Vector{R}) where {R<:Number}
+function normalize_probability(values::Vector{R}) where {R <: Number}
     minp = minimum(values)
     if minp < 0
         amp = abs(minp)

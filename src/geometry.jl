@@ -1,9 +1,14 @@
 export 
+    IntOrRational, 
+    RNode,
     AbstractGeometry, 
     AbstractTensorsLayout,
     network_graph,
     Square,
     Star
+
+const IntOrRational = Union{Int, Rational{Int}}
+const RNode = NTuple{2, IntOrRational}
 
 abstract type AbstractGeometry end
 abstract type AbstractConnectivity end
@@ -32,7 +37,7 @@ end
 
 
 function tensor_map(::Type{Square}, nrows::Int, ncols::Int) 
-    map = Dict()
+    map = Dict{RNode, Symbol}()
     for i ∈ 1:nrows, j ∈ 1:ncols
         push!(map, (i, j) => :site)
         if j < ncols push!(map, (i, j + 1//2) => :central_h) end
@@ -43,7 +48,7 @@ end
 
 
 function tensor_map(::Type{Square{Star}}, nrows::Int, ncols::Int)
-    map = Dict()
+    map = Dict{RNode, Symbol}()
     for i ∈ 1:nrows, j ∈ 1:ncols
         push!(map, (i, j) => :site)
         push!(map, (i, j - 1//2) => :virtual)
@@ -56,7 +61,7 @@ function tensor_map(::Type{Square{Star}}, nrows::Int, ncols::Int)
 end
 
 
-function initialize_gauges!(::Type{Square}, map::Dict, nrows::Int, ncols::Int)
+function initialize_gauges!(::Type{Square}, map::Dict{RNode, Symbol}, nrows::Int, ncols::Int)
     for i ∈ 1:nrows-1, j ∈ 1:ncols
         push!(map, (i + 4//6, j) => :gauge_h)
         push!(map, (i + 5//6, j) => :gauge_h)
@@ -68,7 +73,7 @@ function initialize_gauges!(::Type{Square}, map::Dict, nrows::Int, ncols::Int)
 end
 
 
-function initialize_gauges!(::Type{Square{Star}}, map::Dict, nrows::Int, ncols::Int)
+function initialize_gauges!(::Type{Square{Star}}, map::Dict{RNode, Symbol}, nrows::Int, ncols::Int)
     for i ∈ 1 : nrows - 1, j ∈ 1//2 : 1//2 : ncols
         jj = denominator(j) == 1 ? numerator(j) : j
         push!(map, (i + 4//6, jj) => :gauge_h)

@@ -3,8 +3,6 @@ export
     node_from_index, 
     conditional_probability
 
-const Node = NTuple{2, Int}
-
 struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, Node}
     factor_graph::LabelledGraph{S, Node} where S
     network_graph  #TO BE REMOVEd

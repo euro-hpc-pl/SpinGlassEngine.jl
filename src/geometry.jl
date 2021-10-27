@@ -72,23 +72,6 @@ end
 
 
 
-function initialize_gauges!(::Type{Square{GE}}, map::Dict, nrows::Int, ncols::Int)
-    gauges = Dict()
-    for i ∈ 1:nrows-1, j ∈ 1:ncols
-         push!(map, (i + 1//6, j) => :gauge_h)
-         push!(map, (i + 2//6, j) => :gauge_h)
-     end
-end
-
-function initialize_gauges!(::Type{Square{eGe}}, map::Dict, nrows::Int, ncols::Int)
-    gauges = Dict()
-    for i ∈ 1:nrows-1, j ∈ 1:ncols
-         push!(map, (i + 2//5, j) => :gauge_h)
-         push!(map, (i + 3//5, j) => :gauge_h)
-     end
-end
-
-
 #  "geometria i zwezanie"
 #     - Square or SquareDiag
 #     - gauges_SN

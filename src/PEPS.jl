@@ -47,6 +47,7 @@ struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, Node}
             throw(ArgumentError("Factor graph not compatible with given network."))
         end
 
+        # the two should be combined!
         tmap = tensor_map(T, nrows, ncols)
         gauge_pairs = initialize_gauges!(T, tmap, nrows, ncols)
         

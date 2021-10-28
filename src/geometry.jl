@@ -14,7 +14,6 @@ export
 const IntOrRational = Union{Int, Rational{Int}}
 const RNode = NTuple{2, IntOrRational}
 
-abstract type AbstractOrientation end
 abstract type AbstractGeometry end
 abstract type AbstractConnectivity end
 abstract type AbstractTensorsLayout end
@@ -22,9 +21,9 @@ abstract type AbstractTensorsLayout end
 struct SquareStar{T <: AbstractTensorsLayout} <: AbstractGeometry end
 struct Square{T <: AbstractTensorsLayout} <: AbstractGeometry end 
 
-struct GaugesEnergy{T <: AbstractOrientation} <: AbstractTensorsLayout end
-struct EnergyGauges{T <: AbstractOrientation} <: AbstractTensorsLayout end
-struct EngGaugesEng{T <: AbstractOrientation} <: AbstractTensorsLayout end
+struct GaugesEnergy{T} <: AbstractTensorsLayout end
+struct EnergyGauges{T} <: AbstractTensorsLayout end
+struct EngGaugesEng{T} <: AbstractTensorsLayout end
 
 
 function network_graph(::Type{Square{T}}, m::Int, n::Int) where T

@@ -123,6 +123,7 @@ function boundary(peps::PEPSNetwork{T}, node::Node) where T <: SquareStar
     )
 end
 
+
 function conditional_probability(peps::PEPSNetwork{T}, w::Vector{Int}) where T <: Square
     i, j = node_from_index(peps, length(w)+1)
     ∂v = boundary_state(peps, w, (i, j))

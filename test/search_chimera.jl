@@ -67,14 +67,17 @@
         spectrum=full_spectrum,
         cluster_assignment_rule=super_square_lattice((m, n, t))
     )
-    for transform ∈ all_lattice_transformations
-        peps = PEPSNetwork{Square}(m, n, fg, transform, β)
-        update_gauges!(peps, :id)
-        sol = low_energy_spectrum(peps, num_states)
 
-        @test sol.energies ≈ exact_energies
-        for (i, σ) ∈ enumerate(sol.states)
-            @test σ ∈ exact_states[deg[i]]
+    for T ∈ (EnergyGauges, )
+        for transform ∈ all_lattice_transformations
+            peps = PEPSNetwork{Square{T}}(m, n, fg, transform, β)
+            update_gauges!(peps, :id)
+            sol = low_energy_spectrum(peps, num_states)
+
+            @test sol.energies ≈ exact_energies
+            for (i, σ) ∈ enumerate(sol.states)
+                @test σ ∈ exact_states[deg[i]]
+            end
         end
     end
 end

@@ -13,47 +13,55 @@ struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, Node}
     ncols::Int
     tensors_map::Dict
     gauges::Dict
-    gauge_pairs::List
+    gauge_pairs
 
-    β::Real
+    # to be removed
+    β::Real              
     bond_dim::Int
     var_tol::Real
     sweeps::Int
     mpo_main::Dict
     mpo_dress::Dict
     mpo_right::Dict
+    #-----------------------
 
     function PEPSNetwork{T}(
         m::Int,
         n::Int,
         factor_graph::LabelledGraph,
         transformation::LatticeTransformation,
+        # ------ to be removed--
         β::Real,
         bond_dim::Int=typemax(Int),
         var_tol::Real=1E-8,
         sweeps::Int=4,
+        #-----------------------
     ) where T <: AbstractGeometry
 
         vmap = vertex_map(transformation, m, n)
         nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
 
         ng = network_graph(T, m, n) # TO BE REMOVED
+
         if !is_compatible(factor_graph, network_graph(T, m, n))
             throw(ArgumentError("Factor graph not compatible with given network."))
         end
 
         tmap = tensor_map(T, nrows, ncols)
-        initialize_gauges!(T, tmap, nrows, ncols)
+        gauge_pairs = initialize_gauges!(T, tmap, nrows, ncols)
         
-        ML = MpoLayers(T, ncols)
+        ML = MpoLayers(T, ncols) # to be removed
 
         gmap = Dict()
 
-        network = new(factor_graph, ng, vmap, m, n, nrows, ncols, tmap, gmap,
-                      β, bond_dim, var_tol, sweeps,
-                      ML.main, ML.dress, ML.right)
-        update_gauges!(network)
-        network
+        # to be simplified 
+        net = new(factor_graph, ng, vmap, m, n, nrows, ncols, tmap, gmap, gauge_pairs,
+                    β, bond_dim, var_tol, sweeps,
+                    ML.main, ML.dress, ML.right)
+
+        update_gauges!(net)
+
+        net
     end
 end
 
@@ -65,7 +73,7 @@ function projectors(network::PEPSNetwork{T}, vertex::Node) where T <: Square
 end
 
 
-function projectors(network::PEPSNetwork{T}, vertex::Node) where T <: Square{Star}
+function projectors(network::PEPSNetwork{T}, vertex::Node) where T <: SquareStar
     i, j = vertex
     neighbours = (
                     ((i+1, j-1), (i, j-1), (i-1, j-1)), 
@@ -99,7 +107,7 @@ function boundary(peps::PEPSNetwork{T}, node::Node) where T <: Square
 end
 
 
-function boundary(peps::PEPSNetwork{T}, node::Node) where T <: Square{Star}
+function boundary(peps::PEPSNetwork{T}, node::Node) where T <: SquareStar
     i, j = node
     vcat(
         [
@@ -133,7 +141,7 @@ function conditional_probability(peps::PEPSNetwork{T}, w::Vector{Int}) where T <
 end
 
 
-function conditional_probability(peps::PEPSNetwork{T}, w::Vector{Int}) where T <: Square{Star}
+function conditional_probability(peps::PEPSNetwork{T}, w::Vector{Int}) where T <: SquareStar
     i, j = node_from_index(peps, length(w)+1)
     ∂v = boundary_state(peps, w, (i, j))
 
@@ -179,7 +187,7 @@ function update_energy(network::PEPSNetwork{T}, σ::Vector{Int}) where T <: Squa
 end
 
 
-function update_energy(network::PEPSNetwork{T}, σ::Vector{Int}) where T <: Square{Star}
+function update_energy(network::PEPSNetwork{T}, σ::Vector{Int}) where T <: SquareStar
     i, j = node_from_index(network, length(σ)+1)
     bond_energy(network, (i, j), (i, j-1), local_state_for_node(network, σ, (i, j-1))) +
     bond_energy(network, (i, j), (i-1, j), local_state_for_node(network, σ, (i-1, j))) +

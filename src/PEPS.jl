@@ -13,7 +13,7 @@ struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, Node}
     ncols::Int
     tensors_map::Dict
     gauges::Dict
-    gauge_pairs
+    gauge_pairs # do we need this?
 
     # to be removed
     β::Real              

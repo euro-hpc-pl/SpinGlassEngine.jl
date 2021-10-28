@@ -39,7 +39,7 @@ struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
 end
 
 # to be removed
-function MpoLayers(::Type{T}, ncols::Int) where T <: Square  
+function MpoLayers(::Type{T}, ncols::Int) where T <: Square{NSEnergyGauges}
     main, dress, right = Dict(), Dict(), Dict()
 
     for i ∈ 1:ncols push!(main, i => (-1//6, 0, 3//6, 4//6)) end
@@ -53,24 +53,31 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: Square
     MpoLayers(main, dress, right)
 end
 
-
-
-function MpoLayers(::Type{BasicStrategy{T}}, ncols::Int) where T <: Square
-    main, dress, right = Dict(), Dict(), Dict()
-
-    for i ∈ 1:ncols push!(main, i => (-1//6, 0, 3//6, 4//6)) end
-    for i ∈ 1:ncols - 1 push!(main, i + 1//2 => (0,)) end  
-
-    dress = Dict(i => (3//6, 4//6) for i ∈ 1:ncols)
-
-    for i ∈ 1:ncols push!(right, i => (-3//6, 0)) end
-    for i ∈ 1:ncols - 1 push!(right, i + 1//2 => (0,)) end 
-
-    MpoLayers(main, dress, right)
+function MpoLayers(::Type{T}, ncols::Int) where T <: Square{NSGaugesEnergy}
+## fill in
 end
+
+function MpoLayers(::Type{T}, ncols::Int) where T <: Square{NSEngGaugesEng}
+## fill in
+end
+
+# function MpoLayers(::Type{BasicStrategy{T}}, ncols::Int) where T <: Square{NSEnergyGauges}
+#     main, dress, right = Dict(), Dict(), Dict()
+
+#     for i ∈ 1:ncols push!(main, i => (-1//6, 0, 3//6, 4//6)) end
+#     for i ∈ 1:ncols - 1 push!(main, i + 1//2 => (0,)) end  
+
+#     dress = Dict(i => (3//6, 4//6) for i ∈ 1:ncols)
+
+#     for i ∈ 1:ncols push!(right, i => (-3//6, 0)) end
+#     for i ∈ 1:ncols - 1 push!(right, i + 1//2 => (0,)) end 
+
+#     MpoLayers(main, dress, right)
+# end
+
 
 # to be removed
-function MpoLayers(::Type{T}, ncols::Int) where T <: Square{Star} 
+function MpoLayers(::Type{T}, ncols::Int) where T <: Square{Star, NSEnergyGauges}
     main, dress, right = Dict(), Dict(), Dict()
 
     for i ∈ 1//2 : 1//2 : ncols
@@ -84,18 +91,18 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: Square{Star}
 end
 
 
-function MpoLayers(::Type{BasicStrategy{T}}, ncols::Int) where T <: Square{Star}
-    main, dress, right = Dict(), Dict(), Dict()
+# function MpoLayers(::Type{BasicStrategy{T}}, ncols::Int) where T <: Square{Star}
+#     main, dress, right = Dict(), Dict(), Dict()
 
-    for i ∈ 1//2 : 1//2 : ncols
-        ii = denominator(i) == 1 ? numerator(i) : i
-        push!(main, ii => (-1//6, 0, 3//6, 4//6))
-        push!(dress, ii => (3//6, 4//6))
-        push!(right, ii => (-3//6, 0))
-    end
+#     for i ∈ 1//2 : 1//2 : ncols
+#         ii = denominator(i) == 1 ? numerator(i) : i
+#         push!(main, ii => (-1//6, 0, 3//6, 4//6))
+#         push!(dress, ii => (3//6, 4//6))
+#         push!(right, ii => (-3//6, 0))
+#     end
 
-    MpoLayers(main, dress, right)
-end
+#     MpoLayers(main, dress, right)
+# end
 
 
 

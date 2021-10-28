@@ -5,7 +5,11 @@ export
     AbstractTensorsLayout,
     network_graph,
     Square,
-    Star
+    Star,
+    NSGaugesEnergy,
+    NSEnergyGauges,
+    NSEngGaugesEng
+
 
 const IntOrRational = Union{Int, Rational{Int}}
 const RNode = NTuple{2, IntOrRational}
@@ -18,6 +22,10 @@ struct Star <: AbstractConnectivity end
 struct Square{S <: AbstractConnectivity, 
               T <: AbstractTensorsLayout} <: AbstractGeometry 
 end 
+
+struct NSGaugesEnergy <: AbstractTensorsLayout end
+struct NSEnergyGauges <: AbstractTensorsLayout end
+struct NSEngGaugesEng <: AbstractTensorsLayout end
 
 
 function network_graph(::Type{Square}, m::Int, n::Int)
@@ -36,7 +44,7 @@ function network_graph(::Type{Square{Star}}, m::Int, n::Int)
 end
 
 
-function tensor_map(::Type{Square}, nrows::Int, ncols::Int) 
+function tensor_map(::Type{Square{T}}, nrows::Int, ncols::Int) where T <: Union{NSGaugesEnergy, NSEnergyGauges}
     map = Dict{RNode, Symbol}()
     for i ∈ 1:nrows, j ∈ 1:ncols
         push!(map, (i, j) => :site)
@@ -61,17 +69,35 @@ function tensor_map(::Type{Square{Star}}, nrows::Int, ncols::Int)
 end
 
 
-function initialize_gauges!(::Type{Square}, map::Dict{RNode, Symbol}, nrows::Int, ncols::Int)
-    for i ∈ 1:nrows-1, j ∈ 1:ncols
-        push!(map, (i + 4//6, j) => :gauge_h)
-        push!(map, (i + 5//6, j) => :gauge_h)
-    end
+function initialize_gauges!(::Type{Square{NSGaugesEnergy}}, map::Dict{RNode, Symbol}, nrows::Int, ncols::Int)
+    gauge_pairs = []
     for i ∈ 1:nrows-1, j ∈ 1:ncols
         push!(map, (i + 1//6, j) => :gauge_h)
         push!(map, (i + 2//6, j) => :gauge_h)
+        push!(gauge_pairs, ((i + 1//6, j), (i + 2//6, j)))
     end
+    gauge_pairs
 end
 
+function initialize_gauges!(::Type{Square{NSEnergyGauges}}, map::Dict{RNode, Symbol}, nrows::Int, ncols::Int)
+    gauge_pairs = []
+    for i ∈ 1:nrows-1, j ∈ 1:ncols
+        push!(map, (i + 4//6, j) => :gauge_h)
+        push!(map, (i + 5//6, j) => :gauge_h)
+        push!(gauge_pairs, ((i + 4//6, j), (i + 5//6, j)))
+    end
+    gauge_pairs
+end
+
+function initialize_gauges!(::Type{Square{NSEngGaugesEng}}, map::Dict{RNode, Symbol}, nrows::Int, ncols::Int)
+    gauge_pairs = []
+    for i ∈ 1:nrows-1, j ∈ 1:ncols
+        push!(map, (i + 2//5, j) => :gauge_h)
+        push!(map, (i + 3//5, j) => :gauge_h)
+        push!(gauge_pairs, ((i + 2//5, j), (i + 3//5, j)))
+    end
+    gauge_pairs
+end
 
 function initialize_gauges!(::Type{Square{Star}}, map::Dict{RNode, Symbol}, nrows::Int, ncols::Int)
     for i ∈ 1 : nrows - 1, j ∈ 1//2 : 1//2 : ncols
@@ -80,4 +106,5 @@ function initialize_gauges!(::Type{Square{Star}}, map::Dict{RNode, Symbol}, nrow
         push!(map, (i + 5//6, jj) => :gauge_h)
     end
 end
+
 

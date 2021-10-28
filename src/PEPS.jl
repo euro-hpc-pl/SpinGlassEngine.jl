@@ -13,6 +13,7 @@ struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, Node}
     ncols::Int
     tensors_map::Dict
     gauges::Dict
+    gauge_pairs::List
 
     β::Real
     bond_dim::Int
@@ -48,9 +49,11 @@ struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, Node}
 
         gmap = Dict()
 
-        new(factor_graph, ng, vmap, m, n, nrows, ncols, tmap, gmap,
-            β, bond_dim, var_tol, sweeps,
-            ML.main, ML.dress, ML.right)
+        network = new(factor_graph, ng, vmap, m, n, nrows, ncols, tmap, gmap,
+                      β, bond_dim, var_tol, sweeps,
+                      ML.main, ML.dress, ML.right)
+        update_gauges!(network)
+        network
     end
 end
 

@@ -39,7 +39,7 @@ struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
 end
 
 # to be removed
-function MpoLayers(::Type{T}, ncols::Int) where T <: Square{NSEnergyGauges}
+function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EnergyGauges}
     main, dress, right = Dict(), Dict(), Dict()
 
     for i ∈ 1:ncols push!(main, i => (-1//6, 0, 3//6, 4//6)) end
@@ -53,15 +53,7 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: Square{NSEnergyGauges}
     MpoLayers(main, dress, right)
 end
 
-function MpoLayers(::Type{T}, ncols::Int) where T <: Square{NSGaugesEnergy}
-## fill in
-end
-
-function MpoLayers(::Type{T}, ncols::Int) where T <: Square{NSEngGaugesEng}
-## fill in
-end
-
-# function MpoLayers(::Type{BasicStrategy{T}}, ncols::Int) where T <: Square{NSEnergyGauges}
+# function MpoLayers(::Type{BasicStrategy{T}}, ncols::Int) where T <: Square{EnergyGauges}
 #     main, dress, right = Dict(), Dict(), Dict()
 
 #     for i ∈ 1:ncols push!(main, i => (-1//6, 0, 3//6, 4//6)) end
@@ -77,7 +69,7 @@ end
 
 
 # to be removed
-function MpoLayers(::Type{T}, ncols::Int) where T <: Square{Star, NSEnergyGauges}
+function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EnergyGauges}
     main, dress, right = Dict(), Dict(), Dict()
 
     for i ∈ 1//2 : 1//2 : ncols
@@ -91,7 +83,7 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: Square{Star, NSEnergyGauges
 end
 
 
-# function MpoLayers(::Type{BasicStrategy{T}}, ncols::Int) where T <: Square{Star}
+# function MpoLayers(::Type{BasicStrategy{T}}, ncols::Int) where T <: SquareStar
 #     main, dress, right = Dict(), Dict(), Dict()
 
 #     for i ∈ 1//2 : 1//2 : ncols

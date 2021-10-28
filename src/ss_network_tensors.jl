@@ -181,10 +181,17 @@ function tensor_size(
     v::Tuple{Int, Rational{Int}},
     ::Val{:virtual}
 ) where {S, T}
-    p_lb, p_l, p_lt, 
-    p_rb, p_r, p_rt = _all_fused_projectors(network, v)
-    (size(p_l, 1), size(p_lt, 2) * size(p_rt, 2),
-     size(p_r, 1), size(p_rb, 2) * size(p_lb, 2))
+    i, s = v
+    j = floor(Int, s)
+
+    left_nbrs = ((i+1, j+1), (i, j+1), (i-1, j+1))
+    prl = projector.(Ref(network), Ref((i, j)), left_nbrs)
+    p_lb, p_l, p_lt = last(fuse_projectors(prl))
+    right_nbrs = ((i+1, j), (i, j), (i-1, j))
+    prr = projector.(Ref(network), Ref((i, j+1)), right_nbrs)
+    p_rb, p_r, p_rt = last(fuse_projectors(prr))
+    (size(p_l, 1), maximum(p_lt) * maximum(p_rt),
+    size(p_r, 1), maximum(p_rb) * maximum(p_lb))
 end
 
 

@@ -27,11 +27,11 @@ function bench()
         update_gauges!(peps, :rand)
         map = peps.tensors_map
 
-        f = open("pegasus.txt", "w") # do this once
+        f = open("pegasus2.txt", "w") # do this once
         write(f, " transform ") + write(f, string(transform))
 
 
-        for j in [:site, :central_d, :central_v, :gauge_h] #:virtual]
+        for j in [:virtual, :site, :central_d, :central_v, :gauge_h]
             write(f, " type of tensor ") + write(f, string(j))
             key_value = [k for (k,v) in map if v==j]
             for i in collect(sort(key_value))

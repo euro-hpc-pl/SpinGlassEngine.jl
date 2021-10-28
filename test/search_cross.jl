@@ -44,7 +44,7 @@
         end
         close(f)=#
 
-        for j in [:site, :virtual, :central_d, :central_v, :gauge_h]
+        for j in [:virtual, :site, :central_d, :central_v, :gauge_h]
             println("type of tensor ", j)
             key_value = [k for (k,v) in map if v==j]
             for i in collect(sort(key_value))

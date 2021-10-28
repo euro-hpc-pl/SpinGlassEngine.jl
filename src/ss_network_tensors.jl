@@ -57,10 +57,7 @@ function tensor_size(
     v::S,
     ::Val{:site}
 ) where {S, T}
-    dims = size.(decode_projector!(projectors(network, v)), :EP)
-    pdims = first.(dims)
-    @assert all(σ -> σ == first(pdims), first.(dims))
-    last.(dims)
+    maximum.(projectors(network, v))
 end
 
 

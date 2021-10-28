@@ -40,7 +40,7 @@ function bench()
             write(f, " type of tensor ") + write(f, string(j))
             key_value = [k for (k,v) in map if v==j]
             for i in collect(sort(key_value))
-                write(f, " site ") + write(f, string(i)) + write(f, " size ") + write(f, string(size(tensor(peps, i))))
+                write(f, " site ") + write(f, string(i)) + write(f, " size ") + write(f, string(tensor_size(peps, i)))
             end
             write(f, "------------")
         end
@@ -50,7 +50,7 @@ function bench()
             println("type of tensor ", j)
             key_value = [k for (k,v) in map if v==j]
             for i in collect(sort(key_value))
-                println("site ", i, " size ", size(tensor(peps, i)))
+                println("site ", i, " size ", tensor_size(peps, i))
             end
             println("-------------------")
             println("-------------------")

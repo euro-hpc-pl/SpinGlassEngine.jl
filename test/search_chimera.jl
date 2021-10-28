@@ -67,7 +67,6 @@
         spectrum=full_spectrum,
         cluster_assignment_rule=super_square_lattice((m, n, t))
     )
-
     for transform ∈ all_lattice_transformations
         peps = PEPSNetwork{Square}(m, n, fg, transform, β)
         update_gauges!(peps, :id)

@@ -2,9 +2,7 @@ export
     MpsContractor,
     MpoLayers
 
-
 abstract type AbstractContractor end
-
 
 struct MpoLayers
     main::Dict
@@ -14,13 +12,11 @@ end
 
 
 struct MpsParameters
-    bond_dim::Int
-    var_tol::Real
-    sweeps::Int
-
-    function MpsParameters(bond_dim=typemax(Int), var_to=1E-8, sweeps=4)
-        new(bond_dim, var_to, sweeps)
-    end
+    bond_dimension::Int
+    variational_tol::Real
+    max_num_sweeps::Int
+    
+    MpsParameters(bd=typemax(Int), ϵ=1E-8, sw=4) = new(bd, ϵ, sw)
 end
 
 

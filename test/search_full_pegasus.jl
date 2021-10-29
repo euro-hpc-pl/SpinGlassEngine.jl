@@ -3,8 +3,8 @@ using SpinGlassTensors
 using SpinGlassEngine
 
 function bench()
-    m = 2
-    n = 2
+    m = 3
+    n = 3
     t = 24
 
     β = 3.
@@ -27,7 +27,7 @@ function bench()
         update_gauges!(peps, :rand)
         map = peps.tensors_map
 
-        f = open("pegasus2.txt", "w") # do this once
+        f = open("pegasus3_3.txt", "w") 
         write(f, " transform ") + write(f, string(transform))
 
 

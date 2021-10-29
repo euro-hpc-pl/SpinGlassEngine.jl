@@ -54,7 +54,7 @@ push!(my_tests,
         "compressions.jl" =#
         #"search_full_chimera.jl",
         "search_chimera.jl",
-        "search_cross.jl",
+        #"search_cross.jl",
         #"canonise.jl"
 )
 

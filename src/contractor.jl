@@ -65,6 +65,7 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EnergyGauges}
     MpoLayers(main, dress, right)
 end
 
+
 function MpoLayers(::Type{T}, ncols::Int) where T <: Square{GaugesEnergy}
     main, dress, right = Dict(), Dict(), Dict()
 
@@ -78,6 +79,7 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: Square{GaugesEnergy}
 
     MpoLayers(main, dress, right)
 end
+
 
 function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{GaugesEnergy}
     main, dress, right = Dict(), Dict(), Dict()

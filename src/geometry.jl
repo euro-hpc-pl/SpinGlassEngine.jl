@@ -32,6 +32,24 @@ struct EnergyGauges{T} <: AbstractTensorsLayout end
 struct EngGaugesEng{T} <: AbstractTensorsLayout end
 
 
+# This is different idea to be explored 
+#=
+function (::Square)(m::Int, n::Int) 
+    labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
+    LabelledGraph(labels, grid((m, n)))
+end
+
+
+function (::SquareStar)(m::Int, n::Int)
+    lg = Square(m, n)
+    for i ∈ 1:m-1, j ∈ 1:n-1
+        add_edge!(lg, (i, j), (i+1, j+1))
+        add_edge!(lg, (i+1, j), (i, j+1))
+    end
+    lg
+end
+=#
+
 function network_graph(::Type{Square{T}}, m::Int, n::Int) where T
     labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
     LabelledGraph(labels, grid((m, n)))
@@ -93,7 +111,7 @@ function initialize_gauges!(::Type{Square{T}},
     gauge_pairs
 end
 
-# The following 2 functions should be simplified
+# The following functions should be optimized!
 function initialize_gauges!(::Type{Square{T}}, 
     map::Dict{RNode, Symbol}, 
     nrows::Int, 
@@ -165,4 +183,3 @@ function initialize_gauges!(::Type{SquareStar{T}},
         push!(map, (i + 3//5, jj) => :gauge_h)
     end
 end
-

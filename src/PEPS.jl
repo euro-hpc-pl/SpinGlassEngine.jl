@@ -43,7 +43,7 @@ struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, Node}
 
         ng = network_graph(T, m, n) # TO BE REMOVED
 
-        if !is_compatible(factor_graph, network_graph(T, m, n))
+        if !is_compatible(factor_graph, ng)
             throw(ArgumentError("Factor graph not compatible with given network."))
         end
 

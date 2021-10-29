@@ -9,8 +9,10 @@ using LinearAlgebra
 using LightGraphs
 using ProgressMeter
 
+# to be remove
 SpinGlassNetworks.local_basis(ψ::AbstractMPS, i::Int) = SpinGlassNetworks.local_basis(physical_dim(ψ, i))
 
+# to be remove
 function LinearAlgebra.dot(ψ::AbstractMPS, state::Union{Vector, NTuple})
     C = I
 

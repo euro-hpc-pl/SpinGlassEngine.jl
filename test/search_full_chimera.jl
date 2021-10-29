@@ -23,12 +23,14 @@ function bench()
         cluster_assignment_rule=super_square_lattice((m, n, t))
     )
 
-    #for transform ∈ all_lattice_transformations
-    for transform ∈ rotation.([0])
-        peps = PEPSNetwork{Square}(m, n, fg, transform, β, bond_dim)
-        update_gauges!(peps, :rand)
-        @time sol = low_energy_spectrum(peps, num_states, merge_branches(peps))
-        println(sol.energies[1:1])
+    for Layout ∈ (EnergyGauges, )
+        #for transform ∈ all_lattice_transformations
+        for transform ∈ rotation.([0])
+            peps = PEPSNetwork{Square{Layout}}(m, n, fg, transform, β, bond_dim)
+            update_gauges!(peps, :rand)
+            @time sol = low_energy_spectrum(peps, num_states, merge_branches(peps))
+            println(sol.energies[1:1])
+        end
     end
 end
 

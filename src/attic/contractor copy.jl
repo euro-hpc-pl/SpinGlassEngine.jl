@@ -1,9 +1,11 @@
 export 
-    MpsContractor,
-    MpoLayers
+    MpsContractor
 
 
 abstract type AbstractContractor end
+abstract type AbstractStrategy end
+
+struct BasicStrategy{T <: AbstractGeometry} <: AbstractStrategy end
 
 
 struct MpoLayers
@@ -24,23 +26,21 @@ struct MpsParameters
 end
 
 
-find_layout(network::PEPSNetwork{T}) where {T} = T 
+peps = PEPSNetwork{Square{Layout}}(m, n, fg, transform, β)
 
-
-struct MpsContractor <: AbstractContractor
-    peps::PEPSNetwork{T} where T
+struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
+    peps::PEPSNetwork{S} where S
     betas::Vector{Real}
     params::MpsParameters
     layers::MpoLayers
 
-    function MpsContractor(peps, betas, params) 
+    function MpsContractor{T}(peps, betas, params) where T <: AbstractStrategy
         ctr = new(peps, betas, params)
-        T = find_layout(peps)
         ctr.layers = MpoLayers(T, peps.ncols)  
     end
 end
 
-
+# to be removed
 function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EnergyGauges}
     main, dress, right = Dict(), Dict(), Dict()
 
@@ -55,7 +55,22 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EnergyGauges}
     MpoLayers(main, dress, right)
 end
 
+# function MpoLayers(::Type{BasicStrategy{T}}, ncols::Int) where T <: Square{EnergyGauges}
+#     main, dress, right = Dict(), Dict(), Dict()
 
+#     for i ∈ 1:ncols push!(main, i => (-1//6, 0, 3//6, 4//6)) end
+#     for i ∈ 1:ncols - 1 push!(main, i + 1//2 => (0,)) end  
+
+#     dress = Dict(i => (3//6, 4//6) for i ∈ 1:ncols)
+
+#     for i ∈ 1:ncols push!(right, i => (-3//6, 0)) end
+#     for i ∈ 1:ncols - 1 push!(right, i + 1//2 => (0,)) end 
+
+#     MpoLayers(main, dress, right)
+# end
+
+
+# to be removed
 function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EnergyGauges}
     main, dress, right = Dict(), Dict(), Dict()
 
@@ -68,6 +83,21 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EnergyGauges}
 
     MpoLayers(main, dress, right)
 end
+
+
+# function MpoLayers(::Type{BasicStrategy{T}}, ncols::Int) where T <: SquareStar
+#     main, dress, right = Dict(), Dict(), Dict()
+
+#     for i ∈ 1//2 : 1//2 : ncols
+#         ii = denominator(i) == 1 ? numerator(i) : i
+#         push!(main, ii => (-1//6, 0, 3//6, 4//6))
+#         push!(dress, ii => (3//6, 4//6))
+#         push!(right, ii => (-3//6, 0))
+#     end
+
+#     MpoLayers(main, dress, right)
+# end
+
 
 
 function conditional_probability(crt::MpsContractor, i::Int, j::Int)

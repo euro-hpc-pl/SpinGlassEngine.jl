@@ -87,8 +87,8 @@ end
 
 
 node_index(peps::AbstractGibbsNetwork, node::Node) = peps.ncols * (node[1] - 1) + node[2]
-_mod_wo_zero(k, m) = k % m == 0 ? m : k % m
 
+_mod_wo_zero(k, m) = k % m == 0 ? m : k % m
 
 node_from_index(peps::AbstractGibbsNetwork, index::Int) =
     ((index-1) ÷ peps.ncols + 1, _mod_wo_zero(index, peps.ncols))

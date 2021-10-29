@@ -66,8 +66,8 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EnergyGauges}
 end
 
 
-function conditional_probability(crt::MpsContractor, i::Int, j::Int)
-    # should call mps
+function conditional_probability(network::PEPSNetwork{T}, i::Int, j::Int) where T
+    # should call mps and MpsContractor based on type T
 end
 
 

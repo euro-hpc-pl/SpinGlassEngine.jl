@@ -12,7 +12,9 @@ struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, Node}
     nrows::Int
     ncols::Int
     tensors_map::Dict
-    gauges::Dict
+
+    # Should we store gauges explicitly here?
+    gauges::Dict  
     gauge_pairs # do we need this?
 
     # to be removed
@@ -60,6 +62,7 @@ struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, Node}
                     β, bond_dim, var_tol, sweeps,
                     ML.main, ML.dress, ML.right)
 
+        # Should we have this here?             
         update_gauges!(net)
 
         net

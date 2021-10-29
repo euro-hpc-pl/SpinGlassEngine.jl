@@ -21,6 +21,7 @@ abstract type AbstractTensorsLayout end
 struct SquareStar{T <: AbstractTensorsLayout} <: AbstractGeometry end
 struct Square{T <: AbstractTensorsLayout} <: AbstractGeometry end 
 
+# These are OK in general, but somehow the names are not descriptive enough!
 struct GaugesEnergy{T} <: AbstractTensorsLayout end
 struct EnergyGauges{T} <: AbstractTensorsLayout end
 struct EngGaugesEng{T} <: AbstractTensorsLayout end

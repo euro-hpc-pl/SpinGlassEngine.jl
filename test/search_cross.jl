@@ -23,9 +23,9 @@
         cluster_assignment_rule=super_square_lattice((m, n, t)) 
     )
 
-    for T ∈ (EnergyGauges, )
+    for Layout ∈ (EnergyGauges, )
         for transform ∈ all_lattice_transformations
-            peps = PEPSNetwork{SquareStar{T}}(m, n, fg, transform, β)
+            peps = PEPSNetwork{SquareStar{Layout}}(m, n, fg, transform, β)
             update_gauges!(peps, :rand)
             sol = low_energy_spectrum(peps, states_to_keep, merge_branches(peps))
             @test first(sol.energies) ≈ ground_energy

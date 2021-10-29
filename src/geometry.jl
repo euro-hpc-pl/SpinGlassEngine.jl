@@ -94,7 +94,8 @@ function tensor_map(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T
     map
 end
 
-
+# This should be probably dispatched differently
+# Also, do we really need gauge_pairs?
 function initialize_gauges!(::Type{Square{T}}, 
     map::Dict{RNode, Symbol}, 
     nrows::Int,
@@ -111,7 +112,7 @@ function initialize_gauges!(::Type{Square{T}},
     gauge_pairs
 end
 
-# The following functions should be optimized!
+
 function initialize_gauges!(::Type{Square{T}}, 
     map::Dict{RNode, Symbol}, 
     nrows::Int, 

@@ -22,6 +22,10 @@ abstract type AbstractTensorsLayout end
 struct SquareStar{T <: AbstractTensorsLayout} <: AbstractGeometry end
 struct Square{T <: AbstractTensorsLayout} <: AbstractGeometry end 
 
+# Do aliases make sense?
+const Chimera = Square
+const Pegazus = SquareStar
+
 # These are OK in general, but somehow the names are not descriptive enough!
 struct GaugesEnergy{T} <: AbstractTensorsLayout end
 struct EnergyGauges{T} <: AbstractTensorsLayout end
@@ -89,7 +93,7 @@ function initialize_gauges!(::Type{Square{T}},
     gauge_pairs
 end
 
-
+# The following 2 functions should be simplified
 function initialize_gauges!(::Type{Square{T}}, 
     map::Dict{RNode, Symbol}, 
     nrows::Int, 

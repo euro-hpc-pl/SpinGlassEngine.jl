@@ -68,7 +68,7 @@
         cluster_assignment_rule=super_square_lattice((m, n, t))
     )
 
-    for Layout ∈ (EnergyGauges, )
+    for Layout ∈ (EnergyGauges, GaugesEnergy)
         for transform ∈ all_lattice_transformations  
             peps = PEPSNetwork{Square{Layout}}(m, n, fg, transform, β)
             update_gauges!(peps, :id)

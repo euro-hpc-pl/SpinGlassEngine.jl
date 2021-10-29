@@ -58,10 +58,9 @@ function tensor_size(::Type{Site},
 end
 
 
-xfunction tensor(::Type{Central{Vertical}},
+function tensor(::Type{Central{Vertical}},
     network::AbstractGibbsNetwork{S, T},
-    v::Tuple{Rational{Int}, Int}
-) where {S, T}
+    v::Tuple{Rational{Int}, Int}) where {S, T}
     r, j = v
     i = floor(Int, r)
     connecting_tensor(network, (i, j), (i+1, j))

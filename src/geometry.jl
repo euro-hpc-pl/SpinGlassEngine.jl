@@ -127,7 +127,7 @@ function initialize_gauges!(::Type{SquareStar{T}},
     map::Dict{RNode, Symbol}, 
     nrows::Int, 
     ncols::Int
-) where T
+) where T <: EnergyGauges
     for i ∈ 1 : nrows - 1, j ∈ 1//2 : 1//2 : ncols
         jj = denominator(j) == 1 ? numerator(j) : j
         push!(map, (i + 4//6, jj) => :gauge_h)
@@ -135,4 +135,27 @@ function initialize_gauges!(::Type{SquareStar{T}},
     end
 end
 
+function initialize_gauges!(::Type{SquareStar{T}}, 
+    map::Dict{RNode, Symbol}, 
+    nrows::Int, 
+    ncols::Int
+) where T <: GaugesEnergy
+    for i ∈ 1 : nrows - 1, j ∈ 1//2 : 1//2 : ncols
+        jj = denominator(j) == 1 ? numerator(j) : j
+        push!(map, (i + 1//6, jj) => :gauge_h)
+        push!(map, (i + 2//6, jj) => :gauge_h)
+    end
+end
+
+function initialize_gauges!(::Type{SquareStar{T}}, 
+    map::Dict{RNode, Symbol}, 
+    nrows::Int, 
+    ncols::Int
+) where T <: EngGaugesEng
+    for i ∈ 1 : nrows - 1, j ∈ 1//2 : 1//2 : ncols
+        jj = denominator(j) == 1 ? numerator(j) : j
+        push!(map, (i + 2//5, jj) => :gauge_h)
+        push!(map, (i + 3//5, jj) => :gauge_h)
+    end
+end
 

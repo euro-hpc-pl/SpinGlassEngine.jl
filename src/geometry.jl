@@ -18,6 +18,7 @@ abstract type AbstractGeometry end
 abstract type AbstractConnectivity end
 abstract type AbstractTensorsLayout end
 
+# Should we use Chimera and Pegazus instead of Square and SquareStar?
 struct SquareStar{T <: AbstractTensorsLayout} <: AbstractGeometry end
 struct Square{T <: AbstractTensorsLayout} <: AbstractGeometry end 
 
@@ -135,6 +136,7 @@ function initialize_gauges!(::Type{SquareStar{T}},
     end
 end
 
+
 function initialize_gauges!(::Type{SquareStar{T}}, 
     map::Dict{RNode, Symbol}, 
     nrows::Int, 
@@ -146,6 +148,7 @@ function initialize_gauges!(::Type{SquareStar{T}},
         push!(map, (i + 2//6, jj) => :gauge_h)
     end
 end
+
 
 function initialize_gauges!(::Type{SquareStar{T}}, 
     map::Dict{RNode, Symbol}, 

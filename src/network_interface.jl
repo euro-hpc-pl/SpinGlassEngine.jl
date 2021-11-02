@@ -15,7 +15,7 @@ export
     local_state_for_node,
     iteration_order,
     fuse_projectors,
-    update_gauges!
+    initialize_gauges!
 
 
 const Node = NTuple{2, Int}
@@ -196,38 +196,23 @@ function is_compatible(
     )
 end
 
-#=
-function update_gauges!(
+
+function initialize_gauges!(
     network::AbstractGibbsNetwork{S, T},
     type::Symbol=:rand
 ) where {S, T}
     @assert type ∈ (:id, :rand)
-    for ((i1, j1), (i2, j2)) ∈ network.gauge_pairs
+    for gauge ∈ network.gauges_info
+        ((i1, j1), (i2, j2)) = gauge.positions
+        push!(network.tensors_map, (i1, j1) => gauge.type, (i2, j2) => gauge.type)
         i1 = denominator(i1) == 1 ? numerator(i1) : i1
         j1 = denominator(j1) == 1 ? numerator(j1) : j1
         i2 = denominator(i1) == 1 ? numerator(i2) : i2
         j2 = denominator(j2) == 1 ? numerator(j2) : j2
-
-        X = type == :id ? ones(u) : rand(u) .+ 0.42
-        push!(network.gauges, (i1, j1) => X, (i2, j2) => 1 ./ X)
+        d = tensor_size(network, gauge.attached_tensor)[gauge.attached_leg]
+        X = type == :id ? ones(d) : rand(d) .+ 0.42
+        push!(network.gauges_data, (i1, j1) => X, (i2, j2) => 1 ./ X)
     end
-end
-=#
-
-
-function update_gauges!(  #TO BE REMOVED
-     network::AbstractGibbsNetwork{S, T},
-     type::Symbol=:rand
-) where {S, T}
-     @assert type ∈ (:id, :rand)
-     for i ∈ 1:network.nrows-1, k ∈ 1//2 : 1//2 : network.ncols
-         j = denominator(k) == 1 ? numerator(k) : k
-         u, d = tensor_size(network, (i + 1//2, j))
-         Y = type == :id ? ones(u) : rand(u) .+ 0.42
-         push!(network.gauges, (i + 1//6, j) => Y, (i + 2//6, j) => 1 ./ Y)
-         Z = type == :id ? ones(d) : rand(d) .+ 0.42
-         push!(network.gauges, (i + 4//6, j) => Z, (i + 5//6, j) => 1 ./ Z)
-     end
 end
 
 

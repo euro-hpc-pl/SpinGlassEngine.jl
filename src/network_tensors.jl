@@ -186,7 +186,7 @@ function tensor(
     v::R,
     ::Val{:gauge_h}
 ) where {S, T, R}
-    Diagonal(network.gauges[v])
+    Diagonal(network.gauges_data[v])
 end
 
 
@@ -195,7 +195,7 @@ function tensor_size(
     v::R,
     ::Val{:gauge_h}
 ) where {S, T, R}
-    u = size(network.gauges[v], 1)
+    u = size(network.gauges_data[v], 1)
     u, u
 end
 

@@ -26,7 +26,6 @@
     for Layout ∈ (EnergyGauges, GaugesEnergy)
         for transform ∈ all_lattice_transformations
             peps = PEPSNetwork{SquareStar{Layout}}(m, n, fg, transform, β)
-            update_gauges!(peps, :rand)
             sol = low_energy_spectrum(peps, states_to_keep, merge_branches(peps))
             @test first(sol.energies) ≈ ground_energy
         end

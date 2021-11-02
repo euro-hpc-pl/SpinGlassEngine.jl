@@ -34,7 +34,7 @@ end
 
 
 function tensor(
-    network::AbstractGibbsNetwork{S, T}, 
+    network::AbstractGibbsNetwork{Node, T}, 
     v::S,
     ::Val{:site}
 ) where {S, T}
@@ -49,7 +49,7 @@ end
  
 
 function tensor_size(
-    network::AbstractGibbsNetwork{S, T}, 
+    network::AbstractGibbsNetwork{Node, T}, 
     v::S,
     ::Val{:site}
 ) where {S, T}
@@ -62,10 +62,10 @@ end
 
 
 function tensor(
-    network::AbstractGibbsNetwork{S, T},
+    network::AbstractGibbsNetwork{Node, T},
     v::Tuple{Rational{Int}, Int},
     ::Val{:central_v}
-) where {S, T}
+) where T
     r, j = v
     i = floor(Int, r)
     connecting_tensor(network, (i, j), (i+1, j))
@@ -73,10 +73,10 @@ end
 
 
 function tensor_size(
-    network::AbstractGibbsNetwork{S, T},
+    network::AbstractGibbsNetwork{Node, T},
     v::Tuple{Rational{Int}, Int},
     ::Val{:central_v}
-) where {S, T}
+) where T
     r, j = v
     i = floor(Int, r)
     size(interaction_energy(network, (i, j), (i+1, j)))
@@ -84,10 +84,10 @@ end
 
 
 function tensor(
-    network::AbstractGibbsNetwork{S, T},
+    network::AbstractGibbsNetwork{Node, T},
     w::Tuple{Int, Rational{Int}},
     ::Val{:central_h}
-) where {S, T}
+) where T
     i, r = w
     j = floor(Int, r)
     connecting_tensor(network, (i, j), (i, j+1))
@@ -95,10 +95,10 @@ end
 
 
 function tensor_size(
-    network::AbstractGibbsNetwork{S, T},
+    network::AbstractGibbsNetwork{Node, T},
     w::Tuple{Int, Rational{Int}},
     ::Val{:central_h}
-) where {S, T}
+) where T
     i, r = w
     j = floor(Int, r)
     size(interaction_energy(network, (i, j), (i, j+1)))
@@ -106,10 +106,10 @@ end
 
 
 function tensor(
-    network::AbstractGibbsNetwork{S, T},
+    network::AbstractGibbsNetwork{Node, T},
     v::Tuple{Rational{Int}, Rational{Int}},
     ::Val{:central_d}
-) where {S, T}
+) where T
     r, s = v
     i = floor(Int, r)
     j = floor(Int, s)
@@ -121,10 +121,10 @@ end
 
 
 function tensor_size(
-    network::AbstractGibbsNetwork{S, T},
+    network::AbstractGibbsNetwork{Node, T},
     v::Tuple{Rational{Int}, Rational{Int}},
     ::Val{:central_d}
-) where {S, T}
+) where T
     r, s = v
     i = floor(Int, r)
     j = floor(Int, s)
@@ -135,9 +135,9 @@ end
 
 
 function _all_fused_projectors(
-    network::AbstractGibbsNetwork{S, T},
+    network::AbstractGibbsNetwork{Node, T},
     v::Tuple{Int, Rational{Int}},
-) where {S, T}
+) where T
     i, s = v
     j = floor(Int, s)
 
@@ -154,10 +154,10 @@ end
 
 
 function tensor(
-    network::AbstractGibbsNetwork{S, T},
+    network::AbstractGibbsNetwork{Node, T},
     v::Tuple{Int, Rational{Int}},
     ::Val{:virtual}
-) where {S, T}
+) where T
     p_lb, p_l, p_lt, 
     p_rb, p_r, p_rt = _all_fused_projectors(network, v)
 
@@ -171,10 +171,10 @@ end
 
 
 function tensor_size(
-    network::AbstractGibbsNetwork{S, T},
+    network::AbstractGibbsNetwork{Node, T},
     v::Tuple{Int, Rational{Int}},
     ::Val{:virtual}
-) where {S, T}
+) where T
     p_lb, p_l, p_lt, 
     p_rb, p_r, p_rt = _all_fused_projectors(network, v)
     (size(p_l, 1), size(p_lt, 2) * size(p_rt, 2),
@@ -183,29 +183,29 @@ end
 
 
 function tensor(
-    network::AbstractGibbsNetwork{S, T}, 
-    v::R,
+    network::AbstractGibbsNetwork{Node, T}, 
+    v::S,
     ::Val{:gauge_h}
-) where {S, T, R}
+) where {S, T}
     Diagonal(network.gauges_data[v])
 end
 
 
 function tensor_size(
-    network::AbstractGibbsNetwork{S, T}, 
-    v::R,
+    network::AbstractGibbsNetwork{Node, T}, 
+    v::S,
     ::Val{:gauge_h}
-) where {S, T, R}
+) where {S, T}
     u = size(network.gauges_data[v], 1)
     u, u
 end
 
 
 function connecting_tensor(
-    network::AbstractGibbsNetwork{S, T},
-    v::S,
-    w::S
-) where {S, T}
+    network::AbstractGibbsNetwork{Node, T},
+    v::Node,
+    w::Node
+) where T
     en = interaction_energy(network, v, w)
     exp.(-network.β .* (en .- minimum(en)))
 end 
@@ -213,7 +213,7 @@ end
 
 function reduced_site_tensor(
     network::PEPSNetwork,
-    v::Tuple{Int, Int},
+    v::Node,
     l::Int,
     u::Int
 )
@@ -239,7 +239,7 @@ end
 
 function reduced_site_tensor(
     network::PEPSNetwork{T},
-    v::Tuple{Int, Int},
+    v::Node,
     ld::Int,
     l::Int,
     d::Int,
@@ -277,7 +277,7 @@ end
 
 function tensor_size(
     network::PEPSNetwork{T},
-    v::Tuple{Int, Int},
+    v::Node,
     ::Val{:reduced}
 ) where T <: Square
 

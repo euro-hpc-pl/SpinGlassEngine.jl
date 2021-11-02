@@ -8,6 +8,7 @@ export
     mpo, mps 
 
 
+# tensors signatures are mess    
 function tensor(
     network::AbstractGibbsNetwork{S, T},
     v::R

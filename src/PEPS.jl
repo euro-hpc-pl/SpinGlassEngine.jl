@@ -4,6 +4,8 @@ export
     conditional_probability
 
 
+const AbstractPEPSNetwork = AbstractGibbsNetwork{NTuple{2, Int}, Node}
+
 # node's types to be changes
 struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{NTuple{2, Int}, Node}
     factor_graph::LabelledGraph{S, Node} where S
@@ -47,6 +49,7 @@ struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{NTuple{2, Int}
         nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
 
         ng = network_graph(T, m, n) # TO BE REMOVED
+        #ng = T.name.wrapper(m, n)
 
         if !is_compatible(factor_graph, ng)
             throw(ArgumentError("Factor graph not compatible with given network."))

@@ -53,16 +53,15 @@ struct Node
 end
 =#
 
-
-# This is different idea to be explored 
 #=
-function (::Square)(m::Int, n::Int) 
+# This is different idea to be explored 
+function Square(m::Int, n::Int) 
     labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
     LabelledGraph(labels, grid((m, n)))
 end
 
 
-function (::SquareStar)(m::Int, n::Int)
+function SquareStar(m::Int, n::Int)
     lg = Square(m, n)
     for i ∈ 1:m-1, j ∈ 1:n-1
         add_edge!(lg, (i, j), (i+1, j+1))

@@ -13,12 +13,12 @@ struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, Node}
     ncols::Int
     tensors_map::Dict
 
-    # Should we store gauges explicitly here?
-    gauges::Dict  
-    gauge_pairs # do we need this?
+    # Should we store gauges explicitly here? pack into single structure?
+    gauges_data::Dict
+    gauges_info
 
     # to be removed
-    β::Real              
+    β::Real
     bond_dim::Int
     var_tol::Real
     sweeps::Int
@@ -38,6 +38,7 @@ struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, Node}
         var_tol::Real=1E-8,
         sweeps::Int=4,
         #-----------------------
+        initial_gauges::Symbol=:id
     ) where T <: AbstractGeometry
 
         vmap = vertex_map(transformation, m, n)
@@ -49,22 +50,20 @@ struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, Node}
             throw(ArgumentError("Factor graph not compatible with given network."))
         end
 
-        # the two should be combined!
         tmap = tensor_map(T, nrows, ncols)
-        gauge_pairs = initialize_gauges!(T, tmap, nrows, ncols)
-        
+
+        gauges_data = Dict()
+        gauges_info = gauges_list(T, nrows, ncols)
+
         ML = MpoLayers(T, ncols) # to be removed
 
-        gmap = Dict()
-
         # to be simplified 
-        net = new(factor_graph, ng, vmap, m, n, nrows, ncols, tmap, gmap, gauge_pairs,
+        net = new(factor_graph, ng, vmap, m, n, nrows, ncols, tmap,
+                    gauges_data, gauges_info,
                     β, bond_dim, var_tol, sweeps,
                     ML.main, ML.dress, ML.right)
 
-        # Should we have this here?             
-        update_gauges!(net)
-
+        initialize_gauges!(net)
         net
     end
 end

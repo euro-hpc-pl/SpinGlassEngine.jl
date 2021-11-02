@@ -3,7 +3,9 @@ export
     node_from_index, 
     conditional_probability
 
-struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, Node}
+
+# node's types to be changes
+struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{NTuple{2, Int}, Node}
     factor_graph::LabelledGraph{S, Node} where S
     network_graph  #TO BE REMOVEd
     vertex_map::Function

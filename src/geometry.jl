@@ -33,6 +33,7 @@ struct GaugesEnergy{T} <: AbstractTensorsLayout end
 struct EnergyGauges{T} <: AbstractTensorsLayout end
 struct EngGaugesEng{T} <: AbstractTensorsLayout end
 
+# add types
 struct GaugeInfo
     positions
     attached_tensor

@@ -72,7 +72,7 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: Square{GaugesEnergy}
     for i ∈ 1:ncols push!(main, i => (-4//6, -1//2, 0, 1//6)) end
     for i ∈ 1:ncols - 1 push!(main, i + 1//2 => (0,)) end  
 
-    dress = Dict(i => (1//6) for i ∈ 1:ncols)
+    dress = Dict(i => (1//6,) for i ∈ 1:ncols)
 
     for i ∈ 1:ncols push!(right, i => (-3//6, 0)) end
     for i ∈ 1:ncols - 1 push!(right, i + 1//2 => (0,)) end 

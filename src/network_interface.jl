@@ -18,6 +18,7 @@ export
     initialize_gauges!
 
 
+#const Node = NTuple{2, IntOrRational}
 const Node = NTuple{2, Int}
 
 # S: type of the vertex of network

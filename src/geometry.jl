@@ -72,9 +72,9 @@ end
 =#
 
 
-##############################
+#-----------------------------
 ###    Square geometry     ###
-##############################
+#-----------------------------
 
 
 function network_graph(::Type{Square{T}}, m::Int, n::Int) where T
@@ -102,7 +102,10 @@ function gauges_list(::Type{Square{T}},
     nrows::Int,
     ncols::Int
 ) where T <: GaugesEnergy
-    [GaugeInfo(((i + 1//6, j), (i + 2//6, j)), (i + 1//2, j), 1, :gauge_h) for i ∈ 1:nrows-1 for j ∈ 1:ncols]
+    [
+        GaugeInfo(((i + 1//6, j), (i + 2//6, j)), (i + 1//2, j), 1, :gauge_h) 
+        for i ∈ 1:nrows-1 for j ∈ 1:ncols
+    ]
 end
 
 
@@ -110,7 +113,10 @@ function gauges_list(::Type{Square{T}},
     nrows::Int,
     ncols::Int
 ) where T <: EnergyGauges
-    [GaugeInfo(((i + 4//6, j), (i + 5//6, j)), (i + 1//2, j), 2, :gauge_h) for i ∈ 1:nrows-1 for j ∈ 1:ncols]
+    [
+        GaugeInfo(((i + 4//6, j), (i + 5//6, j)), (i + 1//2, j), 2, :gauge_h) 
+        for i ∈ 1:nrows-1 for j ∈ 1:ncols
+    ]
 end
 
 
@@ -118,13 +124,16 @@ function gauges_list(::Type{Square{T}},
     nrows::Int, 
     ncols::Int
 ) where T <: EngGaugesEng
-    [GaugeInfo(((i + 2//5, j), (i + 3//5, j)), (i + 1//5, j), 2, :gauge_h) for i ∈ 1:nrows-1 for j ∈ 1:ncols]
+    [
+        GaugeInfo(((i + 2//5, j), (i + 3//5, j)), (i + 1//5, j), 2, :gauge_h) 
+        for i ∈ 1:nrows-1 for j ∈ 1:ncols
+    ]
 end
 
 
-##################################
+#---------------------------------
 ###    SquareStar geometry     ###
-##################################
+#---------------------------------
 
 
 function network_graph(::Type{SquareStar{T}}, m::Int, n::Int) where T
@@ -169,7 +178,11 @@ function gauges_list(::Type{SquareStar{T}},
     nrows::Int, 
     ncols::Int
 ) where T <: EnergyGauges
-    gl = [GaugeInfo(((i + 4//6, j), (i + 5//6, j)), (i + 1//2, j), 2, :gauge_h) for i ∈ 1:nrows-1 for j ∈ 1 : ncols]
+    gl = [
+            GaugeInfo(((i + 4//6, j), (i + 5//6, j)), (i + 1//2, j), 2, :gauge_h)
+            for i ∈ 1:nrows-1 for j ∈ 1 : ncols
+        ]
+
     for i ∈ 1:nrows-1, j ∈ 1//2:ncols
         push!(gl, GaugeInfo(((i + 4//6, j), (i + 5//6, j)), (i + 1//2, j), 2, :gauge_h))
     end
@@ -181,7 +194,11 @@ function gauges_list(::Type{SquareStar{T}},
     nrows::Int, 
     ncols::Int
 ) where T <: EngGaugesEng
-    gl = [GaugeInfo(((i + 2//5, j), (i + 3//5, j)), (i + 1//5, j), 2, :gauge_h) for i ∈ 1:nrows-1 for j ∈ 1 : ncols]
+    gl = [
+            GaugeInfo(((i + 2//5, j), (i + 3//5, j)), (i + 1//5, j), 2, :gauge_h) 
+            for i ∈ 1:nrows-1 for j ∈ 1 : ncols
+        ]
+        
     for i ∈ 1:nrows-1, j ∈ 1//2:ncols
         push!(gl, GaugeInfo(((i + 2//5, j), (i + 3//5, j)), (i + 1//5, j), 2, :gauge_h))
     end

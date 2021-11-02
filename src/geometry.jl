@@ -40,6 +40,19 @@ struct GaugeInfo
     type
 end
 
+#=
+struct Node
+    i::IntOrRational
+    j::IntOrRational 
+    
+    function Node(i::IntOrRational, j::IntOrRational)
+        Node(denominator(i) == 1 ? numerator(i) : i,
+             denominator(j) == 1 ? numerator(j) : j)
+    end
+end
+=#
+
+
 # This is different idea to be explored 
 #=
 function (::Square)(m::Int, n::Int) 

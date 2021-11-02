@@ -19,6 +19,7 @@ const RNode = NTuple{2, IntOrRational}
 abstract type AbstractGeometry end
 abstract type AbstractConnectivity end
 abstract type AbstractTensorsLayout end
+#abstract type AbstractNode end
 
 # Should we use Chimera and Pegazus instead of Square and SquareStar?
 struct SquareStar{T <: AbstractTensorsLayout} <: AbstractGeometry end
@@ -42,15 +43,14 @@ struct GaugeInfo
 end
 
 #=
-struct Node
+struct Node <: AbstractNode
     i::IntOrRational
-    j::IntOrRational 
+    j::IntOrRational
     
-    function Node(i::IntOrRational, j::IntOrRational)
-        Node(denominator(i) == 1 ? numerator(i) : i,
-             denominator(j) == 1 ? numerator(j) : j)
-    end
+    Node(i, j) = new(denominator(i) == 1 ? numerator(i) : i,
+                     denominator(j) == 1 ? numerator(j) : j)
 end
+
 =#
 
 #=

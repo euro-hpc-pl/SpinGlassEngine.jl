@@ -28,7 +28,7 @@ struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, Node}
         vmap = vertex_map(transformation, m, n)
         nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
 
-        if !is_compatible(factor_graph, network_graph(T, m, n))
+        if !is_compatible(factor_graph, T.name.wrapper(m, n))
             throw(ArgumentError("Factor graph not compatible with given network."))
         end
 

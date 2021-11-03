@@ -53,8 +53,7 @@ end
 
 =#
 
-#=
-# This is different idea to be explored 
+
 function Square(m::Int, n::Int) 
     labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
     LabelledGraph(labels, grid((m, n)))
@@ -69,18 +68,11 @@ function SquareStar(m::Int, n::Int)
     end
     lg
 end
-=#
 
 
 #-----------------------------
 ###    Square geometry     ###
 #-----------------------------
-
-
-function network_graph(::Type{Square{T}}, m::Int, n::Int) where T
-    labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
-    LabelledGraph(labels, grid((m, n)))
-end
 
 
 function tensor_map(::Type{Square{T}}, 
@@ -134,17 +126,6 @@ end
 #---------------------------------
 ###    SquareStar geometry     ###
 #---------------------------------
-
-
-function network_graph(::Type{SquareStar{T}}, m::Int, n::Int) where T
-    labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
-    lg = LabelledGraph(labels, grid((m, n)))
-    for i ∈ 1:m-1, j ∈ 1:n-1
-        add_edge!(lg, (i, j), (i+1, j+1))
-        add_edge!(lg, (i+1, j), (i, j+1))
-    end
-    lg
-end
 
 
 function tensor_map(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T

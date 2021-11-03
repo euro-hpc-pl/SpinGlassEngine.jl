@@ -7,7 +7,6 @@ export
 # node's types to be changes
 struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, Node}
     factor_graph::LabelledGraph{S, Node} where S
-    network_graph  #TO BE REMOVEd
     vertex_map::Function
     m::Int
     n::Int
@@ -29,10 +28,7 @@ struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, Node}
         vmap = vertex_map(transformation, m, n)
         nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
 
-        ng = network_graph(T, m, n) # TO BE REMOVED
-        #ng = T.name.wrapper(m, n)
-
-        if !is_compatible(factor_graph, ng)
+        if !is_compatible(factor_graph, network_graph(T, m, n))
             throw(ArgumentError("Factor graph not compatible with given network."))
         end
 
@@ -41,7 +37,7 @@ struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, Node}
         gauges_data = Dict()
         gauges_info = gauges_list(T, nrows, ncols)
 
-        net = new(factor_graph, ng, vmap, m, n, nrows, ncols,
+        net = new(factor_graph, vmap, m, n, nrows, ncols,
                   tmap, gauges_data, gauges_info)
 
         initialize_gauges!(net)

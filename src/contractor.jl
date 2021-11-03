@@ -211,7 +211,12 @@ function conditional_probability(contractor::MpsContractor, w::Vector{Int})
 end
 
 
-function conditional_probability(::Type{T}, contractor::MpsContractor, w::Vector{Int}, β) where T <: Square
+function conditional_probability(::Type{T}, 
+    contractor::MpsContractor, 
+    w::Vector{Int}, 
+    β::Real
+) where T <: Square
+
     network = contractor.peps
     i, j = node_from_index(network, length(w)+1)
     ∂v = boundary_state(network, w, (i, j))
@@ -230,7 +235,12 @@ function conditional_probability(::Type{T}, contractor::MpsContractor, w::Vector
 end
 
 
-function conditional_probability(::Type{T}, contractor::MpsContractor, w::Vector{Int}, β) where T <: SquareStar
+function conditional_probability(::Type{T}, 
+    contractor::MpsContractor, 
+    w::Vector{Int}, 
+    β::Real
+) where T <: SquareStar
+
     network = contractor.peps
     i, j = node_from_index(network, length(w)+1)
     ∂v = boundary_state(network, w, (i, j))

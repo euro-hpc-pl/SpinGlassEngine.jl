@@ -22,7 +22,7 @@ struct MpsParameters
 end
 
 
-find_layout(network::PEPSNetwork{T}) where {T} = T 
+layout(network::PEPSNetwork{T}) where {T} = T 
 
 
 struct MpsContractor <: AbstractContractor
@@ -32,7 +32,7 @@ struct MpsContractor <: AbstractContractor
     layers::MpoLayers
 
     function MpsContractor(peps, betas, params)
-        T = find_layout(peps)
+        T = layout(peps)
         layers = MpoLayers(T, peps.ncols)
         new(peps, betas, params, layers)
     end
@@ -106,16 +106,14 @@ end
     W = Dict()
     # Threads.@threads for (j, coor) ∈ layers
     for (j, coor) ∈ layers
-        push!(W,
-            j => Dict(dr => tensor(ctr.peps, PEPSNode(r + dr, j), β) for dr ∈ coor)
-        )
+        push!(W, j => Dict(dr => tensor(ctr.peps, PEPSNode(r + dr, j), β) for dr ∈ coor))
     end
     Mpo(W)
 end
 
 # IdentityMps to be change or remove
 IdentityMps(peps::PEPSNetwork{T}) where T <: Square =
-    Mps(Dict(j => ones(1, 1, 1) for j ∈ 1:peps.ncols))
+Mps(Dict(j => ones(1, 1, 1) for j ∈ 1:peps.ncols))
 
 
 function IdentityMps(peps::PEPSNetwork{T}) where T <: SquareStar
@@ -133,7 +131,7 @@ end
     ψ = mps(contractor, i+1, β)
     W = mpo(contractor, contractor.layers.main, i, β)
 
-    ψ0 = dot(W, ψ)   # to be change
+    ψ0 = dot(W, ψ)   # to be changed
 
     truncate!(ψ0, :left, contractor.params.bond_dimension)
     compress!(ψ0, W, ψ,
@@ -205,7 +203,7 @@ end
 
 
 function conditional_probability(contractor::MpsContractor, w::Vector{Int})
-    T = find_layout(contractor.peps)
+    T = layout(contractor.peps)
     β = last(contractor.betas)
     conditional_probability(T, contractor, w, β)
 end

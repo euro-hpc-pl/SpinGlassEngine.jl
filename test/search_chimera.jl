@@ -72,6 +72,7 @@
 
     for Layout ∈ (EnergyGauges, GaugesEnergy)
         for transform ∈ all_lattice_transformations
+            
             network = PEPSNetwork{Square{Layout}}(m, n, fg, transform)
             contractor = MpsContractor(network, [β], params)
             sol = low_energy_spectrum(contractor, num_states)

@@ -4,7 +4,6 @@ export
     conditional_probability
 
 
-# node's types to be changes
 struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, PEPSNode}
     factor_graph::LabelledGraph
     vertex_map::Function
@@ -37,8 +36,7 @@ struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, PEPSNode
         gauges_data = Dict()
         gauges_info = gauges_list(T, nrows, ncols)
 
-        net = new(factor_graph, vmap, m, n, nrows, ncols,
-                  tmap, gauges_data, gauges_info)
+        net = new(factor_graph, vmap, m, n, nrows, ncols, tmap, gauges_data, gauges_info)
 
         initialize_gauges!(net)
         net

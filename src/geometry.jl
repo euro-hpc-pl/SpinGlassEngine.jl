@@ -19,26 +19,16 @@ abstract type AbstractConnectivity end
 abstract type AbstractTensorsLayout end
 abstract type AbstractNode end
 
-# Should we use Chimera and Pegazus instead of Square and SquareStar?
 struct SquareStar{T <: AbstractTensorsLayout} <: AbstractGeometry end
 struct Square{T <: AbstractTensorsLayout} <: AbstractGeometry end 
 
-# Do aliases make sense?
 const Chimera = Square
 const Pegazus = SquareStar
 
-# These are OK in general, but somehow the names are not descriptive enough!
+# Somehow the names are not descriptive enough!
 struct GaugesEnergy{T} <: AbstractTensorsLayout end
 struct EnergyGauges{T} <: AbstractTensorsLayout end
 struct EngGaugesEng{T} <: AbstractTensorsLayout end
-
-# add types
-struct GaugeInfo
-    positions
-    attached_tensor
-    attached_leg
-    type
-end
 
 const Node = NTuple{2, Int}
 
@@ -51,6 +41,13 @@ struct PEPSNode <: AbstractNode
 end
 
 Node(node::PEPSNode) = (node.i, node.j)
+
+struct GaugeInfo
+    positions::NTuple{2, PEPSNode}
+    attached_tensor::PEPSNode
+    attached_leg::Int
+    type::Symbol
+end
 
 
 function Square(m::Int, n::Int) 

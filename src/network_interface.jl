@@ -16,8 +16,8 @@ export
     initialize_gauges!
 
 
-# S: type of the vertex of network
-# T: type of the vertex of underlying factor graph
+# T: type of the vertex of network
+# S: type of the vertex of underlying factor graph
 abstract type AbstractGibbsNetwork{S, T} end
 
 

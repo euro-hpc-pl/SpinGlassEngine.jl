@@ -1,9 +1,10 @@
 export
-    MpsContractor,
     MpoLayers,
-    MpsParameters
+    MpsParameters,
+    MpsContractor
 
 abstract type AbstractContractor end
+
 
 struct MpoLayers
     main::Dict
@@ -96,18 +97,23 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{GaugesEnergy}
 end
 
 
-@memoize function mpo(contractor::MpsContractor, layers, r::Int, β::Real) where {T <: Number}
+@memoize function mpo(
+    ctr::MpsContractor, 
+    layers::Dict, 
+    r::Int,
+    β::Real
+) 
     W = Dict()
     # Threads.@threads for (j, coor) ∈ layers
     for (j, coor) ∈ layers
         push!(W,
-            j => Dict(dr => tensor(contractor.peps, (r + dr, j), β) for dr ∈ coor)
+            j => Dict(dr => tensor(ctr.peps, (r + dr, j), β) for dr ∈ coor)
         )
     end
     Mpo(W)
 end
 
-
+# to be change
 IdentityMps(peps::PEPSNetwork{T}) where T <: Square =
     Mps(Dict(j => ones(1, 1, 1) for j ∈ 1:peps.ncols))
 
@@ -122,12 +128,13 @@ function IdentityMps(peps::PEPSNetwork{T}) where T <: SquareStar
 end
 
 
-@memoize function mps(contractor::MpsContractor, i::Int, β::Real) where {T <: Number}
+@memoize function mps(contractor::MpsContractor, i::Int, β::Real) where T <: Number
     if i > contractor.peps.nrows return IdentityMps(contractor.peps) end  
     ψ = mps(contractor, i+1, β)
     W = mpo(contractor, contractor.layers.main, i, β)
-    ψ0 = dot(W, ψ)   # dla rzadkosci nie mozemy tworzyc dot(W, ψ)
-    # jako initial guess mozemy probowac wykorzystac mpsy z innych temperatur
+
+    ψ0 = dot(W, ψ)   # to be change
+
     truncate!(ψ0, :left, contractor.params.bond_dimension)
     compress!(ψ0, W, ψ,
             contractor.params.bond_dimension,
@@ -137,7 +144,9 @@ end
 end
 
 
-dressed_mps(contractor::MpsContractor, i::Int) = dressed_mps(contractor, i, last(contractor.betas))
+dressed_mps(contractor::MpsContractor, i::Int) = 
+dressed_mps(contractor, i, last(contractor.betas))
+
 
 @memoize Dict function dressed_mps(contractor::MpsContractor, i::Int, β::Real)
     ψ = mps(contractor, i+1, β)
@@ -195,17 +204,6 @@ end
 end
 
 
-# function optimize_gauges(temp::MpsContractor)
-#     #for beta in betas
-    
-#     # 1) psi_bottom =  mps  ;  psi_top = mps ( :top)
-#     # 2) bazujac na psi_bottom i psi_top zmienia gauge
-#     #    sweep left and right
-        
-#     #end
-# end
-
-
 function conditional_probability(contractor::MpsContractor, w::Vector{Int})
     T = find_layout(contractor.peps)
     β = last(contractor.betas)
@@ -214,15 +212,16 @@ end
 
 
 function conditional_probability(::Type{T}, contractor::MpsContractor, w::Vector{Int}, β) where T <: Square
-    i, j = node_from_index(contractor.peps, length(w)+1)
-    ∂v = boundary_state(contractor.peps, w, (i, j))
+    network = contractor.peps
+    i, j = node_from_index(network, length(w)+1)
+    ∂v = boundary_state(network, w, (i, j))
 
     L = left_env(contractor, i, ∂v[1:j-1], β)
-    R = right_env(contractor, i, ∂v[j+2 : peps.ncols+1], β)
+    R = right_env(contractor, i, ∂v[j+2 : network.ncols+1], β)
     ψ = dressed_mps(contractor, i, β)
     M = ψ.tensors[j]
 
-    A = reduced_site_tensor(contractor.peps, (i, j), ∂v[j], ∂v[j+1], β)
+    A = reduced_site_tensor(network, (i, j), ∂v[j], ∂v[j+1], β)
 
     @tensor prob[σ] := L[x] * M[x, d, y] * A[r, d, σ] *
                        R[y, r] order = (x, d, r, y)
@@ -232,15 +231,16 @@ end
 
 
 function conditional_probability(::Type{T}, contractor::MpsContractor, w::Vector{Int}, β) where T <: SquareStar
-    i, j = node_from_index(contractor.peps, length(w)+1)
-    ∂v = boundary_state(contractor.peps, w, (i, j))
+    network = contractor.peps
+    i, j = node_from_index(network, length(w)+1)
+    ∂v = boundary_state(network, w, (i, j))
 
     L = left_env(contractor, i, ∂v[1:2*j-2], β)
-    R = right_env(contractor, i, ∂v[2*j+3 : 2*peps.ncols+2], β)
+    R = right_env(contractor, i, ∂v[2*j+3 : 2*network.ncols+2], β)
     ψ = dressed_mps(contractor, i, β)
     MX, M = ψ[j-1//2], ψ[j]
 
-    A = reduced_site_tensor(contractor.peps, (i, j), ∂v[2*j-1], ∂v[2*j], ∂v[2*j+1], ∂v[2*j+2], β)
+    A = reduced_site_tensor(network, (i, j), ∂v[2*j-1], ∂v[2*j], ∂v[2*j+1], ∂v[2*j+2], β)
 
     @tensor prob[σ] := L[x] * MX[x, m, y] * M[y, l, z] * R[z, k] *
                         A[k, l, m, σ] order = (x, y, z, k, l, m)

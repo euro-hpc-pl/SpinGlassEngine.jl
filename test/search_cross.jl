@@ -8,10 +8,8 @@
     
     β = 1.
 
-    schedule = 1.
-
     L = n * m * t
-    states_to_keep = 20
+    num_states = 22
 
     instance = "$(@__DIR__)/instances/pathological/cross_$(m)_$(n)_dd.txt"
 
@@ -23,10 +21,15 @@
         cluster_assignment_rule=super_square_lattice((m, n, t)) 
     )
 
+    params = MpsParameters()
+
     for Layout ∈ (EnergyGauges, GaugesEnergy)
         for transform ∈ all_lattice_transformations
-            peps = PEPSNetwork{SquareStar{Layout}}(m, n, fg, transform, β)
-            sol = low_energy_spectrum(peps, states_to_keep, merge_branches(peps))
+
+            network = PEPSNetwork{SquareStar{Layout}}(m, n, fg, transform)
+            contractor = MpsContractor(network, [β], params)
+            sol = low_energy_spectrum(contractor, num_states)
+
             @test first(sol.energies) ≈ ground_energy
         end
     end

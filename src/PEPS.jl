@@ -14,7 +14,8 @@ struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, Node}
     nrows::Int
     ncols::Int
     tensors_map::Dict
-    gauges_data::Dict  # Should we store gauges explicitly here? pack into single structure?
+     # Should we store gauges explicitly here? pack into single structure?
+    gauges_data::Dict 
     gauges_info
 
     function PEPSNetwork{T}(

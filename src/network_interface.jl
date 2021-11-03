@@ -188,15 +188,11 @@ function initialize_gauges!(
 ) where {S, T}
     @assert type ∈ (:id, :rand)
     for gauge ∈ network.gauges_info
-        ((i1, j1), (i2, j2)) = gauge.positions
-        push!(network.tensors_map, (i1, j1) => gauge.type, (i2, j2) => gauge.type)
-        i1 = denominator(i1) == 1 ? numerator(i1) : i1
-        j1 = denominator(j1) == 1 ? numerator(j1) : j1
-        i2 = denominator(i1) == 1 ? numerator(i2) : i2
-        j2 = denominator(j2) == 1 ? numerator(j2) : j2
+        (n1, n2) = gauge.positions
+        push!(network.tensors_map, n1 => gauge.type, n2 => gauge.type)
         d = tensor_size(network, gauge.attached_tensor)[gauge.attached_leg]
         X = type == :id ? ones(d) : rand(d) .+ 0.42
-        push!(network.gauges_data, (i1, j1) => X, (i2, j2) => 1 ./ X)
+        push!(network.gauges_data, n1 => X, n2 => 1 ./ X)
     end
 end
 

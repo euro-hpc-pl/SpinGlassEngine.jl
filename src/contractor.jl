@@ -107,13 +107,13 @@ end
     # Threads.@threads for (j, coor) ∈ layers
     for (j, coor) ∈ layers
         push!(W,
-            j => Dict(dr => tensor(ctr.peps, (r + dr, j), β) for dr ∈ coor)
+            j => Dict(dr => tensor(ctr.peps, PEPSNode(r + dr, j), β) for dr ∈ coor)
         )
     end
     Mpo(W)
 end
 
-# to be change
+# IdentityMps to be change or remove
 IdentityMps(peps::PEPSNetwork{T}) where T <: Square =
     Mps(Dict(j => ones(1, 1, 1) for j ∈ 1:peps.ncols))
 

@@ -6,7 +6,7 @@ export
 
 # node's types to be changes
 struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, Node}
-    factor_graph::LabelledGraph{S, Node} where S
+    factor_graph::LabelledGraph
     vertex_map::Function
     m::Int
     n::Int

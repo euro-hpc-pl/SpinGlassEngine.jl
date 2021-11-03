@@ -287,6 +287,67 @@ function tensor_size(
     size(pr, 2), size(pd, 2), size(pd, 1)
 end 
 
+function sqrt_tensor_up(
+    network::AbstractGibbsNetwork{S, T},
+    v::S,
+    w::S
+) where {S, T}
+    E = interaction_energy(network, v, w)
+    U, Σ, V = svd(E, Dcut = 2)
+    en = U * sqrt(Σ)
+    exp.(-network.β .* (en .- minimum(en)))
+end 
+
+function sqrt_tensor_down(
+    network::AbstractGibbsNetwork{S, T},
+    v::S,
+    w::S
+) where {S, T}
+    E = interaction_energy(network, v, w)
+    U, Σ, V = svd(E, Dcut = 2)
+    en = sqrt(Σ) * V
+    exp.(-network.β .* (en .- minimum(en)))
+end 
+
+function tensor(
+    network::AbstractGibbsNetwork{S, T},
+    w::Tuple{Rational{Int}, Int},
+    ::Val{:sqrt_up}
+) where {S, T}
+    i, r = w
+    j = floor(Int, r)
+    E = sqrt_tensor_up(network, (i, j), (i+1, j))
+end
+
+function tensor_size(
+    network::AbstractGibbsNetwork{S, T},
+    w::Tuple{Rational{Int}, Int},
+    ::Val{:sqrt_up}
+) where {S, T}
+    i, r = w
+    j = floor(Int, r)
+    size(interaction_energy(network, (i, j), (i+1, j)))
+end
+
+function tensor(
+    network::AbstractGibbsNetwork{S, T},
+    w::Tuple{Rational{Int}, Int},
+    ::Val{:sqrt_down}
+) where {S, T}
+    i, r = w
+    j = floor(Int, r)
+    E = sqrt_tensor_down(network, (i, j), (i+1, j))
+end
+
+function tensor_size(
+    network::AbstractGibbsNetwork{S, T},
+    w::Tuple{Rational{Int}, Int},
+    ::Val{:sqrt_down}
+) where {S, T}
+    i, r = w
+    j = floor(Int, r)
+    size(interaction_energy(network, (i, j), (i+1, j)))
+end
 
 @memoize function mpo(peps::AbstractGibbsNetwork, layers, r::Int) where {T <: Number}
     W = Dict()

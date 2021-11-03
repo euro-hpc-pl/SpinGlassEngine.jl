@@ -84,6 +84,23 @@ function tensor_map(::Type{Square{T}},
     map
 end
 
+function tensor_map(::Type{Square{T}}, 
+    nrows::Int, 
+    ncols::Int
+) where T <: EngGaugesEng
+
+    map = Dict{RNode, Symbol}()
+    for i ∈ 1:nrows, j ∈ 1:ncols
+        push!(map, (i, j) => :site)
+        if j < ncols push!(map, (i, j + 1//2) => :central_h) end
+        if i < nrows 
+            push!(map, (i + 1//5, j) => :sqrt_up)
+            push!(map, (i + 4//5, j) => :sqrt_down)
+         end
+    end
+    map
+end
+
 
 function gauges_list(::Type{Square{T}},
     nrows::Int,

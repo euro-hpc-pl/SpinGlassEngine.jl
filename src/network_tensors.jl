@@ -292,10 +292,14 @@ function sqrt_tensor_up(
     v::S,
     w::S
 ) where {S, T}
-    E = interaction_energy(network, v, w)
-    U, Σ, V = svd(E, Dcut = 2)
-    en = U * sqrt(Σ)
-    exp.(-network.β .* (en .- minimum(en)))
+    E = connecting_tensor(network, v, w)
+    U, Σ, V = svd(E, 1)
+    println("UP")
+    println("E ", E)
+    println("U ", U)
+    println("Σ ", Σ)
+    println("V ", V)
+    U * sqrt.(Σ)
 end 
 
 function sqrt_tensor_down(
@@ -303,49 +307,55 @@ function sqrt_tensor_down(
     v::S,
     w::S
 ) where {S, T}
-    E = interaction_energy(network, v, w)
-    U, Σ, V = svd(E, Dcut = 2)
-    en = sqrt(Σ) * V
-    exp.(-network.β .* (en .- minimum(en)))
+    E = connecting_tensor(network, v, w)
+    U, Σ, V = svd(E, 1)
+    println("DOWN")
+    println("E ", E)
+    println("U ", U)
+    println("Σ ", Σ)
+    println("V ", V)
+    sqrt.(Σ)' * V
 end 
 
 function tensor(
     network::AbstractGibbsNetwork{S, T},
-    w::Tuple{Rational{Int}, Int},
+    v::Tuple{Rational{Int}, Int},
     ::Val{:sqrt_up}
 ) where {S, T}
-    i, r = w
-    j = floor(Int, r)
-    E = sqrt_tensor_up(network, (i, j), (i+1, j))
+    r, j = v
+    i = floor(Int, r)
+    println("tensor_up ", sqrt_tensor_up(network, (i, j), (i+1, j)))
+    sqrt_tensor_up(network, (i, j), (i+1, j))
 end
 
 function tensor_size(
     network::AbstractGibbsNetwork{S, T},
-    w::Tuple{Rational{Int}, Int},
+    v::Tuple{Rational{Int}, Int},
     ::Val{:sqrt_up}
 ) where {S, T}
-    i, r = w
-    j = floor(Int, r)
+    r, j = v
+    i = floor(Int, r)
     size(interaction_energy(network, (i, j), (i+1, j)))
 end
 
 function tensor(
     network::AbstractGibbsNetwork{S, T},
-    w::Tuple{Rational{Int}, Int},
+    v::Tuple{Rational{Int}, Int},
     ::Val{:sqrt_down}
 ) where {S, T}
-    i, r = w
-    j = floor(Int, r)
-    E = sqrt_tensor_down(network, (i, j), (i+1, j))
+    r, j = v
+    i = floor(Int, r)
+    println("tensor_down ", sqrt_tensor_down(network, (i, j), (i+1, j)))
+    sqrt_tensor_down(network, (i, j), (i+1, j))
 end
 
 function tensor_size(
     network::AbstractGibbsNetwork{S, T},
-    w::Tuple{Rational{Int}, Int},
+    v::Tuple{Rational{Int}, Int},
     ::Val{:sqrt_down}
 ) where {S, T}
-    i, r = w
-    j = floor(Int, r)
+    r, j = v
+    i = floor(Int, r)
     size(interaction_energy(network, (i, j), (i+1, j)))
 end
 
@@ -441,4 +451,3 @@ end
     @matmul L[x] := sum(α) L̃[α] * M[α, $m, x]
     L
 end
-

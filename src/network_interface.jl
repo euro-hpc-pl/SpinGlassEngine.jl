@@ -5,7 +5,6 @@ using LabelledGraphs
 export
     Node,
     AbstractGibbsNetwork,
-    network_graph,
     vertex_map,
     local_energy,
     interaction_energy,
@@ -35,9 +34,6 @@ not_implmented(name) = throw(NotImplementedError(name))
 
  
 factor_graph(network::AbstractGibbsNetwork{S, T}) where {S, T} = network.factor_graph
-
-#remove
-#network_graph(network::AbstractGibbsNetwork{S, T}) where {S, T} = network.network_graph
 
 vertex_map(network::AbstractGibbsNetwork{S, T}) where {S, T} = network.vertex_map
 
@@ -85,15 +81,6 @@ function projector(
 end
 
 
-# function fuse_projectors(projectors::Union{Vector{T}, NTuple{N, T}}) where {N, T}
-#     println(projectors)
-#     fused, transitions_matrix = rank_reveal(hcat(projectors...), :PE)
-#     println(fused)
-#     transitions = collect(eachcol(transitions_matrix))
-#     println(transitions)
-#     fused, transitions
-# end
-
 function fuse_projectors(projectors::Union{Vector{T}, NTuple{N, T}}) where {N, T}
     fused, energy = rank_reveal(hcat(projectors...), :PE)
     fused = decode_projector!(fused)
@@ -106,6 +93,7 @@ function fuse_projectors(projectors::Union{Vector{T}, NTuple{N, T}}) where {N, T
     end
     fused, transitions
 end
+
 
 function spectrum(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T}
     get_prop(factor_graph(network), vertex_map(network)(vertex), :spectrum)

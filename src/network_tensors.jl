@@ -4,8 +4,8 @@ export
 
    
 function tensor(
-    network::AbstractGibbsNetwork{Node, Node},
-    v::Node,
+    network::AbstractGibbsNetwork{Node, PEPSNode},
+    v::PEPSNode,
     β::Real
 ) 
     if v ∈ keys(network.tensors_map)
@@ -17,8 +17,8 @@ end
 
 
 function tensor_size(
-    network::AbstractGibbsNetwork{Node, Node}, 
-    v::Node
+    network::AbstractGibbsNetwork{Node, PEPSNode}, 
+    v::PEPSNode
 )
     if v ∈ keys(network.tensors_map)
         tensor_size(network, v, Val(network.tensors_map[v]))
@@ -29,14 +29,13 @@ end
 
 
 function tensor(
-    network::AbstractGibbsNetwork{Node, Node}, 
-    v::Node,
+    network::AbstractGibbsNetwork{Node, PEPSNode}, 
+    v::PEPSNode,
     β::Real,
     ::Val{:site}
 ) 
-    loc_exp = exp.(-β .* local_energy(network, v))
-    projs = projectors(network, v)
-    # tu ma byc decode projector
+    loc_exp = exp.(-β .* local_energy(network, Node(v)))
+    projs = projectors(network, Node(v))
     @cast A[σ, _] := loc_exp[σ]
     for pv ∈ projs @cast A[σ, (c, γ)] |= A[σ, c] * pv[σ, γ] end
     B = dropdims(sum(A, dims=1), dims=1)
@@ -45,12 +44,11 @@ end
  
 
 function tensor_size(
-    network::AbstractGibbsNetwork{Node, Node}, 
-    v::Node,
+    network::AbstractGibbsNetwork{Node, PEPSNode}, 
+    v::PEPSNode,
     ::Val{:site}
 ) 
-    dims = size.(projectors(network, v))
-     # tu ma byc decode projector -> max(projecr) da ilosc elementow
+    dims = size.(projectors(network, Node(v)))
     pdims = first.(dims)
     @assert all(σ -> σ == first(pdims), first.(dims))
     last.(dims)
@@ -58,60 +56,55 @@ end
 
 
 function tensor(
-    network::AbstractGibbsNetwork{Node, Node},
-    v::Node,
+    network::AbstractGibbsNetwork{Node, PEPSNode},
+    node::PEPSNode,
     β::Real,
     ::Val{:central_v}
 ) 
-    r, j = v
-    i = floor(Int, r)
-    connecting_tensor(network, (i, j), (i+1, j), β)
+    i = floor(Int, node.i)
+    connecting_tensor(network, (i, node.j), (i+1, node.j), β)
 end
 
 
 function tensor_size(
-    network::AbstractGibbsNetwork{Node, Node},
-    v::Node,
+    network::AbstractGibbsNetwork{Node, PEPSNode},
+    node::PEPSNode,
     ::Val{:central_v}
 ) 
-    r, j = v
-    i = floor(Int, r)
-    size(interaction_energy(network, (i, j), (i+1, j)))
+    i = floor(Int, node.i)
+    size(interaction_energy(network, (i, node.j), (i+1, node.j)))
 end
 
 
 function tensor(
-    network::AbstractGibbsNetwork{Node, Node},
-    w::Node,
+    network::AbstractGibbsNetwork{Node, PEPSNode},
+    node::PEPSNode,
     β::Real,
     ::Val{:central_h}
 ) 
-    i, r = w
-    j = floor(Int, r)
-    connecting_tensor(network, (i, j), (i, j+1), β)
+    j = floor(Int, node.j)
+    connecting_tensor(network, (node.i, j), (node.i, j+1), β)
 end
 
 
 function tensor_size(
-    network::AbstractGibbsNetwork{Node, Node},
-    w::Node,
+    network::AbstractGibbsNetwork{Node, PEPSNode},
+    w::PEPSNode,
     ::Val{:central_h}
 ) 
-    i, r = w
-    j = floor(Int, r)
-    size(interaction_energy(network, (i, j), (i, j+1)))
+    j = floor(Int, node.j)
+    size(interaction_energy(network, (node.i, j), (node.i, j+1)))
 end
 
 
 function tensor(
-    network::AbstractGibbsNetwork{Node, Node},
-    v::Node,
+    network::AbstractGibbsNetwork{Node, PEPSNode},
+    node::PEPSNode,
     β::Real,
     ::Val{:central_d}
 )
-    r, s = v
-    i = floor(Int, r)
-    j = floor(Int, s)
+    i = floor(Int, node.i)
+    j = floor(Int, node.j)
     NW = connecting_tensor(network, (i, j), (i + 1, j + 1), β)
     NE = connecting_tensor(network, (i, j + 1), (i + 1, j), β)
     @cast A[(u, ũ), (d, d̃)] := NW[u, d] * NE[ũ, d̃] 
@@ -120,13 +113,12 @@ end
 
 
 function tensor_size(
-    network::AbstractGibbsNetwork{Node, Node},
-    v::Node,
+    network::AbstractGibbsNetwork{Node, PEPSNode},
+    node::PEPSNode,
     ::Val{:central_d}
 ) 
-    r, s = v
-    i = floor(Int, r)
-    j = floor(Int, s)
+    i = floor(Int, node.i)
+    j = floor(Int, node.j)
     u, d = size(interaction_energy(network, (i, j), (i + 1, j + 1)))
     ũ, d̃ = size(interaction_energy(network, (i, j + 1), (i + 1, j)))
     u * ũ, d * d̃
@@ -134,11 +126,11 @@ end
 
 
 function _all_fused_projectors(
-    network::AbstractGibbsNetwork{Node, Node},
-    v::Node,
+    network::AbstractGibbsNetwork{Node, PEPSNode},
+    node::PEPSNode,
 ) 
-    i, s = v
-    j = floor(Int, s)
+    i = node.i
+    j = floor(Int, node.j)
 
     left_nbrs = ((i+1, j+1), (i, j+1), (i-1, j+1))
     prl = projector.(Ref(network), Ref((i, j)), left_nbrs)
@@ -153,14 +145,15 @@ end
 
 
 function tensor(
-    network::AbstractGibbsNetwork{Node, Node},
-    v::Node,
+    network::AbstractGibbsNetwork{Node, PEPSNode},
+    node::PEPSNode,
     β::Real,
     ::Val{:virtual}
 ) 
     p_lb, p_l, p_lt, 
-    p_rb, p_r, p_rt = _all_fused_projectors(network, v)
+    p_rb, p_r, p_rt = _all_fused_projectors(network, node)
 
+    v = Node(node)
     h = connecting_tensor(network, floor.(Int, v), ceil.(Int, v), β)
 
     @tensor B[l, r] := p_l[l, x] * h[x, y] * p_r[r, y]    
@@ -171,20 +164,20 @@ end
 
 
 function tensor_size(
-    network::AbstractGibbsNetwork{Node, Node},
-    v::Node,
+    network::AbstractGibbsNetwork{Node, PEPSNode},
+    v::PEPSNode,
     ::Val{:virtual}
 ) 
     p_lb, p_l, p_lt, 
-    p_rb, p_r, p_rt = _all_fused_projectors(network, v)
+    p_rb, p_r, p_rt = _all_fused_projectors(network, Node(v))
     (size(p_l, 1), size(p_lt, 2) * size(p_rt, 2),
      size(p_r, 1), size(p_rb, 2) * size(p_lb, 2))
 end
 
 
 function tensor(
-    network::AbstractGibbsNetwork{Node, Node}, 
-    v::Node,
+    network::AbstractGibbsNetwork{Node, PEPSNode}, 
+    v::PEPSNode,
     β::Real,
     ::Val{:gauge_h}
 ) 
@@ -193,8 +186,8 @@ end
 
 
 function tensor_size(
-    network::AbstractGibbsNetwork{Node, Node}, 
-    v::Node,
+    network::AbstractGibbsNetwork{Node, PEPSNode}, 
+    v::PEPSNode,
     ::Val{:gauge_h}
 ) 
     u = size(network.gauges_data[v], 1)
@@ -203,11 +196,11 @@ end
 
 
 function connecting_tensor(
-    network::AbstractGibbsNetwork{Node, T},
+    network::AbstractGibbsNetwork{Node, PEPSNode},
     v::Node,
     w::Node,
     β::Real,
-) where T
+) 
     en = interaction_energy(network, v, w)
     exp.(-β .* (en .- minimum(en)))
 end 
@@ -215,11 +208,11 @@ end
 
 function tensor_size(
     network::PEPSNetwork{T},
-    v::Node,
+    v::PEPSNode,
     ::Val{:reduced}
 ) where T <: Square
 
-    i, j = v
+    i, j = Node(v)
     pr = projector(network, v, (i, j+1))
     pd = projector(network, v, (i+1, j))
     @assert size(pr, 1) == size(pr, 1)

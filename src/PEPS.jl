@@ -5,7 +5,7 @@ export
 
 
 # node's types to be changes
-struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, Node}
+struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, PEPSNode}
     factor_graph::LabelledGraph
     vertex_map::Function
     m::Int

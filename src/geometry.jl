@@ -17,7 +17,6 @@ const IntOrRational = Union{Int, Rational{Int}}
 abstract type AbstractGeometry end
 abstract type AbstractConnectivity end
 abstract type AbstractTensorsLayout end
-abstract type AbstractNode end
 
 struct SquareStar{T <: AbstractTensorsLayout} <: AbstractGeometry end
 struct Square{T <: AbstractTensorsLayout} <: AbstractGeometry end 
@@ -32,7 +31,7 @@ struct EngGaugesEng{T} <: AbstractTensorsLayout end
 
 const Node = NTuple{2, Int}
 
-struct PEPSNode <: AbstractNode
+struct PEPSNode 
     i::IntOrRational
     j::IntOrRational
     

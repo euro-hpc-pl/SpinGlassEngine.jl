@@ -143,23 +143,16 @@ function tensor_map(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T
     map
 end
 
-# in dispatrching there is a problem with 1//1 vs 1
 
 function gauges_list(::Type{SquareStar{T}},
     nrows::Int, 
     ncols::Int
 ) where T <: GaugesEnergy
-    gl = [
-           GaugeInfo((PEPSNode(i + 1//6, j), PEPSNode(i + 2//6, j)), 
-                      PEPSNode(i + 1//2, j), 1, :gauge_h) 
-            for i ∈ 1:nrows-1 for j ∈ 1 : ncols
-        ]
-
-    # to be removed    
-    for i ∈ 1:nrows-1, j ∈ 1//2:ncols
-        push!(gl, GaugeInfo((PEPSNode(i + 1//6, j), PEPSNode(i + 2//6, j)), PEPSNode(i + 1//2, j), 1, :gauge_h))
-    end
-    gl
+    [
+        GaugeInfo((PEPSNode(i + 1//6, j), PEPSNode(i + 2//6, j)), 
+                   PEPSNode(i + 1//2, j), 1, :gauge_h) 
+        for i ∈ 1:nrows-1 for j ∈ 1//2 : 1//2 : ncols
+    ]
 end
 
 
@@ -167,17 +160,11 @@ function gauges_list(::Type{SquareStar{T}},
     nrows::Int, 
     ncols::Int
 ) where T <: EnergyGauges
-    gl = [
-            GaugeInfo((PEPSNode(i + 4//6, j), PEPSNode(i + 5//6, j)), 
-                       PEPSNode(i + 1//2, j), 2, :gauge_h)
-            for i ∈ 1:nrows-1 for j ∈ 1 : ncols
-        ]
-
-        # to be removed
-    for i ∈ 1:nrows-1, j ∈ 1//2:ncols
-        push!(gl, GaugeInfo((PEPSNode(i + 4//6, j), PEPSNode(i + 5//6, j)), PEPSNode(i + 1//2, j), 2, :gauge_h))
-    end
-    gl
+    [
+        GaugeInfo((PEPSNode(i + 4//6, j), PEPSNode(i + 5//6, j)), 
+                   PEPSNode(i + 1//2, j), 2, :gauge_h)
+        for i ∈ 1:nrows-1 for j ∈ 1//2 : 1//2 : ncols
+    ]
 end
 
 
@@ -185,15 +172,9 @@ function gauges_list(::Type{SquareStar{T}},
     nrows::Int, 
     ncols::Int
 ) where T <: EngGaugesEng
-    gl = [
-            GaugeInfo((PEPSNode(i + 2//5, j), PEPSNode(i + 3//5, j)), 
-                       PEPSNode(i + 1//5, j), 2, :gauge_h) 
-            for i ∈ 1:nrows-1 for j ∈ 1 : ncols
-        ]
-        
-        # to be removed
-    for i ∈ 1:nrows-1, j ∈ 1//2:ncols
-        push!(gl, GaugeInfo((PEPSNode(i + 2//5, j), PEPSNode(i + 3//5, j)), PEPSNode(i + 1//5, j), 2, :gauge_h))
-    end
-    gl
+    [
+        GaugeInfo((PEPSNode(i + 2//5, j), PEPSNode(i + 3//5, j)), 
+                   PEPSNode(i + 1//5, j), 2, :gauge_h) 
+        for i ∈ 1:nrows-1 for j ∈ 1//2 : 1//2 : ncols
+    ]
 end

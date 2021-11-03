@@ -1,9 +1,8 @@
 export
     IntOrRational,
-    RNode,
+    Node,
     AbstractGeometry,
     AbstractTensorsLayout,
-    network_graph,
     tensor_map,
     gauges_list,
     Square,
@@ -14,7 +13,6 @@ export
 
 
 const IntOrRational = Union{Int, Rational{Int}}
-const RNode = NTuple{2, IntOrRational}
 
 abstract type AbstractGeometry end
 abstract type AbstractConnectivity end
@@ -42,6 +40,7 @@ struct GaugeInfo
     type
 end
 
+const Node = NTuple{2, IntOrRational}
 #=
 struct Node <: AbstractNode
     i::IntOrRational
@@ -80,7 +79,7 @@ function tensor_map(::Type{Square{T}},
     ncols::Int
 ) where T <: Union{GaugesEnergy, EnergyGauges}
 
-    map = Dict{RNode, Symbol}()
+    map = Dict{Node, Symbol}()
     for i ∈ 1:nrows, j ∈ 1:ncols
         push!(map, (i, j) => :site)
         if j < ncols push!(map, (i, j + 1//2) => :central_h) end
@@ -129,7 +128,7 @@ end
 
 
 function tensor_map(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T
-    map = Dict{RNode, Symbol}()
+    map = Dict{Node, Symbol}()
     for i ∈ 1:nrows, j ∈ 1:ncols
         push!(map, (i, j) => :site)
         push!(map, (i, j - 1//2) => :virtual)

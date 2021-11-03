@@ -3,7 +3,6 @@
 using LabelledGraphs
 
 export
-    Node,
     AbstractGibbsNetwork,
     vertex_map,
     local_energy,
@@ -16,9 +15,6 @@ export
     fuse_projectors,
     initialize_gauges!
 
-
-#const Node = NTuple{2, IntOrRational}
-const Node = NTuple{2, Int}
 
 # S: type of the vertex of network
 # T: type of the vertex of underlying factor graph
@@ -176,9 +172,9 @@ end
 
 
 function is_compatible(
-    factor_graph::LabelledGraph{T, Node}, 
-    network_graph::LabelledGraph{S, Node}
-) where {T, S}
+    factor_graph::LabelledGraph,
+    network_graph::LabelledGraph,
+) 
     all(
         has_edge(network_graph, src(edge), dst(edge))
         for edge ∈ edges(factor_graph)

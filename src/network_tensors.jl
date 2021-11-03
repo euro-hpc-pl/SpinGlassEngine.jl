@@ -30,11 +30,11 @@ end
 
 
 function tensor(
-    network::AbstractGibbsNetwork{Node, T}, 
-    v::S,
+    network::AbstractGibbsNetwork{Node, Node}, 
+    v::Node,
     β::Real,
     ::Val{:site}
-) where {S, T}
+) 
     loc_exp = exp.(-β .* local_energy(network, v))
     projs = projectors(network, v)
     # tu ma byc decode projector
@@ -46,10 +46,10 @@ end
  
 
 function tensor_size(
-    network::AbstractGibbsNetwork{Node, T}, 
-    v::S,
+    network::AbstractGibbsNetwork{Node, Node}, 
+    v::Node,
     ::Val{:site}
-) where {S, T}
+) 
     dims = size.(projectors(network, v))
      # tu ma byc decode projector -> max(projecr) da ilosc elementow
     pdims = first.(dims)
@@ -59,11 +59,11 @@ end
 
 
 function tensor(
-    network::AbstractGibbsNetwork{Node, T},
-    v::Tuple{Rational{Int}, Int},
+    network::AbstractGibbsNetwork{Node, Node},
+    v::Node,
     β::Real,
     ::Val{:central_v}
-) where T
+) 
     r, j = v
     i = floor(Int, r)
     connecting_tensor(network, (i, j), (i+1, j), β)
@@ -71,10 +71,10 @@ end
 
 
 function tensor_size(
-    network::AbstractGibbsNetwork{Node, T},
-    v::Tuple{Rational{Int}, Int},
+    network::AbstractGibbsNetwork{Node, Node},
+    v::Node,
     ::Val{:central_v}
-) where T
+) 
     r, j = v
     i = floor(Int, r)
     size(interaction_energy(network, (i, j), (i+1, j)))
@@ -82,11 +82,11 @@ end
 
 
 function tensor(
-    network::AbstractGibbsNetwork{Node, T},
-    w::Tuple{Int, Rational{Int}},
+    network::AbstractGibbsNetwork{Node, Node},
+    w::Node,
     β::Real,
     ::Val{:central_h}
-) where T
+) 
     i, r = w
     j = floor(Int, r)
     connecting_tensor(network, (i, j), (i, j+1), β)
@@ -94,10 +94,10 @@ end
 
 
 function tensor_size(
-    network::AbstractGibbsNetwork{Node, T},
-    w::Tuple{Int, Rational{Int}},
+    network::AbstractGibbsNetwork{Node, Node},
+    w::Node,
     ::Val{:central_h}
-) where T
+) 
     i, r = w
     j = floor(Int, r)
     size(interaction_energy(network, (i, j), (i, j+1)))
@@ -105,11 +105,11 @@ end
 
 
 function tensor(
-    network::AbstractGibbsNetwork{Node, T},
-    v::Tuple{Rational{Int}, Rational{Int}},
+    network::AbstractGibbsNetwork{Node, Node},
+    v::Node,
     β::Real,
     ::Val{:central_d}
-) where T
+)
     r, s = v
     i = floor(Int, r)
     j = floor(Int, s)
@@ -121,10 +121,10 @@ end
 
 
 function tensor_size(
-    network::AbstractGibbsNetwork{Node, T},
-    v::Tuple{Rational{Int}, Rational{Int}},
+    network::AbstractGibbsNetwork{Node, Node},
+    v::Node,
     ::Val{:central_d}
-) where T
+) 
     r, s = v
     i = floor(Int, r)
     j = floor(Int, s)
@@ -135,9 +135,9 @@ end
 
 
 function _all_fused_projectors(
-    network::AbstractGibbsNetwork{Node, T},
-    v::Tuple{Int, Rational{Int}},
-) where T
+    network::AbstractGibbsNetwork{Node, Node},
+    v::Node,
+) 
     i, s = v
     j = floor(Int, s)
 
@@ -154,11 +154,11 @@ end
 
 
 function tensor(
-    network::AbstractGibbsNetwork{Node, T},
-    v::Tuple{Int, Rational{Int}},
+    network::AbstractGibbsNetwork{Node, Node},
+    v::Node,
     β::Real,
     ::Val{:virtual}
-) where T
+) 
     p_lb, p_l, p_lt, 
     p_rb, p_r, p_rt = _all_fused_projectors(network, v)
 
@@ -172,10 +172,10 @@ end
 
 
 function tensor_size(
-    network::AbstractGibbsNetwork{Node, T},
-    v::Tuple{Int, Rational{Int}},
+    network::AbstractGibbsNetwork{Node, Node},
+    v::Node,
     ::Val{:virtual}
-) where T
+) 
     p_lb, p_l, p_lt, 
     p_rb, p_r, p_rt = _all_fused_projectors(network, v)
     (size(p_l, 1), size(p_lt, 2) * size(p_rt, 2),
@@ -184,20 +184,20 @@ end
 
 
 function tensor(
-    network::AbstractGibbsNetwork{Node, T}, 
-    v::S,
+    network::AbstractGibbsNetwork{Node, Node}, 
+    v::Node,
     β::Real,
     ::Val{:gauge_h}
-) where {S, T}
+) 
     Diagonal(network.gauges_data[v])
 end
 
 
 function tensor_size(
-    network::AbstractGibbsNetwork{Node, T}, 
-    v::S,
+    network::AbstractGibbsNetwork{Node, Node}, 
+    v::Node,
     ::Val{:gauge_h}
-) where {S, T}
+) 
     u = size(network.gauges_data[v], 1)
     u, u
 end

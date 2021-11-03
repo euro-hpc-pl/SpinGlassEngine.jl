@@ -1,6 +1,6 @@
-export 
-    PEPSNetwork, 
-    node_from_index, 
+export
+    PEPSNetwork,
+    node_from_index,
     conditional_probability
 
 
@@ -14,32 +14,14 @@ struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, Node}
     nrows::Int
     ncols::Int
     tensors_map::Dict
-
-    # Should we store gauges explicitly here? pack into single structure?
-    gauges_data::Dict
+    gauges_data::Dict  # Should we store gauges explicitly here? pack into single structure?
     gauges_info
-
-    # to be removed
-    β::Real
-    bond_dim::Int
-    var_tol::Real
-    sweeps::Int
-    mpo_main::Dict
-    mpo_dress::Dict
-    mpo_right::Dict
-    #-----------------------
 
     function PEPSNetwork{T}(
         m::Int,
         n::Int,
         factor_graph::LabelledGraph,
         transformation::LatticeTransformation,
-        # ------ to be removed--
-        β::Real,
-        bond_dim::Int=typemax(Int),
-        var_tol::Real=1E-8,
-        sweeps::Int=4,
-        #-----------------------
         initial_gauges::Symbol=:id
     ) where T <: AbstractGeometry
 
@@ -58,13 +40,8 @@ struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, Node}
         gauges_data = Dict()
         gauges_info = gauges_list(T, nrows, ncols)
 
-        ML = MpoLayers(T, ncols) # to be removed
-
-        # to be simplified 
-        net = new(factor_graph, ng, vmap, m, n, nrows, ncols, tmap,
-                    gauges_data, gauges_info,
-                    β, bond_dim, var_tol, sweeps,
-                    ML.main, ML.dress, ML.right)
+        net = new(factor_graph, ng, vmap, m, n, nrows, ncols,
+                  tmap, gauges_data, gauges_info)
 
         initialize_gauges!(net)
         net
@@ -127,42 +104,6 @@ function boundary(peps::PEPSNetwork{T}, node::Node) where T <: SquareStar
             [((i-1, k-1), (i, k), (i-1, k), (i, k-1)), ((i-1, k), (i, k))] for k ∈ j+1:peps.ncols
         ]...
     )
-end
-
-
-function conditional_probability(peps::PEPSNetwork{T}, w::Vector{Int}) where T <: Square
-    i, j = node_from_index(peps, length(w)+1)
-    ∂v = boundary_state(peps, w, (i, j))
-
-    L = left_env(peps, i, ∂v[1:j-1])
-    R = right_env(peps, i, ∂v[j+2 : peps.ncols+1])
-    A = reduced_site_tensor(peps, (i, j), ∂v[j], ∂v[j+1])
-
-    ψ = dressed_mps(peps, i)
-    M = ψ.tensors[j]
-
-    @tensor prob[σ] := L[x] * M[x, d, y] * A[r, d, σ] *
-                       R[y, r] order = (x, d, r, y)
-
-    normalize_probability(prob)
-end
-
-
-function conditional_probability(peps::PEPSNetwork{T}, w::Vector{Int}) where T <: SquareStar
-    i, j = node_from_index(peps, length(w)+1)
-    ∂v = boundary_state(peps, w, (i, j))
-
-    L = left_env(peps, i, ∂v[1:2*j-2])
-    R = right_env(peps, i, ∂v[2*j+3 : 2*peps.ncols+2])
-    A = reduced_site_tensor(peps, (i, j), ∂v[2*j-1], ∂v[2*j], ∂v[2*j+1], ∂v[2*j+2])
-
-    ψ = dressed_mps(peps, i)
-    MX, M = ψ[j-1//2], ψ[j]
-
-    @tensor prob[σ] := L[x] * MX[x, m, y] * M[y, l, z] * R[z, k] *
-                        A[k, l, m, σ] order = (x, y, z, k, l, m)
-
-    normalize_probability(prob)
 end
 
 

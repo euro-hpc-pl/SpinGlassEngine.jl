@@ -26,20 +26,20 @@ function branch_state(network, σ)
 end
 
 
-function branch_solution(partial_sol::Solution, network::AbstractGibbsNetwork)
-    local_dim = length(local_energy(network, node_from_index(network, length(partial_sol.states[1])+1))) 
+function branch_solution(partial_sol::Solution, contractor::AbstractContractor)
+    local_dim = length(local_energy(contractor.peps, node_from_index(contractor.peps, length(partial_sol.states[1])+1))) 
     new_energies = vcat(
             [
-                (en .+ update_energy(network, state))
+                (en .+ update_energy(contractor.peps, state))
                 for (en, state) ∈ zip(partial_sol.energies, partial_sol.states)
             ]
             ...
         )
-    new_states = vcat(branch_state.(Ref(network), partial_sol.states)...)
+    new_states = vcat(branch_state.(Ref(contractor.peps), partial_sol.states)...)
     new_probabilities = vcat(
             [
                 partial_sol.probabilities[i] .+ log.(p) 
-                for (i,p) ∈ enumerate(conditional_probability.(Ref(network), partial_sol.states))
+                for (i,p) ∈ enumerate(conditional_probability.(Ref(contractor), partial_sol.states))
                     ]
             ...
         )
@@ -117,22 +117,22 @@ end
 
 
 #TODO: incorporate "going back" move to improve alghoritm
-function low_energy_spectrum(network::AbstractGibbsNetwork, max_states::Int, merge_strategy=no_merge)
+function low_energy_spectrum(contractor::AbstractContractor, max_states::Int, merge_strategy=no_merge)
     # Build all boundary mps
-    @showprogress "Preprocesing: " for i ∈ network.nrows:-1:1 dressed_mps(network, i) end
+    @showprogress "Preprocesing: " for i ∈ contractor.peps.nrows:-1:1 dressed_mps(contractor, i) end
 
     # Start branch and bound search
     sol = empty_solution()
-    @showprogress "Search: " for _ ∈ 1:nv(factor_graph(network))
-        sol = branch_solution(sol, network)
+    @showprogress "Search: " for _ ∈ 1:nv(factor_graph(contractor.peps))
+        sol = branch_solution(sol, contractor)
         sol = bound_solution(sol, max_states, merge_strategy)
         # _clear_cache(network, sol)
     end
 
     # Translate variable order (from network to factor graph)
     inner_perm = sortperm([
-        factor_graph(network).reverse_label_map[idx]
-        for idx ∈ network.vertex_map.(iteration_order(network))
+        factor_graph(contractor.peps).reverse_label_map[idx]
+        for idx ∈ contractor.peps.vertex_map.(iteration_order(contractor.peps))
     ])
 
     # Sort using energies as keys

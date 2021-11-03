@@ -68,10 +68,13 @@
         cluster_assignment_rule=super_square_lattice((m, n, t))
     )
 
+    params = MpsParameters()
+
     for Layout ∈ (EnergyGauges, GaugesEnergy)
-        for transform ∈ all_lattice_transformations  
-            peps = PEPSNetwork{Square{Layout}}(m, n, fg, transform, β)
-            sol = low_energy_spectrum(peps, num_states)
+        for transform ∈ all_lattice_transformations
+            network = PEPSNetwork{Square{Layout}}(m, n, fg, transform)
+            contractor = MpsContractor(network, [β], params)
+            sol = low_energy_spectrum(contractor, num_states)
 
             @test sol.energies ≈ exact_energies
             for (i, σ) ∈ enumerate(sol.states)

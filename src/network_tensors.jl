@@ -2,13 +2,12 @@ export
     tensor_size,
     tensor
 
-
-# tensors signatures are mess    
+   
 function tensor(
-    network::AbstractGibbsNetwork{S, T},
-    v::R,
+    network::AbstractGibbsNetwork{Node, Node},
+    v::Node,
     β::Real
-) where {S, T, R}
+) 
     if v ∈ keys(network.tensors_map)
         tensor(network, v, β, Val(network.tensors_map[v]))
     else
@@ -18,9 +17,9 @@ end
 
 
 function tensor_size(
-    network::AbstractGibbsNetwork{S, T}, 
-    v::R
-) where {S, T, R}
+    network::AbstractGibbsNetwork{Node, Node}, 
+    v::Node
+)
     if v ∈ keys(network.tensors_map)
         tensor_size(network, v, Val(network.tensors_map[v]))
     else

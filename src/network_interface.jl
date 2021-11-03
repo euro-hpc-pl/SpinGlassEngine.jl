@@ -147,7 +147,7 @@ function _boundary_index(
     σ::Vector{Int}
 ) where {S, T, N}
     state = local_state_for_node(network, σ, v)
-    if v ∉ vertices(network.network_graph) return ones_like(state) end
+    if v ∉ vertices(network.factor_graph) return ones_like(state) end
     pv = projector(network, v, w) 
     [findfirst(x -> x > 0, pv[i, :]) for i ∈ 1:size(pv)[1]][state]
 end

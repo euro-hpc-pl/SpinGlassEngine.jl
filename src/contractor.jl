@@ -131,8 +131,7 @@ end
     ψ = mps(contractor, i+1, β)
     W = mpo(contractor, contractor.layers.main, i, β)
 
-    ψ0 = dot(W, ψ)   # to be changed
-
+    ψ0 = dot(W, ψ)
     truncate!(ψ0, :left, contractor.params.bond_dimension)
     compress!(ψ0, W, ψ,
             contractor.params.bond_dimension,
@@ -140,6 +139,20 @@ end
             contractor.params.max_num_sweeps)
     ψ0
 end
+
+### Wybor strategii zwezania boundary mps-a przy pomocy typu MpsContractor
+# @memoize function mps(contractor::MpsContractor, i::Int, β::Real) where T <: Number
+#     if i > contractor.peps.nrows return IdentityMps(contractor.peps) end  
+#     ψ = mps(contractor, i+1, β)
+#     W = mpo(contractor, contractor.layers.main, i, β)
+
+#     ψ0 = mps(contractor, i, wieksze beta, lub random/identycznosc/etc..)
+#     compress!(ψ0, W, ψ,
+#             contractor.params.bond_dimension,
+#             contractor.params.variational_tol,
+#             contractor.params.max_num_sweeps)
+#     ψ0
+# end
 
 
 dressed_mps(contractor::MpsContractor, i::Int) = 
@@ -179,10 +192,18 @@ end
 end
 
 
-function _update_reduced_env_right(RE, m::Int, M::Dict, B) 
-    M0 = M[0]
-    Mt = M[-1//2]
+function _update_reduced_env_right(RE, m::Int, M::Dict, B)
+    kk = sort(collect(keys(M)))
+    Mt = M[kk[1]]
     K = @view Mt[m, :]
+
+    for ii ∈ kk[2:end]
+        if ii == 0 break end
+        Mm = M[ii]
+        @tensor K[a] := K[b] * Mm[b, a]
+    end
+
+    M0 = M[0]  # assume convention that we end at site tensor
     @tensor R[x, y] := K[d] * M0[y, d, β, γ] * 
                        B[x, γ, α] * RE[α, β] order = (d, β, γ, α)
     R
@@ -267,6 +288,7 @@ function reduced_site_tensor(
     i, j = v
     eng_local = local_energy(network, v)
     pl = projector(network, v, (i, j-1))
+    # pl 1d -> 2d
     eng_pl = interaction_energy(network, v, (i, j-1))
     @matmul eng_left[x] := sum(y) pl[x, y] * eng_pl[y, $l]
     

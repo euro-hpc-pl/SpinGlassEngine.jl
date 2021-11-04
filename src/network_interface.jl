@@ -44,7 +44,7 @@ conditional_probability(network::AbstractGibbsNetwork{S, T}, v::Vector{Int}) whe
 iteration_order(peps::AbstractGibbsNetwork) = [(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols]
 
 
-function projector(
+function projector(  # ta funkcja ma zwracac 1d projectors
     network::AbstractGibbsNetwork{S, T}, 
     v::S, 
     w::S
@@ -55,10 +55,10 @@ function projector(
     
     if has_edge(fg, fg_w, fg_v)
         P = get_prop(fg, fg_w, fg_v, :pr)#'
-        decode_projector!(P, :EP)'  # to out
+        decode_projector!(P, :EP)'  # to out  !!!!!!!!!!!!!!!!
     elseif has_edge(fg, fg_v, fg_w)
         P = get_prop(fg, fg_v, fg_w, :pl)
-        decode_projector!(P, :PE) # to out
+        decode_projector!(P, :PE) # to out !!!!!!!!!!!!!!!!!!!
     else
         loc_dim = fg_v ∈ vertices(fg) ? length(local_energy(network, v)) : 1 
         ones(loc_dim, 1)

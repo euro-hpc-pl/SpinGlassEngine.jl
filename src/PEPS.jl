@@ -20,8 +20,7 @@ struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, PEPSNode
         m::Int,
         n::Int,
         factor_graph::LabelledGraph,
-        transformation::LatticeTransformation,
-        initial_gauges::Symbol=:id
+        transformation::LatticeTransformation
     ) where T <: AbstractGeometry
 
         vmap = vertex_map(transformation, m, n)

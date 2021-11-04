@@ -288,11 +288,12 @@ function reduced_site_tensor(
     i, j = v
     eng_local = local_energy(network, v)
     pl = projector(network, v, (i, j-1))
-    # pl 1d -> 2d
+    pl = decode_projector!(pl)
     eng_pl = interaction_energy(network, v, (i, j-1))
     @matmul eng_left[x] := sum(y) pl[x, y] * eng_pl[y, $l]
     
     pu = projector(network, v, (i-1, j))
+    pu = decode_projector!(pu)
     eng_pu = interaction_energy(network, v, (i-1, j))
     @matmul eng_up[x] := sum(y) pu[x, y] * eng_pu[y, $u]
 
@@ -300,7 +301,9 @@ function reduced_site_tensor(
     loc_exp = exp.(-β .* (en .- minimum(en)))
 
     pr = projector(network, v, (i, j+1))
+    pr = decode_projector!(pr)
     pd = projector(network, v, (i+1, j))
+    pd = decode_projector!(pd)
     @cast A[r, d, σ] := pr[σ, r] * pd[σ, d] * loc_exp[σ]
     A
 end
@@ -320,24 +323,27 @@ function reduced_site_tensor(
     eng_local = local_energy(network, v)
 
     pl = projector(network, v, (i, j-1))
+    pl = decode_projector!(pl)
     eng_pl = interaction_energy(network, v, (i, j-1))
     @matmul eng_left[x] := sum(y) pl[x, y] * eng_pl[y, $l]
 
     pd = projector(network, v, (i-1, j-1))
+    pd = decode_projector!(pd)
     eng_pd = interaction_energy(network, v, (i-1, j-1))
     @matmul eng_diag[x] := sum(y) pd[x, y] * eng_pd[y, $d]
     
     pu = projector(network, v, (i-1, j))
+    pu = decode_projector!(pu)
     eng_pu = interaction_energy(network, v, (i-1, j))
     @matmul eng_up[x] := sum(y) pu[x, y] * eng_pu[y, $u]
 
     en = eng_local .+ eng_left .+ eng_diag .+ eng_up
     loc_exp = exp.(-β .* (en .- minimum(en)))
 
-    p_lb = projector(network, (i, j-1), (i+1, j))
-    p_rb = projector(network, (i, j), (i+1, j-1))
-    pr = projector(network, v, ((i+1, j+1), (i, j+1), (i-1, j+1)))
-    pd = projector(network, v, (i+1, j))
+    p_lb = decode_projector!(projector(network, (i, j-1), (i+1, j)))
+    p_rb = decode_projector!(projector(network, (i, j), (i+1, j-1)))
+    pr = decode_projector!(projector(network, v, ((i+1, j+1), (i, j+1), (i-1, j+1))))
+    pd = decode_projector!(projector(network, v, (i+1, j)))
 
     @cast A[r, d, (k̃, k), σ] := p_rb[σ, k] * p_lb[$ld, k̃] * pr[σ, r] * 
                                 pd[σ, d] * loc_exp[σ]

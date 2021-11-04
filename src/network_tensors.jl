@@ -293,13 +293,8 @@ function sqrt_tensor_up(
     w::S
 ) where {S, T}
     E = connecting_tensor(network, v, w)
-    U, Σ, V = svd(E, 1)
-    println("UP")
-    println("E ", E)
-    println("U ", U)
-    println("Σ ", Σ)
-    println("V ", V)
-    U * sqrt.(Σ)
+    U, Σ, V = svd(E)
+    U .* sqrt.(Σ)
 end 
 
 function sqrt_tensor_down(
@@ -308,13 +303,8 @@ function sqrt_tensor_down(
     w::S
 ) where {S, T}
     E = connecting_tensor(network, v, w)
-    U, Σ, V = svd(E, 1)
-    println("DOWN")
-    println("E ", E)
-    println("U ", U)
-    println("Σ ", Σ)
-    println("V ", V)
-    sqrt.(Σ)' * V
+    U, Σ, V = svd(E)
+    sqrt.(Σ) .* V'
 end 
 
 function tensor(
@@ -324,7 +314,6 @@ function tensor(
 ) where {S, T}
     r, j = v
     i = floor(Int, r)
-    println("tensor_up ", sqrt_tensor_up(network, (i, j), (i+1, j)))
     sqrt_tensor_up(network, (i, j), (i+1, j))
 end
 
@@ -345,7 +334,6 @@ function tensor(
 ) where {S, T}
     r, j = v
     i = floor(Int, r)
-    println("tensor_down ", sqrt_tensor_down(network, (i, j), (i+1, j)))
     sqrt_tensor_down(network, (i, j), (i+1, j))
 end
 

@@ -38,11 +38,11 @@ function tensor(
     projs = projectors(network, Node(v))
     @cast A[σ, _] := loc_exp[σ]
     for pv ∈ projs 
-        # Zamiana 1d pv -> 2d pv
+        pv = decode_projector!(pv) # Zamiana 1d pv -> 2d pv
         @cast A[σ, (c, γ)] |= A[σ, c] * pv[σ, γ]
     end
     B = dropdims(sum(A, dims=1), dims=1)
-    reshape(B, size.(projs, 2))
+    reshape(B, maximum.(projs))
 end
 
 
@@ -64,12 +64,7 @@ function tensor_size(
     v::PEPSNode,
     ::Val{:site}
 ) 
-    # this is for 2d projectors
-    dims = size.(projectors(network, Node(v)))
-    pdims = first.(dims)
-    @assert all(σ -> σ == first(pdims), first.(dims))
-    last.(dims)
-    # dla 1d, max.(....)
+    maximum.(projectors(network, Node(v)))
 end
 
 
@@ -153,10 +148,16 @@ function _all_fused_projectors(
     left_nbrs = ((i+1, j+1), (i, j+1), (i-1, j+1))
     prl = projector.(Ref(network), Ref((i, j)), left_nbrs)
     p_lb, p_l, p_lt = last(fuse_projectors(prl))
+    p_lb = decode_projector!(p_lb)
+    p_l = decode_projector!(p_l)
+    p_lt = decode_projector!(p_lt)
 
     right_nbrs = ((i+1, j), (i, j), (i-1, j))
     prr = projector.(Ref(network), Ref((i, j+1)), right_nbrs)
     p_rb, p_r, p_rt = last(fuse_projectors(prr))
+    p_rb = decode_projector!(p_rb)
+    p_r = decode_projector!(p_r)
+    p_rt = decode_projector!(p_rt)
 
     p_lb, p_l, p_lt, p_rb, p_r, p_rt
 end
@@ -222,10 +223,17 @@ function tensor_size(
     v::PEPSNode,
     ::Val{:virtual}
 ) 
-    p_lb, p_l, p_lt, 
-    p_rb, p_r, p_rt = _all_fused_projectors(network, Node(v))
-    (size(p_l, 1), size(p_lt, 2) * size(p_rt, 2),
-     size(p_r, 1), size(p_rb, 2) * size(p_lb, 2))
+    i, s = v
+    j = floor(Int, s)
+
+    left_nbrs = ((i+1, j+1), (i, j+1), (i-1, j+1))
+    prl = projector.(Ref(network), Ref((i, j)), left_nbrs)
+    p_lb, p_l, p_lt = last(fuse_projectors(prl))
+    right_nbrs = ((i+1, j), (i, j), (i-1, j))
+    prr = projector.(Ref(network), Ref((i, j+1)), right_nbrs)
+    p_rb, p_r, p_rt = last(fuse_projectors(prr))
+    (size(p_l, 1), maximum(p_lt) * maximum(p_rt),
+    size(p_r, 1), maximum(p_rb) * maximum(p_lb))
 end
 
 
@@ -267,8 +275,8 @@ function tensor_size(
 ) where T <: Square
 
     i, j = Node(v)
-    pr = projector(network, v, (i, j+1))
-    pd = projector(network, v, (i+1, j))
+    pr = decode_projector!(projector(network, v, (i, j+1)))
+    pd = decode_projector!(projector(network, v, (i+1, j)))
     @assert size(pr, 1) == size(pr, 1)
     size(pr, 2), size(pd, 2), size(pd, 1)
 end

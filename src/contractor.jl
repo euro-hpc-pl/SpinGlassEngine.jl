@@ -133,7 +133,7 @@ function IdentityMps(peps::PEPSNetwork{T, S}) where {T <: SquareStar, S}
 end
 
 
-@memoize function mps(contractor::MpsContractor{T}, i::Int, β::Real) where T <: AbstractStrategy
+@memoize function mps(contractor::MpsContractor{Basic}, i::Int, β::Real) 
     if i > contractor.peps.nrows return IdentityMps(contractor.peps) end  
     ψ = mps(contractor, i+1, β)
     W = mpo(contractor, contractor.layers.main, i, β)
@@ -162,7 +162,7 @@ end
 # end
 
 
-dressed_mps(contractor::MpsContractor{T}, i::Int) where T <: AbstractStrategy= 
+dressed_mps(contractor::MpsContractor{T}, i::Int) where T <: AbstractStrategy = 
 dressed_mps(contractor, i, last(contractor.betas))
 
 

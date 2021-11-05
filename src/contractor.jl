@@ -1,10 +1,15 @@
 export
+    Basic,
+    Annealing,
     MpoLayers,
     MpsParameters,
     MpsContractor
 
 abstract type AbstractContractor end
+abstract type AbstractStrategy end
 
+struct Basic <: AbstractStrategy end
+struct Annealing <: AbstractStrategy end
 
 struct MpoLayers
     main::Dict
@@ -26,13 +31,13 @@ layout(network::PEPSNetwork{T, S}) where {T, S} = T
 
 sparsity(network::PEPSNetwork{T, S}) where {T, S} = S
 
-struct MpsContractor <: AbstractContractor
-    peps::PEPSNetwork{T, S} where {T, S}
+struct MpsContractor{S <: AbstractStrategy} <: AbstractContractor
+    peps::PEPSNetwork{T, R} where {T, R}
     betas::Vector{Real}
     params::MpsParameters
     layers::MpoLayers
 
-    function MpsContractor(peps, betas, params)
+    function MpsContractor{S}(peps, betas, params) where S
         T = layout(peps)
         layers = MpoLayers(T, peps.ncols)
         new(peps, betas, params, layers)
@@ -99,11 +104,12 @@ end
 
 
 @memoize function mpo(
-    ctr::MpsContractor, 
+    ctr::MpsContractor{T}, 
     layers::Dict, 
     r::Int,
     β::Real
-) 
+) where T <: AbstractStrategy
+
     W = Dict()
     # Threads.@threads for (j, coor) ∈ layers
     for (j, coor) ∈ layers
@@ -127,7 +133,7 @@ function IdentityMps(peps::PEPSNetwork{T, S}) where {T <: SquareStar, S}
 end
 
 
-@memoize function mps(contractor::MpsContractor, i::Int, β::Real) where T <: Number
+@memoize function mps(contractor::MpsContractor{T}, i::Int, β::Real) where T <: AbstractStrategy
     if i > contractor.peps.nrows return IdentityMps(contractor.peps) end  
     ψ = mps(contractor, i+1, β)
     W = mpo(contractor, contractor.layers.main, i, β)
@@ -156,18 +162,28 @@ end
 # end
 
 
-dressed_mps(contractor::MpsContractor, i::Int) = 
+dressed_mps(contractor::MpsContractor{T}, i::Int) where T <: AbstractStrategy= 
 dressed_mps(contractor, i, last(contractor.betas))
 
 
-@memoize Dict function dressed_mps(contractor::MpsContractor, i::Int, β::Real)
+@memoize Dict function dressed_mps(
+    contractor::MpsContractor{T},
+    i::Int, 
+    β::Real
+) where T <: AbstractStrategy
     ψ = mps(contractor, i+1, β)
     W = mpo(contractor, contractor.layers.dress, i, β)
     W * ψ
 end
 
 
-@memoize Dict function right_env(contractor::MpsContractor, i::Int, ∂v::Vector{Int}, β::Real)
+@memoize Dict function right_env(
+    contractor::MpsContractor{T},
+    i::Int, 
+    ∂v::Vector{Int}, 
+    β::Real
+) where T <: AbstractStrategy
+
     l = length(∂v)
     if l == 0 return ones(1, 1) end
 
@@ -211,7 +227,12 @@ function _update_reduced_env_right(RE, m::Int, M::Dict, B)
 end
 
 
-@memoize Dict function left_env(contractor::MpsContractor, i::Int, ∂v::Vector{Int}, β::Real)
+@memoize Dict function left_env(
+    contractor::MpsContractor{T},
+    i::Int, 
+    ∂v::Vector{Int}, 
+    β::Real
+) where T
     l = length(∂v)
     if l == 0 return ones(1) end
     L̃ = left_env(contractor, i, ∂v[1:l-1], β)
@@ -224,7 +245,7 @@ end
 end
 
 
-function conditional_probability(contractor::MpsContractor, w::Vector{Int})
+function conditional_probability(contractor::MpsContractor{S}, w::Vector{Int}) where S
     T = layout(contractor.peps)
     β = last(contractor.betas)
     conditional_probability(T, contractor, w, β)
@@ -232,10 +253,10 @@ end
 
 
 function conditional_probability(::Type{T}, 
-    contractor::MpsContractor, 
+    contractor::MpsContractor{S}, 
     w::Vector{Int}, 
     β::Real
-) where T <: Square
+) where {T <: Square, S}
 
     network = contractor.peps
     i, j = node_from_index(network, length(w)+1)
@@ -256,10 +277,10 @@ end
 
 
 function conditional_probability(::Type{T}, 
-    contractor::MpsContractor, 
+    contractor::MpsContractor{S}, 
     w::Vector{Int}, 
     β::Real
-) where T <: SquareStar
+) where {T <: SquareStar, S}
 
     network = contractor.peps
     i, j = node_from_index(network, length(w)+1)
@@ -280,12 +301,13 @@ end
 
 
 function reduced_site_tensor(
-    network::PEPSNetwork,
+    network::PEPSNetwork{T, S},
     v::Node,
     l::Int,
     u::Int,
     β::Real
-)
+) where {T, S}
+
     i, j = v
     eng_local = local_energy(network, v)
     pl = projector(network, v, (i, j-1))
@@ -308,14 +330,14 @@ end
 
 
 function reduced_site_tensor(
-    network::PEPSNetwork{T},
+    network::PEPSNetwork{T, S},
     v::Node,
     ld::Int,
     l::Int,
     d::Int,
     u::Int,
     β::Real
-) where T <: SquareStar
+) where {T <: SquareStar, S}
 
     i, j = v
     eng_local = local_energy(network, v)

@@ -31,6 +31,9 @@ layout(network::PEPSNetwork{T, S}) where {T, S} = T
 
 sparsity(network::PEPSNetwork{T, S}) where {T, S} = S
 
+strategy(ctr::MpsContractor{T}) where {T} = T
+
+
 struct MpsContractor{S <: AbstractStrategy} <: AbstractContractor
     peps::PEPSNetwork{T, R} where {T, R}
     betas::Vector{Real}

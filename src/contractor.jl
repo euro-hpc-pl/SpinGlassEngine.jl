@@ -31,21 +31,18 @@ layout(network::PEPSNetwork{T, S}) where {T, S} = T
 
 sparsity(network::PEPSNetwork{T, S}) where {T, S} = S
 
-strategy(ctr::MpsContractor{T}) where {T} = T
 
-
-struct MpsContractor{S <: AbstractStrategy} <: AbstractContractor
-    peps::PEPSNetwork{T, R} where {T, R}
+struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
+    peps::PEPSNetwork{T, S} where {T, S}
     betas::Vector{Real}
     params::MpsParameters
     layers::MpoLayers
 
-    function MpsContractor{S}(peps, betas, params) where S
-        T = layout(peps)
-        layers = MpoLayers(T, peps.ncols)
-        new(peps, betas, params, layers)
-    end
+    MpsContractor{T}(peps, betas, params) where T =
+        new(peps, betas, params, MpoLayers(layout(peps), peps.ncols))
 end
+
+strategy(ctr::MpsContractor{T}) where {T} = T
 
 
 function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EnergyGauges}

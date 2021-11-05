@@ -54,9 +54,9 @@ function projector(  # ta funkcja ma zwracac 1d projectors
     fg_v, fg_w = vmap(v), vmap(w)
     
     if has_edge(fg, fg_w, fg_v)
-        P = get_prop(fg, fg_w, fg_v, :pr)
+        get_prop(fg, fg_w, fg_v, :pr)
     elseif has_edge(fg, fg_v, fg_w)
-        P = get_prop(fg, fg_v, fg_w, :pl)
+        get_prop(fg, fg_v, fg_w, :pl)
     else
         loc_dim = fg_v ∈ vertices(fg) ? length(local_energy(network, v)) : 1 
         floor.(Int, ones(loc_dim, 1))
@@ -74,20 +74,11 @@ function projector(
     ))
 end
 
-
 function fuse_projectors(projectors::Union{Vector{T}, NTuple{N, T}}) where {N, T}
-    fused, energy = rank_reveal(hcat(projectors...), :PE)
-    fused = decode_projector!(fused)
-    i₀ = 1
-    transitions = []
-    for proj ∈ projectors
-        iₑ = i₀ + size(proj, 2) - 1
-        push!(transitions, energy[:, i₀:iₑ])
-        i₀ = iₑ + 1
-    end
+    fused, transitions_matrix = rank_reveal(hcat(projectors...), :PE)
+    transitions = collect(eachcol(transitions_matrix))
     fused, transitions
 end
-
 
 function spectrum(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T}
     get_prop(factor_graph(network), vertex_map(network)(vertex), :spectrum)
@@ -131,7 +122,8 @@ function _boundary_index(
     state = local_state_for_node(network, σ, v)
     if v ∉ vertices(network.factor_graph) return ones_like(state) end
     pv = projector(network, v, w) 
-    [findfirst(x -> x > 0, pv[i, :]) for i ∈ 1:size(pv)[1]][state]
+    #[findfirst(x -> x > 0, pv[i, :]) for i ∈ 1:size(pv)[1]][state]
+    pv[state]
 end
 
 
@@ -143,7 +135,7 @@ function _boundary_index(
     pv = projector(network, v, w)
     i = _boundary_index(network, v, w, σ)
     j = _boundary_index(network, k, l, σ)
-    (j - 1) * size(pv, 2) + i
+    (j - 1) * maximum(pv) + i
 end
 
 

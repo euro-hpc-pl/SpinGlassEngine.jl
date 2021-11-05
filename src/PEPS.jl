@@ -4,7 +4,8 @@ export
     conditional_probability
 
 
-struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, PEPSNode}
+struct PEPSNetwork{T <: AbstractGeometry, 
+                   S <: AbstractSparsity} <: AbstractGibbsNetwork{Node, PEPSNode}
     factor_graph::LabelledGraph
     vertex_map::Function
     m::Int
@@ -16,13 +17,12 @@ struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, PEPSNode
     gauges_data::Dict 
     gauges_info
 
-    function PEPSNetwork{T}(
+    function PEPSNetwork{T, S}(
         m::Int,
         n::Int,
         factor_graph::LabelledGraph,
-        transformation::LatticeTransformation,
-        initial_gauges::Symbol=:id
-    ) where T <: AbstractGeometry
+        transformation::LatticeTransformation
+    ) where {T <: AbstractGeometry, S <: AbstractSparsity}
 
         vmap = vertex_map(transformation, m, n)
         nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
@@ -31,7 +31,7 @@ struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, PEPSNode
             throw(ArgumentError("Factor graph not compatible with given network."))
         end
 
-        tmap = tensor_map(T, nrows, ncols)
+        tmap = tensor_map(T, S, nrows, ncols)
 
         gauges_data = Dict()
         gauges_info = gauges_list(T, nrows, ncols)
@@ -44,14 +44,14 @@ struct PEPSNetwork{T <: AbstractGeometry} <: AbstractGibbsNetwork{Node, PEPSNode
 end
 
 
-function projectors(network::PEPSNetwork{T}, vertex::Node) where T <: Square
+function projectors(network::PEPSNetwork{T, S}, vertex::Node) where {T <: Square, S}
     i, j = vertex
     neighbours = ((i, j-1), (i-1, j), (i, j+1), (i+1, j))
     projector.(Ref(network), Ref(vertex), neighbours)
 end
 
 
-function projectors(network::PEPSNetwork{T}, vertex::Node) where T <: SquareStar
+function projectors(network::PEPSNetwork{T, S}, vertex::Node) where {T <: SquareStar, S}
     i, j = vertex
     neighbours = (
                     ((i+1, j-1), (i, j-1), (i-1, j-1)), 
@@ -63,15 +63,16 @@ function projectors(network::PEPSNetwork{T}, vertex::Node) where T <: SquareStar
 end
 
 
-node_index(peps::AbstractGibbsNetwork, node::Node) = peps.ncols * (node[1] - 1) + node[2]
+node_index(peps::AbstractGibbsNetwork{T, S}, node::Node) where {T, S} = 
+    peps.ncols * (node[1] - 1) + node[2] 
 
 _mod_wo_zero(k, m) = k % m == 0 ? m : k % m
 
-node_from_index(peps::AbstractGibbsNetwork, index::Int) =
-    ((index-1) ÷ peps.ncols + 1, _mod_wo_zero(index, peps.ncols))
+node_from_index(peps::AbstractGibbsNetwork{T, S}, index::Int) where {T, S} =
+    ((index-1) ÷ peps.ncols + 1, _mod_wo_zero(index, peps.ncols)) 
 
 
-function boundary(peps::PEPSNetwork{T}, node::Node) where T <: Square
+function boundary(peps::PEPSNetwork{T, S}, node::Node) where {T <: Square, S}
     i, j = node
     vcat(
         [
@@ -85,7 +86,7 @@ function boundary(peps::PEPSNetwork{T}, node::Node) where T <: Square
 end
 
 
-function boundary(peps::PEPSNetwork{T}, node::Node) where T <: SquareStar
+function boundary(peps::PEPSNetwork{T, S}, node::Node) where {T <: SquareStar, S}
     i, j = node
     vcat(
         [
@@ -103,11 +104,12 @@ end
 
 
 function bond_energy(
-    network::AbstractGibbsNetwork, 
+    network::AbstractGibbsNetwork{T, S}, 
     u::Node, 
     v::Node, 
     σ::Int
-)
+) where {T, S}
+
     fg_u, fg_v = network.vertex_map(u), network.vertex_map(v)
     if has_edge(network.factor_graph, fg_u, fg_v)
         pu, en, pv = get_prop.(Ref(network.factor_graph), Ref(fg_u), Ref(fg_v), (:pl, :en, :pr))
@@ -122,7 +124,7 @@ function bond_energy(
 end
 
 
-function update_energy(network::PEPSNetwork{T}, σ::Vector{Int}) where T <: Square
+function update_energy(network::PEPSNetwork{T, S}, σ::Vector{Int}) where {T <: Square, S}
     i, j = node_from_index(network, length(σ)+1)
     bond_energy(network, (i, j), (i, j-1), local_state_for_node(network, σ, (i, j-1))) +
     bond_energy(network, (i, j), (i-1, j), local_state_for_node(network, σ, (i-1, j))) +
@@ -130,7 +132,7 @@ function update_energy(network::PEPSNetwork{T}, σ::Vector{Int}) where T <: Squa
 end
 
 
-function update_energy(network::PEPSNetwork{T}, σ::Vector{Int}) where T <: SquareStar
+function update_energy(network::PEPSNetwork{T, S}, σ::Vector{Int}) where {T <: SquareStar, S}
     i, j = node_from_index(network, length(σ)+1)
     bond_energy(network, (i, j), (i, j-1), local_state_for_node(network, σ, (i, j-1))) +
     bond_energy(network, (i, j), (i-1, j), local_state_for_node(network, σ, (i-1, j))) +

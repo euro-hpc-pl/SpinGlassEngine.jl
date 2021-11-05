@@ -41,7 +41,7 @@ update_energy(network::AbstractGibbsNetwork{S, T}, σ::Vector{Int}) where {S, T}
 
 conditional_probability(network::AbstractGibbsNetwork{S, T}, v::Vector{Int}) where {S, T} = not_implemented("conditional_probability")
 
-iteration_order(peps::AbstractGibbsNetwork) = [(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols]
+iteration_order(peps::AbstractGibbsNetwork{T, S}) where {S, T} = [(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols]
 
 
 function projector(  # ta funkcja ma zwracac 1d projectors

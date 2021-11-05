@@ -2,9 +2,11 @@ export
     IntOrRational,
     Node, PEPSNode,
     AbstractGeometry,
+    AbstractSparsity,
     AbstractTensorsLayout,
     tensor_map,
     gauges_list,
+    Dense, Sparse,
     Square,
     SquareStar,
     GaugesEnergy,
@@ -15,7 +17,7 @@ export
 const IntOrRational = Union{Int, Rational{Int}}
 
 abstract type AbstractGeometry end
-abstract type AbstractConnectivity end
+abstract type AbstractSparsity end
 abstract type AbstractTensorsLayout end
 
 struct SquareStar{T <: AbstractTensorsLayout} <: AbstractGeometry end
@@ -24,7 +26,10 @@ struct Square{T <: AbstractTensorsLayout} <: AbstractGeometry end
 const Chimera = Square
 const Pegazus = SquareStar
 
-# Somehow the names are not descriptive enough!
+struct Dense <: AbstractSparsity end 
+struct Sparse <: AbstractSparsity end 
+
+# Names are not descriptive enough!
 struct GaugesEnergy{T} <: AbstractTensorsLayout end
 struct EnergyGauges{T} <: AbstractTensorsLayout end
 struct EngGaugesEng{T} <: AbstractTensorsLayout end
@@ -69,15 +74,15 @@ end
 ###    Square geometry     ###
 #-----------------------------
 
+Site(::Type{Dense}) = :site
+Site(::Type{Sparse}) = :sparse_site
 
-function tensor_map(::Type{Square{T}}, 
-    nrows::Int, 
-    ncols::Int
-) where T <: Union{GaugesEnergy, EnergyGauges}
+function tensor_map(::Type{Square{T}}, ::Type{S}, nrows::Int, ncols::Int
+    ) where {T <: Union{GaugesEnergy, EnergyGauges}, S <: AbstractSparsity}
 
     map = Dict{PEPSNode, Symbol}()
     for i ∈ 1:nrows, j ∈ 1:ncols
-        push!(map, PEPSNode(i, j) => :site)
+        push!(map, PEPSNode(i, j) => Site(S))
         if j < ncols push!(map, PEPSNode(i, j + 1//2) => :central_h) end
         if i < nrows push!(map, PEPSNode(i + 1//2, j) => :central_v) end
     end
@@ -126,11 +131,16 @@ end
 #---------------------------------
 
 
-function tensor_map(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T
+Virtual(::Type{Dense}) = :virtual
+Virtual(::Type{Sparse}) = :sparse_virtual
+
+function tensor_map(::Type{SquareStar{T}}, ::Type{S}, nrows::Int, ncols::Int
+) where {T <: Union{EnergyGauges, GaugesEnergy}, S <: AbstractSparsity}
+
     map = Dict{PEPSNode, Symbol}()
     for i ∈ 1:nrows, j ∈ 1:ncols
-        push!(map, PEPSNode(i, j) => :site)
-        push!(map, PEPSNode(i, j - 1//2) => :virtual)
+        push!(map, PEPSNode(i, j) => Site(S))
+        push!(map, PEPSNode(i, j - 1//2) => Virtual(S))
         push!(map, PEPSNode(i + 1//2, j) => :central_v)
     end
     for i ∈ 1:nrows-1, j ∈ 0:ncols-1

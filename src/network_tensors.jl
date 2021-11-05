@@ -112,7 +112,7 @@ end
 
 
 function tensor(
-    network::AbstractGibbsNetwork{Node, PEPSNode}, #, T},
+    network::AbstractGibbsNetwork{Node, PEPSNode},
     node::PEPSNode,
     β::Real,
     ::Val{:central_d}

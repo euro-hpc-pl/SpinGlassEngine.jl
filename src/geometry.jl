@@ -77,8 +77,8 @@ end
 Site(::Type{Dense}) = :site
 Site(::Type{Sparse}) = :sparse_site
 
-function tensor_map(::Type{Square{T}}, ::Type{S}, nrows::Int, ncols::Int)
-    where {T <: Union{GaugesEnergy, EnergyGauges}, S <: AbstractSparsity}
+function tensor_map(::Type{Square{T}}, ::Type{S}, nrows::Int, ncols::Int
+    ) where {T <: Union{GaugesEnergy, EnergyGauges}, S <: AbstractSparsity}
 
     map = Dict{PEPSNode, Symbol}()
     for i ∈ 1:nrows, j ∈ 1:ncols
@@ -134,8 +134,8 @@ end
 Virtual(::Type{Dense}) = :virtual
 Virtual(::Type{Sparse}) = :sparse_virtual
 
-function tensor_map(::Type{SquareStar{T}}, ::Type{S}, nrows::Int, ncols::Int) 
-    where {T <: Union{EnergyGauges, GaugesEnergy}, S <: AbstractSparsity}
+function tensor_map(::Type{SquareStar{T}}, ::Type{S}, nrows::Int, ncols::Int
+) where {T <: Union{EnergyGauges, GaugesEnergy}, S <: AbstractSparsity}
 
     map = Dict{PEPSNode, Symbol}()
     for i ∈ 1:nrows, j ∈ 1:ncols

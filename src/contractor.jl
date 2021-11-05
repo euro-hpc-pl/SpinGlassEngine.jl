@@ -22,11 +22,12 @@ struct MpsParameters
 end
 
 
-layout(network::PEPSNetwork{T}) where {T} = T 
+layout(network::PEPSNetwork{T, S}) where {T, S} = T 
 
+sparsity(network::PEPSNetwork{T, S}) where {T, S} = S
 
 struct MpsContractor <: AbstractContractor
-    peps::PEPSNetwork{T} where T
+    peps::PEPSNetwork{T, S} where {T, S}
     betas::Vector{Real}
     params::MpsParameters
     layers::MpoLayers
@@ -112,11 +113,11 @@ end
 end
 
 # IdentityMps to be change or remove
-IdentityMps(peps::PEPSNetwork{T}) where T <: Square =
+IdentityMps(peps::PEPSNetwork{T, S}) where {T<: Square, S} =
 Mps(Dict(j => ones(1, 1, 1) for j ∈ 1:peps.ncols))
 
 
-function IdentityMps(peps::PEPSNetwork{T}) where T <: SquareStar
+function IdentityMps(peps::PEPSNetwork{T, S}) where {T <: SquareStar, S}
     id = Dict()
     for i ∈ 1//2 : 1//2 : peps.ncols
         ii = denominator(i) == 1 ? numerator(i) : i

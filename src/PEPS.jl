@@ -63,12 +63,13 @@ function projectors(network::PEPSNetwork{T, S}, vertex::Node) where {T <: Square
 end
 
 
-node_index(peps::AbstractGibbsNetwork, node::Node) = peps.ncols * (node[1] - 1) + node[2]
+node_index(peps::AbstractGibbsNetwork{T, S}, node::Node) where {T, S} = 
+    peps.ncols * (node[1] - 1) + node[2] 
 
 _mod_wo_zero(k, m) = k % m == 0 ? m : k % m
 
-node_from_index(peps::AbstractGibbsNetwork, index::Int) =
-    ((index-1) ÷ peps.ncols + 1, _mod_wo_zero(index, peps.ncols))
+node_from_index(peps::AbstractGibbsNetwork{T, S}, index::Int) where {T, S} =
+    ((index-1) ÷ peps.ncols + 1, _mod_wo_zero(index, peps.ncols)) 
 
 
 function boundary(peps::PEPSNetwork{T, S}, node::Node) where {T <: Square, S}
@@ -103,11 +104,12 @@ end
 
 
 function bond_energy(
-    network::AbstractGibbsNetwork, 
+    network::AbstractGibbsNetwork{T, S}, 
     u::Node, 
     v::Node, 
     σ::Int
-)
+) where {T, S}
+
     fg_u, fg_v = network.vertex_map(u), network.vertex_map(v)
     if has_edge(network.factor_graph, fg_u, fg_v)
         pu, en, pv = get_prop.(Ref(network.factor_graph), Ref(fg_u), Ref(fg_v), (:pl, :en, :pr))

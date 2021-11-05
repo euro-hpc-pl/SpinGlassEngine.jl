@@ -11,6 +11,7 @@ function tensor(
     if v ∈ keys(network.tensors_map)
         tensor(network, v, β, Val(network.tensors_map[v]))
     else
+        #floor.(Int, ones(1, 1))
         ones(1, 1)
     end
 end

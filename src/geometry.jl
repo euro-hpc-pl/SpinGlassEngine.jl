@@ -89,6 +89,21 @@ function tensor_map(::Type{Square{T}}, ::Type{S}, nrows::Int, ncols::Int
     map
 end
 
+function tensor_map(::Type{Square{T}}, ::Type{S}, nrows::Int, ncols::Int
+    ) where {T <: EngGaugesEng, S <: AbstractSparsity}
+
+    map = Dict{PEPSNode, Symbol}()
+    for i ∈ 1:nrows, j ∈ 1:ncols
+        push!(map, PEPSNode(i, j) => Site(S))
+        if j < ncols push!(map, PEPSNode(i, j + 1//2) => :central_h) end
+        if i < nrows 
+            push!(map, PEPSNode(i + 1//5, j) => :sqrt_up)
+            push!(map, PEPSNode(i + 4//5, j) => :sqrt_down)
+         end
+    end
+    map
+end
+
 
 function gauges_list(::Type{Square{T}},
     nrows::Int,

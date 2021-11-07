@@ -72,7 +72,7 @@
 
     for Strategy ∈ (Basic,)
         for Sparsity ∈ (Dense,)
-            for Layout ∈ (EnergyGauges, GaugesEnergy)
+            for Layout ∈ (EnergyGauges, GaugesEnergy,)# EngGaugesEng)
                 for transform ∈ all_lattice_transformations
                     
                     network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)

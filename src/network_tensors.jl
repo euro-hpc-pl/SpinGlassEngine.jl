@@ -11,7 +11,6 @@ function tensor(
     if v ∈ keys(network.tensors_map)
         tensor(network, v, β, Val(network.tensors_map[v]))
     else
-        #floor.(Int, ones(1, 1))
         ones(1, 1)
     end
 end
@@ -280,4 +279,84 @@ function tensor_size(
     pd = decode_projector!(projector(network, v, (i+1, j)))
     @assert size(pr, 1) == size(pr, 1)
     size(pr, 2), size(pd, 2), size(pd, 1)
+end
+
+function sqrt_tensor_up(
+    network::AbstractGibbsNetwork{Node, PEPSNode},
+    v::Node,
+    w::Node,
+    β::Real
+)
+    E = connecting_tensor(network, v, w, β)
+    U, Σ, V = svd(E)
+    U .* sqrt.(Σ)
+end 
+
+function sqrt_tensor_down(
+    network::AbstractGibbsNetwork{Node, PEPSNode},
+    v::Node,
+    w::Node,
+    β::Real
+)
+    E = connecting_tensor(network, v, w, β)
+    U, Σ, V = svd(E)
+    sqrt.(Σ) .* V'
+end 
+
+function tensor(
+    network::AbstractGibbsNetwork{Node, PEPSNode},
+    v::PEPSNode,
+    β::Real,
+    ::Val{:sqrt_up}
+)
+    #network::PEPSNetwork{T},
+    #v::PEPSNode,
+    #::Val{:sqrt_up}
+#) where T <: Square
+    r, j = Node(v)
+    i = floor(Int, r)
+    sqrt_tensor_up(network, (i, j), (i+1, j), β)
+end
+
+function tensor_size(
+    network::AbstractGibbsNetwork{Node, PEPSNode},
+    v::PEPSNode,
+    ::Val{:sqrt_up}
+)
+    #network::PEPSNetwork{T},
+    #v::PEPSNode,
+    #::Val{:sqrt_up}
+#) where T <: Square
+    r, j = Node(v)
+    i = floor(Int, r)
+    size(interaction_energy(network, (i, j), (i+1, j)))
+end
+
+function tensor(
+    network::AbstractGibbsNetwork{Node, PEPSNode},
+    v::PEPSNode,
+    β::Real,
+    ::Val{:sqrt_down}
+)
+    #network::PEPSNetwork{T},
+    #v::PEPSNode,
+    #::Val{:sqrt_down}
+#) where T <: Square
+    r, j = Node(v)
+    i = floor(Int, r)
+    sqrt_tensor_down(network, (i, j), (i+1, j), β)
+end
+
+function tensor_size(
+    network::AbstractGibbsNetwork{Node, PEPSNode},
+    v::PEPSNode,
+    ::Val{:sqrt_down}
+)
+    #network::PEPSNetwork{T},
+    #v::PEPSNode,
+    #::Val{:sqrt_down}
+#) where T <: Square
+    r, j = Node(v)
+    i = floor(Int, r)
+    size(interaction_energy(network, (i, j), (i+1, j)))
 end

@@ -266,6 +266,7 @@ function conditional_probability(contractor::MpsContractor{S}, w::Vector{Int}) w
 end
 
 
+
 function conditional_probability(::Type{T}, 
     contractor::MpsContractor{S}, 
     w::Vector{Int}, 
@@ -278,16 +279,61 @@ function conditional_probability(::Type{T},
 
     L = left_env(contractor, i, ∂v[1:j-1], β)
     R = right_env(contractor, i, ∂v[j+2 : network.ncols+1], β)
-    ψ = dressed_mps(contractor, i, β)
-    M = ψ.tensors[j]
+    M = dressed_mps(contractor, i, β)[j]
 
-    A = reduced_site_tensor(network, (i, j), ∂v[j], ∂v[j+1], β)
+    eng_local = local_energy(network, (i, j))
 
-    @tensor prob[σ] := L[x] * M[x, d, y] * A[r, d, σ] *
-                       R[y, r] order = (x, d, r, y)
+    pl = projector(network, (i, j), (i, j-1))
+    eng_pl = interaction_energy(network, (i, j), (i, j-1))
+    eng_left = [eng_pl[pl[σ], ∂v[j]] for σ ∈ 1:length(pl)]
 
-    normalize_probability(prob)
+    pu = projector(network, (i, j), (i-1, j))
+    eng_pu = interaction_energy(network, (i, j), (i-1, j))
+    eng_up = [eng_pu[pu[σ], ∂v[j+1]] for σ ∈ 1:length(pu)]
+
+    en = eng_local .+ eng_left .+ eng_up
+    loc_exp = exp.(-β .* (en .- minimum(en)))
+
+    pr = projector(network, (i, j), (i, j+1))
+    pd = projector(network, (i, j), (i+1, j))
+    for σ ∈ 1:length(loc_exp)
+        MM = @view M[:, pd[σ], :]
+        RR = @view R[:, pr[σ]]
+        env_exp = (L' * MM * RR)[]
+        loc_exp[σ] *= env_exp
+    end
+    normalize_probability(loc_exp)
 end
+
+
+
+
+# function conditional_probability(::Type{T}, 
+#     contractor::MpsContractor{S}, 
+#     w::Vector{Int}, 
+#     β::Real
+# ) where {T <: Square, S}
+
+#     network = contractor.peps
+#     i, j = node_from_index(network, length(w)+1)
+#     ∂v = boundary_state(network, w, (i, j))
+
+#     L = left_env(contractor, i, ∂v[1:j-1], β)
+#     R = right_env(contractor, i, ∂v[j+2 : network.ncols+1], β)
+#     ψ = dressed_mps(contractor, i, β)
+#     M = ψ.tensors[j]
+
+#     A = reduced_site_tensor(network, (i, j), ∂v[j], ∂v[j+1], β)
+
+#     @tensor prob[σ] := L[x] * M[x, d, y] * A[r, d, σ] *
+#                        R[y, r] order = (x, d, r, y)
+
+#     normalize_probability(prob)
+# end
+
+
+
+
 
 
 function conditional_probability(::Type{T}, 
@@ -314,36 +360,36 @@ function conditional_probability(::Type{T},
 end
 
 
-function reduced_site_tensor(
-    network::PEPSNetwork{T, S},
-    v::Node,
-    l::Int,
-    u::Int,
-    β::Real
-) where {T, S}
+# function reduced_site_tensor(
+#     network::PEPSNetwork{T, S},
+#     v::Node,
+#     l::Int,
+#     u::Int,
+#     β::Real
+# ) where {T, S}
 
-    i, j = v
-    eng_local = local_energy(network, v)
-    pl = projector(network, v, (i, j-1))
-    pl = decode_projector!(pl)
-    eng_pl = interaction_energy(network, v, (i, j-1))
-    @matmul eng_left[x] := sum(y) pl[x, y] * eng_pl[y, $l]
+#     i, j = v
+#     eng_local = local_energy(network, v)
+#     pl = projector(network, v, (i, j-1))
+#     pl = decode_projector!(pl)
+#     eng_pl = interaction_energy(network, v, (i, j-1))
+#     @matmul eng_left[x] := sum(y) pl[x, y] * eng_pl[y, $l]
     
-    pu = projector(network, v, (i-1, j))
-    pu = decode_projector!(pu)
-    eng_pu = interaction_energy(network, v, (i-1, j))
-    @matmul eng_up[x] := sum(y) pu[x, y] * eng_pu[y, $u]
+#     pu = projector(network, v, (i-1, j))
+#     pu = decode_projector!(pu)
+#     eng_pu = interaction_energy(network, v, (i-1, j))
+#     @matmul eng_up[x] := sum(y) pu[x, y] * eng_pu[y, $u]
 
-    en = eng_local .+ eng_left .+ eng_up
-    loc_exp = exp.(-β .* (en .- minimum(en)))
+#     en = eng_local .+ eng_left .+ eng_up
+#     loc_exp = exp.(-β .* (en .- minimum(en)))
 
-    pr = projector(network, v, (i, j+1))
-    pr = decode_projector!(pr)
-    pd = projector(network, v, (i+1, j))
-    pd = decode_projector!(pd)
-    @cast A[r, d, σ] := pr[σ, r] * pd[σ, d] * loc_exp[σ]
-    A
-end
+#     pr = projector(network, v, (i, j+1))
+#     pr = decode_projector!(pr)
+#     pd = projector(network, v, (i+1, j))
+#     pd = decode_projector!(pd)
+#     @cast A[r, d, σ] := pr[σ, r] * pd[σ, d] * loc_exp[σ]
+#     A
+# end
 
 
 function reduced_site_tensor(

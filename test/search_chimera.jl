@@ -74,7 +74,7 @@
         for Sparsity ∈ (Dense,)
             for Layout ∈ (EnergyGauges, GaugesEnergy,)# EngGaugesEng)
                 for transform ∈ all_lattice_transformations
-                    
+
                     network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
                     contractor = MpsContractor{Strategy}(network, [β], params)
                     sol = low_energy_spectrum(contractor, num_states)

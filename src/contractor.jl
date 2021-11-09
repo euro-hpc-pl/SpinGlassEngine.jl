@@ -284,7 +284,7 @@ function conditional_probability(::Type{T},
 
     pl = projector(network, (i, j), (i, j-1))
     eng_pl = interaction_energy(network, (i, j), (i, j-1))
-    eng_left = vec(eng_pl[pl, ∂v[j]])
+    eng_left = vec(eng_pl[pl, ∂v[j]]) # vec rm?
 
     pu = projector(network, (i, j), (i-1, j))
     eng_pu = interaction_energy(network, (i, j), (i-1, j))

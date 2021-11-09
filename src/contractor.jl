@@ -266,7 +266,6 @@ function conditional_probability(contractor::MpsContractor{S}, w::Vector{Int}) w
 end
 
 
-
 function conditional_probability(::Type{T}, 
     contractor::MpsContractor{S}, 
     w::Vector{Int}, 
@@ -285,23 +284,25 @@ function conditional_probability(::Type{T},
 
     pl = projector(network, (i, j), (i, j-1))
     eng_pl = interaction_energy(network, (i, j), (i, j-1))
-    eng_left = [eng_pl[pl[σ], ∂v[j]] for σ ∈ 1:length(pl)]
+    eng_left = vec(eng_pl[pl, ∂v[j]])
 
     pu = projector(network, (i, j), (i-1, j))
     eng_pu = interaction_energy(network, (i, j), (i-1, j))
-    eng_up = [eng_pu[pu[σ], ∂v[j+1]] for σ ∈ 1:length(pu)]
+    eng_up = vec(eng_pu[pu, ∂v[j+1]])
 
     en = eng_local .+ eng_left .+ eng_up
     loc_exp = exp.(-β .* (en .- minimum(en)))
 
     pr = projector(network, (i, j), (i, j+1))
     pd = projector(network, (i, j), (i+1, j))
+
+    #Threads.@threads for σ ∈ 1:length(loc_exp)
     for σ ∈ 1:length(loc_exp)
         MM = @view M[:, pd[σ], :]
         RR = @view R[:, pr[σ]]
-        env_exp = (L' * MM * RR)[]
-        loc_exp[σ] *= env_exp
+        loc_exp[σ] *= L' * MM * RR
     end
+
     normalize_probability(loc_exp)
 end
 

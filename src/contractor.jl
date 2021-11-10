@@ -268,12 +268,12 @@ end
 
 function conditional_probability(::Type{T}, 
     contractor::MpsContractor{S}, 
-    w::Vector{Int}, 
+    state::Vector{Int}, 
     β::Real
 ) where {T <: Square, S}
 
-    i, j = node_from_index(contractor.peps, length(w)+1)
-    ∂v = boundary_state(contractor.peps, w, (i, j))
+    i, j = node_from_index(contractor.peps, length(state)+1)
+    ∂v = boundary_state(contractor.peps, state, (i, j))
 
     L = left_env(contractor, i, ∂v[1:j-1], β)
     R = right_env(contractor, i, ∂v[j+2 : contractor.peps.ncols+1], β)

@@ -272,29 +272,28 @@ function conditional_probability(::Type{T},
     β::Real
 ) where {T <: Square, S}
 
-    network = contractor.peps
-    i, j = node_from_index(network, length(w)+1)
-    ∂v = boundary_state(network, w, (i, j))
+    i, j = node_from_index(contractor.peps, length(w)+1)
+    ∂v = boundary_state(contractor.peps, w, (i, j))
 
     L = left_env(contractor, i, ∂v[1:j-1], β)
-    R = right_env(contractor, i, ∂v[j+2 : network.ncols+1], β)
+    R = right_env(contractor, i, ∂v[j+2 : contractor.peps.ncols+1], β)
     M = dressed_mps(contractor, i, β)[j]
 
-    eng_local = local_energy(network, (i, j))
+    eng_local = local_energy(contractor.peps, (i, j))
 
-    pl = projector(network, (i, j), (i, j-1))
-    eng_pl = interaction_energy(network, (i, j), (i, j-1))
+    pl = projector(contractor.peps, (i, j), (i, j-1))
+    eng_pl = interaction_energy(contractor.peps, (i, j), (i, j-1))
     eng_left = @view eng_pl[pl[:], ∂v[j]]
 
-    pu = projector(network, (i, j), (i-1, j))
-    eng_pu = interaction_energy(network, (i, j), (i-1, j))
+    pu = projector(contractor.peps, (i, j), (i-1, j))
+    eng_pu = interaction_energy(contractor.peps, (i, j), (i-1, j))
     eng_up = @view eng_pu[pu[:], ∂v[j+1]]
 
     en = eng_local .+ eng_left .+ eng_up
     loc_exp = exp.(-β .* (en .- minimum(en)))
 
-    pr = projector(network, (i, j), (i, j+1))
-    pd = projector(network, (i, j), (i+1, j))
+    pr = projector(contractor.peps, (i, j), (i, j+1))
+    pd = projector(contractor.peps, (i, j), (i+1, j))
 
     #Threads.@threads for σ ∈ 1:length(loc_exp)
     for σ ∈ 1:length(loc_exp)

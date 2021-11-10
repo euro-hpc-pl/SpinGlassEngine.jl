@@ -77,6 +77,7 @@ end
 Site(::Type{Dense}) = :site
 Site(::Type{Sparse}) = :sparse_site
 
+
 function tensor_map(::Type{Square{T}}, ::Type{S}, nrows::Int, ncols::Int
     ) where {T <: Union{GaugesEnergy, EnergyGauges}, S <: AbstractSparsity}
 

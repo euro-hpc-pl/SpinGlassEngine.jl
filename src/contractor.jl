@@ -193,8 +193,8 @@ end
 
 @memoize Dict function right_env(
     contractor::MpsContractor{T},
-    i::Int, 
-    ∂v::Vector{Int}, 
+    i::Int,
+    ∂v::Vector{Int},
     β::Real
 ) where T <: AbstractStrategy
 

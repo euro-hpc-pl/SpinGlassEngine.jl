@@ -362,7 +362,38 @@ function conditional_probability(::Type{T},
     ψ = dressed_mps(contractor, i, β)
     MX, M = ψ[j-1//2], ψ[j]
 
-    A = reduced_site_tensor(network, (i, j), ∂v[2*j-1], ∂v[2*j], ∂v[2*j+1], ∂v[2*j+2], β)
+    eng_local = local_energy(network, (i, j))
+    ld = ∂v[2*j-1]
+    l = ∂v[2*j]
+    d = ∂v[2*j+1]
+    u = ∂v[2*j+2]
+    pl = projector(network, (i, j), (i, j-1))
+    pl = decode_projector!(pl)
+    eng_pl = interaction_energy(network, (i, j), (i, j-1))
+    @matmul eng_left[x] := sum(y) pl[x, y] * eng_pl[y, $l]
+
+    pd = projector(network, (i, j), (i-1, j-1))
+    pd = decode_projector!(pd)
+    eng_pd = interaction_energy(network, (i, j), (i-1, j-1))
+    @matmul eng_diag[x] := sum(y) pd[x, y] * eng_pd[y, $d]
+    
+    pu = projector(network, (i, j), (i-1, j))
+    pu = decode_projector!(pu)
+    eng_pu = interaction_energy(network, (i, j), (i-1, j))
+    @matmul eng_up[x] := sum(y) pu[x, y] * eng_pu[y, $u]
+
+    en = eng_local .+ eng_left .+ eng_diag .+ eng_up
+    loc_exp = exp.(-β .* (en .- minimum(en)))
+
+    p_lb = decode_projector!(projector(network, (i, j-1), (i+1, j)))
+    p_rb = decode_projector!(projector(network, (i, j), (i+1, j-1)))
+    pr = decode_projector!(projector(network, (i, j), ((i+1, j+1), (i, j+1), (i-1, j+1))))
+    pd = decode_projector!(projector(network, (i, j), (i+1, j)))
+
+    @cast A[r, d, (k̃, k), σ] := p_rb[σ, k] * p_lb[$ld, k̃] * pr[σ, r] * 
+                                pd[σ, d] * loc_exp[σ]
+    
+    #A = reduced_site_tensor(network, (i, j), ∂v[2*j-1], ∂v[2*j], ∂v[2*j+1], ∂v[2*j+2], β)
 
     @tensor prob[σ] := L[x] * MX[x, m, y] * M[y, l, z] * R[z, k] *
                         A[k, l, m, σ] order = (x, y, z, k, l, m)
@@ -370,6 +401,30 @@ function conditional_probability(::Type{T},
     normalize_probability(prob)
 end
 
+#=
+function conditional_probability(::Type{T}, 
+    contractor::MpsContractor{S}, 
+    w::Vector{Int}, 
+    β::Real
+) where {T <: SquareStar, S}
+
+    network = contractor.peps
+    i, j = node_from_index(network, length(w)+1)
+    ∂v = boundary_state(network, w, (i, j))
+
+    L = left_env(contractor, i, ∂v[1:2*j-2], β)
+    R = right_env(contractor, i, ∂v[2*j+3 : 2*network.ncols+2], β)
+    ψ = dressed_mps(contractor, i, β)
+    MX, M = ψ[j-1//2], ψ[j]
+
+    A = reduced_site_tensor(network, (i, j), ∂v[2*j-1], ∂v[2*j], ∂v[2*j+1], ∂v[2*j+2], β)
+
+    @tensor prob[σ] := L[x] * MX[x, m, y] * M[y, l, z] * R[z, k] *
+                        A[k, l, m, σ] order = (x, y, z, k, l, m)
+
+    normalize_probability(prob)
+end
+=#
 
 # to be removed
 function reduced_site_tensor(

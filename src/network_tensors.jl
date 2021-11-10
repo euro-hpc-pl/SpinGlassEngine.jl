@@ -58,7 +58,6 @@ tensor_size(network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, ::Val{:s
 maximum.(projectors(network, Node(v)))
 
 
-
 tensor_size(network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, ::Val{:sparse_site}) =
 maximum.(projectors(network, Node(v)))
 
@@ -132,7 +131,8 @@ function tensor_size(
     u * ũ, d * d̃
 end
 
-
+# ----------------------------------------------------------------------
+# to be removed
 function _all_fused_projectors(
     network::AbstractGibbsNetwork{Node, PEPSNode},
     node::PEPSNode,
@@ -175,42 +175,40 @@ function tensor(
                                      p_rt[r, ũ] * p_lb[l, d̃]
     A
 end 
+# ----------------------------------------------------------------------
 
+#=
+function tensor(
+     network::AbstractGibbsNetwork{Node, PEPSNode},
+     node::PEPSNode,
+     β::Real,
+     ::Val{:virtual}
+)
+     i = node.i
+     j = floor(Int, node.j)
 
+     left_nbrs = ((i+1, j+1), (i, j+1), (i-1, j+1))
+     prl = projector.(Ref(network), Ref((i, j)), left_nbrs)
+     p_lb, p_l, p_lt = last(fuse_projectors(prl))
 
-# function tensor(
-#     network::AbstractGibbsNetwork{Node, PEPSNode},
-#     node::PEPSNode,
-#     β::Real,
-#     ::Val{:virtual}
-# )
-#     i = node.i
-#     j = floor(Int, node.j)
+     right_nbrs = ((i+1, j), (i, j), (i-1, j))
+     prr = projector.(Ref(network), Ref((i, j+1)), right_nbrs)
+     p_rb, p_r, p_rt = last(fuse_projectors(prr))
 
-#     left_nbrs = ((i+1, j+1), (i, j+1), (i-1, j+1))
-#     prl = projector.(Ref(network), Ref((i, j)), left_nbrs)
-#     p_lb, p_l, p_lt = last(fuse_projectors(prl))
+     v = Node(node)
+     h = connecting_tensor(network, floor.(Int, v), ceil.(Int, v), β)
 
-#     right_nbrs = ((i+1, j), (i, j), (i-1, j))
-#     prr = projector.(Ref(network), Ref((i, j+1)), right_nbrs)
-#     p_rb, p_r, p_rt = last(fuse_projectors(prr))
+     A = zeros(maximum(p_l), maximum(p_rt), maximum(p_lt),
+               maximum(p_r), maximum(p_lb), maximum(p_rb))
 
-#     v = Node(node)
-#     h = connecting_tensor(network, floor.(Int, v), ceil.(Int, v), β)
+     for l ∈ 1:length(p_l), r ∈ 1:length(p_r)
+        A[p_l[l], p_rt[r], p_lt[l], p_r[r], p_lb[l], p_rb[r]] += h[l, r]
+     end
 
-#     A = zeros(maximum(p_l), maximum(p_rt), maximum(p_lt),
-#               maximum(p_r), maximum(p_lb), maximum(p_rb))
-
-#     for l ∈ length(p_l)
-#         for r ∈ length(p_r)
-#             A[p_l[l], p_rt[r], p_lt[l], p_r[r], p_lb[l], p_rb[r]] += h[l, r]
-#         end
-#     end
-
-#     @cast AA[l, (ũ, u), r, (d̃, d)]  |= A[l, ũ, u, r, d̃, d]
-#     AA
-# end 
-
+     @cast AA[l, (ũ, u), r, (d̃, d)] := A[l, ũ, u, r, d̃, d]
+     AA
+end 
+=#
 
 function tensor_size(
     network::AbstractGibbsNetwork{Node, PEPSNode},

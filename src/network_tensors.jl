@@ -36,7 +36,6 @@ function tensor(
 )
     loc_exp = exp.(-β .* local_energy(network, Node(v)))
     projs = projectors(network, Node(v))
-    # writing for 4 projs
     A = zeros(maximum.(projs))
     for (σ, lexp) ∈ enumerate(loc_exp)
         A[projs[1][σ], projs[2][σ], projs[3][σ], projs[4][σ]] += lexp  # more elegent solution?
@@ -61,18 +60,16 @@ function tensor_size(
     network::AbstractGibbsNetwork{Node, PEPSNode}, 
     v::PEPSNode,
     ::Val{:site}
-) 
-    maximum.(projectors(network, Node(v)))
-end
+) = maximum.(projectors(network, Node(v)))
+
 
 
 function tensor_size(
     network::AbstractGibbsNetwork{Node, PEPSNode}, 
     v::PEPSNode,
     ::Val{:sparse_site}
-) 
-    maximum.(projectors(network, Node(v)))
-end
+) = maximum.(projectors(network, Node(v)))
+
 
 
 function tensor(
@@ -239,7 +236,7 @@ function tensor_size(
     prr = projector.(Ref(network), Ref((i, j+1)), right_nbrs)
     p_rb, p_r, p_rt = last(fuse_projectors(prr))
     (maximum(p_l), maximum(p_lt) * maximum(p_rt),
-    maximum(p_r), maximum(p_rb) * maximum(p_lb))
+     maximum(p_r), maximum(p_rb) * maximum(p_lb))
 end
 
 
@@ -248,9 +245,8 @@ function tensor(
     v::PEPSNode,
     β::Real,
     ::Val{:gauge_h}
-) 
-    Diagonal(network.gauges_data[v])
-end
+) = Diagonal(network.gauges_data[v])
+
 
 
 function tensor_size(
@@ -285,6 +281,7 @@ function sqrt_tensor_up(
     U .* sqrt.(Σ)
 end 
 
+
 function sqrt_tensor_down(
     network::AbstractGibbsNetwork{Node, PEPSNode},
     v::Node,
@@ -296,34 +293,29 @@ function sqrt_tensor_down(
     sqrt.(Σ) .* V'
 end 
 
+
 function tensor(
     network::AbstractGibbsNetwork{Node, PEPSNode},
     v::PEPSNode,
     β::Real,
     ::Val{:sqrt_up}
 )
-    #network::PEPSNetwork{T},
-    #v::PEPSNode,
-    #::Val{:sqrt_up}
-#) where T <: Square
     r, j = Node(v)
     i = floor(Int, r)
     sqrt_tensor_up(network, (i, j), (i+1, j), β)
 end
 
+
 function tensor_size(
     network::AbstractGibbsNetwork{Node, PEPSNode},
     v::PEPSNode,
     ::Val{:sqrt_up}
 )
-    #network::PEPSNetwork{T},
-    #v::PEPSNode,
-    #::Val{:sqrt_up}
-#) where T <: Square
     r, j = Node(v)
     i = floor(Int, r)
     size(interaction_energy(network, (i, j), (i+1, j)))
 end
+
 
 function tensor(
     network::AbstractGibbsNetwork{Node, PEPSNode},
@@ -331,24 +323,17 @@ function tensor(
     β::Real,
     ::Val{:sqrt_down}
 )
-    #network::PEPSNetwork{T},
-    #v::PEPSNode,
-    #::Val{:sqrt_down}
-#) where T <: Square
     r, j = Node(v)
     i = floor(Int, r)
     sqrt_tensor_down(network, (i, j), (i+1, j), β)
 end
+
 
 function tensor_size(
     network::AbstractGibbsNetwork{Node, PEPSNode},
     v::PEPSNode,
     ::Val{:sqrt_down}
 )
-    #network::PEPSNetwork{T},
-    #v::PEPSNode,
-    #::Val{:sqrt_down}
-#) where T <: Square
     r, j = Node(v)
     i = floor(Int, r)
     size(interaction_energy(network, (i, j), (i+1, j)))

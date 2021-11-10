@@ -71,7 +71,7 @@
     params = MpsParameters()
 
     for Strategy ∈ (Basic,)
-        for Sparsity ∈ (Dense,)
+        for Sparsity ∈ (Dense, Sparse)
             for Layout ∈ (EnergyGauges, GaugesEnergy,)# EngGaugesEng)
                 for transform ∈ all_lattice_transformations
 

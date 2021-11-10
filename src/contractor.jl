@@ -206,10 +206,10 @@ end
     W = mpo(contractor, contractor.layers.right, i, β)
     k = length(ϕ.sites)
     site = ϕ.sites[k-l+1]
-    M̃ = W[site]
-    M = ϕ[site]
+    M = W[site]
+    B = ϕ[site]
 
-    RR = _update_reduced_env_right(R̃, ∂v[1], M̃, M)
+    RR = _update_reduced_env_right(R̃, ∂v[1], M, B)
 
     ls_mps = _left_nbrs_site(site, ϕ.sites)
     ls = _left_nbrs_site(site, W.sites)
@@ -223,7 +223,7 @@ end
 end
 
 
-function _update_reduced_env_right(RE, m::Int, M::Dict, B)
+function _update_reduced_env_right(RE::AbstractArray{Float64,2}, m::Int, M::Dict, B::AbstractArray{Float64,3})
     kk = sort(collect(keys(M)))
     Mt = M[kk[1]]
     K = @view Mt[m, :]
@@ -234,10 +234,32 @@ function _update_reduced_env_right(RE, m::Int, M::Dict, B)
         @tensor K[a] := K[b] * Mm[b, a]
     end
 
-    M0 = M[0]  # assume convention that we end at site tensor
-    @tensor R[x, y] := K[d] * M0[y, d, β, γ] * 
+    _update_reduced_env_right(K, RE, M[0], B)
+end
+
+
+function _update_reduced_env_right(K:: AbstractArray{Float64,1}, RE::AbstractArray{Float64,2}, M::AbstractArray{Float64,4}, B::AbstractArray{Float64,3})
+    @tensor R[x, y] := K[d] * M[y, d, β, γ] * 
                        B[x, γ, α] * RE[α, β] order = (d, β, γ, α)
     R
+end
+
+
+function _update_reduced_env_right(K:: AbstractArray{Float64,1}, RE::AbstractArray{Float64,2}, M::SparseSiteTensor, B::AbstractArray{Float64,3})
+    sc = maximum(M.projs[1])
+    sb = size(B, 1)
+    R = zeros(sb, sc)
+    for (σ, lexp) ∈ enumerate(M.loc_exp)
+        re = @view RE[:, M.projs[3][σ]]
+        b = @view B[:, M.projs[4][σ], :]
+        R[:, M.projs[1][σ]] += (lexp * K[M.projs[2][σ]]) .* (b * re)
+    end
+    R
+end
+
+
+function _update_reduced_env_right(K:: AbstractArray{Float64,1}, RE::AbstractArray{Float64,2}, M::SparseVirtualTensor, B::AbstractArray{Float64,3})
+    ## TO WRITE
 end
 
 

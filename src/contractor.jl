@@ -223,7 +223,12 @@ end
 end
 
 
-function _update_reduced_env_right(RE::AbstractArray{Float64,2}, m::Int, M::Dict, B::AbstractArray{Float64,3})
+function _update_reduced_env_right(
+    RE::AbstractArray{Float64, 2}, 
+    m::Int, 
+    M::Dict, 
+    B::AbstractArray{Float64, 3}
+    )
     kk = sort(collect(keys(M)))
     Mt = M[kk[1]]
     K = @view Mt[m, :]
@@ -238,17 +243,25 @@ function _update_reduced_env_right(RE::AbstractArray{Float64,2}, m::Int, M::Dict
 end
 
 
-function _update_reduced_env_right(K:: AbstractArray{Float64,1}, RE::AbstractArray{Float64,2}, M::AbstractArray{Float64,4}, B::AbstractArray{Float64,3})
+function _update_reduced_env_right(
+    K::AbstractArray{Float64, 1}, 
+    RE::AbstractArray{Float64, 2}, 
+    M::AbstractArray{Float64, 4}, 
+    B::AbstractArray{Float64, 3}
+)
     @tensor R[x, y] := K[d] * M[y, d, β, γ] * 
                        B[x, γ, α] * RE[α, β] order = (d, β, γ, α)
     R
 end
 
 
-function _update_reduced_env_right(K:: AbstractArray{Float64,1}, RE::AbstractArray{Float64,2}, M::SparseSiteTensor, B::AbstractArray{Float64,3})
-    sc = maximum(M.projs[1])
-    sb = size(B, 1)
-    R = zeros(sb, sc)
+function _update_reduced_env_right(
+    K::AbstractArray{Float64, 1}, 
+    RE::AbstractArray{Float64, 2}, 
+    M::SparseSiteTensor, 
+    B::AbstractArray{Float64, 3}
+)
+    R = zeros(size(B, 1), maximum(M.projs[1]))
     for (σ, lexp) ∈ enumerate(M.loc_exp)
         re = @view RE[:, M.projs[3][σ]]
         b = @view B[:, M.projs[4][σ], :]
@@ -258,8 +271,13 @@ function _update_reduced_env_right(K:: AbstractArray{Float64,1}, RE::AbstractArr
 end
 
 
-function _update_reduced_env_right(K:: AbstractArray{Float64,1}, RE::AbstractArray{Float64,2}, M::SparseVirtualTensor, B::AbstractArray{Float64,3})
-    ## TO WRITE
+function _update_reduced_env_right(
+    K::AbstractArray{Float64, 1}, 
+    RE::AbstractArray{Float64, 2}, 
+    M::SparseVirtualTensor, 
+    B::AbstractArray{Float64, 3}
+)
+    # to be written
 end
 
 
@@ -328,36 +346,7 @@ function conditional_probability(::Type{T},
 end
 
 
-
-
-# function conditional_probability(::Type{T}, 
-#     contractor::MpsContractor{S}, 
-#     w::Vector{Int}, 
-#     β::Real
-# ) where {T <: Square, S}
-
-#     network = contractor.peps
-#     i, j = node_from_index(network, length(w)+1)
-#     ∂v = boundary_state(network, w, (i, j))
-
-#     L = left_env(contractor, i, ∂v[1:j-1], β)
-#     R = right_env(contractor, i, ∂v[j+2 : network.ncols+1], β)
-#     ψ = dressed_mps(contractor, i, β)
-#     M = ψ.tensors[j]
-
-#     A = reduced_site_tensor(network, (i, j), ∂v[j], ∂v[j+1], β)
-
-#     @tensor prob[σ] := L[x] * M[x, d, y] * A[r, d, σ] *
-#                        R[y, r] order = (x, d, r, y)
-
-#     normalize_probability(prob)
-# end
-
-
-
-
-
-
+# to be improved
 function conditional_probability(::Type{T}, 
     contractor::MpsContractor{S}, 
     w::Vector{Int}, 
@@ -382,38 +371,7 @@ function conditional_probability(::Type{T},
 end
 
 
-# function reduced_site_tensor(
-#     network::PEPSNetwork{T, S},
-#     v::Node,
-#     l::Int,
-#     u::Int,
-#     β::Real
-# ) where {T, S}
-
-#     i, j = v
-#     eng_local = local_energy(network, v)
-#     pl = projector(network, v, (i, j-1))
-#     pl = decode_projector!(pl)
-#     eng_pl = interaction_energy(network, v, (i, j-1))
-#     @matmul eng_left[x] := sum(y) pl[x, y] * eng_pl[y, $l]
-    
-#     pu = projector(network, v, (i-1, j))
-#     pu = decode_projector!(pu)
-#     eng_pu = interaction_energy(network, v, (i-1, j))
-#     @matmul eng_up[x] := sum(y) pu[x, y] * eng_pu[y, $u]
-
-#     en = eng_local .+ eng_left .+ eng_up
-#     loc_exp = exp.(-β .* (en .- minimum(en)))
-
-#     pr = projector(network, v, (i, j+1))
-#     pr = decode_projector!(pr)
-#     pd = projector(network, v, (i+1, j))
-#     pd = decode_projector!(pd)
-#     @cast A[r, d, σ] := pr[σ, r] * pd[σ, d] * loc_exp[σ]
-#     A
-# end
-
-
+# to be removed
 function reduced_site_tensor(
     network::PEPSNetwork{T, S},
     v::Node,

@@ -37,9 +37,7 @@ function tensor(
     loc_exp = exp.(-β .* local_energy(network, Node(v)))
     projs = projectors(network, Node(v))
     A = zeros(maximum.(projs))
-    for (σ, lexp) ∈ enumerate(loc_exp)
-        A[projs[1][σ], projs[2][σ], projs[3][σ], projs[4][σ]] += lexp  # more elegent solution?
-    end
+    for (σ, lexp) ∈ enumerate(loc_exp) A[getindex.(projs, Ref(σ))...] += lexp end
     A
 end
 
@@ -56,20 +54,13 @@ function tensor(
 end
 
 
-function tensor_size(
-    network::AbstractGibbsNetwork{Node, PEPSNode}, 
-    v::PEPSNode,
-    ::Val{:site}
-) = maximum.(projectors(network, Node(v)))
+tensor_size(network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, ::Val{:site}) =
+maximum.(projectors(network, Node(v)))
 
 
 
-function tensor_size(
-    network::AbstractGibbsNetwork{Node, PEPSNode}, 
-    v::PEPSNode,
-    ::Val{:sparse_site}
-) = maximum.(projectors(network, Node(v)))
-
+tensor_size(network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, ::Val{:sparse_site}) =
+maximum.(projectors(network, Node(v)))
 
 
 function tensor(
@@ -232,15 +223,17 @@ function tensor_size(
     left_nbrs = ((i+1, j+1), (i, j+1), (i-1, j+1))
     prl = projector.(Ref(network), Ref((i, j)), left_nbrs)
     p_lb, p_l, p_lt = last(fuse_projectors(prl))
+
     right_nbrs = ((i+1, j), (i, j), (i-1, j))
     prr = projector.(Ref(network), Ref((i, j+1)), right_nbrs)
     p_rb, p_r, p_rt = last(fuse_projectors(prr))
+
     (maximum(p_l), maximum(p_lt) * maximum(p_rt),
      maximum(p_r), maximum(p_rb) * maximum(p_lb))
 end
 
 
-function tensor(
+tensor(
     network::AbstractGibbsNetwork{Node, PEPSNode}, 
     v::PEPSNode,
     β::Real,

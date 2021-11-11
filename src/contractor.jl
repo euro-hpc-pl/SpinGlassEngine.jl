@@ -154,31 +154,21 @@ end
 
 @memoize function mps(contractor::MpsContractor{Basic}, i::Int, β::Real) 
     if i > contractor.peps.nrows return IdentityMps(contractor.peps) end  
+
     ψ = mps(contractor, i+1, β)
     W = mpo(contractor, contractor.layers.main, i, β)
 
     ψ0 = dot(W, ψ)
     truncate!(ψ0, :left, contractor.params.bond_dimension)
-    compress!(ψ0, W, ψ,
+    compress!(
+            ψ0, 
+            W, 
+            ψ,
             contractor.params.bond_dimension,
             contractor.params.variational_tol,
             contractor.params.max_num_sweeps)
     ψ0
 end
-
-### Wybor strategii zwezania boundary mps-a przy pomocy typu MpsContractor
-# @memoize function mps(contractor::MpsContractor, i::Int, β::Real) where T <: Number
-#     if i > contractor.peps.nrows return IdentityMps(contractor.peps) end  
-#     ψ = mps(contractor, i+1, β)
-#     W = mpo(contractor, contractor.layers.main, i, β)
-
-#     ψ0 = mps(contractor, i, wieksze beta, lub random/identycznosc/etc..)
-#     compress!(ψ0, W, ψ,
-#             contractor.params.bond_dimension,
-#             contractor.params.variational_tol,
-#             contractor.params.max_num_sweeps)
-#     ψ0
-# end
 
 
 dressed_mps(contractor::MpsContractor{T}, i::Int) where T <: AbstractStrategy = 
@@ -220,7 +210,7 @@ end
     ls = _left_nbrs_site(site, W.sites)
 
     while ls > ls_mps
-        M0 = W[ls][0]  ## struktura danych w mpo ???
+        M0 = W[ls][0]  # make this consistent
         @tensor RR[x, y] := M0[y, z] * RR[x, z]
         ls = _left_nbrs_site(ls, W.sites)
     end
@@ -233,7 +223,7 @@ function _update_reduced_env_right(
     m::Int, 
     M::Dict, 
     B::AbstractArray{Float64, 3}
-    )
+)
     kk = sort(collect(keys(M)))
     Mt = M[kk[1]]
     K = @view Mt[m, :]
@@ -340,8 +330,7 @@ function conditional_probability(::Type{T},
     pr = projector(contractor.peps, (i, j), (i, j+1))
     pd = projector(contractor.peps, (i, j), (i+1, j))
 
-    #Threads.@threads for σ ∈ 1:length(loc_exp)
-    for σ ∈ 1:length(loc_exp)
+    Threads.@threads for σ ∈ 1:length(loc_exp)
         MM = @view M[:, pd[σ], :]
         RR = @view R[:, pr[σ]]
         loc_exp[σ] *= L' * MM * RR

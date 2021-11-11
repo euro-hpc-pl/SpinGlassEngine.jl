@@ -124,13 +124,18 @@ end
     β::Real
 ) where T <: AbstractStrategy
 
-    W = Dict()
-    # Threads.@threads for (j, coor) ∈ layers
-    for (j, coor) ∈ layers
-        push!(W, j => Dict(dr => tensor(ctr.peps, PEPSNode(r + dr, j), β) for dr ∈ coor))
+    sites = collect(keys(layers))
+    tensors = Vector{Dict}(undef, length(sites))
+
+    Threads.@threads for i ∈ 1:length(sites)
+        j = sites[i]
+        coor = layers[j]
+        tensors[i] = Dict(dr => tensor(ctr.peps, PEPSNode(r + dr, j), β) 
+                            for dr ∈ coor)
     end
-    Mpo(W)
-end
+
+    Mpo(Dict(sites .=> tensors))
+end                        
 
 # IdentityMps to be change or remove
 IdentityMps(peps::PEPSNetwork{T, S}) where {T<: Square, S} =

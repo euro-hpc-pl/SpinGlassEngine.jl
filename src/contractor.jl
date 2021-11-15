@@ -364,41 +364,62 @@ function conditional_probability(::Type{T},
 
     eng_local = local_energy(network, (i, j))
     ld = ∂v[2*j-1]
-    l = ∂v[2*j]
-    d = ∂v[2*j+1]
-    u = ∂v[2*j+2]
+    println("ld ", ld)
     pl = projector(network, (i, j), (i, j-1))
-    pl = decode_projector!(pl)
     eng_pl = interaction_energy(network, (i, j), (i, j-1))
-    @matmul eng_left[x] := sum(y) pl[x, y] * eng_pl[y, $l]
+    eng_left = @view eng_pl[pl[:], ∂v[2*j]]
 
-    pd = projector(network, (i, j), (i-1, j-1))
-    pd = decode_projector!(pd)
-    eng_pd = interaction_energy(network, (i, j), (i-1, j-1))
-    @matmul eng_diag[x] := sum(y) pd[x, y] * eng_pd[y, $d]
-    
-    pu = projector(network, (i, j), (i-1, j))
-    pu = decode_projector!(pu)
-    eng_pu = interaction_energy(network, (i, j), (i-1, j))
-    @matmul eng_up[x] := sum(y) pu[x, y] * eng_pu[y, $u]
+    pu = projector(contractor.peps, (i, j), (i-1, j))
+    eng_pu = interaction_energy(contractor.peps, (i, j), (i-1, j))
+    eng_up = @view eng_pu[pu[:], ∂v[2*j+2]]
+
+    pd = projector(contractor.peps, (i, j), (i-1, j-1))
+    eng_pd = interaction_energy(contractor.peps, (i, j), (i-1, j-1))
+    eng_diag = @view eng_pd[pd[:], ∂v[2*j+1]]
 
     en = eng_local .+ eng_left .+ eng_diag .+ eng_up
     loc_exp = exp.(-β .* (en .- minimum(en)))
 
-    p_lb = decode_projector!(projector(network, (i, j-1), (i+1, j)))
-    p_rb = decode_projector!(projector(network, (i, j), (i+1, j-1)))
-    pr = decode_projector!(projector(network, (i, j), ((i+1, j+1), (i, j+1), (i-1, j+1))))
-    pd = decode_projector!(projector(network, (i, j), (i+1, j)))
+    p_lb = projector(contractor.peps, (i, j-1), (i+1, j))
+    println("loc_exp ", length(loc_exp))
+    println("p_lb ", p_lb)
+    p_rb = projector(contractor.peps, (i, j), (i+1, j-1))
+    pr = projector(contractor.peps, (i, j), ((i+1, j+1), (i, j+1), (i-1, j+1)))
+    pd = projector(contractor.peps, (i, j), (i+1, j))
+    #println("p_rb ", p_rb)
+    #println("pr ", pr)
+    #println("pd ", pd)
 
-    @cast A[r, d, (k̃, k), σ] := p_rb[σ, k] * p_lb[$ld, k̃] * pr[σ, r] * 
-                                pd[σ, d] * loc_exp[σ]
-    
-    #A = reduced_site_tensor(network, (i, j), ∂v[2*j-1], ∂v[2*j], ∂v[2*j+1], ∂v[2*j+2], β)
+    s_lb = maximum(p_lb)
+    s_rb = maximum(p_rb)
+    s_r = maximum(pr)
+    s_d = maximum(pd)
+    s = length(loc_exp)
 
+    C = zeros(s_r, s_d, s_lb, s_rb, s)
+    #println("size C ", size(C))
+
+    for (σ, lexp) ∈ enumerate(loc_exp)
+        for i in 1:ld
+            #println("i ", i)
+        #println("σ ", σ)
+        #println("lexp ", lexp)
+        #println("prb[sigma] ", p_rb[σ])
+            C[pr[σ], pd[σ], p_lb[i], p_rb[σ], :] .+= lexp
+        end
+    end
+
+    @cast C[r, d, (k̃, k), σ] := C[r, d, k̃, k, σ]
+    #println("C ", size(C))
+    #println("L ", size(L))
+    #println("MX ", size(MX))
+    #println("M ", size(M))
+    #println("R ", size(R))
     @tensor prob[σ] := L[x] * MX[x, m, y] * M[y, l, z] * R[z, k] *
-                        A[k, l, m, σ] order = (x, y, z, k, l, m)
-
+                        C[k, l, m, σ] order = (x, y, z, k, l, m)
+    #println("prob ", prob)
     normalize_probability(prob)
+
 end
 
 #=

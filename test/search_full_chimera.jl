@@ -26,12 +26,16 @@ function bench()
     params = MpsParameters(bond_dim, 1E-8, 4)
 
     for Strategy ∈ (Basic,)
-        for Sparsity ∈ (Dense,)
+        for Sparsity ∈ (Sparse, Dense)
             for Layout ∈ (EnergyGauges, )
                 for transform ∈ rotation.([0])
+                    println((Strategy, Sparsity, Layout, transform))
+
                     network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
                     ctr = MpsContractor{Strategy}(network, [β], params)
+
                     @time sol = low_energy_spectrum(ctr, num_states, merge_branches(network))
+
                     println(sol.energies[1:1])
                 end
             end

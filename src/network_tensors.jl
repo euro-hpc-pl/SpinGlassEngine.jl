@@ -37,8 +37,8 @@ function tensor(
     loc_exp = exp.(-β .* local_energy(network, Node(v)))
     projs = projectors(network, Node(v))
     A = zeros(maximum.(projs))
-    for (σ, lexp) ∈ enumerate(loc_exp) 
-        A[getindex.(projs, Ref(σ))...] += lexp 
+    for (σ, lexp) ∈ enumerate(loc_exp)
+        A[getindex.(projs, Ref(σ))...] += lexp
     end
     A
 end

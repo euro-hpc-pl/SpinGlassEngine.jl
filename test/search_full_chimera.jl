@@ -25,7 +25,7 @@ function bench()
 
     params = MpsParameters(bond_dim, 1E-8, 4)
 
-    for Strategy ∈ (Basic,)
+    for Strategy ∈ (SVDTruncate,)
         for Sparsity ∈ (Dense,)
             for Layout ∈ (EnergyGauges, )
                 for transform ∈ rotation.([0])

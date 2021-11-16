@@ -23,7 +23,7 @@
 
     params = MpsParameters()
 
-    for Strategy ∈ (Basic,)
+    for Strategy ∈ (SVDTruncate,)
         for Sparsity ∈ (Dense,) #Sparse
             for Layout ∈ (EnergyGauges, GaugesEnergy)
                 for transform ∈ all_lattice_transformations

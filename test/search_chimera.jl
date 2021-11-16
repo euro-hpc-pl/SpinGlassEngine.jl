@@ -70,7 +70,7 @@
 
     params = MpsParameters()
 
-    for Strategy ∈ (Basic,)
+    for Strategy ∈ (SVDTruncate,)
         for Sparsity ∈ (Dense, Sparse)
             for Layout ∈ (EnergyGauges, GaugesEnergy,)# EngGaugesEng)
                 for transform ∈ all_lattice_transformations
@@ -96,7 +96,7 @@ type of network (chimera lub pegaz, ewentualnie informacja )
 
 contraction_strategy 
 (beta_target; 
-rozne sposoby odpalenia compress w mps;  (svd, lub initial guess dla roznych beta) lub nawet wyjscie na ctm
+rozne sposoby odpalenia compress w mps;  (SVDTruncate, lub initial guess dla roznych beta) lub nawet wyjscie na ctm
 )
 
 

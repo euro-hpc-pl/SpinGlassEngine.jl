@@ -1,6 +1,6 @@
 export
-    Basic,
-    Annealing,
+    SVDTruncate,
+    MPSAnnealing,
     MpoLayers,
     MpsParameters,
     MpsContractor
@@ -8,8 +8,8 @@ export
 abstract type AbstractContractor end
 abstract type AbstractStrategy end
 
-struct Basic <: AbstractStrategy end
-struct Annealing <: AbstractStrategy end
+struct SVDTruncate <: AbstractStrategy end
+struct MPSAnnealing <: AbstractStrategy end
 
 struct MpoLayers
     main::Dict
@@ -121,16 +121,17 @@ end
     ctr::MpsContractor{T}, 
     layers::Dict, 
     r::Int,
-    β::Real
+    indβ::Int
 ) where T <: AbstractStrategy
 
     sites = collect(keys(layers))
     tensors = Vector{Dict}(undef, length(sites))
 
+
     Threads.@threads for i ∈ 1:length(sites)
         j = sites[i]
         coor = layers[j]
-        tensors[i] = Dict(dr => tensor(ctr.peps, PEPSNode(r + dr, j), β) 
+        tensors[i] = Dict(dr => tensor(ctr.peps, PEPSNode(r + dr, j), ctr.betas[indβ])
                             for dr ∈ coor)
     end
 
@@ -152,17 +153,40 @@ function IdentityMps(peps::PEPSNetwork{T, S}) where {T <: SquareStar, S}
 end
 
 
-@memoize function mps(contractor::MpsContractor{Basic}, i::Int, β::Real) 
-    if i > contractor.peps.nrows return IdentityMps(contractor.peps) end  
+@memoize function mps(contractor::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
+    if i > contractor.peps.nrows return IdentityMps(contractor.peps) end
 
-    ψ = mps(contractor, i+1, β)
-    W = mpo(contractor, contractor.layers.main, i, β)
+    ψ = mps(contractor, i+1, indβ)
+    W = mpo(contractor, contractor.layers.main, i, indβ)
 
     ψ0 = dot(W, ψ)
     truncate!(ψ0, :left, contractor.params.bond_dimension)
     compress!(
-            ψ0, 
-            W, 
+            ψ0,
+            W,
+            ψ,
+            contractor.params.bond_dimension,
+            contractor.params.variational_tol,
+            contractor.params.max_num_sweeps)
+    ψ0
+end
+
+
+@memoize function mps(contractor::MpsContractor{MPSAnnealing}, i::Int, indβ::Int)
+    if i > contractor.peps.nrows return IdentityMps(contractor.peps) end
+
+    ψ = mps(contractor, i+1, indβ)
+    W = mpo(contractor, contractor.layers.main, i, indβ)
+
+    if indβ > 1
+        ψ0 = mps(contractor, i, indβ-1)
+    else
+        ψ0 = dot(W,  IdentityMPS)   ## need identity/trace consistent with arbitrary W
+        truncate!(ψ0, :left, contractor.params.bond_dimension)
+    end
+    compress!(
+            ψ0,
+            W,
             ψ,
             contractor.params.bond_dimension,
             contractor.params.variational_tol,
@@ -172,16 +196,16 @@ end
 
 
 dressed_mps(contractor::MpsContractor{T}, i::Int) where T <: AbstractStrategy = 
-dressed_mps(contractor, i, last(contractor.betas))
+dressed_mps(contractor, i, length(contractor.betas))
 
 
 @memoize Dict function dressed_mps(
     contractor::MpsContractor{T},
     i::Int, 
-    β::Real
+    indβ::Int
 ) where T <: AbstractStrategy
-    ψ = mps(contractor, i+1, β)
-    W = mpo(contractor, contractor.layers.dress, i, β)
+    ψ = mps(contractor, i+1, indβ)
+    W = mpo(contractor, contractor.layers.dress, i, indβ)
     W * ψ
 end
 
@@ -190,15 +214,15 @@ end
     contractor::MpsContractor{T},
     i::Int,
     ∂v::Vector{Int},
-    β::Real
+    indβ::Int
 ) where T <: AbstractStrategy
 
     l = length(∂v)
     if l == 0 return ones(1, 1) end
 
-    R̃ = right_env(contractor, i, ∂v[2:l], β)
-    ϕ = dressed_mps(contractor, i, β)
-    W = mpo(contractor, contractor.layers.right, i, β)
+    R̃ = right_env(contractor, i, ∂v[2:l], indβ)
+    ϕ = dressed_mps(contractor, i, indβ)
+    W = mpo(contractor, contractor.layers.right, i, indβ)
     k = length(ϕ.sites)
     site = ϕ.sites[k-l+1]
     M = W[site]
@@ -280,12 +304,12 @@ end
     contractor::MpsContractor{T},
     i::Int, 
     ∂v::Vector{Int}, 
-    β::Real
+    indβ::Int
 ) where T
     l = length(∂v)
     if l == 0 return ones(1) end
-    L̃ = left_env(contractor, i, ∂v[1:l-1], β)
-    ϕ = dressed_mps(contractor, i, β)
+    L̃ = left_env(contractor, i, ∂v[1:l-1], indβ)
+    ϕ = dressed_mps(contractor, i, indβ)
     m = ∂v[l]
     site = ϕ.sites[l]
     M = ϕ[site]
@@ -296,23 +320,22 @@ end
 
 function conditional_probability(contractor::MpsContractor{S}, w::Vector{Int}) where S
     T = layout(contractor.peps)
-    β = last(contractor.betas)
-    conditional_probability(T, contractor, w, β)
+    conditional_probability(T, contractor, w)
 end
 
 
 function conditional_probability(::Type{T}, 
     contractor::MpsContractor{S}, 
-    state::Vector{Int}, 
-    β::Real
+    state::Vector{Int},
 ) where {T <: Square, S}
 
+    indβ, β = length(contractor.betas), last(contractor.betas)
     i, j = node_from_index(contractor.peps, length(state)+1)
     ∂v = boundary_state(contractor.peps, state, (i, j))
 
-    L = left_env(contractor, i, ∂v[1:j-1], β)
-    R = right_env(contractor, i, ∂v[j+2 : contractor.peps.ncols+1], β)
-    M = dressed_mps(contractor, i, β)[j]
+    L = left_env(contractor, i, ∂v[1:j-1], indβ)
+    R = right_env(contractor, i, ∂v[j+2 : contractor.peps.ncols+1], indβ)
+    M = dressed_mps(contractor, i, indβ)[j]
 
     eng_local = local_energy(contractor.peps, (i, j))
 
@@ -341,21 +364,23 @@ end
 
 
 # to be improved
-function conditional_probability(::Type{T}, 
+function conditional_probability(::Type{T},
     contractor::MpsContractor{S}, 
-    w::Vector{Int}, 
-    β::Real
+    w::Vector{Int},
 ) where {T <: SquareStar, S}
 
+    indβ = length(contractor.betas)
     network = contractor.peps
     i, j = node_from_index(network, length(w)+1)
     ∂v = boundary_state(network, w, (i, j))
 
-    L = left_env(contractor, i, ∂v[1:2*j-2], β)
-    R = right_env(contractor, i, ∂v[2*j+3 : 2*network.ncols+2], β)
-    ψ = dressed_mps(contractor, i, β)
+    L = left_env(contractor, i, ∂v[1:2*j-2], indβ)
+    R = right_env(contractor, i, ∂v[2*j+3 : 2*network.ncols+2], indβ)
+    ψ = dressed_mps(contractor, i, indβ)
     MX, M = ψ[j-1//2], ψ[j]
 
+
+    β = contractor.betas[indβ]
     A = reduced_site_tensor(network, (i, j), ∂v[2*j-1], ∂v[2*j], ∂v[2*j+1], ∂v[2*j+2], β)
 
     @tensor prob[σ] := L[x] * MX[x, m, y] * M[y, l, z] * R[z, k] *

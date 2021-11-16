@@ -127,8 +127,8 @@ end
     sites = collect(keys(layers))
     tensors = Vector{Dict}(undef, length(sites))
 
-
-    Threads.@threads for i ∈ 1:length(sites)
+    #Threads.@threads for i ∈ 1:length(sites)
+    for i ∈ 1:length(sites)
         j = sites[i]
         coor = layers[j]
         tensors[i] = Dict(dr => tensor(ctr.peps, PEPSNode(r + dr, j), ctr.betas[indβ])
@@ -139,7 +139,7 @@ end
 end                        
 
 # IdentityMps to be change or remove
-IdentityMps(peps::PEPSNetwork{T, S}) where {T<: Square, S} =
+IdentityMps(peps::PEPSNetwork{T, S}) where {T <: Square, S} =
 Mps(Dict(j => ones(1, 1, 1) for j ∈ 1:peps.ncols))
 
 
@@ -181,7 +181,7 @@ end
     if indβ > 1
         ψ0 = mps(contractor, i, indβ-1)
     else
-        ψ0 = dot(W,  IdentityMPS)   ## need identity/trace consistent with arbitrary W
+        ψ0 = dot(W, IdentityMPS)   ## need identity/trace consistent with arbitrary W
         truncate!(ψ0, :left, contractor.params.bond_dimension)
     end
     compress!(
@@ -353,7 +353,8 @@ function conditional_probability(::Type{T},
     pr = projector(contractor.peps, (i, j), (i, j+1))
     pd = projector(contractor.peps, (i, j), (i+1, j))
 
-    Threads.@threads for σ ∈ 1:length(loc_exp)
+    #Threads.@threads for σ ∈ 1:length(loc_exp)
+    for σ ∈ 1:length(loc_exp)
         MM = @view M[:, pd[σ], :]
         RR = @view R[:, pr[σ]]
         loc_exp[σ] *= L' * MM * RR

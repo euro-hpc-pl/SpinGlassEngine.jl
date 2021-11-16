@@ -1,7 +1,6 @@
 export
     tensor_size,
     tensor
-
    
 function tensor(
     network::AbstractGibbsNetwork{Node, PEPSNode}, 

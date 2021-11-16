@@ -70,40 +70,15 @@
 
     params = MpsParameters()
 
-    for Strategy ∈ (SVDTruncate,)
-        for Sparsity ∈ (Dense, Sparse)
-            for Layout ∈ (EnergyGauges, GaugesEnergy,)# EngGaugesEng)
-                for transform ∈ all_lattice_transformations
+    for Strategy ∈ (SVDTruncate,), Sparsity ∈ (Dense, Sparse)
+        for Layout ∈ (EnergyGauges, GaugesEnergy,), transform ∈ all_lattice_transformations
 
-                    network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
-                    contractor = MpsContractor{Strategy}(network, [β], params)
-                    sol = low_energy_spectrum(contractor, num_states)
+            network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
+            contractor = MpsContractor{Strategy}(network, [β], params)
+            sol = low_energy_spectrum(contractor, num_states)
 
-                    @test sol.energies ≈ exact_energies
-                    for (i, σ) ∈ enumerate(sol.states)
-                        @test σ ∈ exact_states[deg[i]]
-                    end
-                end
-            end
+            @test sol.energies ≈ exact_energies
+            for (i, σ) ∈ enumerate(sol.states) @test σ ∈ exact_states[deg[i]] end
         end
     end
 end
-
-#= 
-
-type of network (chimera lub pegaz, ewentualnie informacja )
-
-
-contraction_strategy 
-(beta_target; 
-rozne sposoby odpalenia compress w mps;  (SVDTruncate, lub initial guess dla roznych beta) lub nawet wyjscie na ctm
-)
-
-
-
-for transform ∈ all_lattice_transformations
-    peps = PEPSNetwork(m, n, fg, transform, β=β)
-    optimize_gauges!(peps, optimization_parameters or strategy)
-    sol = low_energy_spectrum(peps, num_states)
-end
-=#

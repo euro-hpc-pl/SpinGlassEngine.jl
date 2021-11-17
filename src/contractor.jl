@@ -147,10 +147,9 @@ function IdentityMps(peps::PEPSNetwork{T, S}, Dmax::Int, loc_dim) where {T, S}
     for i ∈ 2 : peps.ncols-1 push!(id, i => zeros(Dmax, loc_dim[i], Dmax)) end
     push!(id, 1 => zeros(1, loc_dim[1], Dmax))
     push!(id, peps.ncols => zeros(Dmax, loc_dim[peps.ncols], 1))
-    for i ∈ 2 : peps.ncols-1 id[i][1, :, 1] = 1 ./ sqrt(loc_dim[i]) end
+    for i ∈ 2 : peps.ncols-1 id[i][1, :, 1] .= 1 / sqrt(loc_dim[i]) end
     Mps(id)
 end
-
 
 
 function IdentityMps(peps::PEPSNetwork{T, S}) where {T <: SquareStar, S}
@@ -193,7 +192,7 @@ end
     else
         ld = local_dims(W, :up)
         ψ0 = IdentityMps(contractor.peps, contractor.params.bond_dimension, ld)
-        canonize!(ψ0)
+        truncate!(ψ0, :left)
     end
     compress!(
             ψ0,

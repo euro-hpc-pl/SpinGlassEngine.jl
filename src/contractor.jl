@@ -196,8 +196,9 @@ end
     if indβ > 1
         ψ0 = mps(contractor, i, indβ-1)
     else
-        ψ0 = dot(W, IdentityMPS)   ## need identity/trace consistent with arbitrary W
-        truncate!(ψ0, :left, contractor.params.bond_dimension)
+        ld = local_dims(W, :up)
+        ψ0 = IdentityMps(contractor.peps, contractor.params.bond_dimension, ld)
+        canonize!(ψ0)
     end
     compress!(
             ψ0,
@@ -313,10 +314,20 @@ function _update_reduced_env_right(
     B::AbstractArray{Float64, 3}
 )
     @tensor REB[x, y, β] := B[x, y, α] * RE[α, β]
+
+    Kloc_exp = M.loc_exp .* vec(K[M.projs[2]])
+    s3 = maximum(M.projs[4])
+    ind43 = vec(M.projs[4]) .+ ((vec(M.projs[3]) .- 1) .* s3)
+    @cast REB2[x, (y, z)] := REB[x, y, z]
+    Rσ = REB2[:, ind43]
     R = zeros(size(B, 1), maximum(M.projs[1]))
-    for (σ, lexp) ∈ enumerate(M.loc_exp)
-        R[:, M.projs[1][σ]] += (lexp * K[M.projs[2][σ]]) .* REB[:, M.projs[4][σ], M.projs[3][σ]]
+    for (σ, kl) ∈ enumerate(Kloc_exp)
+        R[:, M.projs[1][σ]] += kl .* Rσ[:, σ]
     end
+    # R = zeros(size(B, 1), maximum(M.projs[1]))
+    # for (σ, lexp) ∈ enumerate(M.loc_exp)
+    #     R[:, M.projs[1][σ]] += (lexp * K[M.projs[2][σ]]) .* REB[:, M.projs[4][σ], M.projs[3][σ]]
+    # end
     R  # O(chi^2 D^2 + N chi); pamiec co najmniej chi D^2 + chi^2 D
 end
 

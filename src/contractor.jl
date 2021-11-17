@@ -263,36 +263,52 @@ end
 
 
 function _update_reduced_env_right(
-    K::AbstractArray{Float64, 1}, 
-    RE::AbstractArray{Float64, 2}, 
-    M::AbstractArray{Float64, 4}, 
-    B::AbstractArray{Float64, 3}
+    K::AbstractArray{Float64, 1},  # D 
+    RE::AbstractArray{Float64, 2}, # chi x D
+    M::AbstractArray{Float64, 4},  # D x D x D x D
+    B::AbstractArray{Float64, 3}  # chi x D x chi
 )
-    @tensor R[x, y] := K[d] * M[y, d, β, γ] * 
+    @tensor R[x, y] := K[d] * M[y, d, β, γ] *
                        B[x, γ, α] * RE[α, β] order = (d, β, γ, α)
-    R
+    R  # O(D^4 + D^3 chi + D^2 chi^2);  pamiec D^4 + D chi^2 + D^2 chi
 end
 
 
+# function _update_reduced_env_right(
+#     K::AbstractArray{Float64, 1}, 
+#     RE::AbstractArray{Float64, 2}, 
+#     M::SparseSiteTensor, 
+#     B::AbstractArray{Float64, 3}
+# )
+#     R = zeros(size(B, 1), maximum(M.projs[1]))
+#     for (σ, lexp) ∈ enumerate(M.loc_exp)
+#         re = @view RE[:, M.projs[3][σ]]
+#         b = @view B[:, M.projs[4][σ], :]
+#         R[:, M.projs[1][σ]] += (lexp * K[M.projs[2][σ]]) .* (b * re)
+#     end
+#     R  # O(N chi^2 D); pamiec chi^2 D, nie ma D^2
+#     #  dla chimera N = D^2; O(D^3 chi^2)
+# end
+
+
 function _update_reduced_env_right(
-    K::AbstractArray{Float64, 1}, 
-    RE::AbstractArray{Float64, 2}, 
-    M::SparseSiteTensor, 
+    K::AbstractArray{Float64, 1},
+    RE::AbstractArray{Float64, 2},
+    M::SparseSiteTensor,
     B::AbstractArray{Float64, 3}
 )
+    @tensor REB[x, y, β] := B[x, y, α] * RE[α, β]
     R = zeros(size(B, 1), maximum(M.projs[1]))
     for (σ, lexp) ∈ enumerate(M.loc_exp)
-        re = @view RE[:, M.projs[3][σ]]
-        b = @view B[:, M.projs[4][σ], :]
-        R[:, M.projs[1][σ]] += (lexp * K[M.projs[2][σ]]) .* (b * re)
+        R[:, M.projs[1][σ]] += (lexp * K[M.projs[2][σ]]) .* REB[:, M.projs[4][σ], M.projs[3][σ]]
     end
-    R
+    R  # O(chi^2 D^2 + N chi); pamiec co najmniej chi D^2 + chi^2 D
 end
 
 
 function _update_reduced_env_right(
-    K::AbstractArray{Float64, 1}, 
-    RE::AbstractArray{Float64, 2}, 
+    K::AbstractArray{Float64, 1},
+    RE::AbstractArray{Float64, 2},
     M::SparseVirtualTensor, 
     B::AbstractArray{Float64, 3}
 )

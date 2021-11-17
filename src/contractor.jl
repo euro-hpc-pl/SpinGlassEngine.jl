@@ -143,6 +143,21 @@ IdentityMps(peps::PEPSNetwork{T, S}) where {T <: Square, S} =
 Mps(Dict(j => ones(1, 1, 1) for j ∈ 1:peps.ncols))
 
 
+function IdentityMps(peps::PEPSNetwork{T, S}, Dmax::Int, loc_dim::Vector{Int}) where {T <: Square, S}
+    id = Dict()
+    for i ∈ 2 : peps.ncols-1
+        push!(id, i => zeros(Dmax, loc_dim[i], Dmax))
+    end
+    push!(id, 1 => zeros(1, loc_dim[1], Dmax))
+    push!(id, peps.ncols => zeros(Dmax, loc_dim[peps.ncols], 1))
+    for i ∈ 2 : peps.ncols-1
+        id[i][1, :, 1] = 1 ./sqrt(loc_dim[i])
+    end
+    Mps(id)
+end
+
+
+
 function IdentityMps(peps::PEPSNetwork{T, S}) where {T <: SquareStar, S}
     id = Dict()
     for i ∈ 1//2 : 1//2 : peps.ncols
@@ -352,6 +367,7 @@ function conditional_probability(::Type{T},
     L = left_env(contractor, i, ∂v[1:j-1], indβ)
     R = right_env(contractor, i, ∂v[j+2 : contractor.peps.ncols+1], indβ)
     M = dressed_mps(contractor, i, indβ)[j]
+    @tensor LM[y, z] := L[x] * M[x, y, z]
 
     eng_local = local_energy(contractor.peps, (i, j))
 
@@ -369,14 +385,15 @@ function conditional_probability(::Type{T},
     pr = projector(contractor.peps, (i, j), (i, j+1))
     pd = projector(contractor.peps, (i, j), (i+1, j))
 
-    #Threads.@threads for σ ∈ 1:length(loc_exp)
-    for σ ∈ 1:length(loc_exp)
-        MM = @view M[:, pd[σ], :]
-        RR = @view R[:, pr[σ]]
-        loc_exp[σ] *= L' * MM * RR
-    end
+    # Threads.@threads for σ ∈ 1:length(loc_exp)
+    # for σ ∈ 1:length(loc_exp)
+    #     loc_exp[σ] *= (LM[pd[σ], :]' * R[:, pr[σ]])
+    # end
+    # normalize_probability(loc_exp)
 
-    normalize_probability(loc_exp)
+    # variant replacing for-loop above
+    bnd_exp = vec(sum(LM[pd[:], :] .* R[:, pr[:]]', dims=2))
+    normalize_probability(loc_exp .* bnd_exp)
 end
 
 

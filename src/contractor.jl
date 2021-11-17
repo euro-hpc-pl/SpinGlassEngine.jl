@@ -286,7 +286,7 @@ function _update_reduced_env_right(
 )
     @tensor R[x, y] := K[d] * M[y, d, β, γ] *
                        B[x, γ, α] * RE[α, β] order = (d, β, γ, α)
-    R  # O(D^4 + D^3 chi + D^2 chi^2);  pamiec D^4 + D chi^2 + D^2 chi
+    R  # CPU: O(D^4 + D^3 * chi + D^2 * chi^2);  RAM: D^4 + D * chi^2 + D^2 * chi
 end
 
 
@@ -315,21 +315,17 @@ function _update_reduced_env_right(
 )
     @tensor REB[x, y, β] := B[x, y, α] * RE[α, β]
 
-    Kloc_exp = M.loc_exp .* vec(K[M.projs[2]])
+    Kloc_exp = M.loc_exp .* K[M.projs[2]]
     s3 = maximum(M.projs[4])
-    ind43 = vec(M.projs[4]) .+ ((vec(M.projs[3]) .- 1) .* s3)
+    ind43 = M.projs[4] .+ ((M.projs[3] .- 1) .* s3)
     @cast REB2[x, (y, z)] := REB[x, y, z]
     Rσ = REB2[:, ind43]
+
     R = zeros(size(B, 1), maximum(M.projs[1]))
     for (σ, kl) ∈ enumerate(Kloc_exp)
         R[:, M.projs[1][σ]] += kl .* Rσ[:, σ]
     end
-
-    # R = zeros(size(B, 1), maximum(M.projs[1]))
-    # for (σ, lexp) ∈ enumerate(M.loc_exp)
-    #     R[:, M.projs[1][σ]] += (lexp * K[M.projs[2][σ]]) .* REB[:, M.projs[4][σ], M.projs[3][σ]]
-    # end
-    R  # O(chi^2 D^2 + N chi); pamiec co najmniej chi D^2 + chi^2 D
+    R  
 end
 
 
@@ -397,14 +393,8 @@ function conditional_probability(::Type{T},
     pr = projector(contractor.peps, (i, j), (i, j+1))
     pd = projector(contractor.peps, (i, j), (i+1, j))
 
-    # Threads.@threads for σ ∈ 1:length(loc_exp)
-    # for σ ∈ 1:length(loc_exp)
-    #     loc_exp[σ] *= (LM[pd[σ], :]' * R[:, pr[σ]])
-    # end
-    # normalize_probability(loc_exp)
-
-    # variant replacing for-loop above
-    bnd_exp = vec(sum(LM[pd[:], :] .* R[:, pr[:]]', dims=2))
+    x = LM[pd[:], :] .* R[:, pr[:]]'
+    bnd_exp = dropdims(sum(x, dims=2), dims=2)
     normalize_probability(loc_exp .* bnd_exp)
 end
 
@@ -424,7 +414,6 @@ function conditional_probability(::Type{T},
     R = right_env(contractor, i, ∂v[2*j+3 : 2*network.ncols+2], indβ)
     ψ = dressed_mps(contractor, i, indβ)
     MX, M = ψ[j-1//2], ψ[j]
-
 
     β = contractor.betas[indβ]
     A = reduced_site_tensor(network, (i, j), ∂v[2*j-1], ∂v[2*j], ∂v[2*j+1], ∂v[2*j+2], β)

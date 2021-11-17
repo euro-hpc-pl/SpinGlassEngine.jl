@@ -143,7 +143,7 @@ IdentityMps(peps::PEPSNetwork{T, S}) where {T <: Square, S} =
 Mps(Dict(j => ones(1, 1, 1) for j ∈ 1:peps.ncols))
 
 
-function IdentityMps(peps::PEPSNetwork{T, S}, Dmax::Int, loc_dim::Vector{Int}) where {T <: Square, S}
+function IdentityMps(peps::PEPSNetwork{T, S}, Dmax::Int, loc_dim) where {T, S}
     id = Dict()
     for i ∈ 2 : peps.ncols-1
         push!(id, i => zeros(Dmax, loc_dim[i], Dmax))
@@ -151,7 +151,7 @@ function IdentityMps(peps::PEPSNetwork{T, S}, Dmax::Int, loc_dim::Vector{Int}) w
     push!(id, 1 => zeros(1, loc_dim[1], Dmax))
     push!(id, peps.ncols => zeros(Dmax, loc_dim[peps.ncols], 1))
     for i ∈ 2 : peps.ncols-1
-        id[i][1, :, 1] = 1 ./sqrt(loc_dim[i])
+        id[i][1, :, 1] = 1 ./ sqrt(loc_dim[i])
     end
     Mps(id)
 end
@@ -324,6 +324,7 @@ function _update_reduced_env_right(
     for (σ, kl) ∈ enumerate(Kloc_exp)
         R[:, M.projs[1][σ]] += kl .* Rσ[:, σ]
     end
+
     # R = zeros(size(B, 1), maximum(M.projs[1]))
     # for (σ, lexp) ∈ enumerate(M.loc_exp)
     #     R[:, M.projs[1][σ]] += (lexp * K[M.projs[2][σ]]) .* REB[:, M.projs[4][σ], M.projs[3][σ]]

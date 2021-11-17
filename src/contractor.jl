@@ -134,25 +134,20 @@ end
         tensors[i] = Dict(dr => tensor(ctr.peps, PEPSNode(r + dr, j), ctr.betas[indβ])
                             for dr ∈ coor)
     end
-
     Mpo(Dict(sites .=> tensors))
 end                        
 
-# IdentityMps to be change or remove
-IdentityMps(peps::PEPSNetwork{T, S}) where {T <: Square, S} =
+
+IdentityMps(peps::PEPSNetwork{T, S}) where {T <: Square, S} = 
 Mps(Dict(j => ones(1, 1, 1) for j ∈ 1:peps.ncols))
 
 
 function IdentityMps(peps::PEPSNetwork{T, S}, Dmax::Int, loc_dim) where {T, S}
-    id = Dict()
-    for i ∈ 2 : peps.ncols-1
-        push!(id, i => zeros(Dmax, loc_dim[i], Dmax))
-    end
+    id = Dict{Int, Array{Float64, 3}}()
+    for i ∈ 2 : peps.ncols-1 push!(id, i => zeros(Dmax, loc_dim[i], Dmax)) end
     push!(id, 1 => zeros(1, loc_dim[1], Dmax))
     push!(id, peps.ncols => zeros(Dmax, loc_dim[peps.ncols], 1))
-    for i ∈ 2 : peps.ncols-1
-        id[i][1, :, 1] = 1 ./ sqrt(loc_dim[i])
-    end
+    for i ∈ 2 : peps.ncols-1 id[i][1, :, 1] = 1 ./ sqrt(loc_dim[i]) end
     Mps(id)
 end
 

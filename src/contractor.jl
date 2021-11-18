@@ -1,6 +1,6 @@
 export
-    Basic,
-    Annealing,
+    SVDTruncate,
+    MPSAnnealing,
     MpoLayers,
     MpsParameters,
     MpsContractor
@@ -8,8 +8,8 @@ export
 abstract type AbstractContractor end
 abstract type AbstractStrategy end
 
-struct Basic <: AbstractStrategy end
-struct Annealing <: AbstractStrategy end
+struct SVDTruncate <: AbstractStrategy end
+struct MPSAnnealing <: AbstractStrategy end
 
 struct MpoLayers
     main::Dict
@@ -121,20 +121,35 @@ end
     ctr::MpsContractor{T}, 
     layers::Dict, 
     r::Int,
-    β::Real
+    indβ::Int
 ) where T <: AbstractStrategy
 
-    W = Dict()
-    # Threads.@threads for (j, coor) ∈ layers
-    for (j, coor) ∈ layers
-        push!(W, j => Dict(dr => tensor(ctr.peps, PEPSNode(r + dr, j), β) for dr ∈ coor))
-    end
-    Mpo(W)
-end
+    sites = collect(keys(layers))
+    tensors = Vector{Dict}(undef, length(sites))
 
-# IdentityMps to be change or remove
-IdentityMps(peps::PEPSNetwork{T, S}) where {T<: Square, S} =
+    #Threads.@threads for i ∈ 1:length(sites)
+    for i ∈ 1:length(sites)
+        j = sites[i]
+        coor = layers[j]
+        tensors[i] = Dict(dr => tensor(ctr.peps, PEPSNode(r + dr, j), ctr.betas[indβ])
+                            for dr ∈ coor)
+    end
+    Mpo(Dict(sites .=> tensors))
+end                        
+
+
+IdentityMps(peps::PEPSNetwork{T, S}) where {T <: Square, S} = 
 Mps(Dict(j => ones(1, 1, 1) for j ∈ 1:peps.ncols))
+
+
+function IdentityMps(peps::PEPSNetwork{T, S}, Dmax::Int, loc_dim) where {T, S}
+    id = Dict{Int, Array{Float64, 3}}()
+    for i ∈ 2 : peps.ncols-1 push!(id, i => zeros(Dmax, loc_dim[i], Dmax)) end
+    push!(id, 1 => zeros(1, loc_dim[1], Dmax))
+    push!(id, peps.ncols => zeros(Dmax, loc_dim[peps.ncols], 1))
+    for i ∈ 2 : peps.ncols-1 id[i][1, :, 1] .= 1 / sqrt(loc_dim[i]) end
+    Mps(id)
+end
 
 
 function IdentityMps(peps::PEPSNetwork{T, S}) where {T <: SquareStar, S}
@@ -147,46 +162,60 @@ function IdentityMps(peps::PEPSNetwork{T, S}) where {T <: SquareStar, S}
 end
 
 
-@memoize function mps(contractor::MpsContractor{Basic}, i::Int, β::Real) 
-    if i > contractor.peps.nrows return IdentityMps(contractor.peps) end  
-    ψ = mps(contractor, i+1, β)
-    W = mpo(contractor, contractor.layers.main, i, β)
+@memoize function mps(contractor::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
+    if i > contractor.peps.nrows return IdentityMps(contractor.peps) end
+
+    ψ = mps(contractor, i+1, indβ)
+    W = mpo(contractor, contractor.layers.main, i, indβ)
 
     ψ0 = dot(W, ψ)
     truncate!(ψ0, :left, contractor.params.bond_dimension)
-    compress!(ψ0, W, ψ,
+    compress!(
+            ψ0,
+            W,
+            ψ,
             contractor.params.bond_dimension,
             contractor.params.variational_tol,
             contractor.params.max_num_sweeps)
     ψ0
 end
 
-### Wybor strategii zwezania boundary mps-a przy pomocy typu MpsContractor
-# @memoize function mps(contractor::MpsContractor, i::Int, β::Real) where T <: Number
-#     if i > contractor.peps.nrows return IdentityMps(contractor.peps) end  
-#     ψ = mps(contractor, i+1, β)
-#     W = mpo(contractor, contractor.layers.main, i, β)
 
-#     ψ0 = mps(contractor, i, wieksze beta, lub random/identycznosc/etc..)
-#     compress!(ψ0, W, ψ,
-#             contractor.params.bond_dimension,
-#             contractor.params.variational_tol,
-#             contractor.params.max_num_sweeps)
-#     ψ0
-# end
+@memoize function mps(contractor::MpsContractor{MPSAnnealing}, i::Int, indβ::Int)
+    if i > contractor.peps.nrows return IdentityMps(contractor.peps) end
+
+    ψ = mps(contractor, i+1, indβ)
+    W = mpo(contractor, contractor.layers.main, i, indβ)
+
+    if indβ > 1
+        ψ0 = mps(contractor, i, indβ-1)
+    else
+        ld = local_dims(W, :up)
+        ψ0 = IdentityMps(contractor.peps, contractor.params.bond_dimension, ld)
+        truncate!(ψ0, :left)
+    end
+    compress!(
+            ψ0,
+            W,
+            ψ,
+            contractor.params.bond_dimension,
+            contractor.params.variational_tol,
+            contractor.params.max_num_sweeps)
+    ψ0
+end
 
 
 dressed_mps(contractor::MpsContractor{T}, i::Int) where T <: AbstractStrategy = 
-dressed_mps(contractor, i, last(contractor.betas))
+dressed_mps(contractor, i, length(contractor.betas))
 
 
 @memoize Dict function dressed_mps(
     contractor::MpsContractor{T},
     i::Int, 
-    β::Real
+    indβ::Int
 ) where T <: AbstractStrategy
-    ψ = mps(contractor, i+1, β)
-    W = mpo(contractor, contractor.layers.dress, i, β)
+    ψ = mps(contractor, i+1, indβ)
+    W = mpo(contractor, contractor.layers.dress, i, indβ)
     W * ψ
 end
 
@@ -195,15 +224,15 @@ end
     contractor::MpsContractor{T},
     i::Int,
     ∂v::Vector{Int},
-    β::Real
+    indβ::Int
 ) where T <: AbstractStrategy
 
     l = length(∂v)
     if l == 0 return ones(1, 1) end
 
-    R̃ = right_env(contractor, i, ∂v[2:l], β)
-    ϕ = dressed_mps(contractor, i, β)
-    W = mpo(contractor, contractor.layers.right, i, β)
+    R̃ = right_env(contractor, i, ∂v[2:l], indβ)
+    ϕ = dressed_mps(contractor, i, indβ)
+    W = mpo(contractor, contractor.layers.right, i, indβ)
     k = length(ϕ.sites)
     site = ϕ.sites[k-l+1]
     M = W[site]
@@ -215,7 +244,7 @@ end
     ls = _left_nbrs_site(site, W.sites)
 
     while ls > ls_mps
-        M0 = W[ls][0]  ## struktura danych w mpo ???
+        M0 = W[ls][0]  # make this consistent
         @tensor RR[x, y] := M0[y, z] * RR[x, z]
         ls = _left_nbrs_site(ls, W.sites)
     end
@@ -228,7 +257,7 @@ function _update_reduced_env_right(
     m::Int, 
     M::Dict, 
     B::AbstractArray{Float64, 3}
-    )
+)
     kk = sort(collect(keys(M)))
     Mt = M[kk[1]]
     K = @view Mt[m, :]
@@ -244,36 +273,59 @@ end
 
 
 function _update_reduced_env_right(
-    K::AbstractArray{Float64, 1}, 
-    RE::AbstractArray{Float64, 2}, 
-    M::AbstractArray{Float64, 4}, 
-    B::AbstractArray{Float64, 3}
+    K::AbstractArray{Float64, 1},  # D 
+    RE::AbstractArray{Float64, 2}, # chi x D
+    M::AbstractArray{Float64, 4},  # D x D x D x D
+    B::AbstractArray{Float64, 3}  # chi x D x chi
 )
-    @tensor R[x, y] := K[d] * M[y, d, β, γ] * 
+    @tensor R[x, y] := K[d] * M[y, d, β, γ] *
                        B[x, γ, α] * RE[α, β] order = (d, β, γ, α)
-    R
+    R  # CPU: O(D^4 + D^3 * chi + D^2 * chi^2);  RAM: D^4 + D * chi^2 + D^2 * chi
 end
 
 
+# function _update_reduced_env_right(
+#     K::AbstractArray{Float64, 1}, 
+#     RE::AbstractArray{Float64, 2}, 
+#     M::SparseSiteTensor, 
+#     B::AbstractArray{Float64, 3}
+# )
+#     R = zeros(size(B, 1), maximum(M.projs[1]))
+#     for (σ, lexp) ∈ enumerate(M.loc_exp)
+#         re = @view RE[:, M.projs[3][σ]]
+#         b = @view B[:, M.projs[4][σ], :]
+#         R[:, M.projs[1][σ]] += (lexp * K[M.projs[2][σ]]) .* (b * re)
+#     end
+#     R  # O(N chi^2 D); pamiec chi^2 D, nie ma D^2
+#     #  dla chimera N = D^2; O(D^3 chi^2)
+# end
+
+
 function _update_reduced_env_right(
-    K::AbstractArray{Float64, 1}, 
-    RE::AbstractArray{Float64, 2}, 
-    M::SparseSiteTensor, 
+    K::AbstractArray{Float64, 1},
+    RE::AbstractArray{Float64, 2},
+    M::SparseSiteTensor,
     B::AbstractArray{Float64, 3}
 )
+    @tensor REB[x, y, β] := B[x, y, α] * RE[α, β]
+
+    Kloc_exp = M.loc_exp .* K[M.projs[2]]
+    s3 = maximum(M.projs[4])
+    ind43 = M.projs[4] .+ ((M.projs[3] .- 1) .* s3)
+    @cast REB2[x, (y, z)] := REB[x, y, z]
+    Rσ = REB2[:, ind43]
+
     R = zeros(size(B, 1), maximum(M.projs[1]))
-    for (σ, lexp) ∈ enumerate(M.loc_exp)
-        re = @view RE[:, M.projs[3][σ]]
-        b = @view B[:, M.projs[4][σ], :]
-        R[:, M.projs[1][σ]] += (lexp * K[M.projs[2][σ]]) .* (b * re)
+    for (σ, kl) ∈ enumerate(Kloc_exp)
+        R[:, M.projs[1][σ]] += kl .* Rσ[:, σ]
     end
-    R
+    R  
 end
 
 
 function _update_reduced_env_right(
-    K::AbstractArray{Float64, 1}, 
-    RE::AbstractArray{Float64, 2}, 
+    K::AbstractArray{Float64, 1},
+    RE::AbstractArray{Float64, 2},
     M::SparseVirtualTensor, 
     B::AbstractArray{Float64, 3}
 )
@@ -285,12 +337,12 @@ end
     contractor::MpsContractor{T},
     i::Int, 
     ∂v::Vector{Int}, 
-    β::Real
+    indβ::Int
 ) where T
     l = length(∂v)
     if l == 0 return ones(1) end
-    L̃ = left_env(contractor, i, ∂v[1:l-1], β)
-    ϕ = dressed_mps(contractor, i, β)
+    L̃ = left_env(contractor, i, ∂v[1:l-1], indβ)
+    ϕ = dressed_mps(contractor, i, indβ)
     m = ∂v[l]
     site = ϕ.sites[l]
     M = ϕ[site]
@@ -301,23 +353,23 @@ end
 
 function conditional_probability(contractor::MpsContractor{S}, w::Vector{Int}) where S
     T = layout(contractor.peps)
-    β = last(contractor.betas)
-    conditional_probability(T, contractor, w, β)
+    conditional_probability(T, contractor, w)
 end
 
 
 function conditional_probability(::Type{T}, 
     contractor::MpsContractor{S}, 
-    state::Vector{Int}, 
-    β::Real
+    state::Vector{Int},
 ) where {T <: Square, S}
 
+    indβ, β = length(contractor.betas), last(contractor.betas)
     i, j = node_from_index(contractor.peps, length(state)+1)
     ∂v = boundary_state(contractor.peps, state, (i, j))
 
-    L = left_env(contractor, i, ∂v[1:j-1], β)
-    R = right_env(contractor, i, ∂v[j+2 : contractor.peps.ncols+1], β)
-    M = dressed_mps(contractor, i, β)[j]
+    L = left_env(contractor, i, ∂v[1:j-1], indβ)
+    R = right_env(contractor, i, ∂v[j+2 : contractor.peps.ncols+1], indβ)
+    M = dressed_mps(contractor, i, indβ)[j]
+    @tensor LM[y, z] := L[x] * M[x, y, z]
 
     eng_local = local_energy(contractor.peps, (i, j))
 
@@ -335,31 +387,26 @@ function conditional_probability(::Type{T},
     pr = projector(contractor.peps, (i, j), (i, j+1))
     pd = projector(contractor.peps, (i, j), (i+1, j))
 
-    #Threads.@threads for σ ∈ 1:length(loc_exp)
-    for σ ∈ 1:length(loc_exp)
-        MM = @view M[:, pd[σ], :]
-        RR = @view R[:, pr[σ]]
-        loc_exp[σ] *= L' * MM * RR
-    end
-
-    normalize_probability(loc_exp)
+    x = LM[pd[:], :] .* R[:, pr[:]]'
+    bnd_exp = dropdims(sum(x, dims=2), dims=2)
+    normalize_probability(loc_exp .* bnd_exp)
 end
 
 
 # to be improved
-function conditional_probability(::Type{T}, 
+function conditional_probability(::Type{T},
     contractor::MpsContractor{S}, 
-    w::Vector{Int}, 
-    β::Real
+    w::Vector{Int},
 ) where {T <: SquareStar, S}
 
+    indβ, β = length(contractor.betas), last(contractor.betas)
     network = contractor.peps
     i, j = node_from_index(network, length(w)+1)
     ∂v = boundary_state(network, w, (i, j))
 
-    L = left_env(contractor, i, ∂v[1:2*j-2], β)
-    R = right_env(contractor, i, ∂v[2*j+3 : 2*network.ncols+2], β)
-    ψ = dressed_mps(contractor, i, β)
+    L = left_env(contractor, i, ∂v[1:2*j-2], indβ)
+    R = right_env(contractor, i, ∂v[2*j+3 : 2*network.ncols+2], indβ)
+    ψ = dressed_mps(contractor, i, indβ)
     MX, M = ψ[j-1//2], ψ[j]
 
     eng_local = local_energy(network, (i, j))
@@ -402,9 +449,9 @@ function conditional_probability(::Type{T},
     for (σ, lexp) ∈ enumerate(loc_exp)
         for i in 1:ld
             #println("i ", i)
-        #println("σ ", σ)
-        #println("lexp ", lexp)
-        #println("prb[sigma] ", p_rb[σ])
+            #println("σ ", σ)
+            #println("lexp ", lexp)
+            #println("prb[sigma] ", p_rb[σ])
             C[pr[σ], pd[σ], p_lb[i], p_rb[σ], :] .+= lexp
         end
     end
@@ -438,6 +485,7 @@ function conditional_probability(::Type{T},
     ψ = dressed_mps(contractor, i, β)
     MX, M = ψ[j-1//2], ψ[j]
 
+    β = contractor.betas[indβ]
     A = reduced_site_tensor(network, (i, j), ∂v[2*j-1], ∂v[2*j], ∂v[2*j+1], ∂v[2*j+2], β)
 
     @tensor prob[σ] := L[x] * MX[x, m, y] * M[y, l, z] * R[z, k] *

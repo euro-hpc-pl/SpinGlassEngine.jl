@@ -1,12 +1,6 @@
-export
-    tensor_size,
-    tensor
+export tensor_size, tensor
    
-function tensor(
-    network::AbstractGibbsNetwork{Node, PEPSNode}, 
-    v::PEPSNode,
-    β::Real
-) 
+function tensor(network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, β::Real) 
     if v ∈ keys(network.tensors_map)
         tensor(network, v, β, Val(network.tensors_map[v]))
     else
@@ -14,11 +8,7 @@ function tensor(
     end
 end
 
-
-function tensor_size(
-    network::AbstractGibbsNetwork{Node, PEPSNode}, 
-    v::PEPSNode
-)
+function tensor_size(network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode)
     if v ∈ keys(network.tensors_map)
         tensor_size(network, v, Val(network.tensors_map[v]))
     else
@@ -26,12 +16,8 @@ function tensor_size(
     end
 end
 
-
 function tensor(
-    network::PEPSNetwork{T, Dense},
-    v::PEPSNode,
-    β::Real,
-    ::Val{:site}
+    network::PEPSNetwork{T, Dense}, v::PEPSNode, β::Real, ::Val{:site}
 ) where T <: AbstractGeometry
     loc_exp = exp.(-β .* local_energy(network, Node(v)))
     projs = projectors(network, Node(v))
@@ -42,81 +28,59 @@ function tensor(
     A
 end
 
-
 function tensor(
-    network::PEPSNetwork{T, Sparse},
-    v::PEPSNode,
-    β::Real,
-    ::Val{:sparse_site}
+    network::PEPSNetwork{T, Sparse}, v::PEPSNode, β::Real, ::Val{:sparse_site}
 ) where T <: AbstractGeometry
     loc_exp = exp.(-β .* local_energy(network, Node(v)))
     projs = projectors(network, Node(v))
     SparseSiteTensor(loc_exp, projs)
 end
 
+function tensor_size(
+    network::PEPSNetwork{T, Dense}, v::PEPSNode, ::Val{:site}
+) where T <: AbstractGeometry 
+    maximum.(projectors(network, Node(v)))
+end
 
-tensor_size(
-    network::PEPSNetwork{T, Dense}, 
-    v::PEPSNode,
-    ::Val{:site}
-) where T <: AbstractGeometry = maximum.(projectors(network, Node(v)))
-
-
-tensor_size(
-    network::PEPSNetwork{T, Sparse},  
-    v::PEPSNode,
-    ::Val{:sparse_site}
-) where T <: AbstractGeometry = tensor_size(network, v, Val(:site))
+function tensor_size(
+    network::PEPSNetwork{T, Sparse}, v::PEPSNode, ::Val{:sparse_site}
+) where T <: AbstractGeometry 
+    tensor_size(network, v, Val(:site))
+end
     
-
-
 function tensor(
     network::AbstractGibbsNetwork{Node, PEPSNode}, 
-    node::PEPSNode,
-    β::Real,
-    ::Val{:central_v}
+    node::PEPSNode, β::Real, ::Val{:central_v}
 ) 
     i = floor(Int, node.i)
     connecting_tensor(network, (i, node.j), (i+1, node.j), β)
 end
 
-
 function tensor_size(
     network::AbstractGibbsNetwork{Node, PEPSNode}, 
-    node::PEPSNode,
-    ::Val{:central_v}
+    node::PEPSNode, ::Val{:central_v}
 ) 
     i = floor(Int, node.i)
     size(interaction_energy(network, (i, node.j), (i+1, node.j)))
 end
 
-
 function tensor(
     network::AbstractGibbsNetwork{Node, PEPSNode}, 
-    node::PEPSNode,
-    β::Real,
-    ::Val{:central_h}
+    node::PEPSNode, β::Real, ::Val{:central_h}
 ) 
     j = floor(Int, node.j)
     connecting_tensor(network, (node.i, j), (node.i, j+1), β)
 end
 
-
 function tensor_size(
-    network::AbstractGibbsNetwork{Node, PEPSNode}, 
-    w::PEPSNode,
-    ::Val{:central_h}
+    network::AbstractGibbsNetwork{Node, PEPSNode}, w::PEPSNode, ::Val{:central_h}
 ) 
     j = floor(Int, node.j)
     size(interaction_energy(network, (node.i, j), (node.i, j+1)))
 end
 
-
 function tensor(
-    network::PEPSNetwork{SquareStar{T}, S},
-    node::PEPSNode,
-    β::Real,
-    ::Val{:central_d}
+    network::PEPSNetwork{SquareStar{T}, S}, node::PEPSNode, β::Real, ::Val{:central_d}
 ) where {T <: AbstractTensorsLayout, S <: AbstractSparsity}
     i = floor(Int, node.i)
     j = floor(Int, node.j)
@@ -126,11 +90,8 @@ function tensor(
     A
 end
 
-
 function tensor_size(
-    network::PEPSNetwork{SquareStar{T}, S},
-    node::PEPSNode,
-    ::Val{:central_d}
+    network::PEPSNetwork{SquareStar{T}, S}, node::PEPSNode, ::Val{:central_d}
 ) where {T <: AbstractTensorsLayout, S <: AbstractSparsity}
     i = floor(Int, node.i)
     j = floor(Int, node.j)
@@ -139,12 +100,8 @@ function tensor_size(
     u * ũ, d * d̃
 end
 
-
 function tensor(
-    network::PEPSNetwork{SquareStar{T}, Dense},
-    node::PEPSNode,
-    β::Real,
-    ::Val{:virtual}
+    network::PEPSNetwork{SquareStar{T}, Dense}, node::PEPSNode, β::Real, ::Val{:virtual}
 ) where T <: AbstractTensorsLayout
     i = node.i
     j = floor(Int, node.j)
@@ -171,12 +128,9 @@ function tensor(
     AA
 end
 
-
 function tensor(
     network::PEPSNetwork{SquareStar{T}, Sparse},
-    node::PEPSNode,
-    β::Real,
-    ::Val{:sparse_virtual}
+    node::PEPSNode, β::Real, ::Val{:sparse_virtual}
 ) where T <: AbstractTensorsLayout
     i = node.i
     j = floor(Int, node.j)
@@ -195,11 +149,8 @@ function tensor(
     SparseVirtualTensor(h, (p_lb, p_l, p_lt, p_rb, p_r, p_rt))
 end
 
-
 function tensor(
-    network::PEPSNetwork{SquareStar{T}, Dense},
-    node::PEPSNode,
-    ::Val{:virtual}
+    network::PEPSNetwork{SquareStar{T}, Dense}, node::PEPSNode, ::Val{:virtual}
 ) where T <: AbstractTensorsLayout
     i, s = v
     j = floor(Int, s)
@@ -216,100 +167,68 @@ function tensor(
      length(p_r), maximum(p_rb) * maximum(p_lb))
 end
 
-
-tensor(
-    network::AbstractGibbsNetwork{Node, PEPSNode}, 
-    v::PEPSNode,
-    β::Real,
-    ::Val{:gauge_h}
-) = Diagonal(network.gauges_data[v])
-
-
+function tensor(
+    network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, β::Real, ::Val{:gauge_h}
+) 
+    Diagonal(network.gauges_data[v])
+end
 
 function tensor_size(
-    network::AbstractGibbsNetwork{Node, PEPSNode}, 
-    v::PEPSNode,
-    ::Val{:gauge_h}
+    network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, ::Val{:gauge_h}
 ) 
     u = size(network.gauges_data[v], 1)
     u, u
 end
 
-
 function connecting_tensor(
-    network::AbstractGibbsNetwork{Node, PEPSNode},
-    v::Node,
-    w::Node,
-    β::Real,
+    network::AbstractGibbsNetwork{Node, PEPSNode}, v::Node, w::Node, β::Real
 ) 
     en = interaction_energy(network, v, w)
     exp.(-β .* (en .- minimum(en)))
 end 
 
-
 function sqrt_tensor_up(
-    network::AbstractGibbsNetwork{Node, PEPSNode},
-    v::Node,
-    w::Node,
-    β::Real
+    network::AbstractGibbsNetwork{Node, PEPSNode}, v::Node, w::Node, β::Real
 )
     E = connecting_tensor(network, v, w, β)
     U, Σ, V = svd(E)
     U .* sqrt.(Σ)
 end 
 
-
 function sqrt_tensor_down(
-    network::AbstractGibbsNetwork{Node, PEPSNode},
-    v::Node,
-    w::Node,
-    β::Real
+    network::AbstractGibbsNetwork{Node, PEPSNode}, v::Node, w::Node, β::Real
 )
     E = connecting_tensor(network, v, w, β)
     U, Σ, V = svd(E)
     sqrt.(Σ) .* V'
 end 
 
-
 function tensor(
-    network::AbstractGibbsNetwork{Node, PEPSNode},
-    v::PEPSNode,
-    β::Real,
-    ::Val{:sqrt_up}
+    network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, β::Real, ::Val{:sqrt_up}
 )
     r, j = Node(v)
     i = floor(Int, r)
     sqrt_tensor_up(network, (i, j), (i+1, j), β)
 end
 
-
 function tensor_size(
-    network::AbstractGibbsNetwork{Node, PEPSNode},
-    v::PEPSNode,
-    ::Val{:sqrt_up}
+    network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, ::Val{:sqrt_up}
 )
     r, j = Node(v)
     i = floor(Int, r)
     size(interaction_energy(network, (i, j), (i+1, j)))
 end
 
-
 function tensor(
-    network::AbstractGibbsNetwork{Node, PEPSNode},
-    v::PEPSNode,
-    β::Real,
-    ::Val{:sqrt_down}
+    network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, β::Real, ::Val{:sqrt_down}
 )
     r, j = Node(v)
     i = floor(Int, r)
     sqrt_tensor_down(network, (i, j), (i+1, j), β)
 end
 
-
 function tensor_size(
-    network::AbstractGibbsNetwork{Node, PEPSNode},
-    v::PEPSNode,
-    ::Val{:sqrt_down}
+    network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, ::Val{:sqrt_down}
 )
     r, j = Node(v)
     i = floor(Int, r)

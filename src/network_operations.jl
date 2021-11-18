@@ -1,22 +1,15 @@
-export 
-    LatticeTransformation, 
-    rotation, 
-    reflection, 
-    all_lattice_transformations
-
+export LatticeTransformation, rotation, reflection, all_lattice_transformations
 
 struct LatticeTransformation
     permutation::NTuple{4, Int}
     flips_dimensions::Bool
 end
 
-
 Base.:(∘)(op1::LatticeTransformation, op2::LatticeTransformation) =
     LatticeTransformation(
         op1.permutation[collect(op2.permutation)],
         op1.flips_dimensions ⊻ op2.flips_dimensions
     )
-
 
 function reflection(axis::Symbol)
     if axis == :x
@@ -37,7 +30,6 @@ function reflection(axis::Symbol)
     LatticeTransformation(perm, flips)
 end
 
-
 function rotation(θ::Int)
     if θ % 90 != 0
         ArgumentError("Only integral multiplicities of 90° can be passed as θ.")
@@ -52,7 +44,6 @@ function rotation(θ::Int)
     end
 end
 
-
 function check_bounds(m, n)
     function _check(i, j)
         if i < 1 || i > m || j < 1 || j > n
@@ -61,7 +52,6 @@ function check_bounds(m, n)
         true
     end
 end
-
 
 function vertex_map(vert_permutation::NTuple{4, Int}, nrows, ncols)
     if vert_permutation == (1, 2, 3, 4) #
@@ -86,7 +76,9 @@ function vertex_map(vert_permutation::NTuple{4, Int}, nrows, ncols)
     (tuple) -> f(tuple[1], tuple[2])
 end
 
-vertex_map(trans::LatticeTransformation, m::Int, n::Int) = vertex_map(trans.permutation, m, n)
+function vertex_map(trans::LatticeTransformation, m::Int, n::Int)
+    vertex_map(trans.permutation, m, n)
+end
 
 const all_lattice_transformations = (
     rotation.([0, 90, 180, 270])...,

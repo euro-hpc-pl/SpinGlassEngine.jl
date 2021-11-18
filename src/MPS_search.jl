@@ -1,33 +1,20 @@
-export 
-    solve,
-    low_energy_spectrum
+export solve, low_energy_spectrum
 
-    
 _make_left_env(ψ::AbstractMPS, k::Int) = ones(eltype(ψ), 1, k)
-
 _make_LL(ψ::AbstractMPS, b::Int, k::Int, d::Int) = zeros(eltype(ψ), b, k, d)
 
-
 function low_energy_spectrum(
-    ig::IsingGraph,
-    Dcut::Int, 
-    var_ϵ::T, 
-    max_sweeps::Int, 
-    dβ::T,
-    β::T,
-    schedule::Symbol, 
-    num_states::Int
+    ig::IsingGraph, Dcut::Int, var_ϵ::T, max_sweeps::Int, dβ::T, β::T,
+    schedule::Symbol, num_states::Int
 ) where T <: Number
-
-    igp = prune(ig) 
+    igp = prune(ig)
     ψ = MPS(igp, Dcut, var_ϵ, max_sweeps, dβ, β, schedule)
     states, probs, ldp = solve(ψ, num_states)
 
     en = energy.(states, Ref(igp))
     idx = sortperm(en)
     Solution(en[idx], states[idx], probs[idx], [0], ldp)
-end 
-
+end
 
 function solve(ψ::AbstractMPS, keep::Int)
     @assert keep > 0 "Number of states has to be > 0"
@@ -84,13 +71,7 @@ function solve(ψ::AbstractMPS, keep::Int)
     Vector.(eachcol(states[:, 1:keep])), lprob[1:keep], lpCut
 end
 
-
-function _apply_bias!(
-    ψ::AbstractMPS,
-    ig::LabelledGraph, 
-    dβ::Number, 
-    i::Int
-)
+function _apply_bias!(ψ::AbstractMPS, ig::LabelledGraph, dβ::Number, i::Int)
     M = ψ[i]
     h = get_prop(ig, i, :h)
     σ = local_basis(ψ, i)
@@ -99,14 +80,8 @@ function _apply_bias!(
     ψ[i] = M
 end
 
-
 function _apply_exponent!(
-    ψ::AbstractMPS, 
-    ig::LabelledGraph, 
-    dβ::Number, 
-    i::Int, 
-    j::Int, 
-    last::Int
+    ψ::AbstractMPS, ig::LabelledGraph, dβ::Number, i::Int, j::Int, last::Int
 )
     M = ψ[j]
     D = typeof(M).name.wrapper(I(physical_dim(ψ, i)))
@@ -124,7 +99,6 @@ function _apply_exponent!(
     ψ[j] = M̃
 end
 
-
 function _apply_projector!(ψ::AbstractMPS, i::Int)
     M = ψ[i]
     D = typeof(M).name.wrapper(I(physical_dim(ψ, i)))
@@ -132,14 +106,12 @@ function _apply_projector!(ψ::AbstractMPS, i::Int)
     ψ[i] = M̃
 end
 
-
 function _apply_nothing!(ψ::AbstractMPS, l::Int, i::Int)
     M = ψ[l]
     D = typeof(M).name.wrapper(I(physical_dim(ψ, i)))
     @cast M̃[(x, a), σ, (y, b)] := D[x, y] * M[a, σ, b]
     ψ[l] = M̃
 end
-
 
 function purifications(χ::T, ϕ::T) where {T <: AbstractMPS}
     S = promote_type(eltype(χ), eltype(ϕ))
@@ -150,18 +122,11 @@ function purifications(χ::T, ϕ::T) where {T <: AbstractMPS}
     end
     ψ
 end
-purifications(χ) = purifications(χ, χ) 
-
+purifications(χ) = purifications(χ, χ)
 _holes(l::Int, nbrs::Vector) = setdiff(l+1:last(nbrs), nbrs)
 
-
 function _apply_gates(
-    ρ::AbstractMPS, 
-    ig::IsingGraph, 
-    Dcut::Int,
-    var_ϵ::Number,
-    sweeps::Int,
-    dβ::Number
+    ρ::AbstractMPS, ig::IsingGraph, Dcut::Int, var_ϵ::Number, sweeps::Int, dβ::Number
 )
     is_right = true
     for i ∈ 1:nv(ig)
@@ -189,13 +154,8 @@ function _apply_gates(
     ρ
 end
 
-
 function SpinGlassTensors.MPS(
-    ig::IsingGraph, 
-    Dcut::Int,
-    var_ϵ::Number,
-    sweeps::Int,
-    schedule::Vector{<:Number}
+    ig::IsingGraph, Dcut::Int, var_ϵ::Number, sweeps::Int, schedule::Vector{<:Number}
 )
     ρ = HadamardMPS(ig)
     for dβ ∈ schedule
@@ -204,15 +164,9 @@ function SpinGlassTensors.MPS(
     ρ
 end
 
-
 function SpinGlassTensors.MPS(
-    ig::IsingGraph,
-    Dcut::Int,
-    var_ϵ::Number,
-    sweeps::Int,
-    dβ::Number,
-    β::Number,
-    schedule::Symbol
+    ig::IsingGraph, Dcut::Int, var_ϵ::Number,
+    sweeps::Int, dβ::Number, β::Number, schedule::Symbol
 )
     ρ = HadamardMPS(ig)
     is_right = true
@@ -243,10 +197,9 @@ function SpinGlassTensors.MPS(
     ρ
 end
 
-
 function HadamardMPS(::Type{T}, ig::IsingGraph) where T <: Number
     MPS([
-        fill(one(T), r) ./ sqrt(T(r)) 
+        fill(one(T), r) ./ sqrt(T(r))
         for r ∈ values(get_prop(ig, :rank))
     ])
 end

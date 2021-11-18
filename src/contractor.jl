@@ -113,7 +113,8 @@ end
         j = sites[i]
         coor = layers[j]
         tensors[i] = Dict(dr => tensor(ctr.peps, PEPSNode(r + dr, j), ctr.betas[indβ])
-                            for dr ∈ coor)
+                                for dr ∈ coor
+                    )
     end
     QMpo(Dict(sites .=> tensors))
 end
@@ -153,7 +154,6 @@ end
     ψ0
 end
 
-
 @memoize function mps(contractor::MpsContractor{MPSAnnealing}, i::Int, indβ::Int)
     if i > contractor.peps.nrows return IdentityQMps(contractor.peps) end
 
@@ -163,9 +163,8 @@ end
     if indβ > 1
         ψ0 = mps(contractor, i, indβ-1)
     else
-        ld = local_dims(W, :up)
         bd = contractor.params.bond_dimension
-        ψ0 = IdentityQMps(contractor.peps, bd, ld)
+        ψ0 = IdentityQMps(contractor.peps, bd, local_dims(W, :up))
         canonise!(ψ0, :left)
     end
     compress!(
@@ -343,7 +342,7 @@ function conditional_probability(
     A = reduced_site_tensor(network, (i, j), ∂v[2*j-1], ∂v[2*j], ∂v[2*j+1], ∂v[2*j+2], β)
 
     @tensor prob[σ] := L[x] * MX[x, m, y] * M[y, l, z] * R[z, k] *
-                        A[k, l, m, σ] order = (x, y, z, k, l, m)
+                       A[k, l, m, σ] order = (x, y, z, k, l, m)
 
     normalize_probability(prob)
 end
@@ -378,7 +377,6 @@ function reduced_site_tensor(
     pr = decode_projector!(projector(network, v, ((i+1, j+1), (i, j+1), (i-1, j+1))))
     pd = decode_projector!(projector(network, v, (i+1, j)))
 
-    @cast A[r, d, (k̃, k), σ] := p_rb[σ, k] * p_lb[$ld, k̃] * pr[σ, r] *
-                                pd[σ, d] * loc_exp[σ]
+    @cast A[r, d, (k̃, k), σ] := p_rb[σ, k] * p_lb[$ld, k̃] * pr[σ, r] * pd[σ, d] * loc_exp[σ]
     A
 end

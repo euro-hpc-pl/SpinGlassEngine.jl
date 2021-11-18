@@ -191,8 +191,9 @@ end
         ψ0 = mps(contractor, i, indβ-1)
     else
         ld = local_dims(W, :up)
-        ψ0 = IdentityMps(contractor.peps, contractor.params.bond_dimension, ld)
-        truncate!(ψ0, :left)
+        bd = contractor.params.bond_dimension
+        ψ0 = IdentityMps(contractor.peps, bd, ld)
+        canonise!(ψ0, :left)
     end
     compress!(
             ψ0,

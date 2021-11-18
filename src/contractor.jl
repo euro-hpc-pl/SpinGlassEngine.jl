@@ -134,36 +134,36 @@ end
         tensors[i] = Dict(dr => tensor(ctr.peps, PEPSNode(r + dr, j), ctr.betas[indβ])
                             for dr ∈ coor)
     end
-    Mpo(Dict(sites .=> tensors))
+    QMpo(Dict(sites .=> tensors))
 end                        
 
 
-IdentityMps(peps::PEPSNetwork{T, S}) where {T <: Square, S} = 
-Mps(Dict(j => ones(1, 1, 1) for j ∈ 1:peps.ncols))
+IdentityQMps(peps::PEPSNetwork{T, S}) where {T <: Square, S} = 
+QMps(Dict(j => ones(1, 1, 1) for j ∈ 1:peps.ncols))
 
 
-function IdentityMps(peps::PEPSNetwork{T, S}, Dmax::Int, loc_dim) where {T, S}
+function IdentityQMps(peps::PEPSNetwork{T, S}, Dmax::Int, loc_dim) where {T, S}
     id = Dict{Int, Array{Float64, 3}}()
     for i ∈ 2 : peps.ncols-1 push!(id, i => zeros(Dmax, loc_dim[i], Dmax)) end
     push!(id, 1 => zeros(1, loc_dim[1], Dmax))
     push!(id, peps.ncols => zeros(Dmax, loc_dim[peps.ncols], 1))
     for i ∈ 2 : peps.ncols-1 id[i][1, :, 1] .= 1 / sqrt(loc_dim[i]) end
-    Mps(id)
+    QMps(id)
 end
 
 
-function IdentityMps(peps::PEPSNetwork{T, S}) where {T <: SquareStar, S}
+function IdentityQMps(peps::PEPSNetwork{T, S}) where {T <: SquareStar, S}
     id = Dict()
     for i ∈ 1//2 : 1//2 : peps.ncols
         ii = denominator(i) == 1 ? numerator(i) : i
         push!(id, ii => ones(1, 1, 1))
     end
-    Mps(id)
+    QMps(id)
 end
 
 
 @memoize function mps(contractor::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
-    if i > contractor.peps.nrows return IdentityMps(contractor.peps) end
+    if i > contractor.peps.nrows return IdentityQMps(contractor.peps) end
 
     ψ = mps(contractor, i+1, indβ)
     W = mpo(contractor, contractor.layers.main, i, indβ)
@@ -182,7 +182,7 @@ end
 
 
 @memoize function mps(contractor::MpsContractor{MPSAnnealing}, i::Int, indβ::Int)
-    if i > contractor.peps.nrows return IdentityMps(contractor.peps) end
+    if i > contractor.peps.nrows return IdentityQMps(contractor.peps) end
 
     ψ = mps(contractor, i+1, indβ)
     W = mpo(contractor, contractor.layers.main, i, indβ)
@@ -192,7 +192,7 @@ end
     else
         ld = local_dims(W, :up)
         bd = contractor.params.bond_dimension
-        ψ0 = IdentityMps(contractor.peps, bd, ld)
+        ψ0 = IdentityQMps(contractor.peps, bd, ld)
         canonise!(ψ0, :left)
     end
     compress!(

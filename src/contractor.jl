@@ -392,8 +392,71 @@ function conditional_probability(::Type{T},
     normalize_probability(loc_exp .* bnd_exp)
 end
 
+function conditional_probability(::Type{T},
+    contractor::MpsContractor{S}, 
+    state::Vector{Int},
+) where {T <: SquareStar, S}
+
+    indβ, β = length(contractor.betas), last(contractor.betas)
+    i, j = node_from_index(contractor.peps, length(state)+1)
+    ∂v = boundary_state(contractor.peps, state, (i, j))
+
+    L = left_env(contractor, i, ∂v[1:2*j-2], indβ)
+    R = right_env(contractor, i, ∂v[2*j+3 : 2*contractor.peps.ncols+2], indβ)
+    ψ = dressed_mps(contractor, i, indβ)
+    MX, M = ψ[j-1//2], ψ[j]
+    @tensor LM[y, z] := L[x] * M[x, y, z] 
+  
+    eng_local = local_energy(contractor.peps, (i, j))
+    pl = projector(contractor.peps, (i, j), (i, j-1))
+    eng_pl = interaction_energy(contractor.peps, (i, j), (i, j-1))
+    eng_left = @view eng_pl[pl[:], ∂v[2*j]]
+
+    pu = projector(contractor.peps, (i, j), (i-1, j))
+    eng_pu = interaction_energy(contractor.peps, (i, j), (i-1, j))
+    eng_up = @view eng_pu[pu[:], ∂v[2*j+2]]
+
+    pd = projector(contractor.peps, (i, j), (i-1, j-1))
+    eng_pd = interaction_energy(contractor.peps, (i, j), (i-1, j-1))
+    eng_diag = @view eng_pd[pd[:], ∂v[2*j+1]]
+
+    en = eng_local .+ eng_left .+ eng_diag .+ eng_up
+    loc_exp = exp.(-β .* (en .- minimum(en)))
+
+    p_lb = projector(contractor.peps, (i, j-1), (i+1, j))
+    p_rb = projector(contractor.peps, (i, j), (i+1, j-1))
+    pr = projector(contractor.peps, (i, j), ((i+1, j+1), (i, j+1), (i-1, j+1)))
+    pd = projector(contractor.peps, (i, j), (i+1, j))
+
+    s_lb = maximum(p_lb)
+    s_rb = maximum(p_rb)
+
+    @cast mx[a, b, c, d] := MX[a, (b,c), d] (b ∈ 1:s_lb, c ∈ 1:s_rb)
+    println("mx: ", mx)
+    println(typeof(mx))
+    println(size(mx))
+    for σ ∈ 1:length(loc_exp)
+
+        MM = @view LM[pd[σ], :]
+        println("MM: ", MM)
+        println(typeof(MM))
+        println(size(MM))
+        RR = @view R[:, pr[σ]]
+        println("RR: ", RR)
+        println(typeof(RR))
+        println(size(RR))
+        env_exp = (MM * mx * RR)[]
+        loc_exp[σ] *= env_exp
+    end
+    normalize_probability(loc_exp)
+end
+
+
+
+
 
 # to be improved
+#=
 function conditional_probability(::Type{T},
     contractor::MpsContractor{S}, 
     w::Vector{Int},
@@ -411,7 +474,7 @@ function conditional_probability(::Type{T},
 
     eng_local = local_energy(network, (i, j))
     ld = ∂v[2*j-1]
-    println("ld ", ld)
+    #println("ld ", ld)
     pl = projector(network, (i, j), (i, j-1))
     eng_pl = interaction_energy(network, (i, j), (i, j-1))
     eng_left = @view eng_pl[pl[:], ∂v[2*j]]
@@ -428,8 +491,8 @@ function conditional_probability(::Type{T},
     loc_exp = exp.(-β .* (en .- minimum(en)))
 
     p_lb = projector(contractor.peps, (i, j-1), (i+1, j))
-    println("loc_exp ", length(loc_exp))
-    println("p_lb ", p_lb)
+    #println("loc_exp ", length(loc_exp))
+    #println("p_lb ", p_lb)
     p_rb = projector(contractor.peps, (i, j), (i+1, j-1))
     pr = projector(contractor.peps, (i, j), ((i+1, j+1), (i, j+1), (i-1, j+1)))
     pd = projector(contractor.peps, (i, j), (i+1, j))
@@ -468,7 +531,7 @@ function conditional_probability(::Type{T},
     normalize_probability(prob)
 
 end
-
+=#
 #=
 function conditional_probability(::Type{T}, 
     contractor::MpsContractor{S}, 

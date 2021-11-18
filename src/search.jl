@@ -1,11 +1,5 @@
-export 
-    AbstractGibbsNetwork,
-    low_energy_spectrum, 
-    branch_state,
-    bound_solution,
-    merge_branches,
-    Solution
-
+export AbstractGibbsNetwork, low_energy_spectrum, branch_state, bound_solution
+export merge_branches, Solution
 
 struct Solution
     energies::Vector{Float64}
@@ -14,10 +8,7 @@ struct Solution
     degeneracy::Vector{Int}
     largest_discarded_probability::Float64
 end
-
-
 empty_solution() = Solution([0.], [[]], [1.], [1], -Inf)
-
 
 function branch_state(network, σ)
     node = node_from_index(network, length(σ) + 1)
@@ -25,11 +16,10 @@ function branch_state(network, σ)
     vcat.(Ref(σ), basis)
 end
 
-
 function branch_solution(partial_sol::Solution, contractor::T) where T <: AbstractContractor
     node = node_from_index(contractor.peps, length(partial_sol.states[1])+1)
     local_dim = length(local_energy(contractor.peps, node))
-     
+
     new_energies = vcat(
             [
                 (en .+ update_energy(contractor.peps, state))
@@ -41,8 +31,10 @@ function branch_solution(partial_sol::Solution, contractor::T) where T <: Abstra
     new_states = vcat(branch_state.(Ref(contractor.peps), partial_sol.states)...)
     new_probabilities = vcat(
         [
-            partial_sol.probabilities[i] .+ log.(p) 
-            for (i, p) ∈ enumerate(conditional_probability.(Ref(contractor), partial_sol.states))
+            partial_sol.probabilities[i] .+ log.(p)
+            for (i, p) ∈ enumerate(
+                               conditional_probability.(Ref(contractor), partial_sol.states)
+                        )
         ]
         ...
     )
@@ -53,11 +45,10 @@ function branch_solution(partial_sol::Solution, contractor::T) where T <: Abstra
     Solution(new_energies, new_states, new_probabilities, degeneracies, ldp)
 end
 
-
 function merge_branches(network::AbstractGibbsNetwork{S, T}) where {S, T}
     function _merge(partial_sol::Solution)
         node = node_from_index(network, length(partial_sol.states[1])+1)
-        boundaries = hcat(boundary_state.(Ref(network), partial_sol.states, Ref(node))...)'  
+        boundaries = hcat(boundary_state.(Ref(network), partial_sol.states, Ref(node))...)'
         _unique_boundaries, indices = SpinGlassNetworks.unique_dims(boundaries, 1)
 
         sorting_idx = sortperm(indices)
@@ -76,7 +67,8 @@ function merge_branches(network::AbstractGibbsNetwork{S, T}) where {S, T}
 
         while start <= size(boundaries, 1)
             stop = start
-            while stop + 1 <= size(boundaries, 1) && sorted_indices[start] == sorted_indices[stop+1]
+            bsize = size(boundaries, 1)
+            while stop + 1 <= bsize && sorted_indices[start] == sorted_indices[stop+1]
                 stop = stop + 1
             end
 
@@ -89,14 +81,14 @@ function merge_branches(network::AbstractGibbsNetwork{S, T}) where {S, T}
 
             start = stop + 1
         end
-        Solution(new_energies, new_states, new_probs, new_degeneracy, partial_sol.largest_discarded_probability)
+        Solution(
+            new_energies, new_states, new_probs, new_degeneracy,
+            partial_sol.largest_discarded_probability
+        )
     end
     _merge
 end
-
-
 no_merge(partial_sol::Solution) = partial_sol
-
 
 function bound_solution(partial_sol::Solution, max_states::Int, merge_strategy=no_merge)
     if length(partial_sol.probabilities) <= max_states
@@ -121,16 +113,14 @@ function bound_solution(partial_sol::Solution, max_states::Int, merge_strategy=n
     ))
 end
 
-
 #TODO: incorporate "going back" move to improve alghoritm
 function low_energy_spectrum(
-    contractor::T, 
-    max_states::Int, 
-    merge_strategy=no_merge
+    contractor::T, max_states::Int, merge_strategy=no_merge
 ) where T <: AbstractContractor
-
     # Build all boundary mps
-    @showprogress "Preprocesing: " for i ∈ contractor.peps.nrows:-1:1 dressed_mps(contractor, i) end
+    @showprogress "Preprocesing: " for i ∈ contractor.peps.nrows:-1:1
+        dressed_mps(contractor, i)
+    end
 
     # Start branch and bound search
     sol = empty_solution()

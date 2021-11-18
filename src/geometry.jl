@@ -1,18 +1,6 @@
-export
-    IntOrRational,
-    Node, PEPSNode,
-    AbstractGeometry,
-    AbstractSparsity,
-    AbstractTensorsLayout,
-    tensor_map,
-    gauges_list,
-    Dense, Sparse,
-    Square,
-    SquareStar,
-    GaugesEnergy,
-    EnergyGauges,
-    EngGaugesEng
-
+export IntOrRational, Node, PEPSNode, AbstractGeometry, AbstractSparsity
+export AbstractTensorsLayout, tensor_map, gauges_list, Dense, Sparse
+export Square, SquareStar, GaugesEnergy, EnergyGauges, EngGaugesEng
 
 const IntOrRational = Union{Int, Rational{Int}}
 
@@ -21,13 +9,13 @@ abstract type AbstractSparsity end
 abstract type AbstractTensorsLayout end
 
 struct SquareStar{T <: AbstractTensorsLayout} <: AbstractGeometry end
-struct Square{T <: AbstractTensorsLayout} <: AbstractGeometry end 
+struct Square{T <: AbstractTensorsLayout} <: AbstractGeometry end
 
 const Chimera = Square
 const Pegazus = SquareStar
 
-struct Dense <: AbstractSparsity end 
-struct Sparse <: AbstractSparsity end 
+struct Dense <: AbstractSparsity end
+struct Sparse <: AbstractSparsity end
 
 # Names are not descriptive enough!
 struct GaugesEnergy{T} <: AbstractTensorsLayout end
@@ -36,14 +24,14 @@ struct EngGaugesEng{T} <: AbstractTensorsLayout end
 
 const Node = NTuple{2, Int}
 
-struct PEPSNode 
+struct PEPSNode
     i::IntOrRational
     j::IntOrRational
-    
-    PEPSNode(i, j) = new(denominator(i) == 1 ? numerator(i) : i,
-                         denominator(j) == 1 ? numerator(j) : j)
-end
 
+    function PEPSNode(i, j)
+        new(denominator(i) == 1 ? numerator(i) : i, denominator(j) == 1 ? numerator(j) : j)
+    end
+end
 Node(node::PEPSNode) = (node.i, node.j)
 
 struct GaugeInfo
@@ -53,12 +41,10 @@ struct GaugeInfo
     type::Symbol
 end
 
-
-function Square(m::Int, n::Int) 
+function Square(m::Int, n::Int)
     labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
     LabelledGraph(labels, grid((m, n)))
 end
-
 
 function SquareStar(m::Int, n::Int)
     lg = Square(m, n)
@@ -69,7 +55,6 @@ function SquareStar(m::Int, n::Int)
     lg
 end
 
-
 #-----------------------------
 ###    Square geometry     ###
 #-----------------------------
@@ -77,10 +62,9 @@ end
 Site(::Type{Dense}) = :site
 Site(::Type{Sparse}) = :sparse_site
 
-
-function tensor_map(::Type{Square{T}}, ::Type{S}, nrows::Int, ncols::Int
-    ) where {T <: Union{GaugesEnergy, EnergyGauges}, S <: AbstractSparsity}
-
+function tensor_map(
+    ::Type{Square{T}}, ::Type{S}, nrows::Int, ncols::Int
+) where {T <: Union{GaugesEnergy, EnergyGauges}, S <: AbstractSparsity}
     map = Dict{PEPSNode, Symbol}()
     for i ∈ 1:nrows, j ∈ 1:ncols
         push!(map, PEPSNode(i, j) => Site(S))
@@ -90,14 +74,14 @@ function tensor_map(::Type{Square{T}}, ::Type{S}, nrows::Int, ncols::Int
     map
 end
 
-function tensor_map(::Type{Square{T}}, ::Type{S}, nrows::Int, ncols::Int
-    ) where {T <: EngGaugesEng, S <: AbstractSparsity}
-
+function tensor_map(
+    ::Type{Square{T}}, ::Type{S}, nrows::Int, ncols::Int
+) where {T <: EngGaugesEng, S <: AbstractSparsity}
     map = Dict{PEPSNode, Symbol}()
     for i ∈ 1:nrows, j ∈ 1:ncols
         push!(map, PEPSNode(i, j) => Site(S))
         if j < ncols push!(map, PEPSNode(i, j + 1//2) => :central_h) end
-        if i < nrows 
+        if i < nrows
             push!(map, PEPSNode(i + 1//5, j) => :sqrt_up)
             push!(map, PEPSNode(i + 4//5, j) => :sqrt_down)
          end
@@ -105,54 +89,39 @@ function tensor_map(::Type{Square{T}}, ::Type{S}, nrows::Int, ncols::Int
     map
 end
 
-
-function gauges_list(::Type{Square{T}},
-    nrows::Int,
-    ncols::Int
-) where T <: GaugesEnergy
+function gauges_list(::Type{Square{T}}, nrows::Int, ncols::Int ) where T <: GaugesEnergy
     [
-        GaugeInfo((PEPSNode(i + 1//6, j), PEPSNode(i + 2//6, j)), 
-                   PEPSNode(i + 1//2, j), 1, :gauge_h) 
+        GaugeInfo((PEPSNode(i + 1//6, j), PEPSNode(i + 2//6, j)),
+                   PEPSNode(i + 1//2, j), 1, :gauge_h)
         for i ∈ 1:nrows-1 for j ∈ 1:ncols
     ]
 end
 
-
-function gauges_list(::Type{Square{T}},
-    nrows::Int,
-    ncols::Int
-) where T <: EnergyGauges
+function gauges_list(::Type{Square{T}}, nrows::Int, ncols::Int) where T <: EnergyGauges
     [
-        GaugeInfo((PEPSNode(i + 4//6, j), PEPSNode(i + 5//6, j)), 
-                   PEPSNode(i + 1//2, j), 2, :gauge_h) 
+        GaugeInfo((PEPSNode(i + 4//6, j), PEPSNode(i + 5//6, j)),
+                   PEPSNode(i + 1//2, j), 2, :gauge_h)
         for i ∈ 1:nrows-1 for j ∈ 1:ncols
     ]
 end
 
-
-function gauges_list(::Type{Square{T}},
-    nrows::Int, 
-    ncols::Int
-) where T <: EngGaugesEng
+function gauges_list(::Type{Square{T}}, nrows::Int, ncols::Int) where T <: EngGaugesEng
     [
-        GaugeInfo((PEPSNode(i + 2//5, j), PEPSNode(i + 3//5, j)), 
-                   PEPSNode(i + 1//5, j), 2, :gauge_h) 
+        GaugeInfo((PEPSNode(i + 2//5, j), PEPSNode(i + 3//5, j)),
+                   PEPSNode(i + 1//5, j), 2, :gauge_h)
         for i ∈ 1:nrows-1 for j ∈ 1:ncols
     ]
 end
-
 
 #---------------------------------
 ###    SquareStar geometry     ###
 #---------------------------------
 
-
 Virtual(::Type{Dense}) = :virtual
 Virtual(::Type{Sparse}) = :sparse_virtual
-
-function tensor_map(::Type{SquareStar{T}}, ::Type{S}, nrows::Int, ncols::Int
+function tensor_map(
+    ::Type{SquareStar{T}}, ::Type{S}, nrows::Int, ncols::Int
 ) where {T <: Union{EnergyGauges, GaugesEnergy}, S <: AbstractSparsity}
-
     map = Dict{PEPSNode, Symbol}()
     for i ∈ 1:nrows, j ∈ 1:ncols
         push!(map, PEPSNode(i, j) => Site(S))
@@ -165,38 +134,26 @@ function tensor_map(::Type{SquareStar{T}}, ::Type{S}, nrows::Int, ncols::Int
     map
 end
 
-
-function gauges_list(::Type{SquareStar{T}},
-    nrows::Int, 
-    ncols::Int
-) where T <: GaugesEnergy
+function gauges_list(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T <: GaugesEnergy
     [
-        GaugeInfo((PEPSNode(i + 1//6, j), PEPSNode(i + 2//6, j)), 
-                   PEPSNode(i + 1//2, j), 1, :gauge_h) 
+        GaugeInfo((PEPSNode(i + 1//6, j), PEPSNode(i + 2//6, j)),
+                   PEPSNode(i + 1//2, j), 1, :gauge_h)
         for i ∈ 1:nrows-1 for j ∈ 1//2 : 1//2 : ncols
     ]
 end
 
-
-function gauges_list(::Type{SquareStar{T}},
-    nrows::Int, 
-    ncols::Int
-) where T <: EnergyGauges
+function gauges_list(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T <: EnergyGauges
     [
-        GaugeInfo((PEPSNode(i + 4//6, j), PEPSNode(i + 5//6, j)), 
+        GaugeInfo((PEPSNode(i + 4//6, j), PEPSNode(i + 5//6, j)),
                    PEPSNode(i + 1//2, j), 2, :gauge_h)
         for i ∈ 1:nrows-1 for j ∈ 1//2 : 1//2 : ncols
     ]
 end
 
-
-function gauges_list(::Type{SquareStar{T}},
-    nrows::Int, 
-    ncols::Int
-) where T <: EngGaugesEng
+function gauges_list(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T <: EngGaugesEng
     [
-        GaugeInfo((PEPSNode(i + 2//5, j), PEPSNode(i + 3//5, j)), 
-                   PEPSNode(i + 1//5, j), 2, :gauge_h) 
+        GaugeInfo((PEPSNode(i + 2//5, j), PEPSNode(i + 3//5, j)),
+                   PEPSNode(i + 1//5, j), 2, :gauge_h)
         for i ∈ 1:nrows-1 for j ∈ 1//2 : 1//2 : ncols
     ]
 end

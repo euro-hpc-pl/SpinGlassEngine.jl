@@ -71,14 +71,16 @@
     params = MpsParameters()
 
     for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, Sparse)
-        for Layout ∈ (EnergyGauges, GaugesEnergy,), transform ∈ all_lattice_transformations
+        for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
+            for transform ∈ all_lattice_transformations
 
-            network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
-            contractor = MpsContractor{Strategy}(network, [β/8., β/4., β/2., β], params)
-            sol = low_energy_spectrum(contractor, num_states)
+                network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
+                contractor = MpsContractor{Strategy}(network, [β/8., β/4., β/2., β], params)
+                sol = low_energy_spectrum(contractor, num_states)
 
-            @test sol.energies ≈ exact_energies
-            for (i, σ) ∈ enumerate(sol.states) @test σ ∈ exact_states[deg[i]] end
+                @test sol.energies ≈ exact_energies
+                for (i, σ) ∈ enumerate(sol.states) @test σ ∈ exact_states[deg[i]] end
+            end
         end
     end
 end

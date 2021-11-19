@@ -5,7 +5,7 @@
     m = 3
     n = 4
     t = 3
-    
+
     β = 1.
 
     L = n * m * t
@@ -18,19 +18,21 @@
     fg = factor_graph(
         ig,
         spectrum=full_spectrum,
-        cluster_assignment_rule=super_square_lattice((m, n, t)) 
+        cluster_assignment_rule=super_square_lattice((m, n, t))
     )
 
     params = MpsParameters()
 
-    for Strategy ∈ (SVDTruncate,), Sparsity ∈ (Dense,) 
-        for Layout ∈ (EnergyGauges, GaugesEnergy), transform ∈ all_lattice_transformations
+    for Strategy ∈ (SVDTruncate,), Sparsity ∈ (Dense,)
+        for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
+            for transform ∈ all_lattice_transformations
 
-            network = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, fg, transform)
-            contractor = MpsContractor{Strategy}(network, [β], params)
-            sol = low_energy_spectrum(contractor, num_states)
+                network = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, fg, transform)
+                contractor = MpsContractor{Strategy}(network, [β], params)
+                sol = low_energy_spectrum(contractor, num_states)
 
-            @test first(sol.energies) ≈ ground_energy
+                @test first(sol.energies) ≈ ground_energy
+            end
         end
     end
 end

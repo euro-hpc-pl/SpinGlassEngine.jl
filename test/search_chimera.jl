@@ -71,8 +71,12 @@
     params = MpsParameters()
 
     for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, Sparse)
+<<<<<<< HEAD
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
             for transform ∈ all_lattice_transformations
+=======
+        for Layout ∈ (EnergyGauges, GaugesEnergy,EngGaugesEng), transform ∈ all_lattice_transformations
+>>>>>>> dbb30ce0521caa348a75b5a818ed51a4a09460bc
 
                 network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
                 contractor = MpsContractor{Strategy}(network, [β/8., β/4., β/2., β], params)

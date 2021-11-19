@@ -24,7 +24,7 @@
     params = MpsParameters()
 
     for Strategy ∈ (SVDTruncate,), Sparsity ∈ (Dense,)
-        for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
+        for Layout ∈ (EnergyGauges, GaugesEnergy, )
             for transform ∈ all_lattice_transformations
 
                 network = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, fg, transform)

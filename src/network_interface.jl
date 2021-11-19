@@ -8,11 +8,13 @@ export fuse_projectors, initialize_gauges!
 # S: type of the vertex of underlying factor graph
 abstract type AbstractGibbsNetwork{S, T} end
 
+
 struct NotImplementedError{M} <: Exception
     m::M
     NotImplementedError(m::M) where {M} = new{M}(m)
 end
 not_implmented(name) = throw(NotImplementedError(name))
+
 factor_graph(network::AbstractGibbsNetwork{S, T}) where {S, T} = network.factor_graph
 vertex_map(network::AbstractGibbsNetwork{S, T}) where {S, T} = network.vertex_map
 

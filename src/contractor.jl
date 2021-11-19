@@ -228,16 +228,20 @@ function _update_reduced_env_right(
 end
 
 function _update_reduced_env_right(
-    K::AbstractArray{Float64, 1}, RE::AbstractArray{Float64, 2},
-    M::AbstractArray{Float64, 4}, B::AbstractArray{Float64, 3}
+    K::AbstractArray{Float64, 1},
+    RE::AbstractArray{Float64, 2},
+    M::AbstractArray{Float64, 4},
+    B::AbstractArray{Float64, 3}
 )
     @tensor R[x, y] := K[d] * M[y, d, β, γ] * B[x, γ, α] * RE[α, β] order = (d, β, γ, α)
     R
 end
 
 # function _update_reduced_env_right(
-#     K::AbstractArray{Float64, 1}, RE::AbstractArray{Float64, 2},
-#     M::SparseSiteTensor, B::AbstractArray{Float64, 3}
+#     K::AbstractArray{Float64, 1},
+#     RE::AbstractArray{Float64, 2},
+#     M::SparseSiteTensor,
+#     B::AbstractArray{Float64, 3}
 # )
 #     R = zeros(size(B, 1), maximum(M.projs[1]))
 #     for (σ, lexp) ∈ enumerate(M.loc_exp)
@@ -249,8 +253,10 @@ end
 # end
 
 function _update_reduced_env_right(
-    K::AbstractArray{Float64, 1}, RE::AbstractArray{Float64, 2},
-    M::SparseSiteTensor, B::AbstractArray{Float64, 3}
+    K::AbstractArray{Float64, 1},
+    RE::AbstractArray{Float64, 2},
+    M::SparseSiteTensor,
+    B::AbstractArray{Float64, 3}
 )
     @tensor REB[x, y, β] := B[x, y, α] * RE[α, β]
 
@@ -266,8 +272,10 @@ function _update_reduced_env_right(
 end
 
 function _update_reduced_env_right(
-    K::AbstractArray{Float64, 1}, RE::AbstractArray{Float64, 2},
-    M::SparseVirtualTensor, B::AbstractArray{Float64, 3}
+    K::AbstractArray{Float64, 1},
+    RE::AbstractArray{Float64, 2},
+    M::SparseVirtualTensor,
+    B::AbstractArray{Float64, 3}
 )
     # to be written
 end

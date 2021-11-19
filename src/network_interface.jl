@@ -39,7 +39,7 @@ function iteration_order(peps::AbstractGibbsNetwork{T, S}) where {S, T}
 end
 
 # unify :pr and :pl
-function projector( network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
+function projector(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
     fg = factor_graph(network)
     vmap = vertex_map(network)
     fg_v, fg_w = vmap(v), vmap(w)

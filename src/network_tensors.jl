@@ -191,14 +191,14 @@ function sqrt_tensor_up(
     network::AbstractGibbsNetwork{Node, PEPSNode}, v::Node, w::Node, β::Real
 )
     U, Σ, V = svd(connecting_tensor(network, v, w, β))
-    U * diagm(sqrt.(Σ))
+    U * Diagonal(sqrt.(Σ))
 end
 
 function sqrt_tensor_down(
     network::AbstractGibbsNetwork{Node, PEPSNode}, v::Node, w::Node, β::Real
 )
     U, Σ, V = svd(connecting_tensor(network, v, w, β))
-    diagm(sqrt.(Σ)) * V'
+    Diagonal(sqrt.(Σ)) * V'
 end
 
 function tensor(

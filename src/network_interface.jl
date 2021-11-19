@@ -141,9 +141,7 @@ function normalize_probability(values::Vector{R}) where R <: Number
     minp = minimum(values)
     if minp < 0
         amp = abs(minp)
-        for (i, p) ∈ enumerate(values)
-            p < amp ? values[i] = amp : values[i]
-        end
+        for (i, p) ∈ enumerate(values) p < amp ? values[i] = amp : values[i] end
     end
     values / sum(values)
 end

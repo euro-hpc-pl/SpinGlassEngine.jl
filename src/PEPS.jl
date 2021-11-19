@@ -3,7 +3,6 @@ export PEPSNetwork, node_from_index, conditional_probability
 struct PEPSNetwork{
     T <: AbstractGeometry, S <: AbstractSparsity
 } <: AbstractGibbsNetwork{Node, PEPSNode}
-
     factor_graph::LabelledGraph
     vertex_map::Function
     m::Int

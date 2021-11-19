@@ -392,6 +392,7 @@ function conditional_probability(::Type{T},
     normalize_probability(loc_exp .* bnd_exp)
 end
 
+
 function conditional_probability(::Type{T},
     contractor::MpsContractor{S}, 
     state::Vector{Int},
@@ -405,7 +406,7 @@ function conditional_probability(::Type{T},
     R = right_env(contractor, i, ∂v[2*j+3 : 2*contractor.peps.ncols+2], indβ)
     ψ = dressed_mps(contractor, i, indβ)
     MX, M = ψ[j-1//2], ψ[j]
-    @tensor LM[y, z] := L[x] * M[x, y, z] 
+    @tensor LMX[y, z] := L[x] * MX[x, y, z] 
   
     eng_local = local_energy(contractor.peps, (i, j))
     pl = projector(contractor.peps, (i, j), (i, j-1))
@@ -431,171 +432,16 @@ function conditional_probability(::Type{T},
     s_lb = maximum(p_lb)
     s_rb = maximum(p_rb)
 
-    @cast mx[a, b, c, d] := MX[a, (b,c), d] (b ∈ 1:s_lb, c ∈ 1:s_rb)
-    println("mx: ", mx)
-    println(typeof(mx))
-    println(size(mx))
-    for σ ∈ 1:length(loc_exp)
+    @cast LMX2[b, c, d] := LMX[(b, c), d] (b ∈ 1:s_lb, c ∈ 1:s_rb)
 
-        MM = @view LM[pd[σ], :]
-        println("MM: ", MM)
-        println(typeof(MM))
-        println(size(MM))
-        RR = @view R[:, pr[σ]]
-        println("RR: ", RR)
-        println(typeof(RR))
-        println(size(RR))
-        env_exp = (MM * mx * RR)[]
+    for σ ∈ 1:length(loc_exp)
+        lmx = @view LMX2[p_lb[∂v[2*j-1]], p_rb[σ],  :]
+        m = @view M[:, pd[σ], :]
+        r = @view R[:, pr[σ]]
+
+        env_exp = (lmx' * m * r)[]
         loc_exp[σ] *= env_exp
     end
+
     normalize_probability(loc_exp)
-end
-
-
-
-
-
-# to be improved
-#=
-function conditional_probability(::Type{T},
-    contractor::MpsContractor{S}, 
-    w::Vector{Int},
-) where {T <: SquareStar, S}
-
-    indβ, β = length(contractor.betas), last(contractor.betas)
-    network = contractor.peps
-    i, j = node_from_index(network, length(w)+1)
-    ∂v = boundary_state(network, w, (i, j))
-
-    L = left_env(contractor, i, ∂v[1:2*j-2], indβ)
-    R = right_env(contractor, i, ∂v[2*j+3 : 2*network.ncols+2], indβ)
-    ψ = dressed_mps(contractor, i, indβ)
-    MX, M = ψ[j-1//2], ψ[j]
-
-    eng_local = local_energy(network, (i, j))
-    ld = ∂v[2*j-1]
-    #println("ld ", ld)
-    pl = projector(network, (i, j), (i, j-1))
-    eng_pl = interaction_energy(network, (i, j), (i, j-1))
-    eng_left = @view eng_pl[pl[:], ∂v[2*j]]
-
-    pu = projector(contractor.peps, (i, j), (i-1, j))
-    eng_pu = interaction_energy(contractor.peps, (i, j), (i-1, j))
-    eng_up = @view eng_pu[pu[:], ∂v[2*j+2]]
-
-    pd = projector(contractor.peps, (i, j), (i-1, j-1))
-    eng_pd = interaction_energy(contractor.peps, (i, j), (i-1, j-1))
-    eng_diag = @view eng_pd[pd[:], ∂v[2*j+1]]
-
-    en = eng_local .+ eng_left .+ eng_diag .+ eng_up
-    loc_exp = exp.(-β .* (en .- minimum(en)))
-
-    p_lb = projector(contractor.peps, (i, j-1), (i+1, j))
-    #println("loc_exp ", length(loc_exp))
-    #println("p_lb ", p_lb)
-    p_rb = projector(contractor.peps, (i, j), (i+1, j-1))
-    pr = projector(contractor.peps, (i, j), ((i+1, j+1), (i, j+1), (i-1, j+1)))
-    pd = projector(contractor.peps, (i, j), (i+1, j))
-    #println("p_rb ", p_rb)
-    #println("pr ", pr)
-    #println("pd ", pd)
-
-    s_lb = maximum(p_lb)
-    s_rb = maximum(p_rb)
-    s_r = maximum(pr)
-    s_d = maximum(pd)
-    s = length(loc_exp)
-
-    C = zeros(s_r, s_d, s_lb, s_rb, s)
-    #println("size C ", size(C))
-
-    for (σ, lexp) ∈ enumerate(loc_exp)
-        for i in 1:ld
-            #println("i ", i)
-            #println("σ ", σ)
-            #println("lexp ", lexp)
-            #println("prb[sigma] ", p_rb[σ])
-            C[pr[σ], pd[σ], p_lb[i], p_rb[σ], :] .+= lexp
-        end
-    end
-
-    @cast C[r, d, (k̃, k), σ] := C[r, d, k̃, k, σ]
-    #println("C ", size(C))
-    #println("L ", size(L))
-    #println("MX ", size(MX))
-    #println("M ", size(M))
-    #println("R ", size(R))
-    @tensor prob[σ] := L[x] * MX[x, m, y] * M[y, l, z] * R[z, k] *
-                        C[k, l, m, σ] order = (x, y, z, k, l, m)
-    #println("prob ", prob)
-    normalize_probability(prob)
-
-end
-=#
-#=
-function conditional_probability(::Type{T}, 
-    contractor::MpsContractor{S}, 
-    w::Vector{Int}, 
-    β::Real
-) where {T <: SquareStar, S}
-
-    network = contractor.peps
-    i, j = node_from_index(network, length(w)+1)
-    ∂v = boundary_state(network, w, (i, j))
-
-    L = left_env(contractor, i, ∂v[1:2*j-2], β)
-    R = right_env(contractor, i, ∂v[2*j+3 : 2*network.ncols+2], β)
-    ψ = dressed_mps(contractor, i, β)
-    MX, M = ψ[j-1//2], ψ[j]
-
-    β = contractor.betas[indβ]
-    A = reduced_site_tensor(network, (i, j), ∂v[2*j-1], ∂v[2*j], ∂v[2*j+1], ∂v[2*j+2], β)
-
-    @tensor prob[σ] := L[x] * MX[x, m, y] * M[y, l, z] * R[z, k] *
-                        A[k, l, m, σ] order = (x, y, z, k, l, m)
-
-    normalize_probability(prob)
-end
-=#
-
-# to be removed
-function reduced_site_tensor(
-    network::PEPSNetwork{T, S},
-    v::Node,
-    ld::Int,
-    l::Int,
-    d::Int,
-    u::Int,
-    β::Real
-) where {T <: SquareStar, S}
-
-    i, j = v
-    eng_local = local_energy(network, v)
-
-    pl = projector(network, v, (i, j-1))
-    pl = decode_projector!(pl)
-    eng_pl = interaction_energy(network, v, (i, j-1))
-    @matmul eng_left[x] := sum(y) pl[x, y] * eng_pl[y, $l]
-
-    pd = projector(network, v, (i-1, j-1))
-    pd = decode_projector!(pd)
-    eng_pd = interaction_energy(network, v, (i-1, j-1))
-    @matmul eng_diag[x] := sum(y) pd[x, y] * eng_pd[y, $d]
-    
-    pu = projector(network, v, (i-1, j))
-    pu = decode_projector!(pu)
-    eng_pu = interaction_energy(network, v, (i-1, j))
-    @matmul eng_up[x] := sum(y) pu[x, y] * eng_pu[y, $u]
-
-    en = eng_local .+ eng_left .+ eng_diag .+ eng_up
-    loc_exp = exp.(-β .* (en .- minimum(en)))
-
-    p_lb = decode_projector!(projector(network, (i, j-1), (i+1, j)))
-    p_rb = decode_projector!(projector(network, (i, j), (i+1, j-1)))
-    pr = decode_projector!(projector(network, v, ((i+1, j+1), (i, j+1), (i-1, j+1))))
-    pd = decode_projector!(projector(network, v, (i+1, j)))
-
-    @cast A[r, d, (k̃, k), σ] := p_rb[σ, k] * p_lb[$ld, k̃] * pr[σ, r] * 
-                                pd[σ, d] * loc_exp[σ]
-    A
 end

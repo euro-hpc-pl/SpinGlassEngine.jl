@@ -255,7 +255,7 @@ function sqrt_tensor_up(
 )
     E = connecting_tensor(network, v, w, β)
     U, Σ, V = svd(E)
-    U .* sqrt.(Σ)
+    U * diagm(sqrt.(Σ))
 end 
 
 
@@ -267,7 +267,7 @@ function sqrt_tensor_down(
 )
     E = connecting_tensor(network, v, w, β)
     U, Σ, V = svd(E)
-    sqrt.(Σ) .* V'
+    diagm(sqrt.(Σ)) * V'
 end 
 
 
@@ -290,7 +290,8 @@ function tensor_size(
 )
     r, j = Node(v)
     i = floor(Int, r)
-    size(interaction_energy(network, (i, j), (i+1, j)))
+    u, d = size(interaction_energy(network, (i, j), (i+1, j)))
+    (u, min(d, u))
 end
 
 
@@ -313,5 +314,6 @@ function tensor_size(
 )
     r, j = Node(v)
     i = floor(Int, r)
-    size(interaction_energy(network, (i, j), (i+1, j)))
+    u, d = size(interaction_energy(network, (i, j), (i+1, j)))
+    (min(u, d), d)
 end

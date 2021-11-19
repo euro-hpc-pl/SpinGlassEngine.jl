@@ -110,8 +110,9 @@ end
     for i ∈ 1:length(sites)
         j = sites[i]
         coor = layers[j]
-        tensors[i] = Dict(dr => tensor(ctr.peps, PEPSNode(r + dr, j), ctr.betas[indβ])
-                                for dr ∈ coor
+        tensors[i] = Dict(
+                        dr => tensor(ctr.peps, PEPSNode(r + dr, j), ctr.betas[indβ])
+                        for dr ∈ coor
                     )
     end
     QMpo(Dict(sites .=> tensors))
@@ -122,8 +123,10 @@ QMps(Dict(j => ones(1, 1, 1) for j ∈ 1:peps.ncols))
 function IdentityQMps(peps::PEPSNetwork{T, S}, Dmax::Int, loc_dim) where {T, S}
     id = Dict{Int, Array{Float64, 3}}()
     for i ∈ 2 : peps.ncols-1 push!(id, i => zeros(Dmax, loc_dim[i], Dmax)) end
+
     push!(id, 1 => zeros(1, loc_dim[1], Dmax))
     push!(id, peps.ncols => zeros(Dmax, loc_dim[peps.ncols], 1))
+
     for i ∈ 2 : peps.ncols-1 id[i][1, :, 1] .= 1 / sqrt(loc_dim[i]) end
     QMps(id)
 end
@@ -221,7 +224,6 @@ function _update_reduced_env_right(
         Mm = M[ii]
         @tensor K[a] := K[b] * Mm[b, a]
     end
-
     _update_reduced_env_right(K, RE, M[0], B)
 end
 
@@ -285,8 +287,7 @@ end
 end
 
 function conditional_probability(contractor::MpsContractor{S}, w::Vector{Int}) where S
-    T = layout(contractor.peps)
-    conditional_probability(T, contractor, w)
+    conditional_probability(layout(contractor.peps), contractor, w)
 end
 
 function conditional_probability(
@@ -317,8 +318,7 @@ function conditional_probability(
     pr = projector(contractor.peps, (i, j), (i, j+1))
     pd = projector(contractor.peps, (i, j), (i+1, j))
 
-    x = LM[pd[:], :] .* R[:, pr[:]]'
-    bnd_exp = dropdims(sum(x, dims=2), dims=2)
+    bnd_exp = dropdims(sum(LM[pd[:], :] .* R[:, pr[:]]', dims=2), dims=2)
     normalize_probability(loc_exp .* bnd_exp)
 end
 

@@ -57,7 +57,6 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EnergyGauges}
         push!(dress, ii => (3//6, 4//6))
         push!(right, ii => (-3//6, 0))
     end
-
     MpoLayers(main, dress, right)
 end
 
@@ -84,7 +83,6 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{GaugesEnergy}
         push!(dress, ii => (1//6))
         push!(right, ii => (-3//6, 0))
     end
-
     MpoLayers(main, dress, right)
 end
 
@@ -204,7 +202,7 @@ end
     ls = _left_nbrs_site(site, W.sites)
 
     while ls > ls_mps
-        M0 = W[ls][0]  # make this consistent
+        M0 = W[ls][0]  # TODO: make this consistent
         @tensor RR[x, y] := M0[y, z] * RR[x, z]
         ls = _left_nbrs_site(ls, W.sites)
     end
@@ -299,7 +297,7 @@ function conditional_probability(
     ∂v = boundary_state(contractor.peps, state, (i, j))
 
     L = left_env(contractor, i, ∂v[1:j-1], indβ)
-    R = right_env(contractor, i, ∂v[j+2 : contractor.peps.ncols+1], indβ)
+    R = right_env(contractor, i, ∂v[(j+2):(contractor.peps.ncols+1)], indβ)
     M = dressed_mps(contractor, i, indβ)[j]
     @tensor LM[y, z] := L[x] * M[x, y, z]
 
@@ -324,7 +322,7 @@ function conditional_probability(
     normalize_probability(loc_exp .* bnd_exp)
 end
 
-# to be improved
+# TODO: improve!
 function conditional_probability(
     ::Type{T}, contractor::MpsContractor{S}, w::Vector{Int},
 ) where {T <: SquareStar, S}
@@ -334,15 +332,15 @@ function conditional_probability(
     ∂v = boundary_state(network, w, (i, j))
 
     L = left_env(contractor, i, ∂v[1:2*j-2], indβ)
-    R = right_env(contractor, i, ∂v[2*j+3 : 2*network.ncols+2], indβ)
+    R = right_env(contractor, i, ∂v[(2*j+3):(2*network.ncols+2)], indβ)
     ψ = dressed_mps(contractor, i, indβ)
     MX, M = ψ[j-1//2], ψ[j]
 
     β = contractor.betas[indβ]
     A = reduced_site_tensor(network, (i, j), ∂v[2*j-1], ∂v[2*j], ∂v[2*j+1], ∂v[2*j+2], β)
 
-    @tensor prob[σ] := L[x] * MX[x, m, y] * M[y, l, z] * R[z, k] *
-                       A[k, l, m, σ] order = (x, y, z, k, l, m)
+    @tensor prob[σ] := L[x] * MX[x, m, y] * M[y, l, z] * R[z, k] * A[k, l, m, σ]
+                    order = (x, y, z, k, l, m)
 
     normalize_probability(prob)
 end

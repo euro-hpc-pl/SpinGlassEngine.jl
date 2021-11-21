@@ -22,18 +22,17 @@ function tensor(
     loc_exp = exp.(-β .* local_energy(network, Node(v)))
     projs = projectors(network, Node(v))
     A = zeros(maximum.(projs))
-    for (σ, lexp) ∈ enumerate(loc_exp)
-        A[getindex.(projs, Ref(σ))...] += lexp
-    end
+    for (σ, lexp) ∈ enumerate(loc_exp) A[getindex.(projs, Ref(σ))...] += lexp end
     A
 end
 
 function tensor(
     network::PEPSNetwork{T, Sparse}, v::PEPSNode, β::Real, ::Val{:sparse_site}
 ) where T <: AbstractGeometry
-    loc_exp = exp.(-β .* local_energy(network, Node(v)))
-    projs = projectors(network, Node(v))
-    SparseSiteTensor(loc_exp, projs)
+    SparseSiteTensor(
+        exp.(-β .* local_energy(network, Node(v))),
+        projectors(network, Node(v))
+    )
 end
 
 function tensor_size(
@@ -97,7 +96,7 @@ function tensor_size(
     j = floor(Int, node.j)
     u, d = size(interaction_energy(network, (i, j), (i + 1, j + 1)))
     ũ, d̃ = size(interaction_energy(network, (i, j + 1), (i + 1, j)))
-    u * ũ, d * d̃
+    (u * ũ, d * d̃)
 end
 
 function tensor(
@@ -117,8 +116,10 @@ function tensor(
     v = Node(node)
     h = connecting_tensor(network, floor.(Int, v), ceil.(Int, v), β)
 
-    A = zeros(length(p_l), maximum(p_rt), maximum(p_lt),
-              length(p_r), maximum(p_lb), maximum(p_rb))
+    A = zeros(
+            length(p_l), maximum(p_rt), maximum(p_lt),
+            length(p_r), maximum(p_lb), maximum(p_rb)
+        )
 
     for l ∈ 1:length(p_l), r ∈ 1:length(p_r)
         A[l, p_rt[r], p_lt[l], r, p_lb[l], p_rb[r]] = h[p_l[l], p_r[r]]
@@ -163,8 +164,7 @@ function tensor(
     prr = projector.(Ref(network), Ref((i, j+1)), right_nbrs)
     p_rb, p_r, p_rt = last(fuse_projectors(prr))
 
-    (length(p_l), maximum(p_lt) * maximum(p_rt),
-     length(p_r), maximum(p_rb) * maximum(p_lb))
+    (length(p_l), maximum(p_lt) * maximum(p_rt), length(p_r), maximum(p_rb) * maximum(p_lb))
 end
 
 function tensor(
@@ -177,7 +177,7 @@ function tensor_size(
     network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, ::Val{:gauge_h}
 )
     u = size(network.gauges_data[v], 1)
-    u, u
+    (u, u)
 end
 
 function connecting_tensor(

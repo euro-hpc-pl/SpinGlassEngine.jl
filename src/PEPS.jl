@@ -3,7 +3,6 @@ export PEPSNetwork, node_from_index, conditional_probability
 struct PEPSNetwork{
     T <: AbstractGeometry, S <: AbstractSparsity
 } <: AbstractGibbsNetwork{Node, PEPSNode}
-
     factor_graph::LabelledGraph
     vertex_map::Function
     m::Int
@@ -100,8 +99,8 @@ end
 function bond_energy(
     network::AbstractGibbsNetwork{T, S}, u::Node, v::Node, σ::Int
 ) where {T, S}
-
     fg_u, fg_v = network.vertex_map(u), network.vertex_map(v)
+
     if has_edge(network.factor_graph, fg_u, fg_v)
         pu, en, pv = get_prop.(
                            Ref(network.factor_graph), Ref(fg_u), Ref(fg_v), (:pl, :en, :pr)

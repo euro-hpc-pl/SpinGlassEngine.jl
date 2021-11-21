@@ -8,11 +8,13 @@ export fuse_projectors, initialize_gauges!
 # S: type of the vertex of underlying factor graph
 abstract type AbstractGibbsNetwork{S, T} end
 
+
 struct NotImplementedError{M} <: Exception
     m::M
     NotImplementedError(m::M) where {M} = new{M}(m)
 end
 not_implmented(name) = throw(NotImplementedError(name))
+
 factor_graph(network::AbstractGibbsNetwork{S, T}) where {S, T} = network.factor_graph
 vertex_map(network::AbstractGibbsNetwork{S, T}) where {S, T} = network.vertex_map
 
@@ -39,7 +41,7 @@ function iteration_order(peps::AbstractGibbsNetwork{T, S}) where {S, T}
 end
 
 # unify :pr and :pl
-function projector( network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
+function projector(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
     fg = factor_graph(network)
     vmap = vertex_map(network)
     fg_v, fg_w = vmap(v), vmap(w)
@@ -141,9 +143,7 @@ function normalize_probability(values::Vector{R}) where R <: Number
     minp = minimum(values)
     if minp < 0
         amp = abs(minp)
-        for (i, p) ∈ enumerate(values)
-            p < amp ? values[i] = amp : values[i]
-        end
+        for (i, p) ∈ enumerate(values) p < amp ? values[i] = amp : values[i] end
     end
     values / sum(values)
 end

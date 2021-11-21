@@ -100,6 +100,18 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EngGaugesEng}
     MpoLayers(main, dress, right)
 end
 
+function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EngGaugesEng}
+    main, dress, right = Dict(), Dict(), Dict()
+
+    for i ∈ 1//2 : 1//2 : ncols
+        ii = denominator(i) == 1 ? numerator(i) : i
+        push!(main, ii => (-2//5, -1//5, 0, 1//5, 2//5))
+        push!(dress, ii => (1//5, 2//5))
+        push!(right, ii => (-4//5, -1//5, 0))
+    end
+    MpoLayers(main, dress, right)
+end
+
 @memoize function mpo(
     ctr::MpsContractor{T}, layers::Dict, r::Int, indβ::Int
 ) where T <: AbstractStrategy

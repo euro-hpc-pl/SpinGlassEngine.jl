@@ -4,8 +4,14 @@ _make_left_env(ψ::AbstractMPS, k::Int) = ones(eltype(ψ), 1, k)
 _make_LL(ψ::AbstractMPS, b::Int, k::Int, d::Int) = zeros(eltype(ψ), b, k, d)
 
 function low_energy_spectrum(
-    ig::IsingGraph, Dcut::Int, var_ϵ::T, max_sweeps::Int, dβ::T, β::T,
-    schedule::Symbol, num_states::Int
+    ig::IsingGraph,
+    Dcut::Int,
+    var_ϵ::T,
+    max_sweeps::Int,
+    dβ::T,
+    β::T,
+    schedule::Symbol,
+    num_states::Int
 ) where T <: Number
     igp = prune(ig)
     ψ = MPS(igp, Dcut, var_ϵ, max_sweeps, dβ, β, schedule)
@@ -198,9 +204,6 @@ function SpinGlassTensors.MPS(
 end
 
 function HadamardMPS(::Type{T}, ig::IsingGraph) where T <: Number
-    MPS([
-        fill(one(T), r) ./ sqrt(T(r))
-        for r ∈ values(get_prop(ig, :rank))
-    ])
+    MPS([fill(one(T), r) ./ sqrt(T(r)) for r ∈ values(get_prop(ig, :rank))])
 end
 HadamardMPS(ig) = HadamardMPS(Float64, ig)

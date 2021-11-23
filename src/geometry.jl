@@ -119,6 +119,7 @@ end
 
 Virtual(::Type{Dense}) = :virtual
 Virtual(::Type{Sparse}) = :sparse_virtual
+
 function tensor_map(
     ::Type{SquareStar{T}}, ::Type{S}, nrows::Int, ncols::Int
 ) where {T <: Union{EnergyGauges, GaugesEnergy}, S <: AbstractSparsity}

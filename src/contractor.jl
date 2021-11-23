@@ -161,7 +161,11 @@ end
     ψ0 = dot(W, ψ)
     truncate!(ψ0, :left, contractor.params.bond_dimension)
     compress!(
-        ψ0, W, ψ, contractor.params.bond_dimension, contractor.params.variational_tol,
+        ψ0,
+        W,
+        ψ,
+        contractor.params.bond_dimension,
+        contractor.params.variational_tol,
         contractor.params.max_num_sweeps
     )
     ψ0
@@ -181,7 +185,11 @@ end
         canonise!(ψ0, :left)
     end
     compress!(
-            ψ0, W, ψ, contractor.params.bond_dimension, contractor.params.variational_tol,
+            ψ0,
+            W,
+            ψ,
+            contractor.params.bond_dimension,
+            contractor.params.variational_tol,
             contractor.params.max_num_sweeps
     )
     ψ0

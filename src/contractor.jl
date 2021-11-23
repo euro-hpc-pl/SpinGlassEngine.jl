@@ -194,8 +194,10 @@ end
     )
     ψ0
 end
-dressed_mps(contractor::MpsContractor{T}, i::Int) where T <: AbstractStrategy =
-dressed_mps(contractor, i, length(contractor.betas))
+
+function dressed_mps(contractor::MpsContractor{T}, i::Int) where T <: AbstractStrategy
+    dressed_mps(contractor, i, length(contractor.betas))
+end
 
 @memoize Dict function dressed_mps(
     contractor::MpsContractor{T}, i::Int, indβ::Int

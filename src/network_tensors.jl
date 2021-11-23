@@ -234,3 +234,40 @@ function tensor_size(
     u, d = size(interaction_energy(network, (i, j), (i+1, j)))
     (min(u, d), d)
 end
+
+function tensor(
+    network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, β::Real, ::Val{:sqrt_up_d}
+)
+    A = tensor(network, v, β, Val(:central_d))
+    U, Σ, V = svd(A)
+    U * Diagonal(sqrt.(Σ))
+end
+
+function tensor_size(
+    network::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, ::Val{:sqrt_up_d}
+)
+    i = floor(Int, node.i)
+    j = floor(Int, node.j)
+
+    u, d = size(interaction_energy(network, (i, j), (i + 1, j + 1)))
+    ũ, d̃ = size(interaction_energy(network, (i, j + 1), (i + 1, j)))
+    (u * ũ, min(u * ũ, d * d̃))
+end
+
+function tensor(
+    network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, β::Real, ::Val{:sqrt_down_d}
+)
+    A = tensor(network, v, β, Val(:central_d))
+    U, Σ, V = svd(A)
+    Diagonal(sqrt.(Σ)) * V'
+end
+
+function tensor_size(
+    network::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, ::Val{:sqrt_down_d}
+)
+    i = floor(Int, node.i)
+    j = floor(Int, node.j)
+    u, d = size(interaction_energy(network, (i, j), (i + 1, j + 1)))
+    ũ, d̃ = size(interaction_energy(network, (i, j + 1), (i + 1, j)))
+    (min(u * ũ, d * d̃), d * d̃)
+end

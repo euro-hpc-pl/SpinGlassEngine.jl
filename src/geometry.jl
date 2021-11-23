@@ -134,6 +134,23 @@ function tensor_map(
     map
 end
 
+function tensor_map(
+    ::Type{SquareStar{T}}, ::Type{S}, nrows::Int, ncols::Int
+) where {T <: EngGaugesEng, S <: AbstractSparsity}
+    map = Dict{PEPSNode, Symbol}()
+    for i ∈ 1:nrows, j ∈ 1:ncols
+        push!(map, PEPSNode(i, j) => Site(S))
+        push!(map, PEPSNode(i, j - 1//2) => Virtual(S))
+        push!(map, PEPSNode(i + 1//5, j) => :sqrt_up)
+        push!(map, PEPSNode(i + 4//5, j) => :sqrt_down)
+    end
+    for i ∈ 1:nrows-1, j ∈ 0:ncols-1
+        push!(map, PEPSNode(i + 1//5, j + 1//2) => :sqrt_up_d)
+        push!(map, PEPSNode(i + 4//5, j + 1//2) => :sqrt_down_d)
+    end
+    map
+end
+
 function gauges_list(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T <: GaugesEnergy
     [
         GaugeInfo(

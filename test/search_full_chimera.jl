@@ -12,7 +12,7 @@ function bench()
     bond_dim = 32
 
     δp = 1E-2
-    num_states = 1000
+    num_states = 100
 
     instance = "$(@__DIR__)/instances/chimera_droplets/2048power/001.txt"
 

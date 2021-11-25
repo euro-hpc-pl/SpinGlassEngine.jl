@@ -12,7 +12,7 @@ function bench()
     bond_dim = 32
 
     δp = 1E-2
-    num_states = 100
+    num_states = 10000
 
     instance = "$(@__DIR__)/instances/chimera_droplets/2048power/001.txt"
 
@@ -28,7 +28,7 @@ function bench()
     search_params = SearchParameters(num_states, δp)
 
     for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Sparse, Dense)
-        for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng), transform ∈ rotation.([0])
+        for Layout ∈ (EnergyGauges, ), transform ∈ rotation.([0])
             println((Strategy, Sparsity, Layout, transform))
 
             network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)

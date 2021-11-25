@@ -11,13 +11,13 @@ struct SearchParameters
 end
 
 struct Solution
-    energies::Vector{Float64}
+    energies::Vector{Real}
     states::Vector{Vector{Int}}
-    probabilities::Vector{Float64}
+    probabilities::Vector{Real}
     degeneracy::Vector{Int}
-    largest_discarded_probability::Float64
+    largest_discarded_probability::Real
 end
-empty_solution() = Solution([0.], [[]], [1.], [1], -Inf)
+empty_solution() = Solution([0.0], [[]], [1.0], [1], -Inf)
 
 function branch_state(network, σ)
     node = node_from_index(network, length(σ) + 1)
@@ -45,10 +45,9 @@ function branch_solution(
 
     new_energies = vcat(
             [
-                (en .+ update_energy(contractor.peps, state))
+                en .+ update_energy(contractor.peps, state)
                 for (en, state) ∈ zip(partial_sol.energies, partial_sol.states)
-            ]
-            ...
+            ]...
         )
 
     new_states = vcat(branch_state.(Ref(contractor.peps), partial_sol.states)...)
@@ -58,8 +57,7 @@ function branch_solution(
             for (i, p) ∈ enumerate(
                             conditional_probability.(Ref(contractor), partial_sol.states)
                         )
-        ]
-        ...
+        ]...
     )
 
     degeneracies = repeat(partial_sol.degeneracy, inner=local_dim)
@@ -88,10 +86,10 @@ function merge_branches(network::AbstractGibbsNetwork{S, T}) where {S, T}
         probs = partial_sol.probabilities[sorting_idx]
         degeneracy = partial_sol.degeneracy[sorting_idx]
 
-        new_energies = []
-        new_states = []
-        new_probs = []
-        new_degeneracy = []
+        new_energies = typeof(energies[begin])[]
+        new_states = typeof(states[begin])[]
+        new_probs = typeof(probs[begin])[]
+        new_degeneracy = typeof(degeneracy[begin])[]
 
         while start <= size(boundaries, 1)
             stop = start
@@ -110,7 +108,10 @@ function merge_branches(network::AbstractGibbsNetwork{S, T}) where {S, T}
             start = stop + 1
         end
         Solution(
-            new_energies, new_states, new_probs, new_degeneracy,
+            new_energies,
+            new_states,
+            new_probs,
+            new_degeneracy,
             partial_sol.largest_discarded_probability
         )
     end
@@ -128,17 +129,21 @@ function bound_solution(partial_sol::Solution, max_states::Int, merge_strategy=n
     end
 
     indices = partialsortperm(probs, 1:k, rev=true)
-    new_max_discarded_prob = max(partial_sol.largest_discarded_probability, probs[indices[end]])
+    new_max_discarded_prob = max(
+        partial_sol.largest_discarded_probability, probs[indices[end]]
+    )
 
     indices = @view indices[1:k-1]
 
-    merge_strategy(Solution(
-        partial_sol.energies[indices],
-        partial_sol.states[indices],
-        partial_sol.probabilities[indices],
-        partial_sol.degeneracy[indices],
-        new_max_discarded_prob
-    ))
+    merge_strategy(
+        Solution(
+            partial_sol.energies[indices],
+            partial_sol.states[indices],
+            partial_sol.probabilities[indices],
+            partial_sol.degeneracy[indices],
+            new_max_discarded_prob
+        )
+    )
 end
 
 #TODO: incorporate "going back" move to improve alghoritm

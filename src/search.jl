@@ -1,5 +1,14 @@
 export AbstractGibbsNetwork, low_energy_spectrum, branch_state, bound_solution
-export merge_branches, Solution
+export merge_branches, Solution, SearchParameters
+
+struct SearchParameters
+    max_states::Int
+    cut_off_prob::Real
+
+    function SearchParameters(max_states::Int=1, cut_off_prob::Real=0.0)
+        new(max_states, cut_off_prob)
+    end
+end
 
 struct Solution
     energies::Vector{Float64}
@@ -16,21 +25,21 @@ function branch_state(network, σ)
     vcat.(Ref(σ), basis)
 end
 
-function _discard_probability(partial_sol::Solution, δ_p::Real)
+function _discard_small_probabilities(partial_sol::Solution, cut_off_prob::Real)
     prob = partial_sol.probabilities
-    mp = maximum(prob)
-    treshold = mp + log(δ_p)
-    new_indices = findall(x -> x >= treshold, prob)
+    idx = findall(p -> p >= maximum(prob) + log(cut_off_prob), prob)
     Solution(
-        partial_sol.energies[new_indices], 
-        partial_sol.states[new_indices], 
-        prob[new_indices], 
-        partial_sol.degeneracy[new_indices], 
+        partial_sol.energies[idx],
+        partial_sol.states[idx],
+        prob[idx],
+        partial_sol.degeneracy[idx],
         partial_sol.largest_discarded_probability
-        )
+    )
 end
 
-function branch_solution(partial_sol::Solution, contractor::T, δ_p::Real) where T <: AbstractContractor
+function branch_solution(
+    partial_sol::Solution, contractor::T, cut_off_prob::Real
+) where T <: AbstractContractor
     node = node_from_index(contractor.peps, length(partial_sol.states[1])+1)
     local_dim = length(local_energy(contractor.peps, node))
 
@@ -47,7 +56,7 @@ function branch_solution(partial_sol::Solution, contractor::T, δ_p::Real) where
         [
             partial_sol.probabilities[i] .+ log.(p)
             for (i, p) ∈ enumerate(
-                               conditional_probability.(Ref(contractor), partial_sol.states)
+                            conditional_probability.(Ref(contractor), partial_sol.states)
                         )
         ]
         ...
@@ -56,7 +65,12 @@ function branch_solution(partial_sol::Solution, contractor::T, δ_p::Real) where
     degeneracies = repeat(partial_sol.degeneracy, inner=local_dim)
     ldp = partial_sol.largest_discarded_probability
 
-    _discard_probability(Solution(new_energies, new_states, new_probabilities, degeneracies, ldp), δ_p)
+    _discard_small_probabilities(
+        Solution(
+            new_energies, new_states, new_probabilities, degeneracies, ldp
+        ),
+        cut_off_prob
+    )
 end
 
 function merge_branches(network::AbstractGibbsNetwork{S, T}) where {S, T}
@@ -129,7 +143,7 @@ end
 
 #TODO: incorporate "going back" move to improve alghoritm
 function low_energy_spectrum(
-    contractor::T, max_states::Int, δ_p::Real=0, merge_strategy=no_merge
+    contractor::T, sparams::SearchParameters, merge_strategy=no_merge
 ) where T <: AbstractContractor
     # Build all boundary mps
     @showprogress "Preprocesing: " for i ∈ contractor.peps.nrows:-1:1
@@ -139,8 +153,8 @@ function low_energy_spectrum(
     # Start branch and bound search
     sol = empty_solution()
     @showprogress "Search: " for _ ∈ 1:nv(factor_graph(contractor.peps))
-        sol = branch_solution(sol, contractor, δ_p)
-        sol = bound_solution(sol, max_states, merge_strategy)
+        sol = branch_solution(sol, contractor, sparams.cut_off_prob)
+        sol = bound_solution(sol, sparams.max_states, merge_strategy)
         # _clear_cache(network, sol) # TODO: make it work properly
     end
 

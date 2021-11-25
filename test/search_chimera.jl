@@ -2,10 +2,11 @@
     m = 3
     n = 4
     t = 3
+    L = n * m * t
 
     β = 1.
 
-    L = n * m * t
+    bond_dim = 32
     num_states = 22
 
     # energies
@@ -69,6 +70,7 @@
     )
 
     params = MpsParameters()
+    search_params = SearchParameters(num_states, 0.0)
 
     for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, Sparse)
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
@@ -76,7 +78,7 @@
 
                 network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
                 contractor = MpsContractor{Strategy}(network, [β/8., β/4., β/2., β], params)
-                sol = low_energy_spectrum(contractor, num_states)
+                sol = low_energy_spectrum(contractor, search_params)
 
                 @test sol.energies ≈ exact_energies
                 for (i, σ) ∈ enumerate(sol.states) @test σ ∈ exact_states[deg[i]] end

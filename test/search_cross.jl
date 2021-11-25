@@ -5,10 +5,9 @@
     m = 3
     n = 4
     t = 3
+    L = n * m * t
 
     β = 1.
-
-    L = n * m * t
     num_states = 22
 
     instance = "$(@__DIR__)/instances/pathological/cross_$(m)_$(n)_dd.txt"
@@ -22,6 +21,7 @@
     )
 
     params = MpsParameters()
+    search_params = SearchParameters(num_states, 0.0)
 
     for Strategy ∈ (SVDTruncate,), Sparsity ∈ (Dense,)
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
@@ -29,7 +29,7 @@
 
                 network = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, fg, transform)
                 contractor = MpsContractor{Strategy}(network, [β], params)
-                sol = low_energy_spectrum(contractor, num_states)
+                sol = low_energy_spectrum(contractor, search_params)
 
                 @test first(sol.energies) ≈ ground_energy
             end

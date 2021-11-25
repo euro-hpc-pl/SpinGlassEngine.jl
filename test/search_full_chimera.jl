@@ -3,16 +3,16 @@ using SpinGlassTensors
 using SpinGlassEngine
 
 function bench()
-    m = 16 
+    m = 16
     n = 16
     t = 8
+    L = n * m * t
 
     β = 3.
     bond_dim = 32
-    δ_p = 1E-2
 
-    L = n * m * t
-    num_states = 10000
+    δp = 1E-2
+    num_states = 1000
 
     instance = "$(@__DIR__)/instances/chimera_droplets/2048power/001.txt"
 
@@ -25,6 +25,7 @@ function bench()
     )
 
     params = MpsParameters(bond_dim, 1E-8, 4)
+    search_params = SearchParameters(num_states, δp)
 
     for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Sparse, Dense)
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng), transform ∈ rotation.([0])
@@ -33,7 +34,7 @@ function bench()
             network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
             ctr = MpsContractor{Strategy}(network, [β], params)
 
-            @time sol = low_energy_spectrum(ctr, num_states, δ_p, merge_branches(network))
+            @time sol = low_energy_spectrum(ctr, search_params, merge_branches(network))
 
             println(sol.energies[1:1])
         end

@@ -16,7 +16,21 @@ function branch_state(network, σ)
     vcat.(Ref(σ), basis)
 end
 
-function branch_solution(partial_sol::Solution, contractor::T) where T <: AbstractContractor
+function _discard_probability(partial_sol::Solution, δ_p::Real)
+    prob = partial_sol.probabilities
+    mp = maximum(prob)
+    treshold = mp + log(δ_p)
+    new_indices = findall(x -> x >= treshold, prob)
+    Solution(
+        partial_sol.energies[new_indices], 
+        partial_sol.states[new_indices], 
+        prob[new_indices], 
+        partial_sol.degeneracy[new_indices], 
+        partial_sol.largest_discarded_probability
+        )
+end
+
+function branch_solution(partial_sol::Solution, contractor::T, δ_p::Real) where T <: AbstractContractor
     node = node_from_index(contractor.peps, length(partial_sol.states[1])+1)
     local_dim = length(local_energy(contractor.peps, node))
 
@@ -42,7 +56,7 @@ function branch_solution(partial_sol::Solution, contractor::T) where T <: Abstra
     degeneracies = repeat(partial_sol.degeneracy, inner=local_dim)
     ldp = partial_sol.largest_discarded_probability
 
-    Solution(new_energies, new_states, new_probabilities, degeneracies, ldp)
+    _discard_probability(Solution(new_energies, new_states, new_probabilities, degeneracies, ldp), δ_p)
 end
 
 function merge_branches(network::AbstractGibbsNetwork{S, T}) where {S, T}
@@ -115,7 +129,7 @@ end
 
 #TODO: incorporate "going back" move to improve alghoritm
 function low_energy_spectrum(
-    contractor::T, max_states::Int, merge_strategy=no_merge
+    contractor::T, max_states::Int, δ_p::Real=0, merge_strategy=no_merge
 ) where T <: AbstractContractor
     # Build all boundary mps
     @showprogress "Preprocesing: " for i ∈ contractor.peps.nrows:-1:1
@@ -125,7 +139,7 @@ function low_energy_spectrum(
     # Start branch and bound search
     sol = empty_solution()
     @showprogress "Search: " for _ ∈ 1:nv(factor_graph(contractor.peps))
-        sol = branch_solution(sol, contractor)
+        sol = branch_solution(sol, contractor, δ_p)
         sol = bound_solution(sol, max_states, merge_strategy)
         # _clear_cache(network, sol) # TODO: make it work properly
     end

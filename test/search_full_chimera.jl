@@ -9,9 +9,10 @@ function bench()
 
     β = 3.
     bond_dim = 32
+    δ_p = 1E-2
 
     L = n * m * t
-    num_states = 100
+    num_states = 10000
 
     instance = "$(@__DIR__)/instances/chimera_droplets/2048power/001.txt"
 
@@ -25,14 +26,14 @@ function bench()
 
     params = MpsParameters(bond_dim, 1E-8, 4)
 
-    for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Sparse, Dense)
-        for Layout ∈ (EnergyGauges,), transform ∈ rotation.([0])
+    for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Sparse, Dense)
+        for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng), transform ∈ rotation.([0])
             println((Strategy, Sparsity, Layout, transform))
 
             network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
             ctr = MpsContractor{Strategy}(network, [β], params)
 
-            @time sol = low_energy_spectrum(ctr, num_states, merge_branches(network))
+            @time sol = low_energy_spectrum(ctr, num_states, δ_p, merge_branches(network))
 
             println(sol.energies[1:1])
         end

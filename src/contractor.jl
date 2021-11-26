@@ -134,12 +134,12 @@ QMps(Dict(j => ones(1, 1, 1) for j ∈ 1:peps.ncols))
 
 function IdentityQMps(peps::PEPSNetwork{T, S}, Dmax::Int, loc_dim) where {T, S}
     id = Dict{Int, Array{Float64, 3}}()
-    for i ∈ 2 : peps.ncols-1 push!(id, i => zeros(Dmax, loc_dim[i], Dmax)) end
+    for i ∈ 2:peps.ncols-1 push!(id, i => zeros(Dmax, loc_dim[i], Dmax)) end
 
     push!(id, 1 => zeros(1, loc_dim[1], Dmax))
     push!(id, peps.ncols => zeros(Dmax, loc_dim[peps.ncols], 1))
 
-    for i ∈ 1 : peps.ncols id[i][1, :, 1] .= 1 / sqrt(loc_dim[i]) end
+    for i ∈ 1:peps.ncols id[i][1, :, 1] .= 1 / sqrt(loc_dim[i]) end
     QMps(id)
 end
 
@@ -185,12 +185,12 @@ end
         canonise!(ψ0, :left)
     end
     compress!(
-            ψ0,
-            W,
-            ψ,
-            contractor.params.bond_dimension,
-            contractor.params.variational_tol,
-            contractor.params.max_num_sweeps
+        ψ0,
+        W,
+        ψ,
+        contractor.params.bond_dimension,
+        contractor.params.variational_tol,
+        contractor.params.max_num_sweeps
     )
     ψ0
 end

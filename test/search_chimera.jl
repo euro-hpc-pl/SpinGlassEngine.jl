@@ -6,7 +6,7 @@
 
     β = 1.
 
-    bond_dim = 32
+    bond_dim = 16
     num_states = 22
 
     # energies

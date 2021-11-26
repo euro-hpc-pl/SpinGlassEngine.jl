@@ -8,10 +8,12 @@ function bench()
     t = 8
     L = n * m * t
 
+    ground_energy = -3336.773383
+
     β = 3.
     bond_dim = 16
     δp = 1E-2
-    num_states = 10000
+    num_states = 1000
 
     instance = "$(@__DIR__)/instances/chimera_droplets/2048power/001.txt"
 
@@ -35,7 +37,8 @@ function bench()
 
             @time sol = low_energy_spectrum(ctr, search_params, merge_branches(network))
 
-            println(sol.energies[1:1])
+            #@test sol.energies[begin] ≈ ground_energy
+            println(sol.energies[begin])
         end
     end
 end

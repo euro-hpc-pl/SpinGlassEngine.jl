@@ -15,19 +15,24 @@ struct Solution
     states::Vector{Vector{Int}}
     probabilities::Vector{<:Real}
     degeneracy::Vector{Int}
-    largest_discarded_probability::T where T <: Real
+    largest_discarded_probability::Real
 end
 empty_solution() = Solution([0.0], [Vector{Int}[]], [1.0], [1], -Inf)
 
-function branch_state(network, σ)
-    node = node_from_index(network, length(σ) + 1)
-    basis = collect(1:length(local_energy(network, node)))
-    vcat.(Ref(σ), basis)
+function branch_energy(peps::PEPSNetwork{T, S}, eσ::Tuple{<:Real, Vector{Int}}) where {T, S}
+    eσ[begin] .+ update_energy(peps, eσ[end])
 end
 
-function _discard_small_probabilities(
-    partial_sol::Solution, cut_off_prob::T
-) where T <: Real
+function branch_state(network::PEPSNetwork{T, S}, σ::Vector{Int}) where {T, S}
+    node = node_from_index(network, length(σ) + 1)
+    vcat.(Ref(σ), collect(1:length(local_energy(network, node))))
+end
+
+function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T
+    pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
+end
+
+function _discard_probabilities(partial_sol::Solution, cut_off_prob::Real)
     prob = partial_sol.probabilities
     idx = findall(p -> p >= maximum(prob) + log(cut_off_prob), prob)
     Solution(
@@ -39,39 +44,18 @@ function _discard_small_probabilities(
     )
 end
 
-function branch_solution(
-    partial_sol::Solution, contractor::T, cut_off_prob::S
-) where {T <: AbstractContractor, S <: Real}
-    node = node_from_index(contractor.peps, length(partial_sol.states[1])+1)
-    local_dim = length(local_energy(contractor.peps, node))
-
-    new_energies = vcat(
-        [
-            en .+ update_energy(contractor.peps, state)
-            for (en, state) ∈ zip(partial_sol.energies, partial_sol.states)
-        ]...
-    )
-    new_states = vcat(branch_state.(Ref(contractor.peps), partial_sol.states)...)
-
-    new_probabilities = vcat(
-        [
-            partial_sol.probabilities[i] .+ log.(p)
-            for (i, p) ∈ enumerate(
-                            conditional_probability.(Ref(contractor), partial_sol.states)
-                        )
-        ]...
-    )
-    degeneracies = repeat(partial_sol.degeneracy, inner=local_dim)
-
-    _discard_small_probabilities(
+function branch_solution(psol::Solution, ctr::T, δprob::Real) where T <: AbstractContractor
+    node = node_from_index(ctr.peps, length(psol.states[begin]) + 1)
+    
+    _discard_probabilities(
         Solution(
-            new_energies,
-            new_states,
-            new_probabilities,
-            degeneracies,
-            partial_sol.largest_discarded_probability
+            vcat(branch_energy.(Ref(ctr.peps), zip(psol.energies, psol.states))...),
+            vcat(branch_state.(Ref(ctr.peps), psol.states)...),
+            vcat(branch_probability.(Ref(ctr), zip(psol.probabilities, psol.states))...),
+            repeat(psol.degeneracy, inner=length(local_energy(ctr.peps, node))),
+            psol.largest_discarded_probability
         ),
-        cut_off_prob
+        δprob
     )
 end
 

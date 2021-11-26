@@ -11,13 +11,13 @@ struct SearchParameters
 end
 
 struct Solution
-    energies::Vector{Real}
+    energies::Vector{<:Real}
     states::Vector{Vector{Int}}
-    probabilities::Vector{Real}
+    probabilities::Vector{<:Real}
     degeneracy::Vector{Int}
-    largest_discarded_probability::Real
+    largest_discarded_probability::T where T <: Real
 end
-empty_solution() = Solution([0.0], [[]], [1.0], [1], -Inf)
+empty_solution() = Solution([0.0], [Vector{Int}[]], [1.0], [1], -Inf)
 
 function branch_state(network, σ)
     node = node_from_index(network, length(σ) + 1)
@@ -25,7 +25,9 @@ function branch_state(network, σ)
     vcat.(Ref(σ), basis)
 end
 
-function _discard_small_probabilities(partial_sol::Solution, cut_off_prob::Real)
+function _discard_small_probabilities(
+    partial_sol::Solution, cut_off_prob::T
+) where T <: Real
     prob = partial_sol.probabilities
     idx = findall(p -> p >= maximum(prob) + log(cut_off_prob), prob)
     Solution(
@@ -38,19 +40,19 @@ function _discard_small_probabilities(partial_sol::Solution, cut_off_prob::Real)
 end
 
 function branch_solution(
-    partial_sol::Solution, contractor::T, cut_off_prob::Real
-) where T <: AbstractContractor
+    partial_sol::Solution, contractor::T, cut_off_prob::S
+) where {T <: AbstractContractor, S <: Real}
     node = node_from_index(contractor.peps, length(partial_sol.states[1])+1)
     local_dim = length(local_energy(contractor.peps, node))
 
     new_energies = vcat(
-            [
-                en .+ update_energy(contractor.peps, state)
-                for (en, state) ∈ zip(partial_sol.energies, partial_sol.states)
-            ]...
-        )
-
+        [
+            en .+ update_energy(contractor.peps, state)
+            for (en, state) ∈ zip(partial_sol.energies, partial_sol.states)
+        ]...
+    )
     new_states = vcat(branch_state.(Ref(contractor.peps), partial_sol.states)...)
+
     new_probabilities = vcat(
         [
             partial_sol.probabilities[i] .+ log.(p)
@@ -59,13 +61,15 @@ function branch_solution(
                         )
         ]...
     )
-
     degeneracies = repeat(partial_sol.degeneracy, inner=local_dim)
-    ldp = partial_sol.largest_discarded_probability
 
     _discard_small_probabilities(
         Solution(
-            new_energies, new_states, new_probabilities, degeneracies, ldp
+            new_energies,
+            new_states,
+            new_probabilities,
+            degeneracies,
+            partial_sol.largest_discarded_probability
         ),
         cut_off_prob
     )
@@ -75,7 +79,7 @@ function merge_branches(network::AbstractGibbsNetwork{S, T}) where {S, T}
     function _merge(partial_sol::Solution)
         node = node_from_index(network, length(partial_sol.states[1])+1)
         boundaries = hcat(boundary_state.(Ref(network), partial_sol.states, Ref(node))...)'
-        _unique_boundaries, indices = SpinGlassNetworks.unique_dims(boundaries, 1)
+        _, indices = SpinGlassNetworks.unique_dims(boundaries, 1)
 
         sorting_idx = sortperm(indices)
         sorted_indices = indices[sorting_idx]
@@ -107,6 +111,7 @@ function merge_branches(network::AbstractGibbsNetwork{S, T}) where {S, T}
 
             start = stop + 1
         end
+
         Solution(
             new_energies,
             new_states,
@@ -132,7 +137,6 @@ function bound_solution(partial_sol::Solution, max_states::Int, merge_strategy=n
     new_max_discarded_prob = max(
         partial_sol.largest_discarded_probability, probs[indices[end]]
     )
-
     indices = @view indices[1:k-1]
 
     merge_strategy(

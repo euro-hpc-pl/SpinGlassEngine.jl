@@ -17,7 +17,6 @@ const Pegazus = SquareStar
 struct Dense <: AbstractSparsity end
 struct Sparse <: AbstractSparsity end
 
-# Names are not descriptive enough!
 struct GaugesEnergy{T} <: AbstractTensorsLayout end
 struct EnergyGauges{T} <: AbstractTensorsLayout end
 struct EngGaugesEng{T} <: AbstractTensorsLayout end
@@ -28,7 +27,7 @@ struct PEPSNode
     i::IntOrRational
     j::IntOrRational
 
-    function PEPSNode(i, j)
+    function PEPSNode(i::IntOrRational, j::IntOrRational)
         new(denominator(i) == 1 ? numerator(i) : i, denominator(j) == 1 ? numerator(j) : j)
     end
 end
@@ -66,6 +65,7 @@ function tensor_map(
     ::Type{Square{T}}, ::Type{S}, nrows::Int, ncols::Int
 ) where {T <: Union{GaugesEnergy, EnergyGauges}, S <: AbstractSparsity}
     map = Dict{PEPSNode, Symbol}()
+
     for i ∈ 1:nrows, j ∈ 1:ncols
         push!(map, PEPSNode(i, j) => Site(S))
         if j < ncols push!(map, PEPSNode(i, j + 1//2) => :central_h) end
@@ -78,12 +78,16 @@ function tensor_map(
     ::Type{Square{T}}, ::Type{S}, nrows::Int, ncols::Int
 ) where {T <: EngGaugesEng, S <: AbstractSparsity}
     map = Dict{PEPSNode, Symbol}()
+
     for i ∈ 1:nrows, j ∈ 1:ncols
         push!(map, PEPSNode(i, j) => Site(S))
         if j < ncols push!(map, PEPSNode(i, j + 1//2) => :central_h) end
         if i < nrows
-            push!(map, PEPSNode(i + 1//5, j) => :sqrt_up)
-            push!(map, PEPSNode(i + 4//5, j) => :sqrt_down)
+            push!(
+                map,
+                PEPSNode(i + 1//5, j) => :sqrt_up,
+                PEPSNode(i + 4//5, j) => :sqrt_down
+            )
          end
     end
     map
@@ -92,24 +96,36 @@ end
 function gauges_list(::Type{Square{T}}, nrows::Int, ncols::Int ) where T <: GaugesEnergy
     [
         GaugeInfo(
-          (PEPSNode(i + 1//6, j), PEPSNode(i + 2//6, j)),PEPSNode(i + 1//2, j), 1, :gauge_h)
-          for i ∈ 1:nrows-1 for j ∈ 1:ncols
+            (PEPSNode(i + 1//6, j), PEPSNode(i + 2//6, j)),
+            PEPSNode(i + 1//2, j),
+            1,
+            :gauge_h
+        )
+        for i ∈ 1:nrows-1 for j ∈ 1:ncols
     ]
 end
 
 function gauges_list(::Type{Square{T}}, nrows::Int, ncols::Int) where T <: EnergyGauges
     [
         GaugeInfo(
-         (PEPSNode(i + 4//6, j), PEPSNode(i + 5//6, j)), PEPSNode(i + 1//2, j), 2, :gauge_h)
-         for i ∈ 1:nrows-1 for j ∈ 1:ncols
+            (PEPSNode(i + 4//6, j), PEPSNode(i + 5//6, j)),
+            PEPSNode(i + 1//2, j),
+            2,
+            :gauge_h
+        )
+        for i ∈ 1:nrows-1 for j ∈ 1:ncols
     ]
 end
 
 function gauges_list(::Type{Square{T}}, nrows::Int, ncols::Int) where T <: EngGaugesEng
     [
         GaugeInfo(
-         (PEPSNode(i + 2//5, j), PEPSNode(i + 3//5, j)), PEPSNode(i + 1//5, j), 2, :gauge_h)
-         for i ∈ 1:nrows-1 for j ∈ 1:ncols
+            (PEPSNode(i + 2//5, j), PEPSNode(i + 3//5, j)),
+            PEPSNode(i + 1//5, j),
+            2,
+            :gauge_h
+        )
+        for i ∈ 1:nrows-1 for j ∈ 1:ncols
     ]
 end
 
@@ -124,11 +140,16 @@ function tensor_map(
     ::Type{SquareStar{T}}, ::Type{S}, nrows::Int, ncols::Int
 ) where {T <: Union{EnergyGauges, GaugesEnergy}, S <: AbstractSparsity}
     map = Dict{PEPSNode, Symbol}()
+
     for i ∈ 1:nrows, j ∈ 1:ncols
-        push!(map, PEPSNode(i, j) => Site(S))
-        push!(map, PEPSNode(i, j - 1//2) => Virtual(S))
-        push!(map, PEPSNode(i + 1//2, j) => :central_v)
+        push!(
+            map,
+            PEPSNode(i, j) => Site(S),
+            PEPSNode(i, j - 1//2) => Virtual(S),
+            PEPSNode(i + 1//2, j) => :central_v
+        )
     end
+
     for i ∈ 1:nrows-1, j ∈ 0:ncols-1
         push!(map, PEPSNode(i + 1//2, j + 1//2) => :central_d)
     end
@@ -139,15 +160,23 @@ function tensor_map(
     ::Type{SquareStar{T}}, ::Type{S}, nrows::Int, ncols::Int
 ) where {T <: EngGaugesEng, S <: AbstractSparsity}
     map = Dict{PEPSNode, Symbol}()
+
     for i ∈ 1:nrows, j ∈ 1:ncols
-        push!(map, PEPSNode(i, j) => Site(S))
-        push!(map, PEPSNode(i, j - 1//2) => Virtual(S))
-        push!(map, PEPSNode(i + 1//5, j) => :sqrt_up)
-        push!(map, PEPSNode(i + 4//5, j) => :sqrt_down)
+        push!(
+            map,
+            PEPSNode(i, j) => Site(S),
+            PEPSNode(i, j - 1//2) => Virtual(S),
+            PEPSNode(i + 1//5, j) => :sqrt_up,
+            PEPSNode(i + 4//5, j) => :sqrt_down
+        )
     end
+
     for i ∈ 1:nrows-1, j ∈ 0:ncols-1
-        push!(map, PEPSNode(i + 1//5, j + 1//2) => :sqrt_up_d)
-        push!(map, PEPSNode(i + 4//5, j + 1//2) => :sqrt_down_d)
+        push!(
+            map,
+            PEPSNode(i + 1//5, j + 1//2) => :sqrt_up_d,
+            PEPSNode(i + 4//5, j + 1//2) => :sqrt_down_d
+        )
     end
     map
 end
@@ -155,23 +184,35 @@ end
 function gauges_list(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T <: GaugesEnergy
     [
         GaugeInfo(
-         (PEPSNode(i + 1//6, j), PEPSNode(i + 2//6, j)), PEPSNode(i + 1//2, j), 1, :gauge_h)
-         for i ∈ 1:nrows-1 for j ∈ 1//2 : 1//2 : ncols
+            (PEPSNode(i + 1//6, j), PEPSNode(i + 2//6, j)),
+            PEPSNode(i + 1//2, j),
+            1,
+            :gauge_h
+        )
+        for i ∈ 1:nrows-1 for j ∈ 1//2 : 1//2 : ncols
     ]
 end
 
 function gauges_list(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T <: EnergyGauges
     [
         GaugeInfo(
-         (PEPSNode(i + 4//6, j), PEPSNode(i + 5//6, j)), PEPSNode(i + 1//2, j), 2, :gauge_h)
-         for i ∈ 1:nrows-1 for j ∈ 1//2 : 1//2 : ncols
+            (PEPSNode(i + 4//6, j), PEPSNode(i + 5//6, j)),
+            PEPSNode(i + 1//2, j),
+            2,
+            :gauge_h
+        )
+        for i ∈ 1:nrows-1 for j ∈ 1//2 : 1//2 : ncols
     ]
 end
 
 function gauges_list(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T <: EngGaugesEng
     [
         GaugeInfo(
-         (PEPSNode(i + 2//5, j), PEPSNode(i + 3//5, j)), PEPSNode(i + 1//5, j), 2, :gauge_h)
-         for i ∈ 1:nrows-1 for j ∈ 1//2 : 1//2 : ncols
+            (PEPSNode(i + 2//5, j), PEPSNode(i + 3//5, j)),
+            PEPSNode(i + 1//5, j),
+            2,
+            :gauge_h
+        )
+        for i ∈ 1:nrows-1 for j ∈ 1//2 : 1//2 : ncols
     ]
 end

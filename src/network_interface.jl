@@ -60,7 +60,7 @@ end
 function projector(
     network::AbstractGibbsNetwork{S, T}, v::S, W::NTuple{N, S}
 ) where {S, T, N}
-    first(fuse_projectors([projector(network, v, w) for w ∈ W]))
+    first(fuse_projectors(projector.(Ref(network), Ref(v), W)))
 end
 
 function fuse_projectors(projectors::Union{Vector{T}, NTuple{N, T}}) where {N, T}
@@ -131,7 +131,7 @@ function initialize_gauges!(
 ) where {S, T}
     @assert type ∈ (:id, :rand)
     for gauge ∈ network.gauges_info
-        (n1, n2) = gauge.positions
+        n1, n2 = gauge.positions
         push!(network.tensors_map, n1 => gauge.type, n2 => gauge.type)
         d = tensor_size(network, gauge.attached_tensor)[gauge.attached_leg]
         X = type == :id ? ones(d) : rand(d) .+ 0.42
@@ -139,11 +139,13 @@ function initialize_gauges!(
     end
 end
 
-function normalize_probability(values::Vector{R}) where R <: Number
-    minp = minimum(values)
-    if minp < 0
-        amp = abs(minp)
-        for (i, p) ∈ enumerate(values) p < amp ? values[i] = amp : values[i] end
-    end
-    values / sum(values)
+_normalize(probs::Vector{<:Real}) = probs ./ sum(probs)
+function _equalize(probs::Vector{<:Real})
+    mp = abs(minimum(probs))
+    _normalize(replace(p -> p < mp ? mp : p, probs))
+end
+
+function normalize_probability(probs::Vector{<:Real})
+    if minimum(probs) < 0 return _equalize(probs) end
+    _normalize(probs)
 end

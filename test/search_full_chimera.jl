@@ -9,10 +9,9 @@ function bench()
     L = n * m * t
 
     β = 3.
-    bond_dim = 32
-
+    bond_dim = 16
     δp = 1E-2
-    num_states = 100
+    num_states = 10000
 
     instance = "$(@__DIR__)/instances/chimera_droplets/2048power/001.txt"
 
@@ -24,10 +23,10 @@ function bench()
         cluster_assignment_rule=super_square_lattice((m, n, t))
     )
 
-    params = MpsParameters(bond_dim, 1E-8, 4)
+    params = MpsParameters(bond_dim, 1E-8, 10)
     search_params = SearchParameters(num_states, δp)
 
-    for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Sparse, Dense)
+    for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Sparse, Dense)
         for Layout ∈ (EnergyGauges, ), transform ∈ rotation.([0])
             println((Strategy, Sparsity, Layout, transform))
 

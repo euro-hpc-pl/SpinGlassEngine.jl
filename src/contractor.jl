@@ -139,7 +139,7 @@ function IdentityQMps(peps::PEPSNetwork{T, S}, Dmax::Int, loc_dim) where {T, S}
     push!(id, 1 => zeros(1, loc_dim[1], Dmax))
     push!(id, peps.ncols => zeros(Dmax, loc_dim[peps.ncols], 1))
 
-    for i ∈ 2 : peps.ncols-1 id[i][1, :, 1] .= 1 / sqrt(loc_dim[i]) end
+    for i ∈ 1 : peps.ncols id[i][1, :, 1] .= 1 / sqrt(loc_dim[i]) end
     QMps(id)
 end
 

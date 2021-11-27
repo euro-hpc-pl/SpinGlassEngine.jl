@@ -19,6 +19,18 @@ struct Solution
 end
 empty_solution() = Solution([0.0], [Vector{Int}[]], [1.0], [1], -Inf)
 
+function Solution(
+    sol::Solution, idx::Vector{Int}, p::Real=sol.largest_discarded_probability
+)
+    Solution(
+        sol.energies[idx],
+        sol.states[idx],
+        sol.probabilities[idx],
+        sol.degeneracy[idx],
+        sol.largest_discarded_probability
+    )
+end
+
 function branch_energy(peps::PEPSNetwork{T, S}, eσ::Tuple{<:Real, Vector{Int}}) where {T, S}
     eσ[begin] .+ update_energy(peps, eσ[end])
 end
@@ -32,22 +44,14 @@ function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int
     pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
 end
 
-function _discard_probabilities(partial_sol::Solution, cut_off_prob::Real)
-    prob = partial_sol.probabilities
-    idx = findall(p -> p >= maximum(prob) + log(cut_off_prob), prob)
-    Solution(
-        partial_sol.energies[idx],
-        partial_sol.states[idx],
-        prob[idx],
-        partial_sol.degeneracy[idx],
-        partial_sol.largest_discarded_probability
-    )
+function discard_probabilities(psol::Solution, cut_off_prob::Real)
+    pcut = maximum(psol.probabilities) + log(cut_off_prob)
+    Solution(psol, findall(p -> p >= pcut, psol.probabilities))
 end
 
 function branch_solution(psol::Solution, ctr::T, δprob::Real) where T <: AbstractContractor
     node = node_from_index(ctr.peps, length(psol.states[begin]) + 1)
-    
-    _discard_probabilities(
+    discard_probabilities(
         Solution(
             vcat(branch_energy.(Ref(ctr.peps), zip(psol.energies, psol.states))...),
             vcat(branch_state.(Ref(ctr.peps), psol.states)...),
@@ -58,7 +62,45 @@ function branch_solution(psol::Solution, ctr::T, δprob::Real) where T <: Abstra
         δprob
     )
 end
+#=
+function merge_branches(network::AbstractGibbsNetwork{S, T}) where {S, T}
+    function _merge(psol::Solution)
+        node = node_from_index(network, length(psol.states[1])+1)
+        boundaries = hcat(boundary_state.(Ref(network), psol.states, Ref(node))...)'
+        _, indices = SpinGlassNetworks.unique_dims(boundaries, 1)
 
+
+        sorting_idx = sortperm(Vector{Int}(indices)
+        println(sorting_idx)
+        sorted_indices = indices[sorting_idx]
+        println(sorted_indices)
+        nsol = Solution(psol, sorted_indices)
+
+        energies = typeof(nsol.energies[begin])[]
+        states = typeof(nsol.states[begin])[]
+        probs = typeof(nsol.probs[begin])[]
+        degeneracy = typeof(nsol.degeneracy[begin])[]
+
+        start = 1
+        while start <= size(boundaries, 1)
+            stop = start
+            bsize = size(boundaries, 1)
+            while stop + 1 <= bsize && sorted_indices[start] == sorted_indices[stop+1]
+                stop = stop + 1
+            end
+            best_idx = argmin(@view nsol.energies[start:stop]) + start - 1
+
+            push!(energies, nsol.energies[best_idx])
+            push!(states, nsol.states[best_idx])
+            push!(probs, nsol.probs[best_idx])
+            push!(degeneracy, nsol.degeneracy[best_idx])
+            start = stop + 1
+        end
+        Solution(energies, states, probs, degeneracy, psol.largest_discarded_probability)
+    end
+    _merge
+end
+=#
 function merge_branches(network::AbstractGibbsNetwork{S, T}) where {S, T}
     function _merge(partial_sol::Solution)
         node = node_from_index(network, length(partial_sol.states[1])+1)
@@ -106,32 +148,20 @@ function merge_branches(network::AbstractGibbsNetwork{S, T}) where {S, T}
     end
     _merge
 end
+
 no_merge(partial_sol::Solution) = partial_sol
 
-function bound_solution(partial_sol::Solution, max_states::Int, merge_strategy=no_merge)
-    if length(partial_sol.probabilities) <= max_states
-        probs = vcat(partial_sol.probabilities, -Inf)
+function bound_solution(psol::Solution, max_states::Int, merge_strategy=no_merge)
+    if length(psol.probabilities) <= max_states
+        probs = vcat(psol.probabilities, -Inf)
         k = length(probs)
     else
-        probs = partial_sol.probabilities
+        probs = psol.probabilities
         k = max_states + 1
     end
-
-    indices = partialsortperm(probs, 1:k, rev=true)
-    new_max_discarded_prob = max(
-        partial_sol.largest_discarded_probability, probs[indices[end]]
-    )
-    indices = @view indices[1:k-1]
-
-    merge_strategy(
-        Solution(
-            partial_sol.energies[indices],
-            partial_sol.states[indices],
-            partial_sol.probabilities[indices],
-            partial_sol.degeneracy[indices],
-            new_max_discarded_prob
-        )
-    )
+    idx = partialsortperm(probs, 1:k, rev=true)
+    ldp = max(psol.largest_discarded_probability, probs[idx[end]])
+    merge_strategy(Solution(psol, idx[1:k-1], ldp))
 end
 
 #TODO: incorporate "going back" move to improve alghoritm

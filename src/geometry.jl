@@ -1,6 +1,6 @@
 export IntOrRational, Node, PEPSNode, AbstractGeometry, AbstractSparsity
 export AbstractTensorsLayout, tensor_map, gauges_list, Dense, Sparse
-export Square, SquareStar, GaugesEnergy, EnergyGauges, EngGaugesEng
+export Square, SquareStar, GaugesEnergy, EnergyGauges, EngGaugesEng, Chimera, Pegazus
 
 const IntOrRational = Union{Int, Rational{Int}}
 
@@ -11,9 +11,6 @@ abstract type AbstractTensorsLayout end
 struct SquareStar{T <: AbstractTensorsLayout} <: AbstractGeometry end
 struct Square{T <: AbstractTensorsLayout} <: AbstractGeometry end
 
-const Chimera = Square
-const Pegazus = SquareStar
-
 struct Dense <: AbstractSparsity end
 struct Sparse <: AbstractSparsity end
 
@@ -22,6 +19,9 @@ struct EnergyGauges{T} <: AbstractTensorsLayout end
 struct EngGaugesEng{T} <: AbstractTensorsLayout end
 
 const Node = NTuple{2, Int}
+
+const Chimera = Square
+const Pegazus = SquareStar
 
 struct PEPSNode
     i::IntOrRational

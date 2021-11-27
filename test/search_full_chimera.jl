@@ -10,10 +10,10 @@ function bench()
 
     ground_energy = -3336.773383
 
-    β = 3.
+    β = 3.0
     bond_dim = 16
     δp = 1E-2
-    num_states = 1000
+    num_states = 100
 
     instance = "$(@__DIR__)/instances/chimera_droplets/2048power/001.txt"
 
@@ -33,7 +33,7 @@ function bench()
             println((Strategy, Sparsity, Layout, transform))
 
             network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
-            ctr = MpsContractor{Strategy}(network, [β], params)
+            ctr = MpsContractor{Strategy}(network, [β/8., β/4., β/2., β], params)
 
             @time sol = low_energy_spectrum(ctr, search_params, merge_branches(network))
 

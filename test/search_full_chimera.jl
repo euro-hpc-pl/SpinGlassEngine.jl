@@ -15,12 +15,8 @@ function bench()
     δp = 1E-2
     num_states = 100
 
-    instance = "$(@__DIR__)/instances/chimera_droplets/2048power/001.txt"
-
-    ig = ising_graph(instance)
-
     fg = factor_graph(
-        ig,
+        ising_graph("$(@__DIR__)/instances/chimera_droplets/2048power/001.txt"),
         #spectrum=full_spectrum,
         cluster_assignment_rule=super_square_lattice((m, n, t))
     )
@@ -32,8 +28,8 @@ function bench()
         for Layout ∈ (EnergyGauges, ), transform ∈ rotation.([0])
             println((Strategy, Sparsity, Layout, transform))
 
-            network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
-            ctr = MpsContractor{Strategy}(network, [β/8., β/4., β/2., β], params)
+            @time network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
+            @time ctr = MpsContractor{Strategy}(network, [β/8., β/4., β/2., β], params)
 
             @time sol = low_energy_spectrum(ctr, search_params, merge_branches(network))
 

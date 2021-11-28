@@ -1,6 +1,6 @@
 export PEPSNetwork, node_from_index
 
-struct PEPSNetwork{
+mutable struct PEPSNetwork{
     T <: AbstractGeometry, S <: AbstractSparsity
 } <: AbstractGibbsNetwork{Node, PEPSNode}
     factor_graph::LabelledGraph
@@ -10,9 +10,7 @@ struct PEPSNetwork{
     nrows::Int
     ncols::Int
     tensors_map::Dict
-     # Should we store gauges explicitly here? pack into single structure?
-    gauges_data::Dict
-    gauges_info
+    gauges::Gauges{T}
 
     function PEPSNetwork{T, S}(
         m::Int,
@@ -20,21 +18,15 @@ struct PEPSNetwork{
         factor_graph::LabelledGraph,
         transformation::LatticeTransformation
     ) where {T <: AbstractGeometry, S <: AbstractSparsity}
+        net = new(factor_graph, vertex_map(transformation, m, n), m, n)
+        net.nrows, net.ncols = transformation.flips_dimensions ? (n, m) : (m, n)
 
-        vmap = vertex_map(transformation, m, n)
-        nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
-
-        if !is_compatible(factor_graph, T.name.wrapper(m, n))
+        if !is_compatible(net.factor_graph, T.name.wrapper(m, n))
             throw(ArgumentError("Factor graph not compatible with given network."))
         end
 
-        tmap = tensor_map(T, S, nrows, ncols)
-
-        gauges_data = Dict()
-        gauges_info = gauges_list(T, nrows, ncols)
-
-        net = new(factor_graph, vmap, m, n, nrows, ncols, tmap, gauges_data, gauges_info)
-
+        net.tensors_map = tensor_map(T, S, net.nrows, net.ncols)
+        net.gauges = Gauges{T}(net.nrows, net.ncols)
         initialize_gauges!(net)
         net
     end

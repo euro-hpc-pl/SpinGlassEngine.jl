@@ -41,7 +41,7 @@ struct GaugeInfo
 end
 
 struct Gauges{T <: AbstractGeometry}
-    data::Dict{NTuple{2, PEPSNode}, <:AbstractArray}
+    data::Dict#{NTuple{2, PEPSNode}, <:AbstractArray}
     info::Vector{GaugeInfo}
 
     function Gauges{T}(nrows::Int, ncols::Int) where T <: AbstractGeometry

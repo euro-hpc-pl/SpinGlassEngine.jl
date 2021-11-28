@@ -102,7 +102,7 @@ function tensor_map(
     map
 end
 
-function gauges_list(::Type{Square{T}}, nrows::Int, ncols::Int ) where T <: GaugesEnergy
+function gauges_list(::Type{Square{T}}, nrows::Int, ncols::Int) where T <: GaugesEnergy
     [
         GaugeInfo(
             (PEPSNode(i + 1//6, j), PEPSNode(i + 2//6, j)),
@@ -198,7 +198,7 @@ function gauges_list(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T <: G
             1,
             :gauge_h
         )
-        for i ∈ 1:nrows-1 for j ∈ 1//2 : 1//2 : ncols
+        for i ∈ 1:nrows-1 for j ∈ 1//2:1//2:ncols
     ]
 end
 
@@ -210,7 +210,7 @@ function gauges_list(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T <: E
             2,
             :gauge_h
         )
-        for i ∈ 1:nrows-1 for j ∈ 1//2 : 1//2 : ncols
+        for i ∈ 1:nrows-1 for j ∈ 1//2:1//2:ncols
     ]
 end
 
@@ -222,6 +222,6 @@ function gauges_list(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T <: E
             2,
             :gauge_h
         )
-        for i ∈ 1:nrows-1 for j ∈ 1//2 : 1//2 : ncols
+        for i ∈ 1:nrows-1 for j ∈ 1//2:1//2:ncols
     ]
 end

@@ -40,13 +40,13 @@ end
 
 function projectors(network::PEPSNetwork{T, S}, vertex::Node) where {T <: SquareStar, S}
     i, j = vertex
-    neighbours = (
-                    ((i+1, j-1), (i, j-1), (i-1, j-1)),
-                    (i-1, j),
-                    ((i+1, j+1), (i, j+1), (i-1, j+1)),
-                    (i+1, j)
-                )
-    projector.(Ref(network), Ref(vertex), neighbours)
+    nbrs = (
+        ((i+1, j-1), (i, j-1), (i-1, j-1)),
+        (i-1, j),
+        ((i+1, j+1), (i, j+1), (i-1, j+1)),
+        (i+1, j)
+    )
+    projector.(Ref(network), Ref(vertex), nbrs)
 end
 
 function node_index(peps::AbstractGibbsNetwork{T, S}, node::Node) where {T, S}
@@ -61,13 +61,9 @@ end
 function boundary(peps::PEPSNetwork{T, S}, node::Node) where {T <: Square, S}
     i, j = node
     vcat(
-        [
-            ((i, k), (i+1, k)) for k ∈ 1:j-1
-        ]...,
-            ((i, j-1), (i, j)),
-        [
-            ((i-1, k), (i, k)) for k ∈ j:peps.ncols
-        ]...
+        [((i, k), (i+1, k)) for k ∈ 1:j-1]...,
+        ((i, j-1), (i, j)),
+        [((i-1, k), (i, k)) for k ∈ j:peps.ncols]...
     )
 end
 
@@ -75,7 +71,8 @@ function boundary(peps::PEPSNetwork{T, S}, node::Node) where {T <: SquareStar, S
     i, j = node
     vcat(
         [
-            [((i, k-1), (i+1, k), (i, k), (i+1, k-1)), ((i, k), (i+1, k))] for k ∈ 1:j-1
+            [((i, k-1), (i+1, k), (i, k), (i+1, k-1)), ((i, k), (i+1, k))]
+            for k ∈ 1:(j-1)
         ]...,
         ((i, j-1), (i+1, j)),
         ((i, j-1), (i, j)),
@@ -83,7 +80,7 @@ function boundary(peps::PEPSNetwork{T, S}, node::Node) where {T <: SquareStar, S
         ((i-1, j), (i, j)),
         [
             [((i-1, k-1), (i, k), (i-1, k), (i, k-1)), ((i-1, k), (i, k))]
-            for k ∈ j+1:peps.ncols
+            for k ∈ (j+1):peps.ncols
         ]...
     )
 end

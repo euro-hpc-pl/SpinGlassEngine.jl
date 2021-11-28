@@ -92,18 +92,21 @@ end
 ones_like(x::Number) = one(typeof(x))
 ones_like(x::Array) = ones(eltype(x), size(x))
 
-# improve this
 function _boundary_index(
-    network::AbstractGibbsNetwork{S, T}, v::S, w::Union{S, NTuple{N, S}}, σ::Vector{Int}
+    network::AbstractGibbsNetwork{S, T},
+    nodes::Tuple{S, Union{S, NTuple{N, S}}},
+    σ::Vector{Int}
 ) where {S, T, N}
+    v, w = nodes
     state = local_state_for_node(network, σ, v)
     if v ∉ vertices(network.factor_graph) return ones_like(state) end
     projector(network, v, w)[state]
 end
 
 function _boundary_index(
-    network::AbstractGibbsNetwork{S, T}, v::S, w::S, k::S, l::S, σ::Vector{Int}
+    network::AbstractGibbsNetwork{S, T}, nodes::NTuple{4, S}, σ::Vector{Int}
 ) where {S, T}
+    v, w, k, l = nodes
     pv = projector(network, v, w)
     i = _boundary_index(network, v, w, σ)
     j = _boundary_index(network, k, l, σ)
@@ -113,7 +116,7 @@ end
 function boundary_state(
     network::AbstractGibbsNetwork{S, T}, σ::Vector{Int}, node::S
 ) where {S, T}
-    [_boundary_index(network, x..., σ) for x ∈ boundary(network, node)]
+    _boundary_index.(Ref(network), boundary(network, node), Ref(σ))
 end
 
 function local_state_for_node(

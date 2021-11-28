@@ -118,7 +118,7 @@ end
     sites = collect(keys(layers))
     tensors = Vector{Dict}(undef, length(sites))
 
-    #Threads.@threads for i ∈ 1:length(sites)
+    #Threads.@threads for i ∈ 1:length(sites) #TODO: does this make sense here?
     for i ∈ 1:length(sites)
         j = sites[i]
         coor = layers[j]

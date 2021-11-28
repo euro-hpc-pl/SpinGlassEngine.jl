@@ -16,8 +16,8 @@ function bench()
     δp = 1E-2
     bond_dim = 14
     num_states = 50
-    max_sweeps = 6
-    var_epsilon = 1E-4
+    max_sweeps = 4
+    var_epsilon = 1E-3
 
     fg = factor_graph(
         ising_graph("$(@__DIR__)/instances/chimera_droplets/2048power/001.txt"),
@@ -27,7 +27,7 @@ function bench()
     params = MpsParameters(bond_dim, var_epsilon, max_sweeps)
     search_params = SearchParameters(num_states, δp)
 
-    network = PEPSNetwork{Square{EnergyGauges}, Sparse}(m, n, fg, rotation(0))
+    network = PEPSNetwork{Square{EnergyGauges}, Dense}(m, n, fg, rotation(0))
     ctr = MpsContractor{MPSAnnealing}(network, [β], params)
     @time sol = low_energy_spectrum(ctr, search_params, merge_branches(network))
     @test sol.energies[begin] ≈ ground_energy

@@ -92,6 +92,7 @@ end
 ones_like(x::Number) = one(typeof(x))
 ones_like(x::Array) = ones(eltype(x), size(x))
 
+# improve this
 function _boundary_index(
     network::AbstractGibbsNetwork{S, T}, v::S, w::Union{S, NTuple{N, S}}, σ::Vector{Int}
 ) where {S, T, N}
@@ -127,15 +128,15 @@ function is_compatible(factor_graph::LabelledGraph, network_graph::LabelledGraph
 end
 
 function initialize_gauges!(
-    network::AbstractGibbsNetwork{S, T}, type::Symbol=:rand
+    network::AbstractGibbsNetwork{S, T}, type::Symbol=:id
 ) where {S, T}
     @assert type ∈ (:id, :rand)
-    for gauge ∈ network.gauges_info
+    for gauge ∈ network.gauges.info
         n1, n2 = gauge.positions
         push!(network.tensors_map, n1 => gauge.type, n2 => gauge.type)
         d = tensor_size(network, gauge.attached_tensor)[gauge.attached_leg]
         X = type == :id ? ones(d) : rand(d) .+ 0.42
-        push!(network.gauges_data, n1 => X, n2 => 1 ./ X)
+        push!(network.gauges.data, n1 => X, n2 => 1 ./ X)
     end
 end
 

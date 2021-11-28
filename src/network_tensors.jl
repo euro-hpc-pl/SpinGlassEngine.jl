@@ -160,13 +160,13 @@ end
 function tensor(
     network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, β::Real, ::Val{:gauge_h}
 )
-    Diagonal(network.gauges_data[v])
+    Diagonal(network.gauges.data[v])
 end
 
 function tensor_size(
     network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, ::Val{:gauge_h}
 )
-    u = size(network.gauges_data[v], 1)
+    u = size(network.gauges.data[v], 1)
     (u, u)
 end
 

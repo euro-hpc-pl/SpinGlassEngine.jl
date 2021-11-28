@@ -20,14 +20,14 @@ end
 empty_solution() = Solution([0.0], [Vector{Int}[]], [1.0], [1], -Inf)
 
 function Solution(
-    sol::Solution, idx::Vector{Int}, p::Real=sol.largest_discarded_probability
+    sol::Solution, idx::Vector{Int}, ldp::Real=sol.largest_discarded_probability
 )
     Solution(
         sol.energies[idx],
         sol.states[idx],
         sol.probabilities[idx],
         sol.degeneracy[idx],
-        sol.largest_discarded_probability
+        ldp
     )
 end
 
@@ -71,7 +71,7 @@ function merge_branches(network::AbstractGibbsNetwork{S, T}) where {S, T}
 
         sorting_idx = sortperm(indices)
         sorted_indices = indices[sorting_idx]
-        nsol = Solution(psol, Vector{Int}(sorted_indices))
+        nsol = Solution(psol, Vector{Int}(sorted_indices)) #TODO Vector{Int} should be rm
 
         energies = typeof(nsol.energies[begin])[]
         states = typeof(nsol.states[begin])[]

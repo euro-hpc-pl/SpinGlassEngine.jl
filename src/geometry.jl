@@ -1,5 +1,5 @@
 export IntOrRational, Node, PEPSNode, AbstractGeometry, AbstractSparsity
-export AbstractTensorsLayout, tensor_map, gauges_list, Dense, Sparse
+export AbstractTensorsLayout, tensor_map, gauges_list, Dense, Sparse, Gauges
 export Square, SquareStar, GaugesEnergy, EnergyGauges, EngGaugesEng, Chimera, Pegazus
 
 const IntOrRational = Union{Int, Rational{Int}}
@@ -38,6 +38,15 @@ struct GaugeInfo
     attached_tensor::PEPSNode
     attached_leg::Int
     type::Symbol
+end
+
+struct Gauges{T <: AbstractGeometry}
+    data::Dict{NTuple{2, PEPSNode}, <:AbstractArray}
+    info::Vector{GaugeInfo}
+
+    function Gauges{T}(nrows::Int, ncols::Int) where T <: AbstractGeometry
+        new(Dict(), gauges_list(T, nrows, ncols))
+    end
 end
 
 function Square(m::Int, n::Int)

@@ -62,23 +62,20 @@ function branch_solution(psol::Solution, ctr::T, δprob::Real) where T <: Abstra
         δprob
     )
 end
-#=
+
 function merge_branches(network::AbstractGibbsNetwork{S, T}) where {S, T}
     function _merge(psol::Solution)
         node = node_from_index(network, length(psol.states[1])+1)
         boundaries = hcat(boundary_state.(Ref(network), psol.states, Ref(node))...)'
         _, indices = SpinGlassNetworks.unique_dims(boundaries, 1)
 
-
-        sorting_idx = sortperm(Vector{Int}(indices)
-        println(sorting_idx)
+        sorting_idx = sortperm(indices)
         sorted_indices = indices[sorting_idx]
-        println(sorted_indices)
-        nsol = Solution(psol, sorted_indices)
+        nsol = Solution(psol, Vector{Int}(sorted_indices))
 
         energies = typeof(nsol.energies[begin])[]
         states = typeof(nsol.states[begin])[]
-        probs = typeof(nsol.probs[begin])[]
+        probs = typeof(nsol.probabilities[begin])[]
         degeneracy = typeof(nsol.degeneracy[begin])[]
 
         start = 1
@@ -92,7 +89,7 @@ function merge_branches(network::AbstractGibbsNetwork{S, T}) where {S, T}
 
             push!(energies, nsol.energies[best_idx])
             push!(states, nsol.states[best_idx])
-            push!(probs, nsol.probs[best_idx])
+            push!(probs, nsol.probabilities[best_idx])
             push!(degeneracy, nsol.degeneracy[best_idx])
             start = stop + 1
         end
@@ -100,55 +97,6 @@ function merge_branches(network::AbstractGibbsNetwork{S, T}) where {S, T}
     end
     _merge
 end
-=#
-function merge_branches(network::AbstractGibbsNetwork{S, T}) where {S, T}
-    function _merge(partial_sol::Solution)
-        node = node_from_index(network, length(partial_sol.states[1])+1)
-        boundaries = hcat(boundary_state.(Ref(network), partial_sol.states, Ref(node))...)'
-        _, indices = SpinGlassNetworks.unique_dims(boundaries, 1)
-
-        sorting_idx = sortperm(indices)
-        sorted_indices = indices[sorting_idx]
-        start = 1
-
-        energies = partial_sol.energies[sorting_idx]
-        states = partial_sol.states[sorting_idx]
-        probs = partial_sol.probabilities[sorting_idx]
-        degeneracy = partial_sol.degeneracy[sorting_idx]
-
-        new_energies = typeof(energies[begin])[]
-        new_states = typeof(states[begin])[]
-        new_probs = typeof(probs[begin])[]
-        new_degeneracy = typeof(degeneracy[begin])[]
-
-        while start <= size(boundaries, 1)
-            stop = start
-            bsize = size(boundaries, 1)
-            while stop + 1 <= bsize && sorted_indices[start] == sorted_indices[stop+1]
-                stop = stop + 1
-            end
-
-            best_idx = argmin(@view energies[start:stop]) + start-1
-
-            push!(new_energies, energies[best_idx])
-            push!(new_states, states[best_idx])
-            push!(new_probs, probs[best_idx])
-            push!(new_degeneracy, degeneracy[best_idx])
-
-            start = stop + 1
-        end
-
-        Solution(
-            new_energies,
-            new_states,
-            new_probs,
-            new_degeneracy,
-            partial_sol.largest_discarded_probability
-        )
-    end
-    _merge
-end
-
 no_merge(partial_sol::Solution) = partial_sol
 
 function bound_solution(psol::Solution, max_states::Int, merge_strategy=no_merge)

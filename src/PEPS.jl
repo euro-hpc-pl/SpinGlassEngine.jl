@@ -50,7 +50,7 @@ function projectors(network::PEPSNetwork{T, S}, vertex::Node) where {T <: Square
 end
 
 function node_index(peps::AbstractGibbsNetwork{T, S}, node::Node) where {T, S}
-    peps.ncols * (node[1] - 1) + node[2]
+    peps.ncols * (node[begin] - 1) + node[end]
 end
 
 _mod_wo_zero(k, m) = k % m == 0 ? m : k % m

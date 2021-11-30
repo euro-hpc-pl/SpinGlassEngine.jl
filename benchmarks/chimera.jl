@@ -7,6 +7,38 @@ using TensorCast
 using MetaGraphs
 using CSV
 
+
+disable_logging(LogLevel(1))
+
+function proj(state, dims::Union{Vector, NTuple})
+    P = Matrix{Float64}[]
+    for (σ, r) ∈ zip(state, dims)
+        v = zeros(r)
+        v[idx(σ)...] = 1.
+        push!(P, v * v')
+    end
+    P
+end
+
+function SpinGlassEngine.tensor(ψ::AbstractMPS, state::State)
+    C = I
+    for (A, σ) ∈ zip(ψ, state)
+        C *= A[:, idx(σ), :]
+    end
+    tr(C)
+end
+
+function SpinGlassEngine.tensor(ψ::MPS)
+    dims = rank(ψ)
+    Θ = Array{eltype(ψ)}(undef, dims)
+
+    for σ ∈ all_states(dims)
+        Θ[idx.(σ)...] = tensor(ψ, σ)
+    end
+    Θ
+end
+
+
 function bench(instance_dir::String)
     m = 16
     n = 16
@@ -22,9 +54,10 @@ function bench(instance_dir::String)
 
     dir = cd(instance_dir)
 
-    open("/home/bartek/Desktop/Chimera/chimera.csv", "w") do file
+    open("/home/tsmierzchalski/tensor/chimera.csv", "w") do file
 
-    for instance ∈ readdir(join=true)
+    for (i, instance) ∈ enumerate(readdir(join=true))
+        if instance == "/home/tsmierzchalski/tensor/chimera2048_spinglass_power/groundstates_otn2d.txt" continue end
         ig = ising_graph(instance)
 
         fg = factor_graph(
@@ -37,22 +70,23 @@ function bench(instance_dir::String)
         search_params = SearchParameters(num_states, δp)
 
         for β ∈ betas, Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, )
-            for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng), trans ∈ rotation.([0])
+            for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng), transform ∈ rotation.([0])
 
-                network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, trans)
+                network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
                 ctr = MpsContractor{Strategy}(network, [β], params)
 
-                sol = low_energy_spectrum(ctr, search_params, merge_branches(network))
+                times = @elapsed sol = low_energy_spectrum(ctr, search_params, merge_branches(network))
                 data = Dict(
                     "i" => i, "β" => β, "Strategy" => Strategy,
                     "Sparsity" => Sparsity, "Layout" => Layout,
-                    "transform" => transform, "energies" => sol.energies[1:1]
+                    "transform" => transform, "energies" => sol.energies[1:1], 
+                    "time" => times
                 )
-                CSV.write(file, data)
+                CSV.write(file, data, delim = ';', append = true)
             end
         end
     end
 end
 end
 
-bench("/home/bartek/Desktop/Chimera/chimera2048_spinglass_power")
+bench("/home/tsmierzchalski/tensor/chimera2048_spinglass_power")

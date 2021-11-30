@@ -46,7 +46,7 @@ function bench(instance_dir::String)
     L = n * m * t
 
     δp = 1E-2
-    bond_dim = 128
+    bond_dim = 16
     num_states = 100
     max_num_sweeps = 4
     variational_tol = 1E-8

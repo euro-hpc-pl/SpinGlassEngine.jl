@@ -1,45 +1,10 @@
 using SpinGlassEngine
 using Logging
-using SpinGlassNetworks, SpinGlassTensors
-using LightGraphs
-using LinearAlgebra
-using TensorCast
-using MetaGraphs
 using CSV
-
 
 disable_logging(LogLevel(1))
 
-function proj(state, dims::Union{Vector, NTuple})
-    P = Matrix{Float64}[]
-    for (σ, r) ∈ zip(state, dims)
-        v = zeros(r)
-        v[idx(σ)...] = 1.
-        push!(P, v * v')
-    end
-    P
-end
-
-function SpinGlassEngine.tensor(ψ::AbstractMPS, state::State)
-    C = I
-    for (A, σ) ∈ zip(ψ, state)
-        C *= A[:, idx(σ), :]
-    end
-    tr(C)
-end
-
-function SpinGlassEngine.tensor(ψ::MPS)
-    dims = rank(ψ)
-    Θ = Array{eltype(ψ)}(undef, dims)
-
-    for σ ∈ all_states(dims)
-        Θ[idx.(σ)...] = tensor(ψ, σ)
-    end
-    Θ
-end
-
-
-function bench(instance_dir::String)
+function bench(instance_dir::String, out_path::String)
     m = 16
     n = 16
     t = 8
@@ -54,10 +19,9 @@ function bench(instance_dir::String)
 
     dir = cd(instance_dir)
 
-    open("/home/tsmierzchalski/tensor/chimera.csv", "w") do file
+    open(out_path, "w") do file
 
     for (i, instance) ∈ enumerate(readdir(join=true))
-        if instance == "/home/tsmierzchalski/tensor/chimera2048_spinglass_power/groundstates_otn2d.txt" continue end
         ig = ising_graph(instance)
 
         fg = factor_graph(
@@ -79,7 +43,7 @@ function bench(instance_dir::String)
                 data = Dict(
                     "i" => i, "β" => β, "Strategy" => Strategy,
                     "Sparsity" => Sparsity, "Layout" => Layout,
-                    "transform" => transform, "energies" => sol.energies[1:1], 
+                    "transform" => transform, "energies" => sol.energies[1:1],
                     "time" => times
                 )
                 CSV.write(file, data, delim = ';', append = true)
@@ -89,4 +53,7 @@ function bench(instance_dir::String)
 end
 end
 
-bench("/home/tsmierzchalski/tensor/chimera2048_spinglass_power")
+bench(
+    "/home/tsmierzchalski/tensor/chimera2048_spinglass_power",
+    "/home/tsmierzchalski/tensor/chimera.csv"
+    )

@@ -7,14 +7,16 @@ using TensorCast
 using MetaGraphs
 using CSV
 
-function bench(instance_dir::String)
+disable_logging(LogLevel(1))
+
+function bench(instance_dir::String, outer_dir::String)
     m = 16
     n = 16
     t = 8
     L = n * m * t
 
     δp = 1E-2
-    bond_dim = 128
+    bond_dim = 16
     num_states = 100
     max_num_sweeps = 4
     variational_tol = 1E-8
@@ -22,9 +24,10 @@ function bench(instance_dir::String)
 
     dir = cd(instance_dir)
 
-    open("/home/bartek/Desktop/Chimera/chimera.csv", "w") do file
+    open(outer_dir, "w") do file
 
-    for instance ∈ readdir(join=true)
+    for (i, instance) ∈ enumerate(readdir(join=true))
+        println(instance)
         ig = ising_graph(instance)
 
         fg = factor_graph(
@@ -46,7 +49,7 @@ function bench(instance_dir::String)
                 data = Dict(
                     "i" => i, "β" => β, "Strategy" => Strategy,
                     "Sparsity" => Sparsity, "Layout" => Layout,
-                    "transform" => transform, "energies" => sol.energies[1:1]
+                    "transform" => trans, "energies" => sol.energies[1:1]
                 )
                 CSV.write(file, data)
             end
@@ -55,4 +58,7 @@ function bench(instance_dir::String)
 end
 end
 
-bench("/home/bartek/Desktop/Chimera/chimera2048_spinglass_power")
+bench(
+    "/home/bartek/Desktop/Chimera/chimera2048_spinglass_power",
+    "/home/bartek/Desktop/Chimera/chimera.csv"
+)

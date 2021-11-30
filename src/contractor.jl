@@ -145,52 +145,51 @@ end
 
 function IdentityQMps(peps::PEPSNetwork{T, S}) where {T <: SquareStar, S}
     id = Dict()
-    for i ∈ 1//2 : 1//2 : peps.ncols
+    for i ∈ 1//2:1//2:peps.ncols
         ii = denominator(i) == 1 ? numerator(i) : i
         push!(id, ii => ones(1, 1, 1))
     end
     QMps(id)
 end
 
-@memoize function mps(contractor::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
-    if i > contractor.peps.nrows return IdentityQMps(contractor.peps) end
+@memoize function mps(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
+    if i > ctr.peps.nrows return IdentityQMps(ctr.peps) end
 
-    ψ = mps(contractor, i+1, indβ)
-    W = mpo(contractor, contractor.layers.main, i, indβ)
+    ψ = mps(ctr, i+1, indβ)
+    W = mpo(ctr, ctr.layers.main, i, indβ)
 
     ψ0 = dot(W, ψ)
-    truncate!(ψ0, :left, contractor.params.bond_dimension)
+    truncate!(ψ0, :left, ctr.params.bond_dimension)
     compress!(
         ψ0,
         W,
         ψ,
-        contractor.params.bond_dimension,
-        contractor.params.variational_tol,
-        contractor.params.max_num_sweeps
+        ctr.params.bond_dimension,
+        ctr.params.variational_tol,
+        ctr.params.max_num_sweeps
     )
     ψ0
 end
 
-@memoize function mps(contractor::MpsContractor{MPSAnnealing}, i::Int, indβ::Int)
-    if i > contractor.peps.nrows return IdentityQMps(contractor.peps) end
+@memoize function mps(ctr::MpsContractor{MPSAnnealing}, i::Int, indβ::Int)
+    if i > ctr.peps.nrows return IdentityQMps(ctr.peps) end
 
-    ψ = mps(contractor, i+1, indβ)
-    W = mpo(contractor, contractor.layers.main, i, indβ)
+    ψ = mps(ctr, i+1, indβ)
+    W = mpo(ctr, ctr.layers.main, i, indβ)
 
     if indβ > 1
-        ψ0 = mps(contractor, i, indβ-1)
+        ψ0 = mps(ctr, i, indβ-1)
     else
-        bd = contractor.params.bond_dimension
-        ψ0 = IdentityQMps(contractor.peps, bd, local_dims(W, :up))
+        ψ0 = IdentityQMps(ctr.peps, ctr.params.bond_dimension, local_dims(W, :up))
         canonise!(ψ0, :left)
     end
     compress!(
         ψ0,
         W,
         ψ,
-        contractor.params.bond_dimension,
-        contractor.params.variational_tol,
-        contractor.params.max_num_sweeps
+        ctr.params.bond_dimension,
+        ctr.params.variational_tol,
+        ctr.params.max_num_sweeps
     )
     ψ0
 end

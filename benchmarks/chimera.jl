@@ -1,20 +1,17 @@
 using SpinGlassEngine
 using Logging
-using SpinGlassNetworks, SpinGlassTensors
-using LightGraphs
-using LinearAlgebra
-using TensorCast
-using MetaGraphs
 using CSV
 
-function bench(instance_dir::String)
+disable_logging(LogLevel(1))
+
+function bench(instance_dir::String, out_path::String)
     m = 16
     n = 16
     t = 8
     L = n * m * t
 
     δp = 1E-2
-    bond_dim = 128
+    bond_dim = 16
     num_states = 100
     max_num_sweeps = 4
     variational_tol = 1E-8
@@ -22,9 +19,9 @@ function bench(instance_dir::String)
 
     dir = cd(instance_dir)
 
-    open("/home/bgardas/Chimera/chimera.csv", "w") do file
+    open(out_path, "w") do file
 
-    for instance ∈ readdir(join=true)
+    for (i, instance) ∈ enumerate(readdir(join=true))
         ig = ising_graph(instance)
 
         fg = factor_graph(
@@ -37,22 +34,26 @@ function bench(instance_dir::String)
         search_params = SearchParameters(num_states, δp)
 
         for β ∈ betas, Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, )
-            for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng), trans ∈ rotation.([0])
+            for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng), transform ∈ rotation.([0])
 
-                network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, trans)
+                network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
                 ctr = MpsContractor{Strategy}(network, [β], params)
 
-                sol = low_energy_spectrum(ctr, search_params, merge_branches(network))
+                times = @elapsed sol = low_energy_spectrum(ctr, search_params, merge_branches(network))
                 data = Dict(
                     "i" => i, "β" => β, "Strategy" => Strategy,
                     "Sparsity" => Sparsity, "Layout" => Layout,
-                    "transform" => transform, "energies" => sol.energies[1:1]
+                    "transform" => transform, "energies" => sol.energies[1:1],
+                    "time" => times
                 )
-                CSV.write(file, data)
+                CSV.write(file, data, delim = ';', append = true)
             end
         end
     end
 end
 end
 
-bench("/home/bgardas/Chimera/chimera2048_spinglass_power")
+bench(
+    "/home/tsmierzchalski/tensor/chimera2048_spinglass_power",
+    "/home/tsmierzchalski/tensor/chimera.csv"
+    )

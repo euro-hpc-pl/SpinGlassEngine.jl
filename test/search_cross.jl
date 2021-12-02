@@ -23,7 +23,7 @@
     params = MpsParameters()
     search_params = SearchParameters(num_states, 0.0)
 
-    for Strategy ∈ (SVDTruncate,), Sparsity ∈ (Dense,)
+    for Strategy ∈ (SVDTruncate,), Sparsity ∈ (Dense)
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
             for transform ∈ all_lattice_transformations
 

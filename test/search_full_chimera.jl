@@ -2,11 +2,13 @@ using SpinGlassNetworks
 using SpinGlassTensors
 using SpinGlassEngine
 
-function bench()
+function bench(instance::String)
     m = 16
     n = 16
     t = 8
+
     L = n * m * t
+    max_cl_states = 2^(t-0)
 
     ground_energy = -3336.773383
 
@@ -16,15 +18,15 @@ function bench()
     # 3. Code blows up [e.g., LAPACKException(18)] for large β (e.g. β > 4)
     # 4. Sparse is still not faster than Dense
 
-
     β = 3.0
     bond_dim = 64
     δp = 1E-2
     num_states = 100
 
-    fg = factor_graph(
-        ising_graph("$(@__DIR__)/instances/chimera_droplets/2048power/001.txt"),
-        #spectrum=full_spectrum,
+    @time fg = factor_graph(
+        ising_graph(instance),
+        max_cl_states,
+        spectrum=brute_force,
         cluster_assignment_rule=super_square_lattice((m, n, t))
     )
 
@@ -46,4 +48,4 @@ function bench()
     end
 end
 
-bench()
+bench("$(@__DIR__)/instances/chimera_droplets/2048power/001.txt")

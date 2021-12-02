@@ -11,7 +11,7 @@ function bench()
     ground_energy = -3336.773383
 
     β = 3.0
-    bond_dim = 16
+    bond_dim = 128
     δp = 1E-2
     num_states = 100
 
@@ -24,7 +24,7 @@ function bench()
     params = MpsParameters(bond_dim, 1E-8, 10)
     search_params = SearchParameters(num_states, δp)
 
-    for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Sparse, Dense)
+    for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Sparse, Dense)
         for Layout ∈ (EnergyGauges, ), transform ∈ rotation.([0])
             println((Strategy, Sparsity, Layout, transform))
 

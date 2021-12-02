@@ -22,7 +22,7 @@ function bench(instance_dir::String)
 
     dir = cd(instance_dir)
 
-    open("/home/bartek/Desktop/Chimera/chimera.csv", "w") do file
+    open("/home/bgardas/Chimera/chimera.csv", "w") do file
 
     for instance ∈ readdir(join=true)
         ig = ising_graph(instance)
@@ -55,4 +55,4 @@ function bench(instance_dir::String)
 end
 end
 
-bench("/home/bartek/Desktop/Chimera/chimera2048_spinglass_power")
+bench("/home/bgardas/Chimera/chimera2048_spinglass_power")

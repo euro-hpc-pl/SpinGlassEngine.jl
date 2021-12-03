@@ -26,7 +26,7 @@ function bench(instance_dir::String, out_path::String)
 
         fg = factor_graph(
             ig,
-            #spectrum=full_spectrum,
+            spectrum=brute_force,
             cluster_assignment_rule=super_square_lattice((m, n, t))
         )
 

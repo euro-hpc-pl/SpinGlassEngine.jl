@@ -8,17 +8,18 @@ function bench(instance::String)
     t = 24
 
     L = n * m * t
-    #max_cl_states = 2^(t-0)
+    max_cl_states = 256
 
     β = 3.0
     bond_dim = 64
     δp = 1E-2
     num_states = 10
+
     @time ig = ising_graph(instance)
+    
     @time fg = factor_graph(
         ig,
-        100,
-        #Dict((1, 1) => 24, (1, 2) => 24, (2,1) => 24, (2,2) => 24),
+        max_cl_states,
         spectrum=brute_force,
         cluster_assignment_rule=super_square_lattice((m,n,t))
     )

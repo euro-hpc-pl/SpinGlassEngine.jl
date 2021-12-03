@@ -20,8 +20,8 @@ function bench(instance::String)
 
     β = 3.0
     bond_dim = 64
-    δp = 1E-2
-    num_states = 100
+    δp = 1E-3
+    num_states = 1000
 
     @time fg = factor_graph(
         ising_graph(instance),
@@ -33,7 +33,7 @@ function bench(instance::String)
     params = MpsParameters(bond_dim, 1E-8, 10)
     search_params = SearchParameters(num_states, δp)
 
-    for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Sparse, Dense)
+    for Strategy ∈ (MPSAnnealing, ), Sparsity ∈ (Sparse, Dense)
         for Layout ∈ (EnergyGauges, ), transform ∈ rotation.([0])
             println((Strategy, Sparsity, Layout, transform))
 

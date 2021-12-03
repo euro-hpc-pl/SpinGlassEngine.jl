@@ -139,7 +139,7 @@ function tensor(
     v = Node(node)
     h = connecting_tensor(network, floor.(Int, v), ceil.(Int, v), β)
 
-    SparseVirtualTensor(h, (p_lb, p_l, p_lt, p_rb, p_r, p_rt))
+    SparseVirtualTensor(h, (vec(p_lb), vec(p_l), vec(p_lt), vec(p_rb), vec(p_r), vec(p_rt)))
 end
 
 function tensor(

@@ -26,7 +26,7 @@ function bench(instance::String)
     params = MpsParameters(bond_dim, 1E-8, 10)
     search_params = SearchParameters(num_states, δp)
 
-    for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense)
+    for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, )
         for Layout ∈ (EnergyGauges, ), transform ∈ rotation.([0])
             println((Strategy, Sparsity, Layout, transform))
 

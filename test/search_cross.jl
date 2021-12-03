@@ -8,6 +8,7 @@
     L = n * m * t
 
     β = 1.
+    bond_dim = 16
     num_states = 22
 
     instance = "$(@__DIR__)/instances/pathological/cross_$(m)_$(n)_dd.txt"
@@ -20,17 +21,17 @@
         cluster_assignment_rule=super_square_lattice((m, n, t))
     )
 
-    params = MpsParameters()
+    params = MpsParameters(bond_dim, 1E-8, 4)
     search_params = SearchParameters(num_states, 0.0)
 
-    for Strategy ∈ (SVDTruncate,), Sparsity ∈ (Dense)
+    for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Sparse, Dense)
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
             for transform ∈ all_lattice_transformations
 
                 network = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, fg, transform)
-                contractor = MpsContractor{Strategy}(network, [β], params)
+                contractor = MpsContractor{Strategy}(network, [β/2, β], params)
                 sol = low_energy_spectrum(contractor, search_params)
-
+                ##  CLEAR Memoize for each "independent" test (or at the end of low_energy_spectrum)
                 @test first(sol.energies) ≈ ground_energy
             end
         end

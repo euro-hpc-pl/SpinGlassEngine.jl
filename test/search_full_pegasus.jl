@@ -30,7 +30,7 @@ function bench(instance::String)
         for Layout ∈ (EnergyGauges, ), transform ∈ rotation.([0])
             println((Strategy, Sparsity, Layout, transform))
 
-            @time network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
+            @time network = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, fg, transform)
             @time ctr = MpsContractor{Strategy}(network, [β/8, β/4, β/2, β], params)
 
             @time sol = low_energy_spectrum(ctr, search_params, merge_branches(network))

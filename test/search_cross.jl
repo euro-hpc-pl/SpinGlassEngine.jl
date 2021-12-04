@@ -31,8 +31,8 @@
                 network = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, fg, transform)
                 contractor = MpsContractor{Strategy}(network, [β/2, β], params)
                 sol = low_energy_spectrum(contractor, search_params)
-                ##  CLEAR Memoize for each "independent" test (or at the end of low_energy_spectrum)
                 @test first(sol.energies) ≈ ground_energy
+                clear_cache()
             end
         end
     end

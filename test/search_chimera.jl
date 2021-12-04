@@ -82,6 +82,7 @@
 
                 @test sol.energies ≈ exact_energies
                 for (i, σ) ∈ enumerate(sol.states) @test σ ∈ exact_states[deg[i]] end
+                clear_cache()
             end
         end
     end

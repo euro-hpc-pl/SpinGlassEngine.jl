@@ -44,16 +44,16 @@ my_tests = []
 
 push!(my_tests,
 #=
-        "network_operations.jl",
+        "operations.jl",
         "branch_and_bound.jl",
-        "network_interface.jl",
+        "interface.jl",
         "ising_MPS.jl",
         "search_MPS.jl",
         "search_chimera.jl",
-        "network_tensors.jl",
+        "tensors.jl",
         "compressions.jl" =#
         #"search_full_chimera.jl",
-        #"search_pegasus.jl",
+        "search_pegasus.jl",
         "search_chimera.jl",
         #"search_cross.jl",
         #"canonise.jl"

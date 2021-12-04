@@ -1,4 +1,4 @@
-export SVDTruncate, MPSAnnealing, MpoLayers, MpsParameters, MpsContractor
+export SVDTruncate, MPSAnnealing, MpoLayers, MpsParameters, MpsContractor, clear_cache
 
 abstract type AbstractContractor end
 abstract type AbstractStrategy end
@@ -401,4 +401,12 @@ function conditional_probability(
         loc_exp[σ] *= (lmx' * m * r)[]
     end
     normalize_probability(loc_exp)
+end
+
+function clear_cache()
+    empty!(memoize_cache(left_env))
+    empty!(memoize_cache(right_env))
+    empty!(memoize_cache(mpo))
+    empty!(memoize_cache(mps))
+    empty!(memoize_cache(dressed_mps))
 end

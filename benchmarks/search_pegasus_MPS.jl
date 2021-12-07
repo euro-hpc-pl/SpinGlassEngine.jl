@@ -2,9 +2,9 @@ using SpinGlassEngine
 using SpinGlassNetworks
 
 # Solve instance using MPS search
-function bench(instance::String, num_states::Int=100)
+function bench(instance::String, num_states::Int=10000)
     β = 4.0
-    bond_dimension = 32
+    bond_dimension = 64
     variational_tol = 1E-10
     max_num_sweeps = 10
 

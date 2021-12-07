@@ -29,8 +29,9 @@ function bench(instance::String)
     search_params = SearchParameters(num_states, δp)
 
     # Solve using PEPS search
+    energies = Float64[]
     for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, )
-        for Layout ∈ (EnergyGauges, ), transform ∈ rotation.([0])
+        for Layout ∈ (EnergyGauges, ), transform ∈ all_lattice_transformations
             println((Strategy, Sparsity, Layout, transform))
 
             @time network = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, fg, transform)
@@ -38,10 +39,11 @@ function bench(instance::String)
 
             @time sol_peps = low_energy_spectrum(ctr, search_params, merge_branches(network))
 
-            println("->ground from PEPS: ", sol_peps.energies[begin])
+            push!(energies, sol_peps.energies[begin])
             clear_cache()
         end
     end
+    println(sort!(energies))
 end
 
 bench("$(@__DIR__)/instances/pegasus_droplets/2_2_3_00.txt")

@@ -1,8 +1,4 @@
 using SpinGlassExhaustive
-using SpinGlassNetworks
-using SpinGlassTensors
-using SpinGlassEngine
-using Memoize
 
 function brute_force_gpu(ig::IsingGraph; num_states::Int)
     brute_force(ig, :GPU, num_states=num_states)
@@ -14,7 +10,7 @@ function bench(instance::String)
     t = 24
 
     L = n * m * t
-    max_cl_states = 2^10
+    max_cl_states = 2^12
 
     β = 3.0
     bond_dim = 32
@@ -42,7 +38,7 @@ function bench(instance::String)
 
             @time sol_peps = low_energy_spectrum(ctr, search_params, merge_branches(network))
 
-            println("ground from PEPS ", sol_peps.energies[begin])
+            println("->ground from PEPS: ", sol_peps.energies[begin])
             clear_cache()
         end
     end

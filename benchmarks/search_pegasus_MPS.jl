@@ -2,9 +2,9 @@ using SpinGlassEngine
 
 # Solve instance using MPS search
 function bench(instance::String, num_states::Int=100)
-    β = 3.0
-    bond_dimension = 32
-    variational_tol = 1E-8
+    β = 4.0
+    bond_dimension = 64
+    variational_tol = 1E-10
     max_num_sweeps = 10
 
     @time sol = low_energy_spectrum(
@@ -20,4 +20,5 @@ function bench(instance::String, num_states::Int=100)
     println("ground from MPS: ", sol.energies[begin])
 end
 
-bench("$(@__DIR__)/instances/pegasus_droplets/2_2_3_00.txt")
+# best energy found: -44.34375
+bench("$(@__DIR__)/../test/instances/pegasus_droplets/2_2_3_00.txt")

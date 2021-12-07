@@ -180,7 +180,7 @@ function SpinGlassTensors.MPS(
     if schedule == :log
         k = Int(ceil(log2(β/dβ)))
         ρ = _apply_gates(ρ, ig, Dcut, var_ϵ, sweeps, β/(2^k))
-        for _ ∈ 1:k
+        @showprogress "MPS build: " for _ ∈ 1:k
             ρ = purifications(ρ)
             if bond_dimension(ρ) > Dcut
                 ρ = SpinGlassTensors.compress(ρ, Dcut, var_ϵ, sweeps)
@@ -191,7 +191,7 @@ function SpinGlassTensors.MPS(
         k = ceil(β/dβ)
         ρ = _apply_gates(ρ, ig, Dcut, var_ϵ, sweeps, β/k)
         ρ0 = copy(ρ)
-        for _ ∈ 1:Int(k)
+        @showprogress "MPS build: " for _ ∈ 1:Int(k)
             ρ = purifications(ρ, ρ0)
             if bond_dimension(ρ) > Dcut
                 ρ = SpinGlassTensors.compress(ρ, Dcut, var_ϵ, sweeps)

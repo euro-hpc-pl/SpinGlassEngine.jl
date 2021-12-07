@@ -4,7 +4,7 @@ using SpinGlassNetworks
 # Solve instance using MPS search
 function bench(instance::String, num_states::Int=100)
     β = 4.0
-    bond_dimension = 16
+    bond_dimension = 32
     variational_tol = 1E-10
     max_num_sweeps = 10
 
@@ -21,5 +21,5 @@ function bench(instance::String, num_states::Int=100)
     println("ground from MPS: ", sol.energies[begin])
 end
 
-# best energy found: -52.59375
+# best energy found: -56.96875
 bench("$(@__DIR__)/../test/instances/pegasus_droplets/2_2_3_00.txt")

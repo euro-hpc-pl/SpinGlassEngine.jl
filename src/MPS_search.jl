@@ -36,7 +36,7 @@ function solve(ψ::AbstractMPS, keep::Int)
     states = fill([], 1, k)
     left_env = _make_left_env(ψ, k)
 
-    @showprogress "Search: " for (i, M) ∈ enumerate(ψ)
+    @showprogress "Search (MPS): " for (i, M) ∈ enumerate(ψ)
         _, d, b = size(M)
 
         pdo = ones(T, k, d)
@@ -134,7 +134,7 @@ function _apply_gates(
     ρ::AbstractMPS, ig::IsingGraph, Dcut::Int, var_ϵ::Number, sweeps::Int, dβ::Number
 )
     is_right = true
-    @showprogress "Preprocesing: " for i ∈ 1:nv(ig)
+    for i ∈ 1:nv(ig)
         _apply_bias!(ρ, ig, dβ, i)
         is_right = false
 
@@ -159,7 +159,7 @@ function SpinGlassTensors.MPS(
     ig::IsingGraph, Dcut::Int, var_ϵ::Number, sweeps::Int, schedule::Vector{<:Number}
 )
     ρ = HadamardMPS(ig)
-    for dβ ∈ schedule
+    @showprogress "MPS build: " for dβ ∈ schedule
         ρ =_apply_gates(ρ, ig, Dcut, var_ϵ, sweeps, dβ)
     end
     ρ

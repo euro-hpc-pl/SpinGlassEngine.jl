@@ -1,7 +1,12 @@
+using SpinGlassExhaustive
 using SpinGlassNetworks
 using SpinGlassTensors
 using SpinGlassEngine
 using Memoize
+
+function brute_force_gpu(ig::IsingGraph; num_states::Int)
+    brute_force(ig, :GPU, num_states=num_states)
+end
 
 function bench(instance::String)
     m = 2
@@ -12,22 +17,22 @@ function bench(instance::String)
     max_cl_states = 2^10
 
     β = 3.0
-    bond_dim = 64
+    bond_dim = 32
     δp = 1E-2
     num_states = 100
 
     @time ig = ising_graph(instance)
-
     @time fg = factor_graph(
         ig,
         max_cl_states,
-        spectrum=brute_force,
+        spectrum=brute_force_gpu,  # rm _gpu to use CPU
         cluster_assignment_rule=super_square_lattice((m, n, t))
     )
 
     params = MpsParameters(bond_dim, 1E-8, 10)
     search_params = SearchParameters(num_states, δp)
 
+    # Solve using PEPS search
     for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, )
         for Layout ∈ (EnergyGauges, ), transform ∈ rotation.([0])
             println((Strategy, Sparsity, Layout, transform))
@@ -35,9 +40,9 @@ function bench(instance::String)
             @time network = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, fg, transform)
             @time ctr = MpsContractor{Strategy}(network, [β/8, β/4, β/2, β], params)
 
-            @time sol = low_energy_spectrum(ctr, search_params, merge_branches(network))
+            @time sol_peps = low_energy_spectrum(ctr, search_params, merge_branches(network))
 
-            println(sol.energies[begin])
+            println("ground from PEPS ", sol_peps.energies[begin])
             clear_cache()
         end
     end

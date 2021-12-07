@@ -79,11 +79,9 @@
                 @testset "Results from MPS-based search agree with brute-force" begin
                     for max_states ∈ [1, N, 2*N, 3*N, N^2-3, N^2-2, N^2-1, N^2]
                         states, _ = solve(rψ, max_states)
-                        en = energy.(states, Ref(ig))
+                        en = energy(states, ig)
                         sp = brute_force(ig, num_states = max_states)
-                        for (e, ẽ) ∈ zip(sort(en), sp.energies)
-                            @test e ≈ ẽ
-                        end
+                        @test sort(en) ≈ sp.energies
                     end
                 end
             end

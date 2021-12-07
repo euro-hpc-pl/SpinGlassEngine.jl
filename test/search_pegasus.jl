@@ -46,4 +46,5 @@ function bench(instance::String)
     println(sort!(energies))
 end
 
+# best ground found: -59.65625
 bench("$(@__DIR__)/instances/pegasus_droplets/2_2_3_00.txt")

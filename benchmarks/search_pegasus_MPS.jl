@@ -20,5 +20,5 @@ function bench(instance::String, num_states::Int=100)
     println("ground from MPS: ", sol.energies[begin])
 end
 
-# best energy found: -44.34375
+# best energy found: -52.59375
 bench("$(@__DIR__)/../test/instances/pegasus_droplets/2_2_3_00.txt")

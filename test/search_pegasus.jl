@@ -30,7 +30,7 @@ function bench(instance::String)
 
     # Solve using PEPS search
     energies = Float64[]
-    for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, )
+    for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Sparse, )
         for Layout ∈ (EnergyGauges, ), transform ∈ all_lattice_transformations
             println((Strategy, Sparsity, Layout, transform))
 

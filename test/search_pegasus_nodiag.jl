@@ -21,7 +21,7 @@ function bench(instance::String)
     @time fg = factor_graph(
         ig,
         max_cl_states,
-        spectrum=brute_force_gpu,  # rm _gpu to use CPU
+        spectrum=brute_force_gpu, # rm _gpu to use CPU
         cluster_assignment_rule=super_square_lattice((m, n, t))
     )
 

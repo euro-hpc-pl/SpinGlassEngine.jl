@@ -5,8 +5,8 @@
 #end
 
 function bench(instance::String)
-    m = 2
-    n = 2
+    m = 4
+    n = 4
     t = 24
 
     L = n * m * t
@@ -46,5 +46,4 @@ function bench(instance::String)
     println(energies)
 end
 
-# best ground found: -59.65625
-bench("$(@__DIR__)/instances/pegasus_droplets/2_2_3_00.txt")
+bench("$(@__DIR__)/instances/pegasus_nodiag_4x4.txt")

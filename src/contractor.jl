@@ -129,42 +129,13 @@ end
     end
     QMpo(Dict(sites .=> tensors))
 end
-IdentityQMps(peps::PEPSNetwork{T, S}) where {T <: Square, S} =
-QMps(Dict(j => ones(1, 1, 1) for j ∈ 1:peps.ncols))
 
-function IdentityQMps(peps::PEPSNetwork{T, S}, Dmax::Int, loc_dim) where {T <: Square, S}
-    id = Dict{Int, Array{Float64, 3}}()
-    for i ∈ 2:peps.ncols-1 push!(id, i => zeros(Dmax, loc_dim[i], Dmax)) end
-
-    push!(id, 1 => zeros(1, loc_dim[1], Dmax))
-    push!(id, peps.ncols => zeros(Dmax, loc_dim[peps.ncols], 1))
-
-    for i ∈ 1:peps.ncols id[i][1, :, 1] .= 1 / sqrt(loc_dim[i]) end
-    QMps(id)
-end
-
-function IdentityQMps(peps::PEPSNetwork{T, S}) where {T <: SquareStar, S}
-    id = Dict()
-    for i ∈ 1//2:1//2:peps.ncols
-        ii = denominator(i) == 1 ? numerator(i) : i
-        push!(id, ii => ones(1, 1, 1))
-    end
-    QMps(id)
-end
-
-function IdentityQMps(peps::PEPSNetwork{T, S}, Dmax::Int, loc_dim) where {T <: SquareStar, S}
-    id = Dict()
-    for i ∈ 1:1//2:peps.ncols-1//2 push!(id, i => zeros(Dmax, loc_dim[i], Dmax)) end
-
-    push!(id, 1//2 => zeros(1, loc_dim[1//2], Dmax))
-    push!(id, peps.ncols => zeros(Dmax, loc_dim[peps.ncols], 1))
-
-    for i ∈ 1//2:1//2:peps.ncols id[i][1, :, 1] .= 1 / sqrt(loc_dim[i]) end
-    QMps(id)
-end
 
 @memoize function mps(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
-    if i > ctr.peps.nrows return IdentityQMps(ctr.peps) end
+    if i > ctr.peps.nrows
+        W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
+        return IdentityQMps(local_dims(W, :down))
+    end
 
     ψ = mps(ctr, i+1, indβ)
     W = mpo(ctr, ctr.layers.main, i, indβ)
@@ -183,7 +154,10 @@ end
 end
 
 @memoize function mps(ctr::MpsContractor{MPSAnnealing}, i::Int, indβ::Int)
-    if i > ctr.peps.nrows return IdentityQMps(ctr.peps) end
+    if i > ctr.peps.nrows
+        W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
+        return IdentityQMps(local_dims(W, :down))
+    end
 
     ψ = mps(ctr, i+1, indβ)
     W = mpo(ctr, ctr.layers.main, i, indβ)
@@ -191,7 +165,7 @@ end
     if indβ > 1
         ψ0 = mps(ctr, i, indβ-1)
     else
-        ψ0 = IdentityQMps(ctr.peps, ctr.params.bond_dimension, local_dims(W, :up))
+        ψ0 = IdentityQMps(local_dims(W, :up), ctr.params.bond_dimension)
         canonise!(ψ0, :left)
     end
     compress!(

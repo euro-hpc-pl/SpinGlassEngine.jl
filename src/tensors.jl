@@ -258,3 +258,16 @@ function tensor_size(
     ũ, d̃ = size(interaction_energy(network, (i, j + 1), (i + 1, j)))
     (min(u * ũ, d * d̃), d * d̃)
 end
+
+# This is to be changed
+function tensor_size(
+    network::PEPSNetwork{Pegasus, T}, node::PEPSNode, ::Val{:pegasus_site}
+) where T <: AbstractSparsity
+    collect(2^12 for i ∈ 1:4)
+end
+
+function tensor_size(
+    network::PEPSNetwork{Pegasus, T}, node::PEPSNode, ::Val{:sparse_pegasus_site}
+) where T <: AbstractSparsity
+    collect(2^12 for i ∈ 1:4)
+end

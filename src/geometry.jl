@@ -76,7 +76,8 @@ function Pegasus(m::Int, n::Int) where T
         add_edge!(lg, (i, j, 1), (i, j+1, 2))
     end
 
-    # for i ∈ 1:m-1, j ∈ 1:n-1  # diagonalne
+    # Diagonal:
+    # for i ∈ 1:m-1, j ∈ 1:n-1
     #     add_edge!(lg, (i, j, 2), (i+1, j+1, 1))
     #     add_edge!(lg, (i, j, 1), (i+1, j+1, 2))
     # end

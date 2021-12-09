@@ -23,7 +23,6 @@ function bench(instance::String)
         spectrum=brute_force_gpu, # rm _gpu to use CPU
         cluster_assignment_rule=pegasus_lattice((m, n))
     )
-    println(fg)
 
     params = MpsParameters(bond_dim, 1E-8, 10)
     search_params = SearchParameters(num_states, δp)
@@ -34,6 +33,7 @@ function bench(instance::String)
         for transform ∈ rotation.([0])
             println((Strategy, Sparsity, transform))
             @time network = PEPSNetwork{Pegasus, Sparsity}(m, n, fg, transform)
+
             #@time ctr = MpsContractor{Strategy}(network, [β/8, β/4, β/2, β], params)
 
             #@time sol_peps = low_energy_spectrum(ctr, search_params, merge_branches(network))

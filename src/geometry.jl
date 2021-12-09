@@ -10,6 +10,7 @@ abstract type AbstractTensorsLayout end
 
 struct SquareStar{T <: AbstractTensorsLayout} <: AbstractGeometry end
 struct Square{T <: AbstractTensorsLayout} <: AbstractGeometry end
+
 struct Pegasus <: AbstractGeometry end
 
 struct Dense <: AbstractSparsity end
@@ -61,7 +62,7 @@ function SquareStar(m::Int, n::Int)
     lg
 end
 
-function Pegasus(m::Int, n::Int) where T
+function Pegasus(m::Int, n::Int)
     labels = [(i, j, k) for j ∈ 1:n for i ∈ 1:m for k ∈ 1:2]
     lg = LabelledGraph(labels)
     for i ∈ 1:m, j ∈ 1:n add_edge!(lg, (i, j, 1), (i, j, 2)) end

@@ -1,19 +1,19 @@
-using SpinGlassExhaustive
+# using SpinGlassExhaustive
 
-function brute_force_gpu(ig::IsingGraph; num_states::Int)
-    brute_force(ig, :GPU, num_states=num_states)
-end
+# function brute_force_gpu(ig::IsingGraph; num_states::Int)
+#     brute_force(ig, :GPU, num_states=num_states)
+# end
 
 function bench(instance::String)
-    m = 2
-    n = 2
+    m = 4
+    n = 4
     t = 24
 
     L = n * m * t
     max_cl_states = 2^8
 
     β = 2.0
-    bond_dim = 64
+    bond_dim = 16
     δp = 1E-4
     num_states = 1000
 
@@ -21,7 +21,7 @@ function bench(instance::String)
     @time fg = factor_graph(
         ig,
         max_cl_states,
-        spectrum=brute_force_gpu, # rm _gpu to use CPU
+        spectrum=brute_force, #_gpu, # rm _gpu to use CPU
         cluster_assignment_rule=super_square_lattice((m, n, t))
     )
 
@@ -34,7 +34,7 @@ function bench(instance::String)
         for Layout ∈ (GaugesEnergy, ), transform ∈ all_lattice_transformations
             println((Strategy, Sparsity, Layout, transform))
 
-            @time network = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, fg, transform)
+            @time network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
             @time ctr = MpsContractor{Strategy}(network, [β/8, β/4, β/2, β], params)
 
             @time sol_peps = low_energy_spectrum(ctr, search_params, merge_branches(network))
@@ -43,8 +43,8 @@ function bench(instance::String)
             clear_cache()
         end
     end
-    @test all(e -> e ≈ first(energies), energies)
     println(energies)
+    @test all(e -> e ≈ first(energies), energies)
 end
 
-bench("$(@__DIR__)/instances/pegasus_nondiag/2x2.txt")
+bench("$(@__DIR__)/instances/pegasus_nondiag/4x4.txt")

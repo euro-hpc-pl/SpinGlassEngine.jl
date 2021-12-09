@@ -9,7 +9,7 @@ function bench(instance::String)
     n = 4
     L = n * m * 2 * 12
 
-    #max_cl_states = 2^8
+    max_cl_states = 2^8
 
     β = 2.0
     bond_dim = 16
@@ -19,7 +19,7 @@ function bench(instance::String)
     @time ig = ising_graph(instance)
     @time fg = factor_graph(
         ig,
-        # max_cl_states,
+        max_cl_states,
         spectrum=brute_force, #_gpu, # rm _gpu to use CPU
         cluster_assignment_rule=pegasus_lattice((m, n))
     )

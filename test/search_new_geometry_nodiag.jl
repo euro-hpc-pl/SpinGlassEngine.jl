@@ -5,8 +5,8 @@ function brute_force_gpu(ig::IsingGraph; num_states::Int)
 end
 
 function bench(instance::String)
-    m = 4
-    n = 4
+    m = 2
+    n = 2
     L = n * m * 2 * 12
 
     #max_cl_states = 2^8
@@ -23,6 +23,7 @@ function bench(instance::String)
         spectrum=brute_force_gpu, # rm _gpu to use CPU
         cluster_assignment_rule=pegasus_lattice((m, n))
     )
+    println(fg)
 
     params = MpsParameters(bond_dim, 1E-8, 10)
     search_params = SearchParameters(num_states, δp)
@@ -45,4 +46,4 @@ function bench(instance::String)
     println(energies)
 end
 
-bench("$(@__DIR__)/instances/pegasus_nondiag/4x4.txt")
+bench("$(@__DIR__)/instances/pegasus_nondiag/2x2.txt")

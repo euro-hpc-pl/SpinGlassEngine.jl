@@ -12,7 +12,7 @@ function bench(instance::String)
     L = n * m * t
     max_cl_states = 2^8
 
-    β = 2.0
+    β = 2.5
     bond_dim = 16
     δp = 1E-4
     num_states = 1000
@@ -30,11 +30,11 @@ function bench(instance::String)
 
     # Solve using PEPS search
     energies = Float64[]
-    for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, )
-        for Layout ∈ (GaugesEnergy, ), transform ∈ all_lattice_transformations
+    for Strategy ∈ (MPSAnnealing, ), Sparsity ∈ (Sparse, )
+        for Layout ∈ (GaugesEnergy, EnergyGauges, EngGaugesEng), transform ∈ all_lattice_transformations
             println((Strategy, Sparsity, Layout, transform))
 
-            @time network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
+            @time network = PEPSNetwork{Star{Layout}, Sparsity}(m, n, fg, transform)
             @time ctr = MpsContractor{Strategy}(network, [β/8, β/4, β/2, β], params)
 
             @time sol_peps = low_energy_spectrum(ctr, search_params, merge_branches(network))

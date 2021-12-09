@@ -7,7 +7,7 @@
     t = 3
     L = n * m * t
 
-    β = 1.
+    β = 2.
     bond_dim = 16
     num_states = 22
 

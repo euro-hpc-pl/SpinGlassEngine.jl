@@ -9,7 +9,7 @@ function bench(instance::String)
     n = 2
     L = n * m * 2 * 12
 
-    #max_cl_states = 2^8
+    max_cl_states = 2^8
 
     β = 2.0
     bond_dim = 16

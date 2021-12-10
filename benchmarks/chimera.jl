@@ -1,8 +1,13 @@
 using SpinGlassEngine
+using SpinGlassNetworks
+using SpinGlassTensors
 using Logging
 using CSV
+using DataFrames
+
 
 disable_logging(LogLevel(1))
+
 
 function bench(instance_dir::String, out_path::String)
     m = 16
@@ -18,9 +23,7 @@ function bench(instance_dir::String, out_path::String)
     betas = collect(1:8)
 
     dir = cd(instance_dir)
-
-    open(out_path, "w") do file
-
+    count = 0
     for (i, instance) ∈ enumerate(readdir(join=true))
         ig = ising_graph(instance)
 
@@ -33,27 +36,49 @@ function bench(instance_dir::String, out_path::String)
         params = MpsParameters(bond_dim, variational_tol, max_num_sweeps)
         search_params = SearchParameters(num_states, δp)
 
-        for β ∈ betas, Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, )
+        for β ∈ betas, Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, Sparse)
             for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng), transform ∈ rotation.([0])
+                  
+                  
+                data = try
 
-                network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
-                ctr = MpsContractor{Strategy}(network, [β], params)
+                    network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
+                    ctr = MpsContractor{Strategy}(network, [β], params)
+                    times = @elapsed sol = low_energy_spectrum(ctr, search_params, merge_branches(network))
 
-                times = @elapsed sol = low_energy_spectrum(ctr, search_params, merge_branches(network))
-                data = Dict(
-                    "i" => i, "β" => β, "Strategy" => Strategy,
-                    "Sparsity" => Sparsity, "Layout" => Layout,
-                    "transform" => transform, "energies" => sol.energies[1:1],
-                    "time" => times
-                )
-                CSV.write(file, data, delim = ';', append = true)
+                    data = DataFrame(:i => i, :β => β, :Strategy => Strategy,
+                    :Sparsity => Sparsity, :Layout => Layout,
+                    :transform => transform, :energies => sol.energies[1:1],
+                    :time => times)
+
+                    data
+
+                catch e 
+                    
+
+                    data = DataFrame(:i => i, :β => β, :Strategy => Strategy,
+                    :Sparsity => Sparsity, :Layout => Layout,
+                    :transform => transform, :energies => "ERROR",
+                    :time => "ERROR")
+                        
+                    data
+                    
+
+                
+                end
+                println(data)
+                CSV.write(out_path, data, delim = ';', append = count != 0)
+                
+                count += 1
+
+                
             end
         end
     end
 end
-end
+
 
 bench(
     "/home/tsmierzchalski/tensor/chimera2048_spinglass_power",
-    "/home/tsmierzchalski/tensor/chimera.csv"
+    "/home/tsmierzchalski/tensor/chimera2048_97.csv"
     )

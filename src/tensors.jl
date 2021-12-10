@@ -259,15 +259,65 @@ function tensor_size(
     (min(u * ũ, d * d̃), d * d̃)
 end
 
-# This is to be changed
+######### Pegasus #############
+
+
+function tensor(
+    network::PEPSNetwork{Pegasus, T}, node::PEPSNode, β::Real, ::Val{:pegasus_site}
+) where T <: AbstractSparsity
+    i, j = node.i, node.j
+    j1 = 2*j-1
+    j2 = 2*j
+
+    en1 = local_energy(network, (i, j1))
+    en2 = local_energy(network, (i, j2))
+    en12 = interaction_energy(network, (i, j1), (i, j2))
+    eloc = zeros(length(en1), length(en2))
+    p1 = projector(network, (i, j1), (i, j2))
+    p2 = projector(network, (i, j2), (i, j1))
+    for s1 ∈ 1:length(en1), s2 ∈ 1:length(en2)
+        eloc[s2, s1] = en1[s1] + en2[s2] + en12[p1[s1], p2[s2]]
+    end
+    eloc = eloc .- minimum(eloc)
+
+    e1d = interaction_energy(network, (i, j1), (i+1, j1))
+    e2d = interaction_energy(network, (i, j2), (i+1, j1))
+    e1r = interaction_energy(network, (i, j1), (i, j1+2))
+    e2r = interaction_energy(network, (i, j2), (i, j1+2))
+    
+    
+    # projs = projectors(network, Node(node))
+    # A = zeros(maximum.(projs))
+
+    # left_nbrs = ((i+1, j+1), (i, j+1), (i-1, j+1))
+    # prl = projector.(Ref(network), Ref((i, j)), left_nbrs)
+    # p_lb, p_l, p_lt = last(fuse_projectors(prl))
+
+    # for σ1 ∈ 1:length(en1), σ2 ∈ 1:length(en2)
+    #     A[projs] = 0
+    
+    # end
+
+
+    # for (σ, lexp) ∈ enumerate(loc_exp) A[getindex.(projs, Ref(σ))...] += lexp end
+    # A
+end
+
+# function tensor(
+#     network::PEPSNetwork{Pegasus, T}, node::PEPSNode, β::Real, ::Val{:sparse_pegasus_site}
+# ) where T <: AbstractSparsity
+#     ## TO BE ADDED
+# end
+
+
 function tensor_size(
     network::PEPSNetwork{Pegasus, T}, node::PEPSNode, ::Val{:pegasus_site}
 ) where T <: AbstractSparsity
-    collect(2^12 for i ∈ 1:4)
+    maximum.(projectors(network, Node(node)))
 end
 
 function tensor_size(
     network::PEPSNetwork{Pegasus, T}, node::PEPSNode, ::Val{:sparse_pegasus_site}
 ) where T <: AbstractSparsity
-    collect(2^12 for i ∈ 1:4)
+maximum.(projectors(network, Node(node)))
 end

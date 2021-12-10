@@ -25,46 +25,34 @@ function tensor(
     network::PEPSNetwork{T, Sparse}, v::PEPSNode, β::Real, ::Val{:sparse_site}
 ) where T <: AbstractGeometry
     en = local_energy(network, Node(v))
-    SparseSiteTensor(
-        exp.(-β .* (en .- minimum(en))),
-        projectors(network, Node(v))
-    )
+    SparseSiteTensor(exp.(-β .* (en .- minimum(en))), projectors(network, Node(v)))
 end
 
 function Base.size(
-    network::PEPSNetwork{T, Dense}, v::PEPSNode, ::Val{:site}
+    network::PEPSNetwork{T, Dense}, v::PEPSNode, ::Union{Val{:site}, Val{:sparse_site}}
 ) where T <: AbstractGeometry
     maximum.(projectors(network, Node(v)))
 end
 
-function Base.size(
-    network::PEPSNetwork{T, Sparse}, v::PEPSNode, ::Val{:sparse_site}
-) where T <: AbstractGeometry
-    size(network, v, Val(:site))
-end
-
 function tensor(
-    network::AbstractGibbsNetwork{Node, PEPSNode},
-    node::PEPSNode, β::Real, ::Val{:central_v}
+    net::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, β::Real, ::Val{:central_v}
 )
     i = floor(Int, node.i)
-    connecting_tensor(network, (i, node.j), (i+1, node.j), β)
+    connecting_tensor(net, (i, node.j), (i+1, node.j), β)
 end
 
 function Base.size(
-    network::AbstractGibbsNetwork{Node, PEPSNode},
-    node::PEPSNode, ::Val{:central_v}
+    network::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, ::Val{:central_v}
 )
     i = floor(Int, node.i)
     size(interaction_energy(network, (i, node.j), (i+1, node.j)))
 end
 
 function tensor(
-    network::AbstractGibbsNetwork{Node, PEPSNode},
-    node::PEPSNode, β::Real, ::Val{:central_h}
+    net::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, β::Real, ::Val{:central_h}
 )
     j = floor(Int, node.j)
-    connecting_tensor(network, (node.i, j), (node.i, j+1), β)
+    connecting_tensor(net, (node.i, j), (node.i, j+1), β)
 end
 
 function Base.size(
@@ -117,27 +105,25 @@ function tensor(
     for l ∈ 1:length(p_l), r ∈ 1:length(p_r)
         A[l, p_rt[r], p_lt[l], r, p_lb[l], p_rb[r]] = h[p_l[l], p_r[r]]
     end
-
     @cast AA[l, (ũ, u), r, (d̃, d)] := A[l, ũ, u, r, d̃, d]
     AA
 end
 
 function tensor(
-    network::PEPSNetwork{SquareStar{T}, Sparse},
-    node::PEPSNode, β::Real, ::Val{:sparse_virtual}
+    net::PEPSNetwork{SquareStar{T}, Sparse}, node::PEPSNode, β::Real, ::Val{:sparse_virtual}
 ) where T <: AbstractTensorsLayout
     i, j = node.i, floor(Int, node.j)
 
     left_nbrs = ((i+1, j+1), (i, j+1), (i-1, j+1))
-    prl = projector.(Ref(network), Ref((i, j)), left_nbrs)
+    prl = projector.(Ref(net), Ref((i, j)), left_nbrs)
     p_lb, p_l, p_lt = last(fuse_projectors(prl))
 
     right_nbrs = ((i+1, j), (i, j), (i-1, j))
-    prr = projector.(Ref(network), Ref((i, j+1)), right_nbrs)
+    prr = projector.(Ref(net), Ref((i, j+1)), right_nbrs)
     p_rb, p_r, p_rt = last(fuse_projectors(prr))
 
     v = Node(node)
-    h = connecting_tensor(network, floor.(Int, v), ceil.(Int, v), β)
+    h = connecting_tensor(net, floor.(Int, v), ceil.(Int, v), β)
 
     SparseVirtualTensor(h, (vec(p_lb), vec(p_l), vec(p_lt), vec(p_rb), vec(p_r), vec(p_rt)))
 end

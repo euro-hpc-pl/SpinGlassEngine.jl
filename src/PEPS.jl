@@ -52,8 +52,7 @@ end
 
 function projectors(network::PEPSNetwork{T, S}, vertex::Node) where {T <: Pegasus, S}
     i, j = vertex
-    j1 = 2*j-1
-    j2 = 2*j
+    j1, j2 = 2*j-1, 2*j
     (
         projector(network, (i, j2), ((i, j1-2), (i, j2-2))),
         projector(network, (i, j1), ((i-1, j1), (i-1, j2))),

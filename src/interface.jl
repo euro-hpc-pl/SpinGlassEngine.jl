@@ -137,7 +137,7 @@ function initialize_gauges!(
     for gauge ∈ network.gauges.info
         n1, n2 = gauge.positions
         push!(network.tensors_map, n1 => gauge.type, n2 => gauge.type)
-        d = tensor_size(network, gauge.attached_tensor)[gauge.attached_leg]
+        d = size(network, gauge.attached_tensor)[gauge.attached_leg]
         X = type == :id ? ones(d) : rand(d) .+ 0.42
         push!(network.gauges.data, n1 => X, n2 => 1 ./ X)
     end

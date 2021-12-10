@@ -1,13 +1,13 @@
-export tensor_size, tensor
+export tensor
 
 function tensor(network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, β::Real)
     if v ∉ keys(network.tensors_map) return ones(1, 1) end
     tensor(network, v, β, Val(network.tensors_map[v]))
 end
 
-function tensor_size(network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode)
+function Base.size(network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode)
     if v ∉ keys(network.tensors_map) return (1, 1) end
-    tensor_size(network, v, Val(network.tensors_map[v]))
+    size(network, v, Val(network.tensors_map[v]))
 end
 
 function tensor(
@@ -31,16 +31,16 @@ function tensor(
     )
 end
 
-function tensor_size(
+function Base.size(
     network::PEPSNetwork{T, Dense}, v::PEPSNode, ::Val{:site}
 ) where T <: AbstractGeometry
     maximum.(projectors(network, Node(v)))
 end
 
-function tensor_size(
+function Base.size(
     network::PEPSNetwork{T, Sparse}, v::PEPSNode, ::Val{:sparse_site}
 ) where T <: AbstractGeometry
-    tensor_size(network, v, Val(:site))
+    size(network, v, Val(:site))
 end
 
 function tensor(
@@ -51,7 +51,7 @@ function tensor(
     connecting_tensor(network, (i, node.j), (i+1, node.j), β)
 end
 
-function tensor_size(
+function Base.size(
     network::AbstractGibbsNetwork{Node, PEPSNode},
     node::PEPSNode, ::Val{:central_v}
 )
@@ -67,7 +67,7 @@ function tensor(
     connecting_tensor(network, (node.i, j), (node.i, j+1), β)
 end
 
-function tensor_size(
+function Base.size(
     network::AbstractGibbsNetwork{Node, PEPSNode}, w::PEPSNode, ::Val{:central_h}
 )
     j = floor(Int, node.j)
@@ -84,7 +84,7 @@ function tensor(
     A
 end
 
-function tensor_size(
+function Base.size(
     network::PEPSNetwork{SquareStar{T}, S}, node::PEPSNode, ::Val{:central_d}
 ) where {T <: AbstractTensorsLayout, S <: AbstractSparsity}
     i, j = floor(Int, node.i), floor(Int, node.j)
@@ -110,9 +110,9 @@ function tensor(
     h = connecting_tensor(network, floor.(Int, v), ceil.(Int, v), β)
 
     A = zeros(
-            length(p_l), maximum(p_rt), maximum(p_lt),
-            length(p_r), maximum(p_lb), maximum(p_rb)
-        )
+        length(p_l), maximum(p_rt), maximum(p_lt),
+        length(p_r), maximum(p_lb), maximum(p_rb)
+    )
 
     for l ∈ 1:length(p_l), r ∈ 1:length(p_r)
         A[l, p_rt[r], p_lt[l], r, p_lb[l], p_rb[r]] = h[p_l[l], p_r[r]]
@@ -165,7 +165,7 @@ function tensor(
     Diagonal(network.gauges.data[v])
 end
 
-function tensor_size(
+function Base.size(
     network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, ::Val{:gauge_h}
 )
     u = size(network.gauges.data[v], 1)
@@ -201,7 +201,7 @@ function tensor(
     sqrt_tensor_up(network, (i, j), (i+1, j), β)
 end
 
-function tensor_size(
+function Base.size(
     network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, ::Val{:sqrt_up}
 )
     r, j = Node(v)
@@ -218,7 +218,7 @@ function tensor(
     sqrt_tensor_down(network, (i, j), (i+1, j), β)
 end
 
-function tensor_size(
+function Base.size(
     network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, ::Val{:sqrt_down}
 )
     r, j = Node(v)
@@ -234,7 +234,7 @@ function tensor(
     U * Diagonal(sqrt.(Σ))
 end
 
-function tensor_size(
+function Base.size(
     network::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, ::Val{:sqrt_up_d}
 )
     i, j = floor(Int, node.i), floor(Int, node.j)
@@ -250,7 +250,7 @@ function tensor(
     Diagonal(sqrt.(Σ)) * V'
 end
 
-function tensor_size(
+function Base.size(
     network::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, ::Val{:sqrt_down_d}
 )
     i, j = floor(Int, node.i), floor(Int, node.j)
@@ -259,15 +259,13 @@ function tensor_size(
     (min(u * ũ, d * d̃), d * d̃)
 end
 
-######### Pegasus #############
-
+#-------------- Pegasus --------------
 
 function tensor(
     network::PEPSNetwork{Pegasus, T}, node::PEPSNode, β::Real, ::Val{:pegasus_site}
 ) where T <: AbstractSparsity
     i, j = node.i, node.j
-    j1 = 2*j-1
-    j2 = 2*j
+    j1, j2 = 2*j-1, 2*j
 
     en1 = local_energy(network, (i, j1))
     en2 = local_energy(network, (i, j2))
@@ -275,6 +273,7 @@ function tensor(
     eloc = zeros(length(en1), length(en2))
     p1 = projector(network, (i, j1), (i, j2))
     p2 = projector(network, (i, j2), (i, j1))
+
     for s1 ∈ 1:length(en1), s2 ∈ 1:length(en2)
         eloc[s2, s1] = en1[s1] + en2[s2] + en12[p1[s1], p2[s2]]
     end
@@ -284,8 +283,8 @@ function tensor(
     e2d = interaction_energy(network, (i, j2), (i+1, j1))
     e1r = interaction_energy(network, (i, j1), (i, j1+2))
     e2r = interaction_energy(network, (i, j2), (i, j1+2))
-    
-    
+
+
     # projs = projectors(network, Node(node))
     # A = zeros(maximum.(projs))
 
@@ -295,7 +294,7 @@ function tensor(
 
     # for σ1 ∈ 1:length(en1), σ2 ∈ 1:length(en2)
     #     A[projs] = 0
-    
+
     # end
 
 
@@ -309,15 +308,14 @@ end
 #     ## TO BE ADDED
 # end
 
-
-function tensor_size(
+function Base.size(
     network::PEPSNetwork{Pegasus, T}, node::PEPSNode, ::Val{:pegasus_site}
 ) where T <: AbstractSparsity
     maximum.(projectors(network, Node(node)))
 end
 
-function tensor_size(
+function Base.size(
     network::PEPSNetwork{Pegasus, T}, node::PEPSNode, ::Val{:sparse_pegasus_site}
 ) where T <: AbstractSparsity
-maximum.(projectors(network, Node(node)))
+    maximum.(projectors(network, Node(node)))
 end

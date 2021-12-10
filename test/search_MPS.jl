@@ -1,13 +1,10 @@
 @testset "MPS based search finds the correct low energy spectrum" begin
 
     instance = "$(@__DIR__)/instances/pathological/cross_3_4_dd.txt"
-    #instance = "$(@__DIR__)/instances/basic/16_001.txt"
-    #instance = "$(@__DIR__)/instances/basic/128_001.txt"
 
     ig = ising_graph(instance)
 
     expected_energies = [-23.301855, -23.221513, -23.002799, -22.922457]
-    ground_state_energy = -23.301855
 
     max_states = 20000
     to_show = length(expected_energies)
@@ -18,24 +15,37 @@
     Dcut = 32
     var_ϵ = 1E-8
     max_sweeps = 4
- 
+
     @testset "without any purification" begin
-        igp = prune(ig) 
+        igp = prune(ig)
         schedule = fill(dβ, Int(ceil(β/dβ)))
         ψ = MPS(igp, Dcut, var_ϵ, max_sweeps, schedule)
         states, lprob, _ = solve(ψ, max_states)
-        @test sort(energy.(states[1:to_show], Ref(igp))) ≈ expected_energies
-    end  
-    
+        @test sort(energy(states[1:to_show], igp)) ≈ expected_energies
+    end
+
     @testset "with purification" begin
         sol_log = low_energy_spectrum(
-            ig, Dcut, var_ϵ, max_sweeps, 
-            dβ, β, :log, max_states
+            ig,
+            Dcut,
+            var_ϵ,
+            max_sweeps,
+            dβ,
+            β,
+            :log,
+            max_states
         )
         sol_lin = low_energy_spectrum(
-            ig, Dcut, var_ϵ, max_sweeps, 
-            dβ, β, :lin, max_states
+            ig,
+            Dcut,
+            var_ϵ,
+            max_sweeps,
+            dβ,
+            β,
+            :lin,
+            max_states
         )
-        @test sol_log.energies[1] ≈ sol_lin.energies[1] ≈ ground_state_energy
-    end 
-end 
+        @test sol_log.energies[1:to_show] ≈ sol_lin.energies[1:to_show]
+        @test sol_log.energies[1:to_show] ≈ expected_energies[1:to_show]
+    end
+end

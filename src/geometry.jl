@@ -1,6 +1,6 @@
 export IntOrRational, Node, PEPSNode, AbstractGeometry, AbstractSparsity
 export AbstractTensorsLayout, tensor_map, gauges_list, Dense, Sparse, Gauges
-export Square, SquareStar, GaugesEnergy, EnergyGauges, EngGaugesEng, Chimera, Pegazus
+export Square, SquareStar, GaugesEnergy, EnergyGauges, EngGaugesEng, Pegasus
 
 const IntOrRational = Union{Int, Rational{Int}}
 
@@ -11,6 +11,8 @@ abstract type AbstractTensorsLayout end
 struct SquareStar{T <: AbstractTensorsLayout} <: AbstractGeometry end
 struct Square{T <: AbstractTensorsLayout} <: AbstractGeometry end
 
+struct Pegasus <: AbstractGeometry end
+
 struct Dense <: AbstractSparsity end
 struct Sparse <: AbstractSparsity end
 
@@ -19,9 +21,6 @@ struct EnergyGauges{T} <: AbstractTensorsLayout end
 struct EngGaugesEng{T} <: AbstractTensorsLayout end
 
 const Node = NTuple{2, Int}
-
-const Chimera = Square
-const Pegazus = SquareStar
 
 struct PEPSNode
     i::IntOrRational
@@ -60,6 +59,29 @@ function SquareStar(m::Int, n::Int)
         add_edge!(lg, (i, j), (i+1, j+1))
         add_edge!(lg, (i+1, j), (i, j+1))
     end
+    lg
+end
+
+function Pegasus(m::Int, n::Int)
+    labels = [(i, j) for j ∈ 1:2*n for i ∈ 1:m]
+    lg = LabelledGraph(labels)
+    for i ∈ 1:m, j ∈ 1:n add_edge!(lg, (i, 2*j-1), (i, 2*j)) end
+
+    for i ∈ 1:m-1, j ∈ 1:n
+        add_edge!(lg, (i, 2*j-1), (i+1, 2*j-1))
+        add_edge!(lg, (i, 2*j), (i+1, 2*j-1))
+    end
+
+    for i ∈ 1:m, j ∈ 1:n-1
+        add_edge!(lg, (i, 2*j), (i, 2*j+2))
+        add_edge!(lg, (i, 2*j-1), (i, 2*j+2))
+    end
+
+    # Diagonal:
+    # for i ∈ 1:m-1, j ∈ 1:n-1
+    #     add_edge!(lg, (i, 2*j), (i+1, 2*j+1))
+    #     add_edge!(lg, (i, 2*j-1), (i+1, 2*j+2))
+    # end
     lg
 end
 
@@ -223,5 +245,34 @@ function gauges_list(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T <: E
             :gauge_h
         )
         for i ∈ 1:nrows-1 for j ∈ 1//2:1//2:ncols
+    ]
+end
+
+#------------------------------
+###    Pegasus geometry     ###
+#------------------------------
+# Geometry: 2 nodes -> 1 TN site.
+# This will work for Chimera.
+
+PegasusSite(::Type{Dense}) = :pegasus_site
+PegasusSite(::Type{Sparse}) = :sparse_pegasus_site
+
+function tensor_map(
+    ::Type{Pegasus}, ::Type{S}, nrows::Int, ncols::Int
+) where S <: AbstractSparsity
+    map = Dict{PEPSNode, Symbol}()
+    for i ∈ 1:nrows, j ∈ 1:ncols push!(map, PEPSNode(i, j) => PegasusSite(S)) end
+    map
+end
+
+function gauges_list(::Type{Pegasus}, nrows::Int, ncols::Int)
+    [
+        GaugeInfo(
+            (PEPSNode(i + 1//3, j), PEPSNode(i + 2//3, j)),
+            PEPSNode(i , j),
+            2,
+            :gauge_h
+        )
+        for i ∈ 1:nrows-1 for j ∈ 1:ncols
     ]
 end

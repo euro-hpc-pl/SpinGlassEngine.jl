@@ -1,4 +1,4 @@
-export SVDTruncate, MPSAnnealing, MpoLayers, MpsParameters, MpsContractor
+export SVDTruncate, MPSAnnealing, MpoLayers, MpsParameters, MpsContractor, clear_cache
 
 abstract type AbstractContractor end
 abstract type AbstractStrategy end
@@ -129,31 +129,13 @@ end
     end
     QMpo(Dict(sites .=> tensors))
 end
-IdentityQMps(peps::PEPSNetwork{T, S}) where {T <: Square, S} =
-QMps(Dict(j => ones(1, 1, 1) for j ∈ 1:peps.ncols))
 
-function IdentityQMps(peps::PEPSNetwork{T, S}, Dmax::Int, loc_dim) where {T, S}
-    id = Dict{Int, Array{Float64, 3}}()
-    for i ∈ 2:peps.ncols-1 push!(id, i => zeros(Dmax, loc_dim[i], Dmax)) end
-
-    push!(id, 1 => zeros(1, loc_dim[1], Dmax))
-    push!(id, peps.ncols => zeros(Dmax, loc_dim[peps.ncols], 1))
-
-    for i ∈ 1:peps.ncols id[i][1, :, 1] .= 1 / sqrt(loc_dim[i]) end
-    QMps(id)
-end
-
-function IdentityQMps(peps::PEPSNetwork{T, S}) where {T <: SquareStar, S}
-    id = Dict()
-    for i ∈ 1//2:1//2:peps.ncols
-        ii = denominator(i) == 1 ? numerator(i) : i
-        push!(id, ii => ones(1, 1, 1))
-    end
-    QMps(id)
-end
 
 @memoize function mps(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
-    if i > ctr.peps.nrows return IdentityQMps(ctr.peps) end
+    if i > ctr.peps.nrows
+        W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
+        return IdentityQMps(local_dims(W, :down))
+    end
 
     ψ = mps(ctr, i+1, indβ)
     W = mpo(ctr, ctr.layers.main, i, indβ)
@@ -172,7 +154,10 @@ end
 end
 
 @memoize function mps(ctr::MpsContractor{MPSAnnealing}, i::Int, indβ::Int)
-    if i > ctr.peps.nrows return IdentityQMps(ctr.peps) end
+    if i > ctr.peps.nrows
+        W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
+        return IdentityQMps(local_dims(W, :down))
+    end
 
     ψ = mps(ctr, i+1, indβ)
     W = mpo(ctr, ctr.layers.main, i, indβ)
@@ -180,7 +165,7 @@ end
     if indβ > 1
         ψ0 = mps(ctr, i, indβ-1)
     else
-        ψ0 = IdentityQMps(ctr.peps, ctr.params.bond_dimension, local_dims(W, :up))
+        ψ0 = IdentityQMps(local_dims(W, :up), ctr.params.bond_dimension)
         canonise!(ψ0, :left)
     end
     compress!(
@@ -258,20 +243,6 @@ function _update_reduced_env_right(
     R
 end
 
-# function _update_reduced_env_right(
-#     K::AbstractArray{Float64, 1},
-#     RE::AbstractArray{Float64, 2},
-#     M::SparseSiteTensor,
-#     B::AbstractArray{Float64, 3}
-# )
-#     R = zeros(size(B, 1), maximum(M.projs[1]))
-#     for (σ, lexp) ∈ enumerate(M.loc_exp)
-#         re = @view RE[:, M.projs[3][σ]]
-#         b = @view B[:, M.projs[4][σ], :]
-#         R[:, M.projs[1][σ]] += (lexp * K[M.projs[2][σ]]) .* (b * re)
-#     end
-#     R
-# end
 
 function _update_reduced_env_right(
     K::AbstractArray{Float64, 1},
@@ -298,7 +269,16 @@ function _update_reduced_env_right(
     M::SparseVirtualTensor,
     B::AbstractArray{Float64, 3}
 )
-    # to be written
+    h = M.con
+    p_lb, p_l, p_lt, p_rb, p_r, p_rt = M.projs
+    @cast B4[x, k, l, y] := B[x, (k, l), y] (k ∈ 1:maximum(p_lb))
+    @cast K2[t1, t2] := K[(t1, t2)] (t1 ∈ 1:maximum(p_rt))
+    @tensor REB[x, y1, y2, β] := B4[x, y1, y2, α] * RE[α, β]
+    R = zeros(size(B, 1), length(p_l))
+    for l ∈ 1:length(p_l), r ∈ 1:length(p_r)
+        R[:, l] += (K2[p_rt[r], p_lt[l]] .* h[p_l[l], p_r[r]]) .* REB[:, p_lb[l], p_rb[r], r]
+    end
+    R
 end
 
 @memoize Dict function left_env(
@@ -395,4 +375,12 @@ function conditional_probability(
         loc_exp[σ] *= (lmx' * m * r)[]
     end
     normalize_probability(loc_exp)
+end
+
+function clear_cache()
+    empty!(memoize_cache(left_env))
+    empty!(memoize_cache(right_env))
+    empty!(memoize_cache(mpo))
+    empty!(memoize_cache(mps))
+    empty!(memoize_cache(dressed_mps))
 end

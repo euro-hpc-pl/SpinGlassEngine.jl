@@ -6,18 +6,18 @@ _make_LL(ψ::AbstractMPS, b::Int, k::Int, d::Int) = zeros(eltype(ψ), b, k, d)
 function low_energy_spectrum(
     ig::IsingGraph,
     Dcut::Int,
-    var_ϵ::T,
+    var_ϵ::Real,
     max_sweeps::Int,
-    dβ::T,
-    β::T,
+    dβ::Real,
+    β::Real,
     schedule::Symbol,
     num_states::Int
-) where T <: Number
+)
     igp = prune(ig)
     ψ = MPS(igp, Dcut, var_ϵ, max_sweeps, dβ, β, schedule)
     states, probs, ldp = solve(ψ, num_states)
 
-    en = energy.(states, Ref(igp))
+    en = energy(states, igp)
     idx = sortperm(en)
     Solution(en[idx], states[idx], probs[idx], [0], ldp)
 end
@@ -36,7 +36,7 @@ function solve(ψ::AbstractMPS, keep::Int)
     states = fill([], 1, k)
     left_env = _make_left_env(ψ, k)
 
-    for (i, M) ∈ enumerate(ψ)
+    @showprogress "Search (MPS): " for (i, M) ∈ enumerate(ψ)
         _, d, b = size(M)
 
         pdo = ones(T, k, d)
@@ -46,7 +46,6 @@ function solve(ψ::AbstractMPS, keep::Int)
 
         for j ∈ 1:k
             L = left_env[:, j]
-
             for σ ∈ local_basis(d)
                 m = idx(σ)
                 LL[:, j, m] = L' * M[:, m, :]
@@ -95,7 +94,7 @@ function _apply_exponent!(
     J = get_prop(ig, i, j, :J)
     σ = local_basis(ψ, i)
     η = local_basis(ψ, j)'
-    C = exp.(-0.5 * dβ * σ *J * η )
+    C = exp.(-0.5 * dβ * σ *J * η)
 
     if j == last
         @cast M̃[(x, a), σ, b] := C[x, σ] * M[a, σ, b]
@@ -142,12 +141,8 @@ function _apply_gates(
         nbrs = unique_neighbors(ig, i)
         if !isempty(nbrs)
             _apply_projector!(ρ, i)
-            for j ∈ nbrs
-                _apply_exponent!(ρ, ig, dβ, i, j, last(nbrs))
-            end
-            for l ∈ _holes(i, nbrs)
-                _apply_nothing!(ρ, l, i)
-            end
+            for j ∈ nbrs _apply_exponent!(ρ, ig, dβ, i, j, last(nbrs)) end
+            for l ∈ _holes(i, nbrs) _apply_nothing!(ρ, l, i) end
         end
 
         if bond_dimension(ρ) > Dcut
@@ -164,15 +159,20 @@ function SpinGlassTensors.MPS(
     ig::IsingGraph, Dcut::Int, var_ϵ::Number, sweeps::Int, schedule::Vector{<:Number}
 )
     ρ = HadamardMPS(ig)
-    for dβ ∈ schedule
+    @showprogress "MPS build: " for dβ ∈ schedule
         ρ =_apply_gates(ρ, ig, Dcut, var_ϵ, sweeps, dβ)
     end
     ρ
 end
 
 function SpinGlassTensors.MPS(
-    ig::IsingGraph, Dcut::Int, var_ϵ::Number,
-    sweeps::Int, dβ::Number, β::Number, schedule::Symbol
+    ig::IsingGraph,
+    Dcut::Int,
+    var_ϵ::Real,
+    sweeps::Int,
+    dβ::Real,
+    β::Real,
+    schedule::Symbol
 )
     ρ = HadamardMPS(ig)
     is_right = true
@@ -180,7 +180,7 @@ function SpinGlassTensors.MPS(
     if schedule == :log
         k = Int(ceil(log2(β/dβ)))
         ρ = _apply_gates(ρ, ig, Dcut, var_ϵ, sweeps, β/(2^k))
-        for _ ∈ 1:k
+        @showprogress "MPS build: " for _ ∈ 1:k
             ρ = purifications(ρ)
             if bond_dimension(ρ) > Dcut
                 ρ = SpinGlassTensors.compress(ρ, Dcut, var_ϵ, sweeps)
@@ -191,7 +191,7 @@ function SpinGlassTensors.MPS(
         k = ceil(β/dβ)
         ρ = _apply_gates(ρ, ig, Dcut, var_ϵ, sweeps, β/k)
         ρ0 = copy(ρ)
-        for _ ∈ 1:Int(k)
+        @showprogress "MPS build: " for _ ∈ 1:Int(k)
             ρ = purifications(ρ, ρ0)
             if bond_dimension(ρ) > Dcut
                 ρ = SpinGlassTensors.compress(ρ, Dcut, var_ϵ, sweeps)

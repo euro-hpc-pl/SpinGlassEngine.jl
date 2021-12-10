@@ -57,7 +57,7 @@
         15 => 4, 16 => 4, 17 => 4, 18 => 4, 19 => 4, 20 => 4,
         #
         21 => 5, 22 => 5,
-        )
+    )
 
     instance = "$(@__DIR__)/instances/pathological/chim_$(m)_$(n)_$(t).txt"
 
@@ -82,6 +82,7 @@
 
                 @test sol.energies ≈ exact_energies
                 for (i, σ) ∈ enumerate(sol.states) @test σ ∈ exact_states[deg[i]] end
+                clear_cache()
             end
         end
     end

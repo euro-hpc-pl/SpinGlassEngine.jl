@@ -1,8 +1,10 @@
 module SpinGlassEngine
 
 using Base: Tuple
-using SpinGlassTensors, SpinGlassNetworks
-using TensorOperations, TensorCast
+using SpinGlassTensors
+using SpinGlassNetworks
+using TensorOperations
+using TensorCast
 using MetaGraphs
 using Memoize
 using LinearAlgebra

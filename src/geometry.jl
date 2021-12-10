@@ -63,7 +63,7 @@ function SquareStar(m::Int, n::Int)
 end
 
 function Pegasus(m::Int, n::Int)
-    labels = [(i, j) for j ∈ 1:2*n for i ∈ 1:m ]
+    labels = [(i, j) for j ∈ 1:2*n for i ∈ 1:m]
     lg = LabelledGraph(labels)
     for i ∈ 1:m, j ∈ 1:n add_edge!(lg, (i, 2*j-1), (i, 2*j)) end
 

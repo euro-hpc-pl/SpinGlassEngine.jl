@@ -44,7 +44,7 @@ function bench(instance::String)
             @time network = PEPSNetwork{Pegasus, Sparsity}(m, n, fg, transform)
             network2 = PEPSNetwork{Square{EnergyGauges}, Sparsity}(m, n, fg2, transform)
 
-            println(tensor(network, PEPSNode(2, 2), 1))
+            println(tensor(network, PEPSNode(2, 1), 1))
             println(get_prop(network.factor_graph, (2, 3), :spectrum).states)
             println(get_prop(network.factor_graph, (2, 4), :spectrum).states)
 

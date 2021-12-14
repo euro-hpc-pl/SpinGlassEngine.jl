@@ -264,28 +264,46 @@ function tensor(
         eloc[s2, s1] = en1[s1] + en2[s2] + en12[p1[s1], p2[s2]]
     end
     eloc = eloc .- minimum(eloc)
+    loc_exp = exp.(-β .* eloc)
 
     e1d = interaction_energy(network, (i, j1), (i+1, j1))
     e2d = interaction_energy(network, (i, j2), (i+1, j1))
-    e1r = interaction_energy(network, (i, j1), (i, j1+2))
-    e2r = interaction_energy(network, (i, j2), (i, j1+2))
+    e1r = interaction_energy(network, (i, j1), (i, j2+2))
+    e2r = interaction_energy(network, (i, j2), (i, j2+2))
 
+    le1d = exp.(-β .* (e1d .- minimum(e1d)))
+    le2d = exp.(-β .* (e2d .- minimum(e2d)))
+    le1r = exp.(-β .* (e1r .- minimum(e1r)))
+    le2r = exp.(-β .* (e2r .- minimum(e2r)))
 
-    # projs = projectors(network, Node(node))
-    # A = zeros(maximum.(projs))
+    pl  = projector(network, (i, j2), ((i, j1-2), (i, j2-2)))
+    pu  = projector(network, (i, j1), ((i-1, j1), (i-1, j2)))
 
-    # left_nbrs = ((i+1, j+1), (i, j+1), (i-1, j+1))
-    # prl = projector.(Ref(network), Ref((i, j)), left_nbrs)
-    # p_lb, p_l, p_lt = last(fuse_projectors(prl))
+    p1r = projector(network, (i, j1), (i, j2+2))
+    p2r = projector(network, (i, j2), (i, j2+2))
+    p1d = projector(network, (i, j1), (i+1, j1))
+    p2d = projector(network, (i, j2), (i+1, j1))
 
-    # for σ1 ∈ 1:length(en1), σ2 ∈ 1:length(en2)
-    #     A[projs] = 0
+    pr1 = projector(network, (i, j2+2), (i, j1))
+    pr2 = projector(network, (i, j2+2), (i, j2))
+    pr, (pr1, pr2) = fuse_projectors((pr1, pr2))
 
-    # end
+    pd1 = projector(network, (i+1, j1), (i, j1))
+    pd2 = projector(network, (i+1, j1), (i, j2))
+    pd, (pd1, pd2) = fuse_projectors((pd1, pd2))
 
+    le1d = le1d[:, pd1]
+    le1d = le1d[:, pd2]
+    le1d = le1d[:, pr1]
+    le1d = le1d[:, pr2]
 
-    # for (σ, lexp) ∈ enumerate(loc_exp) A[getindex.(projs, Ref(σ))...] += lexp end
-    # A
+    A = zeros(maximum.((pl, pu, pr, pd)))
+    for s1 ∈ 1:length(en1), s2 ∈ 1:length(en2)
+        ld = le1d[p1d[s1], :] .* le2d[p2d[s2], :]
+        A[pl[s2], pu[s1], :, :] .= 1
+        # A[pl[s2], pu[s1], :, :] .+= loc_exp[s2, s1] .* 1
+    end
+    A
 end
 
 # function tensor(

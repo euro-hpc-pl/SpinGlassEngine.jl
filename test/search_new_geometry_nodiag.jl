@@ -1,4 +1,5 @@
 # using SpinGlassExhaustive
+using TensorOperations
 
 # function brute_force_gpu(ig::IsingGraph; num_states::Int)
 #     brute_force(ig, :GPU, num_states=num_states)
@@ -40,28 +41,36 @@ function bench(instance::String)
     for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, )
         for transform ∈ rotation.([0])
             println((Strategy, Sparsity, transform))
-
+            ii = 3
+            jj = 1
             @time network = PEPSNetwork{Pegasus, Sparsity}(m, n, fg, transform)
             network2 = PEPSNetwork{Square{EnergyGauges}, Sparsity}(m, n, fg2, transform)
 
-            println(tensor(network, PEPSNode(2, 1), 1))
-            println(get_prop(network.factor_graph, (2, 3), :spectrum).states)
-            println(get_prop(network.factor_graph, (2, 4), :spectrum).states)
+            bb = tensor(network, PEPSNode(ii, jj), β)
+            # println(get_prop(network.factor_graph, (2, 3), :spectrum).states)
+            # println(get_prop(network.factor_graph, (2, 4), :spectrum).states)
+            # println(local_energy(network2, (2, 2)))
 
-            println(local_energy(network2, (2, 2)))
-
-            println(get_prop(network2.factor_graph, (2, 2), :spectrum).states)
-
+            t1 = tensor(network2, PEPSNode(ii, jj), β)
+            tl = tensor(network2, PEPSNode(ii, jj + 1//2), β)
+            td = tensor(network2, PEPSNode(ii + 1//2, jj), β)
+            @tensor aa[k, l, m, n] := t1[k, l, x, y] * tl[x, m] * td[y, n]
+            
+            println(aa)
+            println("---------------")
+            println(bb)
+            println("---------------")
+            println(aa ./ bb)
+            
+            #println(get_prop(network2.factor_graph, (2, 2), :spectrum).states)
             #@time ctr = MpsContractor{Strategy}(network, [β/8, β/4, β/2, β], params)
-
             #@time sol_peps = low_energy_spectrum(ctr, search_params, merge_branches(network))
-
             #push!(energies, sol_peps.energies[begin])
             #clear_cache()
         end
     end
-    @test all(e -> e ≈ first(energies), energies)
-    println(energies)
+    #@test all(e -> e ≈ first(energies), energies)
+    #println(energies)
 end
 
 bench("$(@__DIR__)/instances/pegasus_nondiag/3x2x1.txt")

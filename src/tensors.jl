@@ -266,16 +266,6 @@ function tensor(
     eloc = eloc .- minimum(eloc)
     loc_exp = exp.(-β .* eloc)
 
-    e1d = interaction_energy(network, (i, j1), (i+1, j1))
-    e2d = interaction_energy(network, (i, j2), (i+1, j1))
-    e1r = interaction_energy(network, (i, j1), (i, j2+2))
-    e2r = interaction_energy(network, (i, j2), (i, j2+2))
-
-    le1d = exp.(-β .* (e1d .- minimum(e1d)))
-    le2d = exp.(-β .* (e2d .- minimum(e2d)))
-    le1r = exp.(-β .* (e1r .- minimum(e1r)))
-    le2r = exp.(-β .* (e2r .- minimum(e2r)))
-
     pl  = projector(network, (i, j2), ((i, j1-2), (i, j2-2)))
     pu  = projector(network, (i, j1), ((i-1, j1), (i-1, j2)))
 
@@ -292,16 +282,26 @@ function tensor(
     pd2 = projector(network, (i+1, j1), (i, j2))
     pd, (pd1, pd2) = fuse_projectors((pd1, pd2))
 
-    le1d = le1d[:, pd1]
-    le1d = le1d[:, pd2]
-    le1d = le1d[:, pr1]
-    le1d = le1d[:, pr2]
+    e1d = interaction_energy(network, (i, j1), (i+1, j1))
+    e2d = interaction_energy(network, (i, j2), (i+1, j1))
+    e1r = interaction_energy(network, (i, j1), (i, j2+2))
+    e2r = interaction_energy(network, (i, j2), (i, j2+2))
+
+    e1d = e1d[:, pd1]
+    e2d = e2d[:, pd2]
+    e1r = e1r[:, pr1]
+    e2r = e2r[:, pr2]
+
+    le1d = exp.(-β .* (e1d .- minimum(e1d)))
+    le2d = exp.(-β .* (e2d .- minimum(e2d)))
+    le1r = exp.(-β .* (e1r .- minimum(e1r)))
+    le2r = exp.(-β .* (e2r .- minimum(e2r)))
 
     A = zeros(maximum.((pl, pu, pr, pd)))
     for s1 ∈ 1:length(en1), s2 ∈ 1:length(en2)
-        ld = le1d[p1d[s1], :] .* le2d[p2d[s2], :]
-        A[pl[s2], pu[s1], :, :] .= 1
-        # A[pl[s2], pu[s1], :, :] .+= loc_exp[s2, s1] .* 1
+        lr = reshape(le1r[p1r[s1], :], :, 1) .* reshape(le2r[p2r[s2], :], :, 1)
+        ld = reshape(le1d[p1d[s1], :], 1, :) .* reshape(le2d[p2d[s2], :], 1, :)
+        A[pl[s2], pu[s1], :, :] += loc_exp[s2, s1] .* (lr .* ld)
     end
     A
 end

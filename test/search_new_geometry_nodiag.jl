@@ -39,7 +39,7 @@ function bench(instance::String)
     # Solve using PEPS search
     energies = Float64[]
     for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, )
-        for transform ∈ rotation.([0])
+        for transform ∈ rotation.([180])
             println((Strategy, Sparsity, transform))
             ii = 3
             jj = 1
@@ -52,21 +52,21 @@ function bench(instance::String)
             # println(local_energy(network2, (2, 2)))
 
             t1 = tensor(network2, PEPSNode(ii, jj), β)
-            tl = tensor(network2, PEPSNode(ii, jj + 1//2), β)
-            td = tensor(network2, PEPSNode(ii + 1//2, jj), β)
-            @tensor aa[k, l, m, n] := t1[k, l, x, y] * tl[x, m] * td[y, n]
+            #tl = tensor(network2, PEPSNode(ii, jj + 1//2), β)
+            #td = tensor(network2, PEPSNode(ii + 1//2, jj), β)
+            #@tensor aa[k, l, m, n] := t1[k, l, x, y] * tl[x, m] * td[y, n]
             
-            println(aa)
-            println("---------------")
+            # println(aa)
+            # println("---------------")
             println(bb)
             println("---------------")
-            println(aa ./ bb)
+            println(t1)
             
             #println(get_prop(network2.factor_graph, (2, 2), :spectrum).states)
-            #@time ctr = MpsContractor{Strategy}(network, [β/8, β/4, β/2, β], params)
-            #@time sol_peps = low_energy_spectrum(ctr, search_params, merge_branches(network))
-            #push!(energies, sol_peps.energies[begin])
-            #clear_cache()
+            @time ctr = MpsContractor{Strategy}(network, [β/8, β/4, β/2, β], params)
+            @time sol_peps = low_energy_spectrum(ctr, search_params, merge_branches(network))
+            push!(energies, sol_peps.energies[begin])
+            clear_cache()
         end
     end
     #@test all(e -> e ≈ first(energies), energies)

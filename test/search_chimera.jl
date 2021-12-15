@@ -82,6 +82,12 @@
 
                 @test sol.energies ≈ exact_energies
                 for (i, σ) ∈ enumerate(sol.states) @test σ ∈ exact_states[deg[i]] end
+                println(maximum(contractor.statistics))
+
+                # psi_bottom = mps_top(contractor, 2, 4)
+                # psi_top = mps_top(contractor, 1, 4)
+                # println(psi_bottom * psi_top)
+
                 clear_cache()
             end
         end

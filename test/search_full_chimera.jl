@@ -18,7 +18,7 @@ function bench(instance::String)
     # 3. Code blows up [e.g., LAPACKException(18)] for large β (e.g. β > 4)
     # 4. Sparse is still not faster than Dense
 
-    β = 3.0
+    β = 7.0
     bond_dim = 64
     δp = 1E-3
     num_states = 1000
@@ -33,7 +33,7 @@ function bench(instance::String)
     params = MpsParameters(bond_dim, 1E-8, 10)
     search_params = SearchParameters(num_states, δp)
 
-    for Strategy ∈ (MPSAnnealing, ), Sparsity ∈ (Sparse, Dense)
+    for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense,)
         for Layout ∈ (EnergyGauges, ), transform ∈ rotation.([0])
             println((Strategy, Sparsity, Layout, transform))
 
@@ -41,8 +41,10 @@ function bench(instance::String)
             @time ctr = MpsContractor{Strategy}(network, [β/8, β/4, β/2, β], params)
 
             @time sol = low_energy_spectrum(ctr, search_params, merge_branches(network))
+            println(maximum(ctr.statistics))
 
             @test sol.energies[begin] ≈ ground_energy
+
             #println(sol.energies[begin])
             clear_cache()
         end

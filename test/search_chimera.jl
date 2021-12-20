@@ -72,8 +72,11 @@
     params = MpsParameters(bond_dim, 1E-8, 4)
     search_params = SearchParameters(num_states, 0.0)
 
-    for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, Sparse)
+    for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, ) #Sparse MPSAnnealing
+        println("Strategy ", Strategy)
+        println("Sparsity ", Sparsity)
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
+            println("Layout ", Layout)
             for transform ∈ all_lattice_transformations
 
                 network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
@@ -84,9 +87,10 @@
                 for (i, σ) ∈ enumerate(sol.states) @test σ ∈ exact_states[deg[i]] end
                 println(maximum(contractor.statistics))
 
-                # psi_bottom = mps_top(contractor, 2, 4)
-                # psi_top = mps_top(contractor, 1, 4)
-                # println(psi_bottom * psi_top)
+                psi_top = mps_top(contractor, 1, 4)
+                psi_bottom = mps(contractor, 2, 4)
+
+                println(psi_bottom * psi_top) 
 
                 clear_cache()
             end

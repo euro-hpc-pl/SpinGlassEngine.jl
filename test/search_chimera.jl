@@ -72,7 +72,7 @@
     params = MpsParameters(bond_dim, 1E-8, 4)
     search_params = SearchParameters(num_states, 0.0)
 
-    for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, ) #Sparse MPSAnnealing
+    for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, Sparse) #MPSAnnealing
         println("Strategy ", Strategy)
         println("Sparsity ", Sparsity)
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)

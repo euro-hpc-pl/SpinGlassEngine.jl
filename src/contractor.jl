@@ -143,15 +143,15 @@ end
 
     ψ0 = dot(ψ, W)
     truncate!(ψ0, :left, ctr.params.bond_dimension)
-    # compress!(
-    #     ψ0,
-    #     W,
-    #     ψ,
-    #     ctr.params.bond_dimension,
-    #     ctr.params.variational_tol,
-    #     ctr.params.max_num_sweeps,
-    #     :c
-    # )
+    compress!(
+        ψ0,
+        W,
+        ψ,
+        ctr.params.bond_dimension,
+        ctr.params.variational_tol,
+        ctr.params.max_num_sweeps,
+        :c
+    )
     ψ0
 end
 

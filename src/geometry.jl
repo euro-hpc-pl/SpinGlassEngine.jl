@@ -74,27 +74,27 @@ function SquareStar(m::Int, n::Int)
 end
 
 function Pegasus(m::Int, n::Int)
-    labels = [(i, j) for j ∈ 1:2*n for i ∈ 1:m]
+    labels = [(i, j, k) for j ∈ 1:n for i ∈ 1:m for k ∈ 1:2]
     lg = LabelledGraph(labels)
-    for i ∈ 1:m, j ∈ 1:n add_edge!(lg, (i, 2*j-1), (i, 2*j)) end
+    for i ∈ 1:m, j ∈ 1:n add_edge!(lg, (i, j, 1), (i, j, 2)) end
 
     for i ∈ 1:m-1, j ∈ 1:n
-        add_edge!(lg, (i, 2*j-1), (i+1, 2*j-1))
-        add_edge!(lg, (i, 2*j), (i+1, 2*j-1))
+        add_edge!(lg, (i, j, 1), (i+1, j, 1))
+        add_edge!(lg, (i, j, 2), (i+1, j, 1))
     end
 
     for i ∈ 1:m, j ∈ 1:n-1
-        add_edge!(lg, (i, 2*j), (i, 2*j+2))
-        add_edge!(lg, (i, 2*j-1), (i, 2*j+2))
+        add_edge!(lg, (i, j, 2), (i, j+1, 2))
+        add_edge!(lg, (i, j, 1), (i, j+1, 2))
     end
 
-    # Diagonal:
-    # for i ∈ 1:m-1, j ∈ 1:n-1
-    #     add_edge!(lg, (i, 2*j), (i+1, 2*j+1))
-    #     add_edge!(lg, (i, 2*j-1), (i+1, 2*j+2))
+    # for i ∈ 1:m-1, j ∈ 1:n-1  # diagonalne
+    #     add_edge!(lg, (i, j, 2), (i+1, j+1, 1))
+    #     add_edge!(lg, (i, j, 1), (i+1, j+1, 2))
     # end
     lg
 end
+
 
 #-----------------------------
 ###    Square geometry     ###

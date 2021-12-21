@@ -32,7 +32,6 @@ struct PEPSNode
 end
 Node(node::PEPSNode) = (node.i, node.j)
 
-
 struct SuperPEPSNode
     i::IntOrRational
     j::IntOrRational
@@ -43,9 +42,6 @@ struct SuperPEPSNode
     end
 end
 Node(node::SuperPEPSNode) = (node.i, node.j, node.k)
-
-
-
 
 struct GaugeInfo
     positions::NTuple{2, PEPSNode}

@@ -158,14 +158,19 @@ function update_energy(
     local_energy(network, (i, j))
 end
 
-
 function update_energy(network::PEPSNetwork{T, S}, σ::Vector{Int}) where {T <: Pegasus, S}
     i, j, k = node_from_index(network, length(σ)+1)
-    en = bond_energy(network, (i, j, k), (i, j-1, 2), local_state_for_node(network, σ, (i, j-1, 2))) +
-    bond_energy(network, (i, j, k), (i-1, j, 1), local_state_for_node(network, σ, (i-1, j, 1))) +
+    en = bond_energy(
+        network, (i, j, k), (i, j-1, 2), local_state_for_node(network, σ, (i, j-1, 2))
+    ) +
+    bond_energy(
+        network, (i, j, k), (i-1, j, 1), local_state_for_node(network, σ, (i-1, j, 1))
+    ) +
     local_energy(network, (i, j, k))
     if k == 2
-        en += bond_energy(network, (i, j, 2), (i, j, 1), local_state_for_node(network, σ, (i, j, 1)))
+        en += bond_energy(
+            network, (i, j, 2), (i, j, 1), local_state_for_node(network, σ, (i, j, 1))
+        )
     end
     en
 end

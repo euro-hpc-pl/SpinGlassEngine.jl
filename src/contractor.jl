@@ -1,4 +1,5 @@
-export SVDTruncate, MPSAnnealing, MpoLayers, MpsParameters, MpsContractor, clear_cache,  mps_top, mps
+export SVDTruncate, MPSAnnealing, MpoLayers, MpsParameters, MpsContractor
+export clear_cache, mps_top, mps
 
 abstract type AbstractContractor end
 abstract type AbstractStrategy end
@@ -154,7 +155,6 @@ end
     )
     ψ0
 end
-
 
 @memoize function mps(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
     if i > ctr.peps.nrows
@@ -449,11 +449,9 @@ function conditional_probability(
 
     bnd_exp = dropdims(sum(LM[pd[:], :] .* R[:, pr[:]]', dims=2), dims=2)
     probs = loc_exp .* bnd_exp
-    # println(minimum(probs), maximum(probs))
     push!(contractor.statistics, state => error_measure(probs))
     normalize_probability(probs)
 end
-
 
 function clear_cache()
     empty!(memoize_cache(left_env))
@@ -463,25 +461,18 @@ function clear_cache()
     empty!(memoize_cache(dressed_mps))
 end
 
-
 function error_measure(probs)
-    if maximum(probs) <= 0
-        return 2.
-    end
-    if minimum(probs) < 0
-        return abs(minimum(probs)) / maximum(abs.(probs))
-    end
-    return 0.
+    if maximum(probs) <= 0 return 2.0 end
+    if minimum(probs) < 0 return abs(minimum(probs)) / maximum(abs.(probs)) end
+    return 0.0
 end
-
 
 function MpoLayers(::Type{T}, ncols::Int) where T <: Pegasus
     main, dress, right = Dict(), Dict(), Dict()
-    for i ∈ 1 : ncols
+    for i ∈ 1:ncols
         push!(main, i => (-1//3, 0, 1//3))
         push!(dress, i => (1//3))
         push!(right, i => (0, ))
     end
     MpoLayers(main, dress, right)
 end
-

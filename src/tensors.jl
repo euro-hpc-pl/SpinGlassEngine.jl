@@ -247,11 +247,72 @@ end
 
 #-------------- Pegasus --------------
 
-function tensor(
+# function tensor(    energie podpinane z dolu i z prawej
+#     network::PEPSNetwork{Pegasus, T}, node::PEPSNode, β::Real, ::Val{:pegasus_site}
+# ) where T <: AbstractSparsity
+#     i, j = node.i, node.j
+#     j1, j2 = 2*j-1, 2*j
+
+#     en1 = local_energy(network, (i, j1))
+#     en2 = local_energy(network, (i, j2))
+#     en12 = interaction_energy(network, (i, j1), (i, j2))
+#     eloc = zeros(length(en1), length(en2))
+#     p1 = projector(network, (i, j1), (i, j2))
+#     p2 = projector(network, (i, j2), (i, j1))
+
+#     for s1 ∈ 1:length(en1), s2 ∈ 1:length(en2)
+#         eloc[s2, s1] = en1[s1] + en2[s2] + en12[p1[s1], p2[s2]]
+#     end
+#     eloc = eloc .- minimum(eloc)
+#     loc_exp = exp.(-β .* eloc)
+
+#     pl  = projector(network, (i, j2), ((i, j1-2), (i, j2-2)))
+#     pu  = projector(network, (i, j1), ((i-1, j1), (i-1, j2)))
+
+#     p1r = projector(network, (i, j1), (i, j2+2))
+#     p2r = projector(network, (i, j2), (i, j2+2))
+#     p1d = projector(network, (i, j1), (i+1, j1))
+#     p2d = projector(network, (i, j2), (i+1, j1))
+
+#     pr1 = projector(network, (i, j2+2), (i, j1))
+#     pr2 = projector(network, (i, j2+2), (i, j2))
+#     pr, (pr1, pr2) = fuse_projectors((pr1, pr2))
+
+#     pd1 = projector(network, (i+1, j1), (i, j1))
+#     pd2 = projector(network, (i+1, j1), (i, j2))
+#     pd, (pd1, pd2) = fuse_projectors((pd1, pd2))
+
+#     e1d = interaction_energy(network, (i, j1), (i+1, j1))
+#     e2d = interaction_energy(network, (i, j2), (i+1, j1))
+#     e1r = interaction_energy(network, (i, j1), (i, j2+2))
+#     e2r = interaction_energy(network, (i, j2), (i, j2+2))
+
+#     e1d = e1d[:, pd1]
+#     e2d = e2d[:, pd2]
+#     e1r = e1r[:, pr1]
+#     e2r = e2r[:, pr2]
+
+#     le1d = exp.(-β .* (e1d .- minimum(e1d)))
+#     le2d = exp.(-β .* (e2d .- minimum(e2d)))
+#     le1r = exp.(-β .* (e1r .- minimum(e1r)))
+#     le2r = exp.(-β .* (e2r .- minimum(e2r)))
+
+#     A = zeros(maximum.((pl, pu, pr, pd)))
+#     for s1 ∈ 1:length(en1), s2 ∈ 1:length(en2)
+#         lr = reshape(le1r[p1r[s1], :], :, 1) .* reshape(le2r[p2r[s2], :], :, 1)
+#         ld = reshape(le1d[p1d[s1], :], 1, :) .* reshape(le2d[p2d[s2], :], 1, :)
+#         A[pl[s2], pu[s1], :, :] += loc_exp[s2, s1] .* (lr .* ld)
+#     end
+#     A
+# end
+
+
+
+function tensor(  # cluster-cluster energies atttached from left and top
     network::PEPSNetwork{Pegasus, T}, node::PEPSNode, β::Real, ::Val{:pegasus_site}
 ) where T <: AbstractSparsity
     i, j = node.i, node.j
-    j1, j2 = 2*j-1, 2*j
+    j1, j2 = 2*j, 2*j -1
 
     en1 = local_energy(network, (i, j1))
     en2 = local_energy(network, (i, j2))
@@ -266,45 +327,46 @@ function tensor(
     eloc = eloc .- minimum(eloc)
     loc_exp = exp.(-β .* eloc)
 
-    pl  = projector(network, (i, j2), ((i, j1-2), (i, j2-2)))
-    pu  = projector(network, (i, j1), ((i-1, j1), (i-1, j2)))
+    pr  = projector(network, (i, j2), ((i, j1+2), (i, j2+2)))
+    pd  = projector(network, (i, j1), ((i+1, j1), (i+1, j2)))
 
-    p1r = projector(network, (i, j1), (i, j2+2))
-    p2r = projector(network, (i, j2), (i, j2+2))
-    p1d = projector(network, (i, j1), (i+1, j1))
-    p2d = projector(network, (i, j2), (i+1, j1))
+    p1l = projector(network, (i, j1), (i, j2-2))
+    p2l = projector(network, (i, j2), (i, j2-2))
+    p1u = projector(network, (i, j1), (i-1, j1))
+    p2u = projector(network, (i, j2), (i-1, j1))
 
-    pr1 = projector(network, (i, j2+2), (i, j1))
-    pr2 = projector(network, (i, j2+2), (i, j2))
-    pr, (pr1, pr2) = fuse_projectors((pr1, pr2))
+    pl1 = projector(network, (i, j2-2), (i, j1))
+    pl2 = projector(network, (i, j2-2), (i, j2))
+    pl, (pl1, pl2) = fuse_projectors((pl1, pl2))
 
-    pd1 = projector(network, (i+1, j1), (i, j1))
-    pd2 = projector(network, (i+1, j1), (i, j2))
-    pd, (pd1, pd2) = fuse_projectors((pd1, pd2))
+    pu1 = projector(network, (i-1, j1), (i, j1))
+    pu2 = projector(network, (i-1, j1), (i, j2))
+    pu, (pu1, pu2) = fuse_projectors((pu1, pu2))
 
-    e1d = interaction_energy(network, (i, j1), (i+1, j1))
-    e2d = interaction_energy(network, (i, j2), (i+1, j1))
-    e1r = interaction_energy(network, (i, j1), (i, j2+2))
-    e2r = interaction_energy(network, (i, j2), (i, j2+2))
+    e1u = interaction_energy(network, (i, j1), (i-1, j1))
+    e2u = interaction_energy(network, (i, j2), (i-1, j1))
+    e1l = interaction_energy(network, (i, j1), (i, j2-2))
+    e2l = interaction_energy(network, (i, j2), (i, j2-2))
 
-    e1d = e1d[:, pd1]
-    e2d = e2d[:, pd2]
-    e1r = e1r[:, pr1]
-    e2r = e2r[:, pr2]
+    e1u = e1u[:, pu1]
+    e2u = e2u[:, pu2]
+    e1l = e1l[:, pl1]
+    e2l = e2l[:, pl2]
 
-    le1d = exp.(-β .* (e1d .- minimum(e1d)))
-    le2d = exp.(-β .* (e2d .- minimum(e2d)))
-    le1r = exp.(-β .* (e1r .- minimum(e1r)))
-    le2r = exp.(-β .* (e2r .- minimum(e2r)))
+    le1u = exp.(-β .* (e1u .- minimum(e1u)))
+    le2u = exp.(-β .* (e2u .- minimum(e2u)))
+    le1l = exp.(-β .* (e1l .- minimum(e1l)))
+    le2l = exp.(-β .* (e2l .- minimum(e2l)))
 
     A = zeros(maximum.((pl, pu, pr, pd)))
     for s1 ∈ 1:length(en1), s2 ∈ 1:length(en2)
-        lr = reshape(le1r[p1r[s1], :], :, 1) .* reshape(le2r[p2r[s2], :], :, 1)
-        ld = reshape(le1d[p1d[s1], :], 1, :) .* reshape(le2d[p2d[s2], :], 1, :)
-        A[pl[s2], pu[s1], :, :] += loc_exp[s2, s1] .* (lr .* ld)
+        ll = reshape(le1l[p1l[s1], :], :, 1) .* reshape(le2l[p2l[s2], :], :, 1)
+        lu = reshape(le1u[p1u[s1], :], 1, :) .* reshape(le2u[p2u[s2], :], 1, :)
+        A[:, :, pr[s2], pd[s1]] += loc_exp[s2, s1] .* (ll .* lu)
     end
     A
 end
+
 
 # function tensor(
 #     network::PEPSNetwork{Pegasus, T}, node::PEPSNode, β::Real, ::Val{:sparse_pegasus_site}

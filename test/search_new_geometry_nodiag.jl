@@ -68,7 +68,7 @@ function bench(instance::String)
             # println(tn ./ too)
             # println("---------------")
 
-            #println(get_prop(network2.factor_graph, (2, 2), :spectrum).states)
+            println(get_prop(network2.factor_graph, (2, 2), :spectrum).states)
             @time ctr = MpsContractor{Strategy}(network, [β/8, β/4, β/2, β], params)
             #@time sol_peps = low_energy_spectrum(ctr, search_params, merge_branches(network))
             # push!(energies, sol_peps.energies[begin])

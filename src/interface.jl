@@ -144,7 +144,6 @@ function initialize_gauges!(
 end
 
 _normalize(probs::Vector{<:Real}) = probs ./ sum(probs)
-
 function _equalize(probs::Vector{<:Real})
     mp = abs(minimum(probs))
     _normalize(replace(p -> p < mp ? mp : p, probs))

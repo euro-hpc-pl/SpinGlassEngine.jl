@@ -21,9 +21,9 @@ mutable struct PEPSNetwork{
         net = new(factor_graph, vertex_map(transformation, m, n), m, n)
         net.nrows, net.ncols = transformation.flips_dimensions ? (n, m) : (m, n)
 
-        # if !is_compatible(net.factor_graph, T.name.wrapper(m, n))
-        #     throw(ArgumentError("Factor graph not compatible with given network."))
-        # end
+        if !is_compatible(net.factor_graph, T.name.wrapper(m, n))
+             throw(ArgumentError("Factor graph not compatible with given network."))
+        end
 
         net.tensors_map = tensor_map(T, S, net.nrows, net.ncols)
         net.gauges = Gauges{T}(net.nrows, net.ncols)

@@ -411,6 +411,50 @@ function conditional_probability(
     normalize_probability(loc_exp)
 end
 
+
+function conditional_probability(
+    ::Type{T}, contractor::MpsContractor{S}, state::Vector{Int},
+) where {T <: Pegasus, S}
+    indβ, β = length(contractor.betas), last(contractor.betas)
+    i, j, k = node_from_index(contractor.peps, length(state)+1)
+    println(i, j, k)
+    ∂v = boundary_state(contractor.peps, state, (i, j))
+    println(∂v)
+
+    L = left_env(contractor, i, ∂v[1:j-1], indβ)
+    R = right_env(contractor, i, ∂v[(j+2):(contractor.peps.ncols+1)], indβ)
+    M = dressed_mps(contractor, i, indβ)[j]
+
+    L = L ./ maximum(abs.(L))
+    R = R ./ maximum(abs.(R))
+    M = M ./ maximum(abs.(M))
+
+    @tensor LM[y, z] := L[x] * M[x, y, z]
+
+    eng_local = local_energy(contractor.peps, (i, j))
+
+    pl = projector(contractor.peps, (i, j), (i, j-1))
+    eng_pl = interaction_energy(contractor.peps, (i, j), (i, j-1))
+    eng_left = @view eng_pl[pl[:], ∂v[j]]
+
+    pu = projector(contractor.peps, (i, j), (i-1, j))
+    eng_pu = interaction_energy(contractor.peps, (i, j), (i-1, j))
+    eng_up = @view eng_pu[pu[:], ∂v[j+1]]
+
+    en = eng_local .+ eng_left .+ eng_up
+    loc_exp = exp.(-β .* (en .- minimum(en)))
+
+    pr = projector(contractor.peps, (i, j), (i, j+1))
+    pd = projector(contractor.peps, (i, j), (i+1, j))
+
+    bnd_exp = dropdims(sum(LM[pd[:], :] .* R[:, pr[:]]', dims=2), dims=2)
+    probs = loc_exp .* bnd_exp
+    # println(minimum(probs), maximum(probs))
+    push!(contractor.statistics, state => error_measure(probs))
+    normalize_probability(probs)
+end
+
+
 function clear_cache()
     empty!(memoize_cache(left_env))
     empty!(memoize_cache(right_env))
@@ -429,3 +473,15 @@ function error_measure(probs)
     end
     return 0.
 end
+
+
+function MpoLayers(::Type{T}, ncols::Int) where T <: Pegasus
+    main, dress, right = Dict(), Dict(), Dict()
+    for i ∈ 1 : ncols
+        push!(main, i => (-1//3, 0, 1//3))
+        push!(dress, i => (1//3))
+        push!(right, i => (0, ))
+    end
+    MpoLayers(main, dress, right)
+end
+

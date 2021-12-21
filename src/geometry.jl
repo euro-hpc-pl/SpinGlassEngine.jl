@@ -20,7 +20,7 @@ struct GaugesEnergy{T} <: AbstractTensorsLayout end
 struct EnergyGauges{T} <: AbstractTensorsLayout end
 struct EngGaugesEng{T} <: AbstractTensorsLayout end
 
-const Node = NTuple{2, Int}
+const Node = NTuple{N, Int} where N
 
 struct PEPSNode
     i::IntOrRational
@@ -31,6 +31,21 @@ struct PEPSNode
     end
 end
 Node(node::PEPSNode) = (node.i, node.j)
+
+
+struct SuperPEPSNode
+    i::IntOrRational
+    j::IntOrRational
+    k::Int
+
+    function SuperPEPSNode(i::IntOrRational, j::IntOrRational, k::Int)
+        new(denominator(i) == 1 ? numerator(i) : i, denominator(j) == 1 ? numerator(j) : j, k)
+    end
+end
+Node(node::SuperPEPSNode) = (node.i, node.j, node.k)
+
+
+
 
 struct GaugeInfo
     positions::NTuple{2, PEPSNode}
@@ -270,7 +285,7 @@ function gauges_list(::Type{Pegasus}, nrows::Int, ncols::Int)
         GaugeInfo(
             (PEPSNode(i + 1//3, j), PEPSNode(i + 2//3, j)),
             PEPSNode(i , j),
-            2,
+            4,
             :gauge_h
         )
         for i ∈ 1:nrows-1 for j ∈ 1:ncols

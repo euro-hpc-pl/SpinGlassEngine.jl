@@ -21,9 +21,9 @@ mutable struct PEPSNetwork{
         net = new(factor_graph, vertex_map(transformation, m, n), m, n)
         net.nrows, net.ncols = transformation.flips_dimensions ? (n, m) : (m, n)
 
-        if !is_compatible(net.factor_graph, T.name.wrapper(m, n))
-            throw(ArgumentError("Factor graph not compatible with given network."))
-        end
+        # if !is_compatible(net.factor_graph, T.name.wrapper(m, n))
+        #     throw(ArgumentError("Factor graph not compatible with given network."))
+        # end
 
         net.tensors_map = tensor_map(T, S, net.nrows, net.ncols)
         net.gauges = Gauges{T}(net.nrows, net.ncols)
@@ -52,12 +52,11 @@ end
 
 function projectors(network::PEPSNetwork{T, S}, vertex::Node) where {T <: Pegasus, S}
     i, j = vertex
-    j1, j2 = 2*j, 2*j-1
     (
-        projector(network, (i, j2-2), ((i, j1), (i, j2))),
-        projector(network, (i-1, j1), ((i, j1), (i, j2))),
-        projector(network, (i, j2), ((i, j1+2), (i, j2+2))),
-        projector(network, (i, j1), ((i+1, j1), (i+1, j2)))
+        projector(network, (i, j-1, 2), ((i, j, 1), (i, j, 2))),
+        projector(network, (i-1, j, 1), ((i, j, 1), (i, j, 2))),
+        projector(network, (i, j, 2), ((i, j+1, 1), (i, j+1, 2))),
+        projector(network, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
     )
 end
 
@@ -67,9 +66,19 @@ function node_index(peps::AbstractGibbsNetwork{T, S}, node::Node) where {T, S}
 end
 
 _mod_wo_zero(k, m) = k % m == 0 ? m : k % m
-function node_from_index(peps::AbstractGibbsNetwork{T, S}, index::Int) where {T, S}
+function node_from_index(peps::PEPSNetwork{T, S}, index::Int) where {T <: Square, S}
     ((index-1) ÷ peps.ncols + 1, _mod_wo_zero(index, peps.ncols))
 end
+
+function node_from_index(peps::PEPSNetwork{T, S}, index::Int) where {T <: SquareStar, S}
+    ((index-1) ÷ peps.ncols + 1, _mod_wo_zero(index, peps.ncols))
+end
+
+
+function node_from_index(peps::PEPSNetwork{T, S}, index::Int) where {T <: Pegasus, S}
+    ((index-1) ÷ (2 * peps.ncols) + 1, _mod_wo_zero(index, 2* peps.ncols), _mod_wo_zero(index, 2))
+end
+
 
 function boundary(peps::PEPSNetwork{T, S}, node::Node) where {T <: Square, S}
     i, j = node
@@ -103,15 +112,11 @@ end
 function boundary(peps::PEPSNetwork{T, S}, node::Node) where {T <: Pegasus, S}
     i, j = node
     vcat(
-        [((i, 2*k), ((i+1, 2*k), (i+1, 2*k-1))) for k ∈ 1:j-1]...,
-        ((i, 2*(j-1)-1), ((i, 2*j), (i, 2*j-1))),
-        [((i-1, 2*k), ((i, 2*k), (i, 2*k-1))) for k ∈ j:peps.ncols]...
+        [((i, k, 1), ((i+1, k, 1), (i+1, k, 2))) for k ∈ 1:j-1]...,
+        ((i, (j-1), 2), ((i, j, 1), (i, j, 2))),
+        [((i-1, k, 1), ((i, k, 1), (i, k, 2))) for k ∈ j:peps.ncols]...
     )
 end
-
-
-
-        projector(network, (i-1, j1), ((i, j1), (i, j2))),
 
 
 function bond_energy(
@@ -151,4 +156,16 @@ function update_energy(
     bond_energy(network, (i, j), (i-1, j-1), local_state_for_node(network, σ, (i-1, j-1))) +
     bond_energy(network, (i, j), (i-1, j+1), local_state_for_node(network, σ, (i-1, j+1))) +
     local_energy(network, (i, j))
+end
+
+
+function update_energy(network::PEPSNetwork{T, S}, σ::Vector{Int}) where {T <: Pegasus, S}
+    i, j, k = node_from_index(network, length(σ)+1)
+    en = bond_energy(network, (i, j, k), (i, j-1, 2), local_state_for_node(network, σ, (i, j-1, 2))) +
+    bond_energy(network, (i, j, k), (i-1, j, 1), local_state_for_node(network, σ, (i-1, j, 1))) +
+    local_energy(network, (i, j, k))
+    if k == 2
+        en += bond_energy(network, (i, j, 2), (i, j, 1), local_state_for_node(network, σ, (i, j, 1)))
+    end
+    en
 end

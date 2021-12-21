@@ -73,8 +73,8 @@ function vertex_map(vert_permutation::NTuple{4, Int}, nrows, ncols)
     else
         ArgumentError("$(vert_permutation) does not define square isometry.")
     end
-    vmap(node::NTuple{Int, 2}) = f(node[1], node[2])
-    vmap(node::NTuple{Int, 3}) = (f(node[1], node[2])..., node[3])
+    vmap(node::NTuple{2, Int}) = f(node[1], node[2])
+    vmap(node::NTuple{3, Int}) = (f(node[1], node[2])..., node[3])
     vmap
 end
 

@@ -52,12 +52,12 @@ end
 
 function projectors(network::PEPSNetwork{T, S}, vertex::Node) where {T <: Pegasus, S}
     i, j = vertex
-    j1, j2 = 2*j-1, 2*j
+    j1, j2 = 2*j, 2*j-1
     (
-        projector(network, (i, j2), ((i, j1-2), (i, j2-2))),
-        projector(network, (i, j1), ((i-1, j1), (i-1, j2))),
-        projector(network, (i, j2+2), ((i, j1), (i, j2))),
-        projector(network, (i+1, j1), ((i, j1), (i, j2)))
+        projector(network, (i, j2-2), ((i, j1), (i, j2))),
+        projector(network, (i-1, j1), ((i, j1), (i, j2))),
+        projector(network, (i, j2), ((i, j1+2), (i, j2+2))),
+        projector(network, (i, j1), ((i+1, j1), (i+1, j2)))
     )
 end
 
@@ -97,6 +97,22 @@ function boundary(peps::PEPSNetwork{T, S}, node::Node) where {T <: SquareStar, S
         ]...
     )
 end
+
+
+
+function boundary(peps::PEPSNetwork{T, S}, node::Node) where {T <: Pegasus, S}
+    i, j = node
+    vcat(
+        [((i, 2*k), ((i+1, 2*k), (i+1, 2*k-1))) for k ∈ 1:j-1]...,
+        ((i, 2*(j-1)-1), ((i, 2*j), (i, 2*j-1))),
+        [((i-1, 2*k), ((i, 2*k), (i, 2*k-1))) for k ∈ j:peps.ncols]...
+    )
+end
+
+
+
+        projector(network, (i-1, j1), ((i, j1), (i, j2))),
+
 
 function bond_energy(
     network::AbstractGibbsNetwork{T, S}, u::Node, v::Node, σ::Int

@@ -1,4 +1,4 @@
-export SVDTruncate, MPSAnnealing, MpoLayers, MpsParameters, MpsContractor, clear_cache
+export SVDTruncate, MPSAnnealing, MpoLayers, MpsParameters, MpsContractor, clear_cache,  mps_top, mps
 
 abstract type AbstractContractor end
 abstract type AbstractStrategy end
@@ -22,14 +22,15 @@ end
 layout(network::PEPSNetwork{T, S}) where {T, S} = T
 sparsity(network::PEPSNetwork{T, S}) where {T, S} = S
 
-struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
+mutable struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
     peps::PEPSNetwork{T, S} where {T, S}
     betas::Vector{Real}
     params::MpsParameters
     layers::MpoLayers
+    statistics::Dict
 
     function MpsContractor{T}(peps, betas, params) where T
-        new(peps, betas, params, MpoLayers(layout(peps), peps.ncols))
+        new(peps, betas, params, MpoLayers(layout(peps), peps.ncols), Dict())
     end
 end
 strategy(ctr::MpsContractor{T}) where {T} = T
@@ -128,6 +129,30 @@ end
                     )
     end
     QMpo(Dict(sites .=> tensors))
+end
+
+
+@memoize function mps_top(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
+    if i < 1
+        W = mpo(ctr, ctr.layers.main, 1, indβ)
+        return IdentityQMps(local_dims(W, :up))
+    end
+
+    ψ = mps_top(ctr, i-1, indβ)
+    W = mpo(ctr, ctr.layers.main, i, indβ)
+
+    ψ0 = dot(ψ, W)
+    truncate!(ψ0, :left, ctr.params.bond_dimension)
+    compress!(
+        ψ0,
+        W,
+        ψ,
+        ctr.params.bond_dimension,
+        ctr.params.variational_tol,
+        ctr.params.max_num_sweeps,
+        :c
+    )
+    ψ0
 end
 
 
@@ -309,6 +334,11 @@ function conditional_probability(
     L = left_env(contractor, i, ∂v[1:j-1], indβ)
     R = right_env(contractor, i, ∂v[(j+2):(contractor.peps.ncols+1)], indβ)
     M = dressed_mps(contractor, i, indβ)[j]
+
+    L = L ./ maximum(abs.(L))
+    R = R ./ maximum(abs.(R))
+    M = M ./ maximum(abs.(M))
+
     @tensor LM[y, z] := L[x] * M[x, y, z]
 
     eng_local = local_energy(contractor.peps, (i, j))
@@ -328,7 +358,10 @@ function conditional_probability(
     pd = projector(contractor.peps, (i, j), (i+1, j))
 
     bnd_exp = dropdims(sum(LM[pd[:], :] .* R[:, pr[:]]', dims=2), dims=2)
-    normalize_probability(loc_exp .* bnd_exp)
+    probs = loc_exp .* bnd_exp
+    # println(minimum(probs), maximum(probs))
+    push!(contractor.statistics, state => error_measure(probs))
+    normalize_probability(probs)
 end
 
 # TODO: rewrite this using brodcasting
@@ -374,6 +407,7 @@ function conditional_probability(
         r = @view R[:, pr[σ]]
         loc_exp[σ] *= (lmx' * m * r)[]
     end
+    push!(contractor.statistics, state => error_measure(loc_exp))
     normalize_probability(loc_exp)
 end
 
@@ -383,4 +417,15 @@ function clear_cache()
     empty!(memoize_cache(mpo))
     empty!(memoize_cache(mps))
     empty!(memoize_cache(dressed_mps))
+end
+
+
+function error_measure(probs)
+    if maximum(probs) <= 0
+        return 2.
+    end
+    if minimum(probs) < 0
+        return abs(minimum(probs)) / maximum(abs.(probs))
+    end
+    return 0.
 end

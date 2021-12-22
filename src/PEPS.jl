@@ -108,7 +108,8 @@ function boundary(peps::PEPSNetwork{T, S}, node::Node) where {T <: Pegasus, S}
     vcat(
         [((i, k, 1), ((i+1, k, 1), (i+1, k, 2))) for k ∈ 1:j-1]...,
         ((i, (j-1), 2), ((i, j, 1), (i, j, 2))),
-        [((i-1, k, 1), ((i, k, 1), (i, k, 2))) for k ∈ j:peps.ncols]...
+        [((i-1, k, 1), ((i, k, 1), (i, k, 2))) for k ∈ j:peps.ncols]...,
+        ((i, j, 1), (i, j, 2))
     )
 end
 
@@ -128,7 +129,7 @@ function bond_energy(
                     )
         energies = @view en[pv[σ], pu]
     else
-        energies = zeros(length(local_energy(network, u)))
+        energies = zeros(length(local_energy(network, fg_u)))
     end
     vec(energies)
 end
@@ -153,6 +154,11 @@ end
 
 function update_energy(network::PEPSNetwork{T, S}, σ::Vector{Int}) where {T <: Pegasus, S}
     i, j, k = node_from_index(network, length(σ)+1)
+
+    println(i," ",j," ",k)
+    be = bond_energy(network, (i, j, k), (i, j-1, 2), local_state_for_node(network, σ, (i, j-1, 2)))
+    println(be)
+
     en = bond_energy(
         network, (i, j, k), (i, j-1, 2), local_state_for_node(network, σ, (i, j-1, 2))
     ) +

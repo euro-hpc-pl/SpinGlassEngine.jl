@@ -247,13 +247,18 @@ function _update_reduced_env_right(
     RE::AbstractArray{Float64, 2}, m::Int, M::Dict, B::AbstractArray{Float64, 3}
 )
     kk = sort(collect(keys(M)))
-    Mt = M[kk[1]]
-    K = @view Mt[m, :]
+    if kk[1] < 0
+        Mt = M[kk[1]]
+        K = @view Mt[m, :]
 
-    for ii ∈ kk[2:end]
-        if ii == 0 break end
-        Mm = M[ii]
-        @tensor K[a] := K[b] * Mm[b, a]
+        for ii ∈ kk[2:end]
+            if ii == 0 break end
+            Mm = M[ii]
+            @tensor K[a] := K[b] * Mm[b, a]
+        end
+    else
+        K = zeros(size(M[0], 2))
+        K[m] = 1.
     end
     _update_reduced_env_right(K, RE, M[0], B)
 end
@@ -431,25 +436,27 @@ function conditional_probability(
 
     @tensor LM[y, z] := L[x] * M[x, y, z]
 
-    eng_local = local_energy(contractor.peps, (i, j))
+    eng_local = local_energy(contractor.peps, (i, j, k))
 
-    pl = projector(contractor.peps, (i, j), (i, j-1))
-    eng_pl = interaction_energy(contractor.peps, (i, j), (i, j-1))
-    eng_left = @view eng_pl[pl[:], ∂v[j]]
+    probs = exp.(-β * (eng_local .- minimum(eng_local)))
 
-    pu = projector(contractor.peps, (i, j), (i-1, j))
-    eng_pu = interaction_energy(contractor.peps, (i, j), (i-1, j))
-    eng_up = @view eng_pu[pu[:], ∂v[j+1]]
+    # pl = projector(contractor.peps, (i, j), (i, j-1))
+    # eng_pl = interaction_energy(contractor.peps, (i, j), (i, j-1))
+    # eng_left = @view eng_pl[pl[:], ∂v[j]]
 
-    en = eng_local .+ eng_left .+ eng_up
-    loc_exp = exp.(-β .* (en .- minimum(en)))
+    # pu = projector(contractor.peps, (i, j), (i-1, j))
+    # eng_pu = interaction_energy(contractor.peps, (i, j), (i-1, j))
+    # eng_up = @view eng_pu[pu[:], ∂v[j+1]]
 
-    pr = projector(contractor.peps, (i, j), (i, j+1))
-    pd = projector(contractor.peps, (i, j), (i+1, j))
+    # en = eng_local .+ eng_left .+ eng_up
+    # loc_exp = exp.(-β .* (en .- minimum(en)))
 
-    bnd_exp = dropdims(sum(LM[pd[:], :] .* R[:, pr[:]]', dims=2), dims=2)
-    probs = loc_exp .* bnd_exp
-    push!(contractor.statistics, state => error_measure(probs))
+    # pr = projector(contractor.peps, (i, j), (i, j+1))
+    # pd = projector(contractor.peps, (i, j), (i+1, j))
+
+    # bnd_exp = dropdims(sum(LM[pd[:], :] .* R[:, pr[:]]', dims=2), dims=2)
+    # probs = loc_exp .* bnd_exp
+    # push!(contractor.statistics, state => error_measure(probs))
     normalize_probability(probs)
 end
 

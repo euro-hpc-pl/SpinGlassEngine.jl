@@ -20,7 +20,7 @@ struct GaugesEnergy{T} <: AbstractTensorsLayout end
 struct EnergyGauges{T} <: AbstractTensorsLayout end
 struct EngGaugesEng{T} <: AbstractTensorsLayout end
 
-const Node = NTuple{2, Int}
+const Node = NTuple{N, Int} where N
 
 struct PEPSNode
     i::IntOrRational
@@ -31,6 +31,17 @@ struct PEPSNode
     end
 end
 Node(node::PEPSNode) = (node.i, node.j)
+
+struct SuperPEPSNode
+    i::IntOrRational
+    j::IntOrRational
+    k::Int
+
+    function SuperPEPSNode(i::IntOrRational, j::IntOrRational, k::Int)
+        new(denominator(i) == 1 ? numerator(i) : i, denominator(j) == 1 ? numerator(j) : j, k)
+    end
+end
+Node(node::SuperPEPSNode) = (node.i, node.j, node.k)
 
 struct GaugeInfo
     positions::NTuple{2, PEPSNode}
@@ -63,27 +74,27 @@ function SquareStar(m::Int, n::Int)
 end
 
 function Pegasus(m::Int, n::Int)
-    labels = [(i, j) for j ∈ 1:2*n for i ∈ 1:m]
+    labels = [(i, j, k) for j ∈ 1:n for i ∈ 1:m for k ∈ 1:2]
     lg = LabelledGraph(labels)
-    for i ∈ 1:m, j ∈ 1:n add_edge!(lg, (i, 2*j-1), (i, 2*j)) end
+    for i ∈ 1:m, j ∈ 1:n add_edge!(lg, (i, j, 1), (i, j, 2)) end
 
     for i ∈ 1:m-1, j ∈ 1:n
-        add_edge!(lg, (i, 2*j-1), (i+1, 2*j-1))
-        add_edge!(lg, (i, 2*j), (i+1, 2*j-1))
+        add_edge!(lg, (i, j, 1), (i+1, j, 1))
+        add_edge!(lg, (i, j, 2), (i+1, j, 1))
     end
 
     for i ∈ 1:m, j ∈ 1:n-1
-        add_edge!(lg, (i, 2*j), (i, 2*j+2))
-        add_edge!(lg, (i, 2*j-1), (i, 2*j+2))
+        add_edge!(lg, (i, j, 2), (i, j+1, 2))
+        add_edge!(lg, (i, j, 1), (i, j+1, 2))
     end
 
-    # Diagonal:
-    # for i ∈ 1:m-1, j ∈ 1:n-1
-    #     add_edge!(lg, (i, 2*j), (i+1, 2*j+1))
-    #     add_edge!(lg, (i, 2*j-1), (i+1, 2*j+2))
+    # for i ∈ 1:m-1, j ∈ 1:n-1  # diagonalne
+    #     add_edge!(lg, (i, j, 2), (i+1, j+1, 1))
+    #     add_edge!(lg, (i, j, 1), (i+1, j+1, 2))
     # end
     lg
 end
+
 
 #-----------------------------
 ###    Square geometry     ###
@@ -270,7 +281,7 @@ function gauges_list(::Type{Pegasus}, nrows::Int, ncols::Int)
         GaugeInfo(
             (PEPSNode(i + 1//3, j), PEPSNode(i + 2//3, j)),
             PEPSNode(i , j),
-            2,
+            4,
             :gauge_h
         )
         for i ∈ 1:nrows-1 for j ∈ 1:ncols

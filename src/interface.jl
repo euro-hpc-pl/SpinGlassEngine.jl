@@ -51,8 +51,7 @@ function projector(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
     elseif has_edge(fg, fg_v, fg_w)
         p = get_prop(fg, fg_v, fg_w, :pl)
     else
-        loc_dim = fg_v ∈ vertices(fg) ? length(local_energy(network, v)) : 1
-        p = floor.(Int, ones(loc_dim, 1))
+        p = ones(Int, fg_v ∈ vertices(fg) ? cluster_size(network, v) : 1, 1)
     end
     vec(p)
 end
@@ -75,6 +74,10 @@ end
 
 function local_energy(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T}
     spectrum(network, vertex).energies
+end
+
+function cluster_size(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T}
+    length(local_energy(network, vertex))
 end
 
 function interaction_energy(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
@@ -144,7 +147,6 @@ function initialize_gauges!(
 end
 
 _normalize(probs::Vector{<:Real}) = probs ./ sum(probs)
-
 function _equalize(probs::Vector{<:Real})
     mp = abs(minimum(probs))
     _normalize(replace(p -> p < mp ? mp : p, probs))

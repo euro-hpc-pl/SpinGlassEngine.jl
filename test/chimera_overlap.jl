@@ -49,7 +49,7 @@ for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, Sparse)
         overlap34 = psi_bottom4 * psi_top3 
         println("overlap 3-4 ", overlap34)
 
-        clear_cache()
+        clear_memoize_cache()
             
     end
 end

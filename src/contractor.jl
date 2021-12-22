@@ -1,5 +1,5 @@
 export SVDTruncate, MPSAnnealing, MpoLayers, MpsParameters, MpsContractor
-export clear_cache, mps_top, mps
+export clear_memoize_cache, mps_top, mps
 
 abstract type AbstractContractor end
 abstract type AbstractStrategy end
@@ -460,7 +460,7 @@ function conditional_probability(
     normalize_probability(probs)
 end
 
-function clear_cache()
+function clear_memoize_cache()
     empty!(memoize_cache(left_env))
     empty!(memoize_cache(right_env))
     empty!(memoize_cache(mpo))

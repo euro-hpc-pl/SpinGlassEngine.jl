@@ -18,7 +18,7 @@ function bench(instance::String)
     # 3. Code blows up [e.g., LAPACKException(18)] for large β (e.g. β > 4)
     # 4. Sparse is still not faster than Dense
 
-    β = 7.0
+    β = 3.0
     bond_dim = 64
     δp = 1E-3
     num_states = 1000
@@ -46,7 +46,7 @@ function bench(instance::String)
             @test sol.energies[begin] ≈ ground_energy
 
             #println(sol.energies[begin])
-            clear_cache()
+            clear_memoize_cache()
         end
     end
 end

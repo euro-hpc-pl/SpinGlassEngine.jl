@@ -75,7 +75,7 @@
     for Strategy ∈ (SVDTruncate,), Sparsity ∈ (Dense,) # MPSAnnealing
         println("Strategy ", Strategy)
         println("Sparsity ", Sparsity)
-        for Layout ∈ (EnergyGauges, ) #GaugesEnergy, EngGaugesEng 
+        for Layout ∈ (EnergyGauges, ) #GaugesEnergy, EngGaugesEng
             println("Layout ", Layout)
             for transform ∈ all_lattice_transformations #[[4,8]]] errors are here
 
@@ -93,7 +93,7 @@
                 for x in sol.states
                     println(x)
                 end
-                # clear_cache()
+                clear_memoize_cache()
             end
         end
     end

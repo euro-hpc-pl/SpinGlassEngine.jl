@@ -129,47 +129,35 @@ function bond_energy(
                     )
         energies = @view en[pv[σ], pu]
     else
-        energies = zeros(length(local_energy(network, fg_u)))
+        energies = zeros(cluster_size(network, u))
     end
     vec(energies)
 end
 
 function update_energy(network::PEPSNetwork{T, S}, σ::Vector{Int}) where {T <: Square, S}
     i, j = node_from_index(network, length(σ)+1)
-    bond_energy(network, (i, j), (i, j-1), local_state_for_node(network, σ, (i, j-1))) +
-    bond_energy(network, (i, j), (i-1, j), local_state_for_node(network, σ, (i-1, j))) +
-    local_energy(network, (i, j))
-end
-
-function update_energy(
-    network::PEPSNetwork{T, S}, σ::Vector{Int}
-) where {T <: SquareStar, S}
-    i, j = node_from_index(network, length(σ)+1)
-    bond_energy(network, (i, j), (i, j-1), local_state_for_node(network, σ, (i, j-1))) +
-    bond_energy(network, (i, j), (i-1, j), local_state_for_node(network, σ, (i-1, j))) +
-    bond_energy(network, (i, j), (i-1, j-1), local_state_for_node(network, σ, (i-1, j-1))) +
-    bond_energy(network, (i, j), (i-1, j+1), local_state_for_node(network, σ, (i-1, j+1))) +
-    local_energy(network, (i, j))
-end
-
-function update_energy(network::PEPSNetwork{T, S}, σ::Vector{Int}) where {T <: Pegasus, S}
-    i, j, k = node_from_index(network, length(σ)+1)
-
-    println(i," ",j," ",k)
-    be = bond_energy(network, (i, j, k), (i, j-1, 2), local_state_for_node(network, σ, (i, j-1, 2)))
-    println(be)
-
-    en = bond_energy(
-        network, (i, j, k), (i, j-1, 2), local_state_for_node(network, σ, (i, j-1, 2))
-    ) +
-    bond_energy(
-        network, (i, j, k), (i-1, j, 1), local_state_for_node(network, σ, (i-1, j, 1))
-    ) +
-    local_energy(network, (i, j, k))
-    if k == 2
-        en += bond_energy(
-            network, (i, j, 2), (i, j, 1), local_state_for_node(network, σ, (i, j, 1))
-        )
+    en = local_energy(network, (i, j))
+    for v ∈ ((i, j-1), (i-1, j))
+        en += bond_energy(network, (i, j), v, local_state_for_node(network, σ, v))
     end
     en
+end
+
+function update_energy(net::PEPSNetwork{T, S}, σ::Vector{Int}) where {T <: SquareStar, S}
+    i, j = node_from_index(net, length(σ)+1)
+    en = local_energy(net, (i, j))
+    for v ∈ ((i, j-1), (i-1, j), (i-1, j-1), (i-1, j+1))
+       en += bond_energy(net, (i, j), v, local_state_for_node(net, σ, v))
+    end
+    en
+end
+
+function update_energy(net::PEPSNetwork{T, S}, σ::Vector{Int}) where {T <: Pegasus, S}
+    i, j, k = node_from_index(net, length(σ)+1)
+    en = local_energy(net, (i, j, k))
+    for v ∈ ((i, j-1, 2), (i-1, j, 1))
+        en += bond_energy(net, (i, j, k), v, local_state_for_node(net, σ, v))
+    end
+    if k != 2 return en end
+    en += bond_energy(net, (i, j, 2), (i, j, 1), local_state_for_node(net, σ, (i, j, 1)))
 end

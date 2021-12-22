@@ -72,12 +72,12 @@
     params = MpsParameters(bond_dim, 1E-8, 4)
     search_params = SearchParameters(num_states, 0.0)
 
-    for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, Sparse) #MPSAnnealing
+    for Strategy ∈ (SVDTruncate,), Sparsity ∈ (Dense,) # MPSAnnealing
         println("Strategy ", Strategy)
         println("Sparsity ", Sparsity)
-        for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
+        for Layout ∈ (EnergyGauges, ) #GaugesEnergy, EngGaugesEng
             println("Layout ", Layout)
-            for transform ∈ all_lattice_transformations
+            for transform ∈ all_lattice_transformations #[[4,8]]] errors are here
 
                 network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
                 contractor = MpsContractor{Strategy}(network, [β/8., β/4., β/2., β], params)
@@ -87,12 +87,13 @@
                 for (i, σ) ∈ enumerate(sol.states) @test σ ∈ exact_states[deg[i]] end
                 println(maximum(contractor.statistics))
 
-                psi_top = mps_top(contractor, 1, 4)
-                psi_bottom = mps(contractor, 2, 4)
-
-                println(psi_bottom * psi_top) 
-
-                clear_cache()
+                norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
+                exact_norm_prob = exp.(-β .* (sol.energies .- sol.energies[1]))
+                @test norm_prob ≈ exact_norm_prob
+                for x in sol.states
+                    println(x)
+                end
+                clear_memoize_cache()
             end
         end
     end

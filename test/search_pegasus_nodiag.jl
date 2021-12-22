@@ -40,7 +40,7 @@ function bench(instance::String)
             @time sol_peps = low_energy_spectrum(ctr, search_params, merge_branches(network))
 
             push!(energies, sol_peps.energies[begin])
-            clear_cache()
+            clear_memoize_cache()
         end
     end
     println(energies)
@@ -48,5 +48,3 @@ function bench(instance::String)
 end
 
 #bench("$(@__DIR__)/instances/pegasus_nondiag/4x4.txt")
-
-

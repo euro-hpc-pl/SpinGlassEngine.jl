@@ -1,4 +1,5 @@
-export SVDTruncate, MPSAnnealing, MpoLayers, MpsParameters, MpsContractor, clear_cache,  mps_top, mps
+export SVDTruncate, MPSAnnealing, MpoLayers, MpsParameters, MpsContractor
+export clear_memoize_cache, mps_top, mps
 
 abstract type AbstractContractor end
 abstract type AbstractStrategy end
@@ -155,7 +156,6 @@ end
     ψ0
 end
 
-
 @memoize function mps(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
     if i > ctr.peps.nrows
         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
@@ -247,13 +247,18 @@ function _update_reduced_env_right(
     RE::AbstractArray{Float64, 2}, m::Int, M::Dict, B::AbstractArray{Float64, 3}
 )
     kk = sort(collect(keys(M)))
-    Mt = M[kk[1]]
-    K = @view Mt[m, :]
+    if kk[1] < 0
+        Mt = M[kk[1]]
+        K = @view Mt[m, :]
 
-    for ii ∈ kk[2:end]
-        if ii == 0 break end
-        Mm = M[ii]
-        @tensor K[a] := K[b] * Mm[b, a]
+        for ii ∈ kk[2:end]
+            if ii == 0 break end
+            Mm = M[ii]
+            @tensor K[a] := K[b] * Mm[b, a]
+        end
+    else
+        K = zeros(size(M[0], 2))
+        K[m] = 1.
     end
     _update_reduced_env_right(K, RE, M[0], B)
 end
@@ -411,7 +416,51 @@ function conditional_probability(
     normalize_probability(loc_exp)
 end
 
-function clear_cache()
+
+function conditional_probability(
+    ::Type{T}, contractor::MpsContractor{S}, state::Vector{Int},
+) where {T <: Pegasus, S}
+    indβ, β = length(contractor.betas), last(contractor.betas)
+    i, j, k = node_from_index(contractor.peps, length(state)+1)
+    println(i, j, k)
+    ∂v = boundary_state(contractor.peps, state, (i, j))
+    println(∂v)
+
+    L = left_env(contractor, i, ∂v[1:j-1], indβ)
+    R = right_env(contractor, i, ∂v[(j+2):(contractor.peps.ncols+1)], indβ)
+    M = dressed_mps(contractor, i, indβ)[j]
+
+    L = L ./ maximum(abs.(L))
+    R = R ./ maximum(abs.(R))
+    M = M ./ maximum(abs.(M))
+
+    @tensor LM[y, z] := L[x] * M[x, y, z]
+
+    eng_local = local_energy(contractor.peps, (i, j, k))
+
+    probs = exp.(-β * (eng_local .- minimum(eng_local)))
+
+    # pl = projector(contractor.peps, (i, j), (i, j-1))
+    # eng_pl = interaction_energy(contractor.peps, (i, j), (i, j-1))
+    # eng_left = @view eng_pl[pl[:], ∂v[j]]
+
+    # pu = projector(contractor.peps, (i, j), (i-1, j))
+    # eng_pu = interaction_energy(contractor.peps, (i, j), (i-1, j))
+    # eng_up = @view eng_pu[pu[:], ∂v[j+1]]
+
+    # en = eng_local .+ eng_left .+ eng_up
+    # loc_exp = exp.(-β .* (en .- minimum(en)))
+
+    # pr = projector(contractor.peps, (i, j), (i, j+1))
+    # pd = projector(contractor.peps, (i, j), (i+1, j))
+
+    # bnd_exp = dropdims(sum(LM[pd[:], :] .* R[:, pr[:]]', dims=2), dims=2)
+    # probs = loc_exp .* bnd_exp
+    # push!(contractor.statistics, state => error_measure(probs))
+    normalize_probability(probs)
+end
+
+function clear_memoize_cache()
     empty!(memoize_cache(left_env))
     empty!(memoize_cache(right_env))
     empty!(memoize_cache(mpo))
@@ -419,13 +468,18 @@ function clear_cache()
     empty!(memoize_cache(dressed_mps))
 end
 
-
 function error_measure(probs)
-    if maximum(probs) <= 0
-        return 2.
+    if maximum(probs) <= 0 return 2.0 end
+    if minimum(probs) < 0 return abs(minimum(probs)) / maximum(abs.(probs)) end
+    return 0.0
+end
+
+function MpoLayers(::Type{T}, ncols::Int) where T <: Pegasus
+    main, dress, right = Dict(), Dict(), Dict()
+    for i ∈ 1:ncols
+        push!(main, i => (-1//3, 0, 1//3))
+        push!(dress, i => (1//3))
+        push!(right, i => (0, ))
     end
-    if minimum(probs) < 0
-        return abs(minimum(probs)) / maximum(abs.(probs))
-    end
-    return 0.
+    MpoLayers(main, dress, right)
 end

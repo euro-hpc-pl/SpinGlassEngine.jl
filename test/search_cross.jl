@@ -32,7 +32,7 @@
                 contractor = MpsContractor{Strategy}(network, [β/2, β], params)
                 sol = low_energy_spectrum(contractor, search_params)
                 @test first(sol.energies) ≈ ground_energy
-                clear_cache()
+                clear_memoize_cache()
             end
         end
     end

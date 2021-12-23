@@ -18,8 +18,8 @@ function bench(instance::String)
     δp = 1e-4
     num_states = 64
 
-    @time ig = ising_graph(instance)
-    @time fg = factor_graph(
+    ig = ising_graph(instance)
+    fg = factor_graph(
         ig,
         # max_cl_states,
         spectrum=full_spectrum, #_gpu, # rm _gpu to use CPU
@@ -42,12 +42,8 @@ function bench(instance::String)
         for transform ∈ rotation.([180])
             println((Strategy, Sparsity, transform))
 
-            @time network = PEPSNetwork{Pegasus, Sparsity}(m, n, fg, transform)
-
+            network = PEPSNetwork{Pegasus, Sparsity}(m, n, fg, transform)
             network2 = PEPSNetwork{Square{EnergyGauges}, Sparsity}(m, n, fg2, transform)
-
-            # println(network.ncols)
-            # println(network.nrows)
 
             # for ii in 1:3, jj in 1:2
             #     to = tensor(network2, PEPSNode(ii, jj), β)
@@ -64,30 +60,29 @@ function bench(instance::String)
             # println(tn ./ too)
             # println("---------------")
 
-            # println(get_prop(network2.factor_graph, (2, 2), :spectrum).states)
-            @time ctr = MpsContractor{Strategy}(network2, [β/8, β/4, β/2, β], params)
-            @time sol_peps = low_energy_spectrum(ctr, search_params) #merge_branches(network2))
+            ctr = MpsContractor{Strategy}(network2, [β/8, β/4, β/2, β], params)
+            sol_peps = low_energy_spectrum(ctr, search_params) #merge_branches(network2))
             println(sol_peps.energies)
-            println(sol_peps.states)
+            #println(sol_peps.states)
 
-            # println(energy(ig, fg2, sol_peps.states[1]))
-
-            # println(sols[1])
-
-            #eng_states = energy(sol_peps.states, )
+            J = couplings(ig) + Diagonal(biases(ig))
+            #println("en(fg) -> ", energy.(Ref(J), Ref(fg), sol_peps.states))
+            println("en(fg2) -> ", energy(J, fg2, sol_peps.states[1]))
+            #println(sols[1])
 
             clear_memoize_cache()
 
             println("---------- switching to new geometry -------------- ")
-            @time ctr = MpsContractor{Strategy}(network, [β/8, β/4, β/2, β], params)
-            @time sol_peps = low_energy_spectrum(ctr, search_params) #, merge_branches(network))
+            ctr = MpsContractor{Strategy}(network, [β/8, β/4, β/2, β], params)
+            sol_peps = low_energy_spectrum(ctr, search_params) #, merge_branches(network))
             println(sol_peps.energies)
-            println(sol_peps.states)
+            #println(sol_peps.states)
 
-            # println(energy(ig, fg2, sol_peps.states[1]))
+            #println(sol_peps.energies)
+            println("en(fg) -> ", energy(J, fg, sol_peps.states[1]))
 
-            # # push!(energies, sol_peps.energies[begin])
-            # clear_memoize_cache()
+            #push!(energies, sol_peps.energies[begin])
+            #clear_memoize_cache()
         end
     end
     #@test all(e -> e ≈ first(energies), energies)

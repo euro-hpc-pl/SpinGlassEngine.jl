@@ -1,8 +1,21 @@
 
-function to_state(fg_state::Dict{Int, Int})
-    ig_state = zeros(Int, maximum(keys(fg_state)))
-    for (i, σ) ∈ fg_state @inbounds ig_state[i] = σ end
-    ig_state
+function _energy(ig::IsingGraph, fg, fg_state::Vector{Int})
+    ig_state = decode_factor_graph_state(fg, fg_state)
+    en = 0.0
+    for (i, σ) ∈ ig_state
+        en += get_prop(ig, i, :h) * σ
+        for (j, η) ∈ ig_state
+            if has_edge(ig, i, j)
+                J = get_prop(ig, i, j, :J)
+            elseif has_edge(ig, j, i)
+                J = get_prop(ig, j, i, :J)
+            else
+                J = 0.0
+            end
+            en += σ * J * η / 2.0
+        end
+    end
+    en
 end
 
 @testset "Pegasus-like instance has the correct ground state energy" begin
@@ -40,9 +53,8 @@ end
                 contractor = MpsContractor{Strategy}(network, [β/2, β], params)
                 sol = low_energy_spectrum(contractor, search_params)
                 @test sol.energies[begin] ≈ ground_energy
-                #@test sol.energies ≈ energy.(Ref(J), Ref(fg), sol.states)
-                spins = decode_factor_graph_state(fg, sol.states[1])
-                println(to_state(spins))
+
+                @test sol.energies[1] ≈ _energy(ig, fg, sol.states[1])
                 clear_memoize_cache()
             end
         end

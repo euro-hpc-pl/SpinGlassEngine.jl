@@ -32,8 +32,10 @@
                 network = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, fg, transform)
                 contractor = MpsContractor{Strategy}(network, [β/2, β], params)
                 sol = low_energy_spectrum(contractor, search_params)
+
+                ig_states = decode_factor_graph_state.(Ref(fg), sol.states)
                 @test sol.energies[begin] ≈ ground_energy
-                @test sol.energies ≈ energy.(Ref(ig), Ref(fg), sol.states)
+                @test sol.energies ≈ energy.(Ref(ig), ig_states)
                 clear_memoize_cache()
             end
         end

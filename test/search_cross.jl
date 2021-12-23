@@ -54,7 +54,7 @@ end
                 sol = low_energy_spectrum(contractor, search_params)
                 @test sol.energies[begin] ≈ ground_energy
 
-                @test sol.energies[1] ≈ _energy(ig, fg, sol.states[1])
+                @test sol.energies ≈ _energy.(Ref(ig), Ref(fg), sol.states)
                 clear_memoize_cache()
             end
         end

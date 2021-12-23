@@ -62,27 +62,15 @@ function bench(instance::String)
 
             ctr = MpsContractor{Strategy}(network2, [β/8, β/4, β/2, β], params)
             sol_peps = low_energy_spectrum(ctr, search_params) #merge_branches(network2))
-            println(sol_peps.energies)
-            #println(sol_peps.states)
 
-            J = couplings(ig) + Diagonal(biases(ig))
-            println(" ")
-            #println("en(fg2) -> ", energy.(Ref(J), Ref(fg2), sol_peps.states))
-            println("en(fg2) -> ", energy(J, fg2, sol_peps.states[1]))
-            #println(sols[1])
+            @test sol_peps.energies ≈ energy.(Ref(ig), Ref(fg2), sol_peps.states)
 
             clear_memoize_cache()
-
             println("---------- switching to new geometry -------------- ")
             ctr = MpsContractor{Strategy}(network, [β/8, β/4, β/2, β], params)
             sol_peps = low_energy_spectrum(ctr, search_params) #, merge_branches(network))
-            println(sol_peps.energies)
-            #println(sol_peps.states)
 
-            #println(sol_peps.energies)
-            println(" ")
-            #println("en(fg) -> ", energy.(Ref(J), Ref(fg), sol_peps.states))
-            println("en(fg) -> ", energy(J, fg, sol_peps.states[1]))
+            @test sol_peps.energies ≈ energy.(Ref(ig), Ref(fg), sol_peps.states)
 
             #push!(energies, sol_peps.energies[begin])
             #clear_memoize_cache()

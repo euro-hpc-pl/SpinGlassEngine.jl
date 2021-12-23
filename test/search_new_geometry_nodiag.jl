@@ -11,12 +11,12 @@ function bench(instance::String)
     t = 1
     L = n * m * t * 2 * 4
 
-    max_cl_states = 2^8
+    max_cl_states = 2^2
 
-    β = 2.0
+    β = 1.0
     bond_dim = 16
-    δp = 1E-4
-    num_states = 1000
+    δp = 1e-4
+    num_states = 16
 
     @time ig = ising_graph(instance)
     @time fg = factor_graph(
@@ -69,14 +69,17 @@ function bench(instance::String)
             # println("---------------")
 
             # println(get_prop(network2.factor_graph, (2, 2), :spectrum).states)
-            # @time ctr = MpsContractor{Strategy}(network2, [β/8, β/4, β/2, β], params)
-            # @time sol_peps = low_energy_spectrum(ctr, search_params, merge_branches(network))
+            @time ctr = MpsContractor{Strategy}(network2, [β/8, β/4, β/2, β], params)
+            @time sol_peps = low_energy_spectrum(ctr, search_params) #merge_branches(network2))
+            println(sol_peps.energies)
+            clear_memoize_cache()
 
-            println("---------- switching to new geometry -------------- ")
+            # println("---------- switching to new geometry -------------- ")
             @time ctr = MpsContractor{Strategy}(network, [β/8, β/4, β/2, β], params)
-            @time sol_peps = low_energy_spectrum(ctr, search_params, merge_branches(network))
+            @time sol_peps = low_energy_spectrum(ctr, search_params) #, merge_branches(network))
+            println(sol_peps.energies)
             # push!(energies, sol_peps.energies[begin])
-            #clear_memoize_cache()
+            clear_memoize_cache()
         end
     end
     #@test all(e -> e ≈ first(energies), energies)

@@ -1,7 +1,7 @@
 using LabelledGraphs
 
 export AbstractGibbsNetwork, vertex_map, local_energy, interaction_energy, connecting_tensor
-export normalize_probability, boundary_state, local_state_for_node, iteration_order
+export normalize_probability, boundary_state, local_state_for_node
 export fuse_projectors, initialize_gauges!
 
 # T: type of the vertex of network
@@ -36,9 +36,9 @@ function conditional_probability(
     not_implemented("conditional_probability")
 end
 
-function iteration_order(peps::AbstractGibbsNetwork{T, S}) where {S, T}
-    [(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols]
-end
+
+
+
 
 # unify :pr and :pl
 function projector(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
@@ -69,8 +69,6 @@ function fuse_projectors(projectors::Union{Vector{T}, NTuple{N, T}}) where {N, T
 end
 
 function spectrum(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T}
-    println("ver ->", vertex)
-    println("map -> ", vertex_map(network)(vertex))
     get_prop(factor_graph(network), vertex_map(network)(vertex), :spectrum)
 end
 

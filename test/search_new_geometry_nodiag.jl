@@ -13,10 +13,10 @@ function bench(instance::String)
 
     max_cl_states = 2^2
 
-    β = 1.0
+    β = 2.0
     bond_dim = 16
     δp = 1e-4
-    num_states = 16
+    num_states = 64
 
     @time ig = ising_graph(instance)
     @time fg = factor_graph(
@@ -49,22 +49,18 @@ function bench(instance::String)
             # println(network.ncols)
             # println(network.nrows)
 
-            #
+            # for ii in 1:3, jj in 1:2
+            #     to = tensor(network2, PEPSNode(ii, jj), β)
+            #     tl = tensor(network2, PEPSNode(ii, jj - 1//2), β)
+            #     tu = tensor(network2, PEPSNode(ii - 1//2, jj), β)
+            #     @tensor too[k, l, m, n] := tl[k, x] * tu[l, y] * to[x, y, m, n]
 
-            for ii in 1:3, jj in 1:2
+            #     tn = tensor(network, PEPSNode(ii, jj), β)
+            #     # # println(aa)
+            #     println("---------------")
+            #     println(tn ./ too)
+            # end
 
-                to = tensor(network2, PEPSNode(ii, jj), β)
-                tl = tensor(network2, PEPSNode(ii, jj - 1//2), β)
-                tu = tensor(network2, PEPSNode(ii - 1//2, jj), β)
-                @tensor too[k, l, m, n] := tl[k, x] * tu[l, y] * to[x, y, m, n]
-
-                tn = tensor(network, PEPSNode(ii, jj), β)
-                # # println(aa)
-
-                println("---------------")
-                println(tn ./ too)
-
-            end
             # println(tn ./ too)
             # println("---------------")
 
@@ -72,14 +68,26 @@ function bench(instance::String)
             @time ctr = MpsContractor{Strategy}(network2, [β/8, β/4, β/2, β], params)
             @time sol_peps = low_energy_spectrum(ctr, search_params) #merge_branches(network2))
             println(sol_peps.energies)
+            println(sol_peps.states)
+
+            # println(energy(ig, fg2, sol_peps.states[1]))
+
+            # println(sols[1])
+
+            #eng_states = energy(sol_peps.states, )
+
             clear_memoize_cache()
 
-            # println("---------- switching to new geometry -------------- ")
+            println("---------- switching to new geometry -------------- ")
             @time ctr = MpsContractor{Strategy}(network, [β/8, β/4, β/2, β], params)
             @time sol_peps = low_energy_spectrum(ctr, search_params) #, merge_branches(network))
             println(sol_peps.energies)
-            # push!(energies, sol_peps.energies[begin])
-            clear_memoize_cache()
+            println(sol_peps.states)
+
+            # println(energy(ig, fg2, sol_peps.states[1]))
+
+            # # push!(energies, sol_peps.energies[begin])
+            # clear_memoize_cache()
         end
     end
     #@test all(e -> e ≈ first(energies), energies)

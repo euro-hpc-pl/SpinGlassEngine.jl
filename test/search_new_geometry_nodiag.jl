@@ -66,8 +66,9 @@ function bench(instance::String)
             #println(sol_peps.states)
 
             J = couplings(ig) + Diagonal(biases(ig))
-            #println("en(fg) -> ", energy.(Ref(J), Ref(fg), sol_peps.states))
-            println("en(fg2) -> ", energy(J, fg2, sol_peps.states[1]))
+            println(" ")
+            println("en(fg2) -> ", sort(energy.(Ref(J), Ref(fg2), sol_peps.states)))
+            #println("en(fg2) -> ", energy(J, fg2, sol_peps.states[1]))
             #println(sols[1])
 
             clear_memoize_cache()
@@ -79,7 +80,7 @@ function bench(instance::String)
             #println(sol_peps.states)
 
             #println(sol_peps.energies)
-            println("en(fg) -> ", energy(J, fg, sol_peps.states[1]))
+            println("en(fg) -> ", sort(energy(J, fg, sol_peps.states[1])))
 
             #push!(energies, sol_peps.energies[begin])
             #clear_memoize_cache()

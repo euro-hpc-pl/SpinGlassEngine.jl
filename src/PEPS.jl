@@ -34,8 +34,7 @@ end
 
 function projectors(network::PEPSNetwork{T, S}, vertex::Node) where {T <: Square, S}
     i, j = vertex
-    neighbours = ((i, j-1), (i-1, j), (i, j+1), (i+1, j))
-    projector.(Ref(network), Ref(vertex), neighbours)
+    projector.(Ref(network), Ref(vertex), ((i, j-1), (i-1, j), (i, j+1), (i+1, j)))
 end
 
 function projectors(network::PEPSNetwork{T, S}, vertex::Node) where {T <: SquareStar, S}
@@ -49,13 +48,13 @@ function projectors(network::PEPSNetwork{T, S}, vertex::Node) where {T <: Square
     projector.(Ref(network), Ref(vertex), nbrs)
 end
 
-function projectors(network::PEPSNetwork{T, S}, vertex::Node) where {T <: Pegasus, S}
+function projectors(net::PEPSNetwork{T, S}, vertex::Node) where {T <: Pegasus, S}
     i, j = vertex
     (
-        projector(network, (i, j-1, 2), ((i, j, 1), (i, j, 2))),
-        projector(network, (i-1, j, 1), ((i, j, 1), (i, j, 2))),
-        projector(network, (i, j, 2), ((i, j+1, 1), (i, j+1, 2))),
-        projector(network, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
+        projector(net, (i, j-1, 2), ((i, j, 1), (i, j, 2))),
+        projector(net, (i-1, j, 1), ((i, j, 1), (i, j, 2))),
+        projector(net, (i, j, 2), ((i, j+1, 1), (i, j+1, 2))),
+        projector(net, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
     )
 end
 
@@ -63,17 +62,17 @@ function node_index(peps::AbstractGibbsNetwork{T, S}, node::Node) where {T, S}
     peps.ncols * (node[begin] - 1) + node[end]
 end
 
-_mod_wo_zero(k, m) = k % m == 0 ? m : k % m
+mod_wo_zero(k, m) = k % m == 0 ? m : k % m
 function node_from_index(peps::PEPSNetwork{T, S}, index::Int) where {T <: Square, S}
-    ((index-1) ÷ peps.ncols + 1, _mod_wo_zero(index, peps.ncols))
+    ((index - 1) ÷ peps.ncols + 1, mod_wo_zero(index, peps.ncols))
 end
 
 function node_from_index(peps::PEPSNetwork{T, S}, index::Int) where {T <: SquareStar, S}
-    ((index-1) ÷ peps.ncols + 1, _mod_wo_zero(index, peps.ncols))
+    ((index - 1) ÷ peps.ncols + 1, mod_wo_zero(index, peps.ncols))
 end
 
-function node_from_index(peps::PEPSNetwork{T, S}, index::Int) where {T <: Pegasus, S}
-    ((index-1) ÷ (2 * peps.ncols) + 1, _mod_wo_zero(index, 2* peps.ncols), _mod_wo_zero(index, 2))
+function node_from_index(peps::PEPSNetwork{T, S}, idx::Int) where {T <: Pegasus, S}
+    ((idx - 1) ÷ (2 * peps.ncols) + 1, mod_wo_zero(idx, 2 * peps.ncols), mod_wo_zero(idx, 2))
 end
 
 function boundary(peps::PEPSNetwork{T, S}, node::Node) where {T <: Square, S}
@@ -113,23 +112,20 @@ function boundary(peps::PEPSNetwork{T, S}, node::Node) where {T <: Pegasus, S}
     )
 end
 
-function bond_energy(
-    network::AbstractGibbsNetwork{T, S}, u::Node, v::Node, σ::Int
-) where {T, S}
-    fg_u, fg_v = network.vertex_map(u), network.vertex_map(v)
-
-    if has_edge(network.factor_graph, fg_u, fg_v)
+function bond_energy(net::AbstractGibbsNetwork{T, S}, u::Node, v::Node, σ::Int) where {T, S}
+    fg_u, fg_v = net.vertex_map(u), net.vertex_map(v)
+    if has_edge(net.factor_graph, fg_u, fg_v)
         pu, en, pv = get_prop.(
-                        Ref(network.factor_graph), Ref(fg_u), Ref(fg_v), (:pl, :en, :pr)
+                        Ref(net.factor_graph), Ref(fg_u), Ref(fg_v), (:pl, :en, :pr)
                     )
-        energies = @view en[pu, pv[σ]]
-    elseif has_edge(network.factor_graph, fg_v, fg_u)
+        energies = en[pu, pv[σ]]
+    elseif has_edge(net.factor_graph, fg_v, fg_u)
         pv, en, pu = get_prop.(
-                        Ref(network.factor_graph), Ref(fg_v), Ref(fg_u), (:pl, :en, :pr)
+                        Ref(net.factor_graph), Ref(fg_v), Ref(fg_u), (:pl, :en, :pr)
                     )
-        energies = @view en[pv[σ], pu]
+        energies = en[pv[σ], pu]
     else
-        energies = zeros(cluster_size(network, u))
+        energies = zeros(cluster_size(net, u))
     end
     vec(energies)
 end

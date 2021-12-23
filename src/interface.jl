@@ -69,6 +69,8 @@ function fuse_projectors(projectors::Union{Vector{T}, NTuple{N, T}}) where {N, T
 end
 
 function spectrum(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T}
+    println("ver ->", vertex)
+    println("map -> ", vertex_map(network)(vertex))
     get_prop(factor_graph(network), vertex_map(network)(vertex), :spectrum)
 end
 

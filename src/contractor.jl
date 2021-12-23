@@ -422,7 +422,7 @@ function conditional_probability(
 ) where {T <: Pegasus, S}
     indβ, β = length(contractor.betas), last(contractor.betas)
     i, j, k = node_from_index(contractor.peps, length(state)+1)
-    println(i, j, k)
+    #println(i, j, k)
     ∂v = boundary_state(contractor.peps, state, (i, j))
     println(∂v)
 

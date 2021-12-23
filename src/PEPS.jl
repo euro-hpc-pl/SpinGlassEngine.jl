@@ -146,30 +146,20 @@ function bond_energy(net::AbstractGibbsNetwork{T, S}, u::Node, v::Node, σ::Int)
     vec(energies)
 end
 
-function update_energy(network::PEPSNetwork{T, S}, σ::Vector{Int}) where {T <: Square, S}
-    i, j = node_from_index(network, length(σ)+1)
-    en = local_energy(network, (i, j))
-    for v ∈ ((i, j-1), (i-1, j))
-        en += bond_energy(network, (i, j), v, local_state_for_node(network, σ, v))
-    end
-    en
+@inline node_neighbors(::Type{Square{T}}, (i, j)) where {T} = ((i, j-1), (i-1, j))
+@inline function node_neighbors(::Type{SquareStar{T}}, (i, j)) where T
+    ((i, j-1), (i-1, j), (i-1, j-1), (i-1, j+1))
 end
+@inline node_neighbors(::Type{Pegasus}, (i, j, k)) = ((i, j-1, 2), (i-1, j, 1))
 
-function update_energy(net::PEPSNetwork{T, S}, σ::Vector{Int}) where {T <: SquareStar, S}
-    i, j = node_from_index(net, length(σ)+1)
-    en = local_energy(net, (i, j))
-    for v ∈ ((i, j-1), (i-1, j), (i-1, j-1), (i-1, j+1))
-       en += bond_energy(net, (i, j), v, local_state_for_node(net, σ, v))
+function update_energy(net::PEPSNetwork{T, S}, σ::Vector{Int}) where {T, S}
+    u = node_from_index(net, length(σ)+1)
+    en = local_energy(net, u)
+    for v ∈ node_neighbors(T, u)
+        en += bond_energy(net, u, v, local_state_for_node(net, σ, v))
     end
-    en
-end
-
-function update_energy(net::PEPSNetwork{T, S}, σ::Vector{Int}) where {T <: Pegasus, S}
-    i, j, k = node_from_index(net, length(σ)+1)
-    en = local_energy(net, (i, j, k))
-    for v ∈ ((i, j-1, 2), (i-1, j, 1))
-        en += bond_energy(net, (i, j, k), v, local_state_for_node(net, σ, v))
-    end
+    if T != Pegasus return en end
+    i, j, k = u
     if k != 2 return en end
-    en += bond_energy(net, (i, j, 2), (i, j, 1), local_state_for_node(net, σ, (i, j, 1)))
+    en += bond_energy(net, u, (i, j, 1), local_state_for_node(net, σ, (i, j, 1)))
 end

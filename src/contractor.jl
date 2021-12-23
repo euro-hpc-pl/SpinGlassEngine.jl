@@ -422,9 +422,7 @@ function conditional_probability(
 ) where {T <: Pegasus, S}
     indβ, β = length(contractor.betas), last(contractor.betas)
     i, j, k = node_from_index(contractor.peps, length(state)+1)
-    #println(i, j, k)
     ∂v = boundary_state(contractor.peps, state, (i, j))
-    println(∂v)
 
     L = left_env(contractor, i, ∂v[1:j-1], indβ)
     R = right_env(contractor, i, ∂v[(j+2):(contractor.peps.ncols+1)], indβ)
@@ -438,25 +436,46 @@ function conditional_probability(
 
     eng_local = local_energy(contractor.peps, (i, j, k))
 
-    probs = exp.(-β * (eng_local .- minimum(eng_local)))
+    pl1 = projector(contractor.peps, (i, j-1, 2), (i, j, 1))
+    pl2 = projector(contractor.peps, (i, j-1, 2), (i, j, 2))
+    pl, (pl1, pl2) = fuse_projectors((pl1, pl2))
 
-    # pl = projector(contractor.peps, (i, j), (i, j-1))
-    # eng_pl = interaction_energy(contractor.peps, (i, j), (i, j-1))
-    # eng_left = @view eng_pl[pl[:], ∂v[j]]
+    pu1 = projector(contractor.peps, (i-1, j, 1), (i, j, 1))
+    pu2 = projector(contractor.peps, (i-1, j, 1), (i, j, 2))
+    pu, (pu1, pu2) = fuse_projectors((pu1, pu2))
 
-    # pu = projector(contractor.peps, (i, j), (i-1, j))
-    # eng_pu = interaction_energy(contractor.peps, (i, j), (i-1, j))
-    # eng_up = @view eng_pu[pu[:], ∂v[j+1]]
+    p1l = projector(contractor.peps, (i, j, 1), (i, j-1 ,2))
+    p2l = projector(contractor.peps, (i, j, 2), (i, j-1, 2))
+    p1u = projector(contractor.peps, (i, j, 1), (i-1, j, 1))
+    p2u = projector(contractor.peps, (i, j, 2), (i-1, j, 1))
 
-    # en = eng_local .+ eng_left .+ eng_up
-    # loc_exp = exp.(-β .* (en .- minimum(en)))
+    e1u = interaction_energy(contractor.peps, (i, j, 1), (i-1, j, 1))
+    e2u = interaction_energy(contractor.peps, (i, j, 2), (i-1, j, 1))
+    e1l = interaction_energy(contractor.peps, (i, j, 1), (i, j-1, 2))
+    e2l = interaction_energy(contractor.peps, (i, j, 2), (i, j-1, 2))
 
-    # pr = projector(contractor.peps, (i, j), (i, j+1))
-    # pd = projector(contractor.peps, (i, j), (i+1, j))
+    if k == 1
+        eng_left = @view e1l[p1l[:], pl2[∂v[j]]]
+        eng_up = @view e1u[p1u[:], pu1[∂v[j+1]]]
+        en = eng_local .+ eng_left .+ eng_up
+    else  # k == 2
+        eng_left = @view e2l[p2l[:], pl1[∂v[j]]]
+        eng_up = @view e2u[p2u[:], pu2[∂v[j+1]]]
+        en21 = interaction_energy(contractor.peps, (i, j, 2), (i, j, 1))
+        p21 = projector(contractor.peps, (i, j, 2), (i, j, 1))
+        p12 = projector(contractor.peps, (i, j, 1), (i, j, 2))
+        en_int = @view en21[p21[:], p12[∂v[end]]]
+        en = eng_local .+ eng_left .+ eng_up .+ en_int
+    end
 
-    # bnd_exp = dropdims(sum(LM[pd[:], :] .* R[:, pr[:]]', dims=2), dims=2)
-    # probs = loc_exp .* bnd_exp
-    # push!(contractor.statistics, state => error_measure(probs))
+    loc_exp = exp.(-β .* (en .- minimum(en)))
+
+    pr  = projector(contractor.peps, (i, j, 2), ((i, j+1, 1), (i, j+1, 2)))
+    pd  = projector(contractor.peps, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
+
+    bnd_exp = dropdims(sum(LM[pd[:], :] .* R[:, pr[:]]', dims=2), dims=2)
+    probs = loc_exp .* bnd_exp
+    push!(contractor.statistics, state => error_measure(probs))
     normalize_probability(probs)
 end
 

@@ -132,7 +132,6 @@ end
     QMpo(Dict(sites .=> tensors))
 end
 
-
 @memoize function mps_top(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
     if i < 1
         W = mpo(ctr, ctr.layers.main, 1, indβ)
@@ -273,7 +272,6 @@ function _update_reduced_env_right(
     R
 end
 
-
 function _update_reduced_env_right(
     K::AbstractArray{Float64, 1},
     RE::AbstractArray{Float64, 2},
@@ -340,12 +338,11 @@ function conditional_probability(
     R = right_env(contractor, i, ∂v[(j+2):(contractor.peps.ncols+1)], indβ)
     M = dressed_mps(contractor, i, indβ)[j]
 
-    L = L ./ maximum(abs.(L))
-    R = R ./ maximum(abs.(R))
-    M = M ./ maximum(abs.(M))
+    L ./= maximum(abs.(L))
+    R ./= maximum(abs.(R))
+    M ./= maximum(abs.(M))
 
     @tensor LM[y, z] := L[x] * M[x, y, z]
-
     eng_local = local_energy(contractor.peps, (i, j))
 
     pl = projector(contractor.peps, (i, j), (i, j-1))
@@ -364,7 +361,6 @@ function conditional_probability(
 
     bnd_exp = dropdims(sum(LM[pd[:], :] .* R[:, pr[:]]', dims=2), dims=2)
     probs = loc_exp .* bnd_exp
-    # println(minimum(probs), maximum(probs))
     push!(contractor.statistics, state => error_measure(probs))
     normalize_probability(probs)
 end
@@ -416,7 +412,6 @@ function conditional_probability(
     normalize_probability(loc_exp)
 end
 
-
 function conditional_probability(
     ::Type{T}, contractor::MpsContractor{S}, state::Vector{Int},
 ) where {T <: Pegasus, S}
@@ -428,12 +423,11 @@ function conditional_probability(
     R = right_env(contractor, i, ∂v[(j+2):(contractor.peps.ncols+1)], indβ)
     M = dressed_mps(contractor, i, indβ)[j]
 
-    L = L ./ maximum(abs.(L))
-    R = R ./ maximum(abs.(R))
-    M = M ./ maximum(abs.(M))
+    L ./= maximum(abs.(L))
+    R ./= maximum(abs.(R))
+    M ./= maximum(abs.(M))
 
     @tensor LM[y, z] := L[x] * M[x, y, z]
-
     eng_local = local_energy(contractor.peps, (i, j, k))
 
     pl1 = projector(contractor.peps, (i, j-1, 2), (i, j, 1))

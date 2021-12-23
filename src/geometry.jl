@@ -95,7 +95,6 @@ function Pegasus(m::Int, n::Int)
     lg
 end
 
-
 #-----------------------------
 ###    Square geometry     ###
 #-----------------------------

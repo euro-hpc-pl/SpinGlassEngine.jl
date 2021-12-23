@@ -1,4 +1,4 @@
-export PEPSNetwork, node_from_index
+export PEPSNetwork, node_from_index, iteration_order
 
 mutable struct PEPSNetwork{
     T <: AbstractGeometry, S <: AbstractSparsity
@@ -72,8 +72,24 @@ function node_from_index(peps::PEPSNetwork{T, S}, index::Int) where {T <: Square
 end
 
 function node_from_index(peps::PEPSNetwork{T, S}, idx::Int) where {T <: Pegasus, S}
-    ((idx - 1) ÷ (2 * peps.ncols) + 1, mod_wo_zero(idx, 2 * peps.ncols), mod_wo_zero(idx, 2))
+    ((idx - 1) ÷ (2 * peps.ncols) + 1, mod_wo_zero((idx - 1) ÷ 2 + 1, peps.ncols), mod_wo_zero(idx, 2))
 end
+
+
+function iteration_order(peps::PEPSNetwork{T, S}) where {T <: Square, S}
+    [(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols]
+end
+
+
+function iteration_order(peps::PEPSNetwork{T, S}) where {T <: SquareStar, S}
+    [(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols]
+end
+
+
+function iteration_order(peps::PEPSNetwork{T, S}) where {T <: Pegasus, S}
+    [(i, j, k) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols for k ∈ 1:2]
+end
+
 
 function boundary(peps::PEPSNetwork{T, S}, node::Node) where {T <: Square, S}
     i, j = node

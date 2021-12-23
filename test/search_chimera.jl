@@ -72,7 +72,7 @@
     params = MpsParameters(bond_dim, 1E-8, 4)
     search_params = SearchParameters(num_states, 0.0)
 
-    for Strategy ∈ (SVDTruncate,), Sparsity ∈ (Dense,) # MPSAnnealing
+    for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, ) # MPSAnnealing
         println("Strategy ", Strategy)
         println("Sparsity ", Sparsity)
         for Layout ∈ (EnergyGauges, ) #GaugesEnergy, EngGaugesEng
@@ -90,9 +90,7 @@
                 norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
                 exact_norm_prob = exp.(-β .* (sol.energies .- sol.energies[1]))
                 @test norm_prob ≈ exact_norm_prob
-                for x in sol.states
-                    println(x)
-                end
+                for x in sol.states println(x) end
                 clear_memoize_cache()
             end
         end

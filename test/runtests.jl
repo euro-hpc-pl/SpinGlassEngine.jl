@@ -47,7 +47,7 @@ push!(my_tests,
         "search_cross.jl",
         # #"search_pegasus.jl",
         #"search_pegasus_nodiag.jl",
-        "search_new_geometry_nodiag.jl",
+        #"search_new_geometry_nodiag.jl",
         #"chimera_overlap.jl"
 )
 

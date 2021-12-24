@@ -53,7 +53,7 @@ end
 function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EnergyGauges}
     main, dress, right = Dict(), Dict(), Dict()
 
-    for i ∈ 1//2 : 1//2 : ncols
+    for i ∈ 1//2:1//2:ncols
         ii = denominator(i) == 1 ? numerator(i) : i
         push!(main, ii => (-1//6, 0, 3//6, 4//6))
         push!(dress, ii => (3//6, 4//6))
@@ -79,7 +79,7 @@ end
 function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{GaugesEnergy}
     main, dress, right = Dict(), Dict(), Dict()
 
-    for i ∈ 1//2 : 1//2 : ncols
+    for i ∈ 1//2:1//2:ncols
         ii = denominator(i) == 1 ? numerator(i) : i
         push!(main, ii => (-4//6, -1//2, 0, 1//6))
         push!(dress, ii => (1//6))
@@ -105,7 +105,7 @@ end
 function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EngGaugesEng}
     main, dress, right = Dict(), Dict(), Dict()
 
-    for i ∈ 1//2 : 1//2 : ncols
+    for i ∈ 1//2:1//2:ncols
         ii = denominator(i) == 1 ? numerator(i) : i
         push!(main, ii => (-2//5, -1//5, 0, 1//5, 2//5))
         push!(dress, ii => (1//5, 2//5))
@@ -118,18 +118,15 @@ end
     ctr::MpsContractor{T}, layers::Dict, r::Int, indβ::Int
 ) where T <: AbstractStrategy
     sites = collect(keys(layers))
-    tensors = Vector{Dict}(undef, length(sites))
+    ten = Vector{Dict}(undef, length(sites))
 
     #Threads.@threads for i ∈ 1:length(sites) #TODO: does this make sense here?
     for i ∈ 1:length(sites)
         j = sites[i]
-        coor = layers[j]
-        tensors[i] = Dict(
-                        dr => tensor(ctr.peps, PEPSNode(r + dr, j), ctr.betas[indβ])
-                        for dr ∈ coor
-                    )
+        coor, β = layers[j], ctr.betas[indβ]
+        ten[i] = Dict(dr => tensor(ctr.peps, PEPSNode(r + dr, j), β) for dr ∈ coor)
     end
-    QMpo(Dict(sites .=> tensors))
+    QMpo(Dict(sites .=> ten))
 end
 
 @memoize function mps_top(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)

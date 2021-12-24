@@ -36,16 +36,9 @@ function conditional_probability(
     not_implemented("conditional_probability")
 end
 
-
-
-
-
-# unify :pr and :pl
 function projector(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
     fg = factor_graph(network)
-    vmap = vertex_map(network)
-    fg_v, fg_w = vmap(v), vmap(w)
-
+    fg_v, fg_w = network.vertex_map(v), network.vertex_map(w)
     if has_edge(fg, fg_w, fg_v)
         p = get_prop(fg, fg_w, fg_v, :pr)
     elseif has_edge(fg, fg_v, fg_w)
@@ -57,9 +50,9 @@ function projector(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
 end
 
 function projector(
-    network::AbstractGibbsNetwork{S, T}, v::S, W::NTuple{N, S}
+    network::AbstractGibbsNetwork{S, T}, v::S, vertices::NTuple{N, S}
 ) where {S, T, N}
-    first(fuse_projectors(projector.(Ref(network), Ref(v), W)))
+    first(fuse_projectors(projector.(Ref(network), Ref(v), vertices)))
 end
 
 function fuse_projectors(projectors::Union{Vector{T}, NTuple{N, T}}) where {N, T}
@@ -82,8 +75,7 @@ end
 
 function interaction_energy(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
     fg = factor_graph(network)
-    vmap = vertex_map(network)
-    fg_v, fg_w = vmap(v), vmap(w)
+    fg_v, fg_w = network.vertex_map(v), network.vertex_map(w)
     if has_edge(fg, fg_w, fg_v)
         get_prop(fg, fg_w, fg_v, :en)'
     elseif has_edge(fg, fg_v, fg_w)

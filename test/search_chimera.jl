@@ -77,7 +77,7 @@
         println("Sparsity ", Sparsity)
         for Layout ∈ (EnergyGauges, ) #GaugesEnergy, EngGaugesEng
             println("Layout ", Layout)
-            for transform ∈ all_lattice_transformations #[[4,8]]] errors are here
+            for transform ∈ all_lattice_transformations[[1,2,3,5,6,7]] #[[4,8]]] errors are here
 
                 network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
                 contractor = MpsContractor{Strategy}(network, [β/8., β/4., β/2., β], params)

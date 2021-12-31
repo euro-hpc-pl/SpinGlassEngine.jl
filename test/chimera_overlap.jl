@@ -38,12 +38,27 @@ for Strategy ∈ (SVDTruncate, )
         @time ctr_s = MpsContractor{Strategy}(network_s, [β/8, β/4, β/2, β], params)
 
         for i in 1:n
+            @testset "Overlap <mps_dense|mps_sparse>" begin
             psi_bottom_d = mps(ctr_d, i, 4)
             psi_bottom_s = mps(ctr_s, i, 4)
             @test psi_bottom_d * psi_bottom_s ≈ 1.0
+            end
+            @testset "Overlap <mps_top_dense|mps_top_sparse>" begin
             #psi_top_d = mps_top(ctr_d, i, 4)
             #psi_top_s = mps_top(ctr_s, i, 4)
             #@test psi_top_d * psi_top_s ≈ 1.0
+            end
+        end
+
+        @testset "Compare the results for Dense with Python" begin
+            overlap_python = [0.2637787707674837, 0.2501621729619047, 0.2951954406837012]
+            for i in 1:n-1
+                psi_top = mps_top(ctr_d, i, 4)
+                psi_bottom = mps(ctr_d, i+1, 4)
+                overlap = psi_bottom * psi_top
+                #@test overlap ≈ overlap_python[i] 
+                @test isapprox(overlap, overlap_python[i], atol=1e-5)
+            end
         end
         
         clear_memoize_cache()

@@ -11,8 +11,8 @@ max_cl_states = 2^(t-0)
 
 ground_energy = -3336.773383
 
-β = 3.0
-bond_dim = 48
+β = 0.5
+bond_dim = 16
 δp = 1E-3
 num_states = 1000
 
@@ -28,27 +28,24 @@ instance = "$(@__DIR__)/instances/chimera_droplets/128power/001.txt"
 params = MpsParameters(bond_dim, 1E-8, 10)
 search_params = SearchParameters(num_states, δp)
 
-for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, Sparse)
-    for Layout ∈ (EnergyGauges, ), transform ∈ rotation.([0])
-        println((Strategy, Sparsity, Layout, transform))
+for Strategy ∈ (SVDTruncate, )
+    for Layout ∈ (GaugesEnergy, ), transform ∈ rotation.([0])
+        println((Strategy, Layout, transform))
 
-        @time network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
-        @time ctr = MpsContractor{Strategy}(network, [β/8, β/4, β/2, β], params)
+        @time network_d = PEPSNetwork{Square{Layout}, Dense}(m, n, fg, transform)
+        @time network_s = PEPSNetwork{Square{Layout}, Sparse}(m, n, fg, transform)
+        @time ctr_d = MpsContractor{Strategy}(network_d, [β/8, β/4, β/2, β], params)
+        @time ctr_s = MpsContractor{Strategy}(network_s, [β/8, β/4, β/2, β], params)
 
-        psi_top1 = mps_top(ctr, 1, 4)
-        psi_bottom2 = mps(ctr, 2, 4)
-        psi_top2 = mps_top(ctr, 2, 4)
-        psi_bottom3 = mps(ctr, 3, 4)
-        psi_top3 = mps_top(ctr, 3, 4)
-        psi_bottom4 = mps(ctr, 4, 4)
-
-        overlap12 = psi_bottom2 * psi_top1 
-        println("overlap 1-2 ", overlap12)
-        overlap23 = psi_bottom3 * psi_top2 
-        println("overlap 2-3 ", overlap23)
-        overlap34 = psi_bottom4 * psi_top3 
-        println("overlap 3-4 ", overlap34)
-
+        for i in 1:n
+            psi_bottom_d = mps(ctr_d, i, 4)
+            psi_bottom_s = mps(ctr_s, i, 4)
+            @test psi_bottom_d * psi_bottom_s ≈ 1.0
+            #psi_top_d = mps_top(ctr_d, i, 4)
+            #psi_top_s = mps_top(ctr_s, i, 4)
+            #@test psi_top_d * psi_top_s ≈ 1.0
+        end
+        
         clear_memoize_cache()
             
     end

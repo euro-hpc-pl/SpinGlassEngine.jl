@@ -28,7 +28,8 @@ instance = "$(@__DIR__)/instances/chimera_droplets/128power/001.txt"
 params = MpsParameters(bond_dim, 1E-8, 10)
 search_params = SearchParameters(num_states, δp)
 
-for Strategy ∈ (SVDTruncate, )
+Strategy = SVDTruncate
+@testset "Compare the results for GaugesEnergy with Python" begin
     for Layout ∈ (GaugesEnergy, ), transform ∈ rotation.([0])
         println((Strategy, Layout, transform))
 
@@ -74,5 +75,21 @@ for Strategy ∈ (SVDTruncate, )
         
         clear_memoize_cache()
             
+    end
+end
+
+@testset "Compare the results for EnergyGauges with Python" begin
+    overlap_python = [0.18603559878582027, 0.36463028391550056, 0.30532555472025247]
+    for Sparsity ∈ (Dense, Sparse), transform ∈ rotation.([0])
+        @time network = PEPSNetwork{Square{EnergyGauges}, Sparsity}(m, n, fg, transform)
+        @time ctr = MpsContractor{Strategy}(network, [β/8, β/4, β/2, β], params)
+        for i in 1:n-1
+            psi_top = mps_top(ctr, i, 4)
+            psi_bottom = mps(ctr, i+1, 4)
+            overlap = psi_bottom * psi_top
+            #@test overlap ≈ overlap_python[i] 
+            @test isapprox(overlap, overlap_python[i], atol=1e-5)
+        end
+        clear_memoize_cache()
     end
 end

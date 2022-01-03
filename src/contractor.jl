@@ -493,3 +493,10 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: Pegasus
     end
     MpoLayers(main, dress, right)
 end
+
+
+function initialize_gauges!(
+    ctr::MpsContractor{T}, type::Symbol=:id
+) where {T}
+    initialize_gauges!(ctr.peps, type) 
+end

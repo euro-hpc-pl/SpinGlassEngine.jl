@@ -25,7 +25,7 @@ sparsity(network::PEPSNetwork{T, S}) where {T, S} = S
 
 mutable struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
     peps::PEPSNetwork{T, S} where {T, S}
-    betas::Vector{Real}
+    betas::Vector{<:Real}
     params::MpsParameters
     layers::MpoLayers
     statistics::Dict
@@ -36,7 +36,7 @@ mutable struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
 end
 strategy(ctr::MpsContractor{T}) where {T} = T
 
-# This may be potentially slow
+# This may be potentially slow (use objectid(ctr))
 Base.hash(ctr::MpsContractor{T}, h::UInt) where {T} = hash(ctr.peps.gauges.data, h)
 
 function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EnergyGauges}

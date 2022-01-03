@@ -247,7 +247,8 @@ end
 
 #-------------- Pegasus --------------
 
-function tensor(  # cluster-cluster energies atttached from left and top
+# cluster-cluster energies atttached from left and top
+function tensor(
     network::PEPSNetwork{Pegasus, T}, node::PEPSNode, β::Real, ::Val{:pegasus_site}
 ) where T <: AbstractSparsity
     i, j = node.i, node.j
@@ -265,8 +266,8 @@ function tensor(  # cluster-cluster energies atttached from left and top
     eloc = eloc .- minimum(eloc)
     loc_exp = exp.(-β .* eloc)
 
-    pr  = projector(network, (i, j, 2), ((i, j+1, 1), (i, j+1, 2)))
-    pd  = projector(network, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
+    pr = projector(network, (i, j, 2), ((i, j+1, 1), (i, j+1, 2)))
+    pd = projector(network, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
 
     p1l = projector(network, (i, j, 1), (i, j-1 ,2))
     p2l = projector(network, (i, j, 2), (i, j-1, 2))
@@ -286,10 +287,10 @@ function tensor(  # cluster-cluster energies atttached from left and top
     e1l = interaction_energy(network, (i, j, 1), (i, j-1, 2))
     e2l = interaction_energy(network, (i, j, 2), (i, j-1, 2))
 
-    e1u = e1u[:, pu1]
-    e2u = e2u[:, pu2]
-    e1l = e1l[:, pl1]
-    e2l = e2l[:, pl2]
+    e1u = @view e1u[:, pu1]
+    e2u = @view e2u[:, pu2]
+    e1l = @view e1l[:, pl1]
+    e2l = @view e2l[:, pl2]
 
     le1u = exp.(-β .* (e1u .- minimum(e1u)))
     le2u = exp.(-β .* (e2u .- minimum(e2u)))
@@ -304,7 +305,6 @@ function tensor(  # cluster-cluster energies atttached from left and top
     end
     A
 end
-
 
 # function tensor(
 #     network::PEPSNetwork{Pegasus, T}, node::PEPSNode, β::Real, ::Val{:sparse_pegasus_site}

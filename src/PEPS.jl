@@ -16,7 +16,7 @@ mutable struct PEPSNetwork{
         m::Int,
         n::Int,
         factor_graph::LabelledGraph,
-        transformation::LatticeTransformation, 
+        transformation::LatticeTransformation,
         init_gauge::Symbol=:id
     ) where {T <: AbstractGeometry, S <: AbstractSparsity}
         net = new(factor_graph, vertex_map(transformation, m, n), m, n)

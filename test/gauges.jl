@@ -2,7 +2,6 @@ using SpinGlassNetworks
 using SpinGlassTensors
 using SpinGlassEngine
 using Memoize
-using Random
 
 m = 4
 n = 4
@@ -46,9 +45,9 @@ Strategy = SVDTruncate
                 println("overlap ", overlap)
             end
         end
-        println("before ", length(memoize_cache(mps)))
-        initialize_gauges!(ctr_d, :id)
+        initialize_gauges!(ctr_d.peps, :id)
 
+        println("cache size before: ", length(memoize_cache(mps)))
         @testset "Compare the results for Dense with Python" begin
             for i in 1:n-1
                 psi_top = mps_top(ctr_d, i, 4)
@@ -57,9 +56,9 @@ Strategy = SVDTruncate
                 println("overlap ", overlap)
             end
         end
-        println("after ", length(memoize_cache(mps)))
-    
+        println("cache size after ", length(memoize_cache(mps)))
+
         clear_memoize_cache()
-            
+
     end
 end

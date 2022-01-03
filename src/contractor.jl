@@ -36,6 +36,9 @@ mutable struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
 end
 strategy(ctr::MpsContractor{T}) where {T} = T
 
+# This may be potentially slow
+Base.hash(ctr::MpsContractor{T}, h::UInt) where {T} = hash(ctr.peps.gauges.data, h)
+
 function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EnergyGauges}
     main, dress, right = Dict(), Dict(), Dict()
 
@@ -114,7 +117,7 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EngGaugesEng}
     MpoLayers(main, dress, right)
 end
 
-@memoize function mpo(
+@memoize Dict function mpo(
     ctr::MpsContractor{T}, layers::Dict, r::Int, indβ::Int
 ) where T <: AbstractStrategy
     sites = collect(keys(layers))
@@ -129,7 +132,7 @@ end
     QMpo(Dict(sites .=> ten))
 end
 
-@memoize function mps_top(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
+@memoize Dict function mps_top(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
     if i < 1
         W = mpo(ctr, ctr.layers.main, 1, indβ)
         return IdentityQMps(local_dims(W, :up))
@@ -152,7 +155,7 @@ end
     ψ0
 end
 
-@memoize function mps(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
+@memoize Dict function mps(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
     if i > ctr.peps.nrows
         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
         return IdentityQMps(local_dims(W, :down))
@@ -174,7 +177,7 @@ end
     ψ0
 end
 
-@memoize function mps(ctr::MpsContractor{MPSAnnealing}, i::Int, indβ::Int)
+@memoize Dict function mps(ctr::MpsContractor{MPSAnnealing}, i::Int, indβ::Int)
     if i > ctr.peps.nrows
         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
         return IdentityQMps(local_dims(W, :down))
@@ -492,11 +495,4 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: Pegasus
         push!(right, i => (0, ))
     end
     MpoLayers(main, dress, right)
-end
-
-
-function initialize_gauges!(
-    ctr::MpsContractor{T}, type::Symbol=:id
-) where {T}
-    initialize_gauges!(ctr.peps, type) 
 end

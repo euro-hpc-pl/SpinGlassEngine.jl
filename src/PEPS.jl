@@ -17,7 +17,7 @@ mutable struct PEPSNetwork{
         n::Int,
         factor_graph::LabelledGraph,
         transformation::LatticeTransformation,
-        init_gauge::Symbol=:id
+        gauge_type::Symbol=:id
     ) where {T <: AbstractGeometry, S <: AbstractSparsity}
         net = new(factor_graph, vertex_map(transformation, m, n), m, n)
         net.nrows, net.ncols = transformation.flips_dimensions ? (n, m) : (m, n)
@@ -28,7 +28,7 @@ mutable struct PEPSNetwork{
 
         net.tensors_map = tensor_map(T, S, net.nrows, net.ncols)
         net.gauges = Gauges{T}(net.nrows, net.ncols)
-        initialize_gauges!(net, init_gauge)
+        initialize_gauges!(net, gauge_type)
         net
     end
 end

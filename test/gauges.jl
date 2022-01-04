@@ -28,7 +28,7 @@ params = MpsParameters(bond_dim, 1E-8, 10)
 search_params = SearchParameters(num_states, δp)
 
 Strategy = SVDTruncate
-@testset "Compare the results for GaugesEnergy with Python" begin
+@testset "Updating gauges works correctly." begin
     for Layout ∈ (GaugesEnergy, ), transform ∈ rotation.([0])
         println((Strategy, Layout, transform))
 
@@ -37,46 +37,27 @@ Strategy = SVDTruncate
         ctr_d = MpsContractor{Strategy}(network_d, [β/8, β/4, β/2, β], params)
         ctr_s = MpsContractor{Strategy}(network_s, [β/8, β/4, β/2, β], params)
 
-        @testset "Check if overlaps are correct " begin
-            for i in 1:n-1
-                psi_top = mps_top(ctr_d, i, 4)
-                psi_bottom = mps(ctr_d, i+1, 4)
-                overlap1 = tr(overlap_density_matrix(psi_top, psi_bottom, 3))
-                overlap2 = psi_bottom * psi_top
+        @testset "Overlaps calculated differently agree" begin
+            indβ = 3
+            for i ∈ 1:n-1
+                ψ_top = mps_top(ctr_d, i, indβ)
+                ψ_bot = mps(ctr_d, i+1, indβ)
+                overlap = tr(overlap_density_matrix(ψ_top, ψ_bot, indβ))
+                @test overlap ≈ ψ_bot * ψ_top
+            end
+        end
+
+        @testset "Test update_gauges" begin
+            indβ = 3
+            for i ∈ 1:n-1, i ∈ n-1:-1:1
+                ψ_top = mps_top(ctr_d, i, indβ)
+                ψ_bot = mps(ctr_d, i+1, indβ)
+                overlap1 = tr(overlap_density_matrix(ψ_top, ψ_bot, indβ))
+                update_gauges!(ctr_d, i, indβ)
+                overlap2 = tr(overlap_density_matrix(ψ_top, ψ_bot, indβ))
                 @test overlap1 ≈ overlap2
             end
         end
-
-        initialize_gauges!(ctr_d.peps, :id)
-
-        println("cache size before: ", length(memoize_cache(mps)))
-        @testset "Compare the results after initialize_gauges" begin
-            for i in 1:n-1
-                psi_top = mps_top(ctr_d, i, 4)
-                psi_bottom = mps(ctr_d, i+1, 4)
-                overlap1 = tr(overlap_density_matrix(psi_top, psi_bottom, 3))
-                overlap2 = psi_bottom * psi_top
-                @test overlap1 ≈ overlap2            
-            end
-        end
-        println("cache size after ", length(memoize_cache(mps)))
-
-        @testset "Test update_gauges" begin
-            for i in 1:n-1#, n-1:-1:1
-                psi_top = mps_top(ctr_d, i, 4)
-                psi_bottom = mps(ctr_d, i+1, 4)
-                overlap1 = tr(overlap_density_matrix(psi_top, psi_bottom, 3))
-                update_gauges!(ctr_d, i, 4)
-                overlap2 = tr(overlap_density_matrix(psi_top, psi_bottom, 3))
-                println("i ", i)
-                println("overlap1 ", overlap1)
-                println("overlap2 ", overlap2)
-            end
-        end
-        println("cache size after ", length(memoize_cache(mps)))
-
-
         clear_memoize_cache()
-
     end
 end

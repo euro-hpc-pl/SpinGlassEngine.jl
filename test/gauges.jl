@@ -53,17 +53,17 @@ Strategy = SVDTruncate
                 ψ_top = mps_top(ctr_d, i, indβ)
                 ψ_bot = mps(ctr_d, i+1, indβ)
                 overlap1 = ψ_top * ψ_bot
-                println("mps = ", length(memoize_cache(mps)))
-                println("mps_top = ", length(memoize_cache(mps_top)))
-
+                println("#(cache mps) = ", length(memoize_cache(mps)))
+                println("#(cache mps_top) = ", length(memoize_cache(mps_top)))
 
                 update_gauges!(ctr_d, i, indβ)
                 ψ_top = mps_top(ctr_d, i, indβ)
                 ψ_bot = mps(ctr_d, i+1, indβ)
                 overlap2 = ψ_top * ψ_bot
                 println(overlap1, ' ', overlap2)
-                #@test overlap1 ≈ overlap2
-                println(length(memoize_cache(mps)))
+
+                println("#(cache mps after) = ", length(memoize_cache(mps)))
+                println("#(cache mps_top after) = ", length(memoize_cache(mps_top)))
             end
         end
         clear_memoize_cache()

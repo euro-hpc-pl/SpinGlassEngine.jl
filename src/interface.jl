@@ -125,16 +125,14 @@ function is_compatible(factor_graph::LabelledGraph, network_graph::LabelledGraph
     all(has_edge(network_graph, src(edge), dst(edge)) for edge ∈ edges(factor_graph))
 end
 
-function initialize_gauges!(
-    network::AbstractGibbsNetwork{S, T}, type::Symbol=:id
-) where {S, T}
+function initialize_gauges!(net::AbstractGibbsNetwork{S, T}, type::Symbol=:id) where {S, T}
     @assert type ∈ (:id, :rand)
-    for gauge ∈ network.gauges.info
+    for gauge ∈ net.gauges.info
         n1, n2 = gauge.positions
-        push!(network.tensors_map, n1 => gauge.type, n2 => gauge.type)
-        d = size(network, gauge.attached_tensor)[gauge.attached_leg]
+        push!(net.tensors_map, n1 => gauge.type, n2 => gauge.type)
+        d = size(net, gauge.attached_tensor)[gauge.attached_leg]
         X = type == :id ? ones(d) : rand(d) .+ 0.42
-        push!(network.gauges.data, n1 => X, n2 => 1 ./ X)
+        push!(net.gauges.data, n1 => X, n2 => 1 ./ X)
     end
 end
 

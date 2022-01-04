@@ -41,8 +41,9 @@ Strategy = SVDTruncate
             for i in 1:n-1
                 psi_top = mps_top(ctr_d, i, 4)
                 psi_bottom = mps(ctr_d, i+1, 4)
-                overlap = psi_bottom * psi_top
-                println("overlap ", overlap)
+                overlap1 = tr(overlap_density_matrix(psi_top, psi_bottom, 3))
+                overlap2 = psi_bottom * psi_top
+                @test overlap1 ≈ overlap2
             end
         end
         initialize_gauges!(ctr_d.peps, :id)
@@ -52,8 +53,9 @@ Strategy = SVDTruncate
             for i in 1:n-1
                 psi_top = mps_top(ctr_d, i, 4)
                 psi_bottom = mps(ctr_d, i+1, 4)
-                overlap = psi_bottom * psi_top
-                println("overlap ", overlap)
+                overlap1 = tr(overlap_density_matrix(psi_top, psi_bottom, 3))
+                overlap2 = psi_bottom * psi_top
+                @test overlap1 ≈ overlap2            
             end
         end
         println("cache size after ", length(memoize_cache(mps)))

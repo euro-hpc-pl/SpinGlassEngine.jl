@@ -35,9 +35,7 @@ mutable struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
     end
 end
 strategy(ctr::MpsContractor{T}) where {T} = T
-
-# This may be potentially slow (use objectid(ctr))
-Base.hash(ctr::MpsContractor{T}, h::UInt) where {T} = hash(ctr.peps.gauges.data, h)
+#Base.hash(ctr::MpsContractor{T}, h::UInt) where {T} = hash(ctr.peps.gauges.data, h)
 
 function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EnergyGauges}
     main, dress, right = Dict(), Dict(), Dict()
@@ -203,27 +201,27 @@ end
     ψ0
 end
 
-function dressed_mps(contractor::MpsContractor{T}, i::Int) where T <: AbstractStrategy
-    dressed_mps(contractor, i, length(contractor.betas))
+function dressed_mps(ctr::MpsContractor{T}, i::Int) where T <: AbstractStrategy
+    dressed_mps(ctr, i, length(ctr.betas))
 end
 
 @memoize Dict function dressed_mps(
-    contractor::MpsContractor{T}, i::Int, indβ::Int
+    ctr::MpsContractor{T}, i::Int, indβ::Int
 ) where T <: AbstractStrategy
-    ψ = mps(contractor, i+1, indβ)
-    W = mpo(contractor, contractor.layers.dress, i, indβ)
+    ψ = mps(ctr, i+1, indβ)
+    W = mpo(ctr, ctr.layers.dress, i, indβ)
     W * ψ
 end
 
 @memoize Dict function right_env(
-    contractor::MpsContractor{T}, i::Int, ∂v::Vector{Int}, indβ::Int
+    ctr::MpsContractor{T}, i::Int, ∂v::Vector{Int}, indβ::Int
 ) where T <: AbstractStrategy
     l = length(∂v)
     if l == 0 return ones(1, 1) end
 
-    R̃ = right_env(contractor, i, ∂v[2:l], indβ)
-    ϕ = dressed_mps(contractor, i, indβ)
-    W = mpo(contractor, contractor.layers.right, i, indβ)
+    R̃ = right_env(ctr, i, ∂v[2:l], indβ)
+    ϕ = dressed_mps(ctr, i, indβ)
+    W = mpo(ctr, ctr.layers.right, i, indβ)
     k = length(ϕ.sites)
     site = ϕ.sites[k-l+1]
     M = W[site]
@@ -310,12 +308,12 @@ function _update_reduced_env_right(
 end
 
 @memoize Dict function left_env(
-    contractor::MpsContractor{T}, i::Int, ∂v::Vector{Int}, indβ::Int
+    ctr::MpsContractor{T}, i::Int, ∂v::Vector{Int}, indβ::Int
 ) where T
     l = length(∂v)
     if l == 0 return ones(1) end
-    L̃ = left_env(contractor, i, ∂v[1:l-1], indβ)
-    ϕ = dressed_mps(contractor, i, indβ)
+    L̃ = left_env(ctr, i, ∂v[1:l-1], indβ)
+    ϕ = dressed_mps(ctr, i, indβ)
     m = ∂v[l]
     site = ϕ.sites[l]
     M = ϕ[site]
@@ -323,82 +321,82 @@ end
     L
 end
 
-function conditional_probability(contractor::MpsContractor{S}, w::Vector{Int}) where S
-    conditional_probability(layout(contractor.peps), contractor, w)
+function conditional_probability(ctr::MpsContractor{S}, w::Vector{Int}) where S
+    conditional_probability(layout(ctr.peps), ctr, w)
 end
 
 function conditional_probability(
-    ::Type{T}, contractor::MpsContractor{S}, state::Vector{Int},
+    ::Type{T}, ctr::MpsContractor{S}, state::Vector{Int},
 ) where {T <: Square, S}
-    indβ, β = length(contractor.betas), last(contractor.betas)
-    i, j = node_from_index(contractor.peps, length(state)+1)
-    ∂v = boundary_state(contractor.peps, state, (i, j))
+    indβ, β = length(ctr.betas), last(ctr.betas)
+    i, j = node_from_index(ctr.peps, length(state)+1)
+    ∂v = boundary_state(ctr.peps, state, (i, j))
 
-    L = left_env(contractor, i, ∂v[1:j-1], indβ)
-    R = right_env(contractor, i, ∂v[(j+2):(contractor.peps.ncols+1)], indβ)
-    M = dressed_mps(contractor, i, indβ)[j]
+    L = left_env(ctr, i, ∂v[1:j-1], indβ)
+    R = right_env(ctr, i, ∂v[(j+2):(ctr.peps.ncols+1)], indβ)
+    M = dressed_mps(ctr, i, indβ)[j]
 
     L ./= maximum(abs.(L))
     R ./= maximum(abs.(R))
     M ./= maximum(abs.(M))
 
     @tensor LM[y, z] := L[x] * M[x, y, z]
-    eng_local = local_energy(contractor.peps, (i, j))
+    eng_local = local_energy(ctr.peps, (i, j))
 
-    pl = projector(contractor.peps, (i, j), (i, j-1))
-    eng_pl = interaction_energy(contractor.peps, (i, j), (i, j-1))
+    pl = projector(ctr.peps, (i, j), (i, j-1))
+    eng_pl = interaction_energy(ctr.peps, (i, j), (i, j-1))
     eng_left = @view eng_pl[pl[:], ∂v[j]]
 
-    pu = projector(contractor.peps, (i, j), (i-1, j))
-    eng_pu = interaction_energy(contractor.peps, (i, j), (i-1, j))
+    pu = projector(ctr.peps, (i, j), (i-1, j))
+    eng_pu = interaction_energy(ctr.peps, (i, j), (i-1, j))
     eng_up = @view eng_pu[pu[:], ∂v[j+1]]
 
     en = eng_local .+ eng_left .+ eng_up
     loc_exp = exp.(-β .* (en .- minimum(en)))
 
-    pr = projector(contractor.peps, (i, j), (i, j+1))
-    pd = projector(contractor.peps, (i, j), (i+1, j))
+    pr = projector(ctr.peps, (i, j), (i, j+1))
+    pd = projector(ctr.peps, (i, j), (i+1, j))
 
     bnd_exp = dropdims(sum(LM[pd[:], :] .* R[:, pr[:]]', dims=2), dims=2)
     probs = loc_exp .* bnd_exp
-    push!(contractor.statistics, state => error_measure(probs))
+    push!(ctr.statistics, state => error_measure(probs))
     normalize_probability(probs)
 end
 
 # TODO: rewrite this using brodcasting
 function conditional_probability(
-    ::Type{T}, contractor::MpsContractor{S}, state::Vector{Int},
+    ::Type{T}, ctr::MpsContractor{S}, state::Vector{Int},
 ) where {T <: SquareStar, S}
-    indβ, β = length(contractor.betas), last(contractor.betas)
-    i, j = node_from_index(contractor.peps, length(state)+1)
-    ∂v = boundary_state(contractor.peps, state, (i, j))
+    indβ, β = length(ctr.betas), last(ctr.betas)
+    i, j = node_from_index(ctr.peps, length(state)+1)
+    ∂v = boundary_state(ctr.peps, state, (i, j))
 
-    L = left_env(contractor, i, ∂v[1:2*j-2], indβ)
-    R = right_env(contractor, i, ∂v[(2*j+3):(2*contractor.peps.ncols+2)], indβ)
-    ψ = dressed_mps(contractor, i, indβ)
+    L = left_env(ctr, i, ∂v[1:2*j-2], indβ)
+    R = right_env(ctr, i, ∂v[(2*j+3):(2*ctr.peps.ncols+2)], indβ)
+    ψ = dressed_mps(ctr, i, indβ)
     MX, M = ψ[j-1//2], ψ[j]
     @tensor LMX[y, z] := L[x] * MX[x, y, z]
 
-    eng_local = local_energy(contractor.peps, (i, j))
-    pl = projector(contractor.peps, (i, j), (i, j-1))
-    eng_pl = interaction_energy(contractor.peps, (i, j), (i, j-1))
+    eng_local = local_energy(ctr.peps, (i, j))
+    pl = projector(ctr.peps, (i, j), (i, j-1))
+    eng_pl = interaction_energy(ctr.peps, (i, j), (i, j-1))
     eng_left = @view eng_pl[pl[:], ∂v[2*j]]
 
-    pu = projector(contractor.peps, (i, j), (i-1, j))
-    eng_pu = interaction_energy(contractor.peps, (i, j), (i-1, j))
+    pu = projector(ctr.peps, (i, j), (i-1, j))
+    eng_pu = interaction_energy(ctr.peps, (i, j), (i-1, j))
     eng_up = @view eng_pu[pu[:], ∂v[2*j+2]]
 
-    pd = projector(contractor.peps, (i, j), (i-1, j-1))
-    eng_pd = interaction_energy(contractor.peps, (i, j), (i-1, j-1))
+    pd = projector(ctr.peps, (i, j), (i-1, j-1))
+    eng_pd = interaction_energy(ctr.peps, (i, j), (i-1, j-1))
     eng_diag = @view eng_pd[pd[:], ∂v[2*j+1]]
 
     en = eng_local .+ eng_left .+ eng_diag .+ eng_up
     loc_exp = exp.(-β .* (en .- minimum(en)))
 
-    p_lb = projector(contractor.peps, (i, j-1), (i+1, j))
-    p_rb = projector(contractor.peps, (i, j), (i+1, j-1))
-    pr = projector(contractor.peps, (i, j), ((i+1, j+1), (i, j+1), (i-1, j+1)))
-    pd = projector(contractor.peps, (i, j), (i+1, j))
+    p_lb = projector(ctr.peps, (i, j-1), (i+1, j))
+    p_rb = projector(ctr.peps, (i, j), (i+1, j-1))
+    pr = projector(ctr.peps, (i, j), ((i+1, j+1), (i, j+1), (i-1, j+1)))
+    pd = projector(ctr.peps, (i, j), (i+1, j))
 
     @cast LMX2[b, c, d] := LMX[(b, c), d] (b ∈ 1:maximum(p_lb), c ∈ 1:maximum(p_rb))
 
@@ -408,45 +406,45 @@ function conditional_probability(
         r = @view R[:, pr[σ]]
         loc_exp[σ] *= (lmx' * m * r)[]
     end
-    push!(contractor.statistics, state => error_measure(loc_exp))
+    push!(ctr.statistics, state => error_measure(loc_exp))
     normalize_probability(loc_exp)
 end
 
 function conditional_probability(
-    ::Type{T}, contractor::MpsContractor{S}, state::Vector{Int},
+    ::Type{T}, ctr::MpsContractor{S}, state::Vector{Int},
 ) where {T <: Pegasus, S}
-    indβ, β = length(contractor.betas), last(contractor.betas)
-    i, j, k = node_from_index(contractor.peps, length(state)+1)
-    ∂v = boundary_state(contractor.peps, state, (i, j))
+    indβ, β = length(ctr.betas), last(ctr.betas)
+    i, j, k = node_from_index(ctr.peps, length(state)+1)
+    ∂v = boundary_state(ctr.peps, state, (i, j))
 
-    L = left_env(contractor, i, ∂v[1:j-1], indβ)
-    R = right_env(contractor, i, ∂v[(j+2):(contractor.peps.ncols+1)], indβ)
-    M = dressed_mps(contractor, i, indβ)[j]
+    L = left_env(ctr, i, ∂v[1:j-1], indβ)
+    R = right_env(ctr, i, ∂v[(j+2):(ctr.peps.ncols+1)], indβ)
+    M = dressed_mps(ctr, i, indβ)[j]
 
     L ./= maximum(abs.(L))
     R ./= maximum(abs.(R))
     M ./= maximum(abs.(M))
 
     @tensor LM[y, z] := L[x] * M[x, y, z]
-    eng_local = local_energy(contractor.peps, (i, j, k))
+    eng_local = local_energy(ctr.peps, (i, j, k))
 
-    pl1 = projector(contractor.peps, (i, j-1, 2), (i, j, 1))
-    pl2 = projector(contractor.peps, (i, j-1, 2), (i, j, 2))
+    pl1 = projector(ctr.peps, (i, j-1, 2), (i, j, 1))
+    pl2 = projector(ctr.peps, (i, j-1, 2), (i, j, 2))
     pl, (pl1, pl2) = fuse_projectors((pl1, pl2))
 
-    pu1 = projector(contractor.peps, (i-1, j, 1), (i, j, 1))
-    pu2 = projector(contractor.peps, (i-1, j, 1), (i, j, 2))
+    pu1 = projector(ctr.peps, (i-1, j, 1), (i, j, 1))
+    pu2 = projector(ctr.peps, (i-1, j, 1), (i, j, 2))
     pu, (pu1, pu2) = fuse_projectors((pu1, pu2))
 
-    p1l = projector(contractor.peps, (i, j, 1), (i, j-1 ,2))
-    p2l = projector(contractor.peps, (i, j, 2), (i, j-1, 2))
-    p1u = projector(contractor.peps, (i, j, 1), (i-1, j, 1))
-    p2u = projector(contractor.peps, (i, j, 2), (i-1, j, 1))
+    p1l = projector(ctr.peps, (i, j, 1), (i, j-1 ,2))
+    p2l = projector(ctr.peps, (i, j, 2), (i, j-1, 2))
+    p1u = projector(ctr.peps, (i, j, 1), (i-1, j, 1))
+    p2u = projector(ctr.peps, (i, j, 2), (i-1, j, 1))
 
-    e1u = interaction_energy(contractor.peps, (i, j, 1), (i-1, j, 1))
-    e2u = interaction_energy(contractor.peps, (i, j, 2), (i-1, j, 1))
-    e1l = interaction_energy(contractor.peps, (i, j, 1), (i, j-1, 2))
-    e2l = interaction_energy(contractor.peps, (i, j, 2), (i, j-1, 2))
+    e1u = interaction_energy(ctr.peps, (i, j, 1), (i-1, j, 1))
+    e2u = interaction_energy(ctr.peps, (i, j, 2), (i-1, j, 1))
+    e1l = interaction_energy(ctr.peps, (i, j, 1), (i, j-1, 2))
+    e2l = interaction_energy(ctr.peps, (i, j, 2), (i, j-1, 2))
 
     if k == 1
         eng_left = @view e1l[p1l[:], pl2[∂v[j]]]
@@ -455,21 +453,20 @@ function conditional_probability(
     else  # k == 2
         eng_left = @view e2l[p2l[:], pl1[∂v[j]]]
         eng_up = @view e2u[p2u[:], pu2[∂v[j+1]]]
-        en21 = interaction_energy(contractor.peps, (i, j, 2), (i, j, 1))
-        p21 = projector(contractor.peps, (i, j, 2), (i, j, 1))
-        p12 = projector(contractor.peps, (i, j, 1), (i, j, 2))
+        en21 = interaction_energy(ctr.peps, (i, j, 2), (i, j, 1))
+        p21 = projector(ctr.peps, (i, j, 2), (i, j, 1))
+        p12 = projector(ctr.peps, (i, j, 1), (i, j, 2))
         en_int = @view en21[p21[:], p12[∂v[end]]]
         en = eng_local .+ eng_left .+ eng_up .+ en_int
     end
-
     loc_exp = exp.(-β .* (en .- minimum(en)))
 
-    pr  = projector(contractor.peps, (i, j, 2), ((i, j+1, 1), (i, j+1, 2)))
-    pd  = projector(contractor.peps, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
+    pr = projector(ctr.peps, (i, j, 2), ((i, j+1, 1), (i, j+1, 2)))
+    pd = projector(ctr.peps, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
 
     bnd_exp = dropdims(sum(LM[pd[:], :] .* R[:, pr[:]]', dims=2), dims=2)
     probs = loc_exp .* bnd_exp
-    push!(contractor.statistics, state => error_measure(probs))
+    push!(ctr.statistics, state => error_measure(probs))
     normalize_probability(probs)
 end
 

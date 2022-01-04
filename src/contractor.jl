@@ -1,5 +1,5 @@
 export SVDTruncate, MPSAnnealing, MpoLayers, MpsParameters, MpsContractor
-export clear_memoize_cache, mps_top, mps
+export clear_memoize_cache, mps_top, mps, update_gauges!
 
 abstract type AbstractContractor end
 abstract type AbstractStrategy end
@@ -495,4 +495,20 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: Pegasus
         push!(right, i => (0, ))
     end
     MpoLayers(main, dress, right)
+end
+
+function update_gauges!(ctr::MpsContractor, row::IntOrRational, indβ::Int)
+    clm = ctr.layers.main
+    psi_top = mps_top(ctr, row, indβ)
+    psi_bottom = mps(ctr, row+1, indβ)
+    println("row ", row)
+    for i in psi_top.sites
+        n_bottom = (row + 1 + clm[i][begin], i)
+        n_top = (row + clm[i][end], i)
+        println("n_top ", n_top)
+        println("n_bottom ", n_bottom)
+        E = overlap_density_matrix(psi_top, psi_bottom, i)
+        X = rand(size(E, 2)) .+ 0.42
+        push!(ctr.peps.gauges.data, n_top => X, n_bottom => 1 ./ X)
+    end
 end

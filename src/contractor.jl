@@ -506,15 +506,15 @@ function update_gauges!(ctr::MpsContractor{T}, row::IntOrRational, indβ::Int) w
         n_bot = PEPSNode(row + 1 + clm[i][begin], i)
         n_top = PEPSNode(row + clm[i][end], i)
         ρ = overlap_density_matrix(ψ_top, ψ_bot, i)
-        X = rand(size(ρ, 2)) .+ 0.5 * rand()
+        X = rand(size(ρ, 2)) .+ rand() / 2.0
         push!(ctr.peps.gauges.data, n_top => X, n_bot => 1 ./ X)
     end
 
     for ind ∈ 1:indβ
-         for i ∈ row:ctr.peps.nrows delete!(memoize_cache(mps_top), (ctr, i, ind)) end
-         for i ∈ 1:row+1 delete!(memoize_cache(mps), (ctr, i, ind)) end
-         delete!(memoize_cache(mpo), (ctr, ctr.layers.main, row, ind))
-         delete!(memoize_cache(mpo), (ctr, ctr.layers.dress, row, ind))
-         delete!(memoize_cache(mpo), (ctr, ctr.layers.right, row, ind))
+        for i ∈ row:ctr.peps.nrows delete!(memoize_cache(mps_top), (ctr, i, ind)) end
+        for i ∈ 1:row+1 delete!(memoize_cache(mps), (ctr, i, ind)) end
+        delete!(memoize_cache(mpo), (ctr, ctr.layers.main, row, ind))
+        delete!(memoize_cache(mpo), (ctr, ctr.layers.dress, row, ind))
+        delete!(memoize_cache(mpo), (ctr, ctr.layers.right, row, ind))
     end
 end

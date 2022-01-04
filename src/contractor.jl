@@ -497,18 +497,18 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: Pegasus
     MpoLayers(main, dress, right)
 end
 
-function update_gauges!(ctr::MpsContractor, row::IntOrRational, indβ::Int)
+function update_gauges!(ctr::MpsContractor{T}, row::IntOrRational, indβ::Int) where T
     clm = ctr.layers.main
-    psi_top = mps_top(ctr, row, indβ)
-    psi_bottom = mps(ctr, row+1, indβ)
-    println("row ", row)
-    for i in psi_top.sites
-        n_bottom = (row + 1 + clm[i][begin], i)
+    ψ_top = mps_top(ctr, row, indβ)
+    ψ_bot= mps(ctr, row + 1, indβ)
+    for i ∈ ψ_top.sites
+        n_bot = (row + 1 + clm[i][begin], i)
         n_top = (row + clm[i][end], i)
-        println("n_top ", n_top)
-        println("n_bottom ", n_bottom)
-        E = overlap_density_matrix(psi_top, psi_bottom, i)
-        X = rand(size(E, 2)) .+ 0.42
-        push!(ctr.peps.gauges.data, n_top => X, n_bottom => 1 ./ X)
+        ρ = overlap_density_matrix(ψ_top, ψ_bot, i)
+        X = rand(size(ρ, 2)) .+ 0.42
+        push!(ctr.peps.gauges.data, n_top => X, n_bot => 1 ./ X)
     end
+    # delete!(memoize_cache(mps), (ctr, i, indβ))
+    # delete!(memoize_cache(mps_top), (ctr, i, indβ))
+    # delete!(memoize_cache(mpo), (ctr, layers, r::Int, indβ))
 end

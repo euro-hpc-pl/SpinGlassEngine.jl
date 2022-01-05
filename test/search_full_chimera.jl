@@ -19,7 +19,7 @@ function bench(instance::String)
     # 4. Sparse is still not faster than Dense
 
     β = 3.0
-    bond_dim = 64
+    bond_dim = 32
     δp = 1E-3
     num_states = 1000
 

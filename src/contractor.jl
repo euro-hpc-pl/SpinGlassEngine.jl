@@ -35,7 +35,6 @@ mutable struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
     end
 end
 strategy(ctr::MpsContractor{T}) where {T} = T
-#Base.hash(ctr::MpsContractor{T}, h::UInt) where {T} = hash(ctr.peps.gauges.data, h)
 
 function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EnergyGauges}
     main, dress, right = Dict(), Dict(), Dict()
@@ -118,14 +117,14 @@ end
 @memoize Dict function mpo(
     ctr::MpsContractor{T}, layers::Dict, r::Int, indβ::Int
 ) where T <: AbstractStrategy
+    β = ctr.betas[indβ]
     sites = collect(keys(layers))
     ten = Vector{Dict}(undef, length(sites))
 
-    #Threads.@threads for i ∈ 1:length(sites) #TODO: does this make sense here?
+    #Threads.@threads for i ∈ 1:length(sites)
     for i ∈ 1:length(sites)
         j = sites[i]
-        coor, β = layers[j], ctr.betas[indβ]
-        ten[i] = Dict(dr => tensor(ctr.peps, PEPSNode(r + dr, j), β) for dr ∈ coor)
+        ten[i] = Dict(dr => tensor(ctr.peps, PEPSNode(r + dr, j), β) for dr ∈ layers[j])
     end
     QMpo(Dict(sites .=> ten))
 end

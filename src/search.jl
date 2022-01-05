@@ -114,25 +114,25 @@ end
 
 #TODO: incorporate "going back" move to improve alghoritm
 function low_energy_spectrum(
-    contractor::T, sparams::SearchParameters, merge_strategy=no_merge
+    ctr::T, sparams::SearchParameters, merge_strategy=no_merge
 ) where T <: AbstractContractor
     # Build all boundary mps
-    @showprogress "Preprocesing: " for i ∈ contractor.peps.nrows:-1:1
-        dressed_mps(contractor, i)
+    @showprogress "Preprocesing: " for i ∈ ctr.peps.nrows:-1:1
+        dressed_mps(ctr, i)
     end
 
     # Start branch and bound search
     sol = empty_solution()
-    @showprogress "Search: " for _ ∈ 1:nv(factor_graph(contractor.peps))
-        sol = branch_solution(sol, contractor, sparams.cut_off_prob)
+    @showprogress "Search: " for _ ∈ 1:nv(factor_graph(ctr.peps))
+        sol = branch_solution(sol, ctr, sparams.cut_off_prob)
         sol = bound_solution(sol, sparams.max_states, merge_strategy)
         # _clear_cache(network, sol) # TODO: make it work properly
     end
 
     # Translate variable order (from network to factor graph)
     inner_perm = sortperm([
-        factor_graph(contractor.peps).reverse_label_map[idx]
-        for idx ∈ contractor.peps.vertex_map.(iteration_order(contractor.peps))
+        factor_graph(ctr.peps).reverse_label_map[idx]
+        for idx ∈ ctr.peps.vertex_map.(iteration_order(ctr.peps))
     ])
 
     # Sort using energies as keys

@@ -31,24 +31,16 @@ function bench(instance::String)
     params = MpsParameters(bond_dim, 1E-8, 10)
     search_params = SearchParameters(num_states, δp)
 
-    for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense,)
-        for Layout ∈ (EnergyGauges, ), transform ∈ rotation.([0])
-            network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
-            ctr = MpsContractor{Strategy}(network, [β/8, β/4, β/2, β], params)
-            sol = low_energy_spectrum(ctr, search_params, merge_branches(network))
-            @assert sol.energies[begin] ≈ ground_energy
-            clear_memoize_cache()
-        end
-    end
+    network = PEPSNetwork{Square{EnergyGauges}, Dense}(m, n, fg, rotation(0))
+    ctr = MpsContractor{SVDTruncate}(network, [β/8, β/4, β/2, β], params)
+    sol = low_energy_spectrum(ctr, search_params, merge_branches(network))
+
+    @assert sol.energies[begin] ≈ ground_energy
+    clear_memoize_cache()
 end
 
 instance = "$(@__DIR__)/../test/instances/chimera_droplets/2048power/001.txt"
-bench(instance)
+#bench(instance)
 
 @profview bench(instance)
-
-#=
-Profile.clear()
-@profile bench(instance)
 ProfileVega.view() |> save("$(@__DIR__)/prof_full_chimera.svg")
-=#

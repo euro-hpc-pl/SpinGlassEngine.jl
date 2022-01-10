@@ -2,7 +2,7 @@ using SpinGlassNetworks
 using SpinGlassTensors
 using SpinGlassEngine
 using Logging
-using ProfileVega
+using Profile, ProfileVega
 
 disable_logging(LogLevel(1))
 
@@ -21,7 +21,7 @@ function bench(instance::String)
     δp = 1E-3
     num_states = 1000
 
-    @time fg = factor_graph(
+    fg = factor_graph(
         ising_graph(instance),
         max_cl_states,
         spectrum=brute_force,
@@ -43,6 +43,12 @@ function bench(instance::String)
 end
 
 instance = "$(@__DIR__)/../test/instances/chimera_droplets/2048power/001.txt"
-#bench(instance)
+bench(instance)
 
 @profview bench(instance)
+
+#=
+Profile.clear()
+@profile bench(instance)
+ProfileVega.view() |> save("$(@__DIR__)/prof_full_chimera.svg")
+=#

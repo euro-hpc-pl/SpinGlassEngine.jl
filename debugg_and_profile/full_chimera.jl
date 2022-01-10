@@ -2,7 +2,7 @@ using SpinGlassNetworks
 using SpinGlassTensors
 using SpinGlassEngine
 using Logging
-using Profile, ProfileVega
+using Profile, PProf #ProfileVega
 
 disable_logging(LogLevel(1))
 
@@ -31,9 +31,9 @@ function bench(instance::String)
     params = MpsParameters(bond_dim, 1E-8, 10)
     search_params = SearchParameters(num_states, δp)
 
-    network = PEPSNetwork{Square{EnergyGauges}, Dense}(m, n, fg, rotation(0))
-    ctr = MpsContractor{SVDTruncate}(network, [β/8, β/4, β/2, β], params)
-    sol = low_energy_spectrum(ctr, search_params, merge_branches(network))
+    net = PEPSNetwork{Square{EnergyGauges}, Dense}(m, n, fg, rotation(0))
+    ctr = MpsContractor{SVDTruncate}(net, [β/8, β/4, β/2, β], params)
+    sol = low_energy_spectrum(ctr, search_params, merge_branches(net))
 
     @assert sol.energies[begin] ≈ ground_energy
     clear_memoize_cache()
@@ -42,5 +42,8 @@ end
 instance = "$(@__DIR__)/../test/instances/chimera_droplets/2048power/001.txt"
 #bench(instance)
 
-@profview bench(instance)
-ProfileVega.view() |> save("$(@__DIR__)/prof_full_chimera.svg")
+@profile bench(instance)
+pprof()
+
+#ProfileVega.view() |> save("$(@__DIR__)/prof_full_chimera.svg")
+#ProfileSVG.save("$(@__DIR__)/prof_full_chimera.svg")

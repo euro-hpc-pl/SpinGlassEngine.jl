@@ -2,7 +2,7 @@ using SpinGlassNetworks
 using SpinGlassTensors
 using SpinGlassEngine
 using Logging
-using Profile, PProf 
+using Profile, PProf
 
 disable_logging(LogLevel(1))
 
@@ -31,7 +31,7 @@ function bench(instance::String)
     params = MpsParameters(bond_dim, 1E-8, 10)
     search_params = SearchParameters(num_states, δp)
 
-    net = PEPSNetwork{Square{EnergyGauges}, Dense}(m, n, fg, rotation(0))
+    net = PEPSNetwork{Square{EnergyGauges}, Sparse}(m, n, fg, rotation(0))
     ctr = MpsContractor{SVDTruncate}(net, [β/8, β/4, β/2, β], params)
     sol = low_energy_spectrum(ctr, search_params, merge_branches(net))
 

@@ -50,7 +50,7 @@ push!(my_tests,
         #"search_pegasus_nodiag.jl",
         #"search_new_geometry_nodiag.jl",
         #"chimera_overlap.jl",
-        "gauges.jl"
+        "gauges_2.jl"
 )
 
 for my_test in my_tests

@@ -2,7 +2,7 @@ using SpinGlassNetworks
 using SpinGlassTensors
 using SpinGlassEngine
 using Logging
-using ProfileView
+using ProfileVega
 
 disable_logging(LogLevel(1))
 
@@ -43,6 +43,6 @@ function bench(instance::String)
 end
 
 instance = "$(@__DIR__)/../test/instances/chimera_droplets/2048power/001.txt"
-bench(instance)
+#bench(instance)
 
 @profview bench(instance)

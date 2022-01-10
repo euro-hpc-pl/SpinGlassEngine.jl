@@ -2,7 +2,7 @@ using SpinGlassNetworks
 using SpinGlassTensors
 using SpinGlassEngine
 using Logging
-using Profile, PProf #ProfileVega
+using Profile, PProf 
 
 disable_logging(LogLevel(1))
 
@@ -40,10 +40,7 @@ function bench(instance::String)
 end
 
 instance = "$(@__DIR__)/../test/instances/chimera_droplets/2048power/001.txt"
-#bench(instance)
+bench(instance)
 
 @profile bench(instance)
 pprof()
-
-#ProfileVega.view() |> save("$(@__DIR__)/prof_full_chimera.svg")
-#ProfileSVG.save("$(@__DIR__)/prof_full_chimera.svg")

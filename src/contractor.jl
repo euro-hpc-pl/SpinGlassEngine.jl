@@ -158,8 +158,6 @@ end
         return IdentityQMps(local_dims(W, :down))
     end
 
-    #@infiltrate
-
     ψ = mps(ctr, i+1, indβ)
     W = mpo(ctr, ctr.layers.main, i, indβ)
 

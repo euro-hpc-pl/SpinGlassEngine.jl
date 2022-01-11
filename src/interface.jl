@@ -88,19 +88,14 @@ ones_like(x::Number) = one(typeof(x))
 ones_like(x::AbstractArray) = ones(eltype(x), size(x))
 
 function boundary_index(
-    network::AbstractGibbsNetwork{S, T},
+    net::AbstractGibbsNetwork{S, T},
     nodes::Tuple{S, Union{S, NTuple{N, S}}},
     σ::Vector{Int}
 ) where {S, T, N}
     v, w = nodes
     state = local_state_for_node(network, σ, v)
-    if network.vertex_map(v) ∉ vertices(network.factor_graph) 
-        #test = 0
-        return ones_like(state) 
-    end
-    #test = 1
-    #@infiltrate
-    projector(network, v, w)[state]
+    if net.vertex_map(v) ∉ vertices(net.factor_graph) return ones_like(state) end
+    projector(net, v, w)[state]
 end
 
 function boundary_index(

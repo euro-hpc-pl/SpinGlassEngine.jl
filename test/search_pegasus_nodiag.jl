@@ -9,7 +9,6 @@ function bench(instance::String)
     n = 4
     t = 24
 
-    L = n * m * t
     max_cl_states = 2^8
 
     β = 2.5
@@ -43,8 +42,7 @@ function bench(instance::String)
             clear_memoize_cache()
         end
     end
-    println(energies)
     @test all(e -> e ≈ first(energies), energies)
 end
 
-#bench("$(@__DIR__)/instances/pegasus_nondiag/4x4.txt")
+bench("$(@__DIR__)/instances/pegasus_nondiag/4x4.txt")

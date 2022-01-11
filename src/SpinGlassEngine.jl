@@ -7,7 +7,7 @@ using TensorOperations
 using TensorCast
 using MetaGraphs
 using Memoize
-using LinearAlgebra
+using LinearAlgebra, MKL
 using LightGraphs
 using ProgressMeter
 using Infiltrator

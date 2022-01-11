@@ -10,7 +10,7 @@ function bench(instance::String, size::NTuple{3, Int})
     δp = 1E-2
     bond_dim = 16
     max_cl_states = 2^8
-    num_states = 100
+    num_states = 1000
     max_sweeps = 10
     var_epsilon = 1E-3
 

@@ -261,8 +261,7 @@ end
 #------------------------------
 ###    Pegasus geometry     ###
 #------------------------------
-# Geometry: 2 nodes -> 1 TN site.
-# This will work for Chimera.
+# Geometry: 2 nodes -> 1 TN site. This will work for Chimera.
 
 PegasusSite(::Type{Dense}) = :pegasus_site
 PegasusSite(::Type{Sparse}) = :sparse_pegasus_site

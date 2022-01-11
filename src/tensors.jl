@@ -56,7 +56,7 @@ function tensor(
 end
 
 function Base.size(
-    network::AbstractGibbsNetwork{Node, PEPSNode}, w::PEPSNode, ::Val{:central_h}
+    network::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, ::Val{:central_h}
 )
     j = floor(Int, node.j)
     size(interaction_energy(network, (node.i, j), (node.i, j+1)))

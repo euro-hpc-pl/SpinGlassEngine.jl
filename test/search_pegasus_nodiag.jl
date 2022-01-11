@@ -23,17 +23,16 @@ function bench(instance::String)
         spectrum=brute_force, #_gpu, # rm _gpu to use CPU
         cluster_assignment_rule=super_square_lattice((m, n, t))
     )
-
     params = MpsParameters(bond_dim, 1E-8, 10)
     search_params = SearchParameters(num_states, δp)
 
     # Solve using PEPS search
     energies = Float64[]
     for Strategy ∈ (MPSAnnealing, ), Sparsity ∈ (Dense, )
-        for Layout ∈ (GaugesEnergy, EnergyGauges, EngGaugesEng), transform ∈ all_lattice_transformations
+        for Layout ∈ (GaugesEnergy, EnergyGauges, EngGaugesEng), trans ∈ all_lattice_transformations
             println((Strategy, Sparsity, Layout, transform))
 
-            @time network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
+            @time network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, trans)
             @time ctr = MpsContractor{Strategy}(network, [β/8, β/4, β/2, β], params)
 
             @time sol_peps = low_energy_spectrum(ctr, search_params, merge_branches(network))

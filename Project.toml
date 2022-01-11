@@ -25,7 +25,7 @@ SpinGlassNetworks = "0.2"
 SpinGlassTensors = "0.1.5"
 TensorCast = "0.3, 0.4"
 TensorOperations = "3.0.1"
-julia = "1.5, 1.6"
+julia = "1.5, 1.6, 1.7"
 
 
 [extras]

@@ -10,7 +10,7 @@ using Memoize
 using LinearAlgebra, MKL
 using LightGraphs
 using ProgressMeter
-using Infiltrator
+#using Infiltrator
 
 # to be remove
 function SpinGlassNetworks.local_basis(ψ::AbstractMPS, i::Int)

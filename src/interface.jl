@@ -94,7 +94,12 @@ function boundary_index(
 ) where {S, T, N}
     v, w = nodes
     state = local_state_for_node(network, σ, v)
-    if v ∉ vertices(network.factor_graph) return ones_like(state) end
+    if network.vertex_map(v) ∉ vertices(network.factor_graph) 
+        #test = 0
+        return ones_like(state) 
+    end
+    #test = 1
+    #@infiltrate
     projector(network, v, w)[state]
 end
 

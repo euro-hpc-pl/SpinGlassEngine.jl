@@ -17,7 +17,7 @@ struct Solution
     degeneracy::Vector{Int}
     largest_discarded_probability::Real
 end
-empty_solution() = Solution([0.0], [Vector{Int}[]], [1.0], [1], -Inf)
+empty_solution() = Solution([0.0], [Vector{Int}[]], [0.0], [1], -Inf)
 
 function Solution(
     sol::Solution, idx::Vector{Int}, ldp::Real=sol.largest_discarded_probability

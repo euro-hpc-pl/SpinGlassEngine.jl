@@ -4,7 +4,7 @@
     t = 3
     L = n * m * t
 
-    β = 1.
+    β = 1.0
 
     bond_dim = 16
     num_states = 22
@@ -58,30 +58,23 @@
         #
         21 => 5, 22 => 5,
     )
-
     instance = "$(@__DIR__)/instances/pathological/chim_$(m)_$(n)_$(t).txt"
 
     ig = ising_graph(instance)
-
     fg = factor_graph(
         ig,
         spectrum=full_spectrum,
         cluster_assignment_rule=super_square_lattice((m, n, t))
     )
-
     params = MpsParameters(bond_dim, 1E-8, 4)
     search_params = SearchParameters(num_states, 0.0)
 
-    for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense,) # MPSAnnealing
-        println("Strategy ", Strategy)
-        println("Sparsity ", Sparsity)
-        for Layout ∈ (EnergyGauges, ) #GaugesEnergy, EngGaugesEng
-            println("Layout ", Layout)
-            for transform ∈ all_lattice_transformations[[1,2,3,5,6,7]] #[[4,8]]] errors are here
-
-                network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
-                contractor = MpsContractor{Strategy}(network, [β/8., β/4., β/2., β], params)
-                sol = low_energy_spectrum(contractor, search_params)
+    for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense,)
+        for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
+            for transform ∈ all_lattice_transformations
+                net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
+                ctr = MpsContractor{Strategy}(net, [β/8., β/4., β/2., β], params)
+                sol = low_energy_spectrum(ctr, search_params)
 
                 @test sol.energies ≈ exact_energies
                 ig_states = decode_factor_graph_state.(Ref(fg), sol.states)

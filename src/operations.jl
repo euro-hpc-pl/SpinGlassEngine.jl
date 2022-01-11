@@ -5,11 +5,12 @@ struct LatticeTransformation
     flips_dimensions::Bool
 end
 
-Base.:(∘)(op1::LatticeTransformation, op2::LatticeTransformation) =
+function Base.:(∘)(op1::LatticeTransformation, op2::LatticeTransformation)
     LatticeTransformation(
         op1.permutation[collect(op2.permutation)],
         op1.flips_dimensions ⊻ op2.flips_dimensions
     )
+end
 
 function reflection(axis::Symbol)
     if axis == :x

@@ -2,12 +2,10 @@
 @testset "Pegasus-like instance has the correct ground state energy" begin
     ground_energy = -23.301855
 
-    m = 3
-    n = 4
-    t = 3
+    m, n, t = 3, 4, 3
     L = n * m * t
 
-    β = 2.
+    β = 2.0
     bond_dim = 16
     num_states = 22
 
@@ -25,8 +23,8 @@
 
     for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Sparse, Dense)
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
-            for transform ∈ all_lattice_transformations
-                net = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, fg, transform)
+            for transform ∈ all_lattice_transformations, Lattice ∈ (SquareStar, )
+                net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform)
                 ctr = MpsContractor{Strategy}(net, [β/2, β], params)
                 sol = low_energy_spectrum(ctr, search_params)
 

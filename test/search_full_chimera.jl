@@ -12,12 +12,6 @@ function bench(instance::String)
 
     ground_energy = -3336.773383
 
-    # Quick observations regarding this script:
-    # 1. Slow for small beta (e.g., β < 1)
-    # 2. MPSAnnealing is slow for larger bond_dim (e.g. ~128)
-    # 3. Code blows up [e.g., LAPACKException(18)] for large β (e.g. β > 4)
-    # 4. Sparse is still not faster than Dense
-
     β = 3.0
     bond_dim = 32
     δp = 1E-3
@@ -45,7 +39,6 @@ function bench(instance::String)
 
             @test sol.energies[begin] ≈ ground_energy
 
-            #println(sol.energies[begin])
             clear_memoize_cache()
         end
     end

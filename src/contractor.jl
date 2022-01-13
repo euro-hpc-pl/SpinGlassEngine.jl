@@ -358,7 +358,6 @@ function conditional_probability(
 
     bnd_exp = dropdims(sum(LM[pd[:], :] .* R[:, pr[:]]', dims=2), dims=2)
     probs = loc_exp .* bnd_exp
-    #@infiltrate
     push!(ctr.statistics, state => error_measure(probs))
     normalize_probability(probs)
 end

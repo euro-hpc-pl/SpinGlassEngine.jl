@@ -1,4 +1,4 @@
-@testset "Chimera-like instance has the correct low energy spectrum" begin
+@testset "Chimera-like instance has the correct energy spectrum for all heuristics" begin
     m, n, t = 3, 4, 3
 
     β = 1.0

@@ -1,6 +1,5 @@
 @testset "Chimera-like instance has the correct low energy spectrum" begin
     m, n, t = 3, 4, 3
-    L = n * m * t
 
     β = 1.0
     bond_dim = 16
@@ -76,6 +75,8 @@
                 @test sol.energies ≈ exact_energies
                 ig_states = decode_factor_graph_state.(Ref(fg), sol.states)
                 @test sol.energies ≈ energy.(Ref(ig), ig_states)
+
+                for (i, σ) ∈ enumerate(sol.states) @test σ ∈ exact_states[deg[i]] end
 
                 norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
                 @test norm_prob ≈ exp.(-β .* (sol.energies .- sol.energies[1]))

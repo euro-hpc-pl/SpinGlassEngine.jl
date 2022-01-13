@@ -54,9 +54,8 @@
         #
         21 => 5, 22 => 5,
     )
-    instance = "$(@__DIR__)/instances/pathological/chim_$(m)_$(n)_$(t).txt"
 
-    ig = ising_graph(instance)
+    ig = ising_graph("$(@__DIR__)/instances/pathological/chim_$(m)_$(n)_$(t).txt")
     fg = factor_graph(
         ig,
         spectrum=full_spectrum,
@@ -68,6 +67,7 @@
     for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, Sparse)
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
             for transform ∈ all_lattice_transformations, Lattice ∈ (Square, SquareStar)
+
                 net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform)
                 ctr = MpsContractor{Strategy}(net, [β/8., β/4., β/2., β], params)
                 sol = low_energy_spectrum(ctr, search_params)

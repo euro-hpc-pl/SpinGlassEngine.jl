@@ -1,11 +1,8 @@
 @testset "Chimera-like instance has the correct low energy spectrum" begin
-    m = 3
-    n = 4
-    t = 3
+    m, n, t = 3, 4, 3
     L = n * m * t
 
     β = 1.0
-
     bond_dim = 16
     num_states = 22
 
@@ -69,10 +66,10 @@
     params = MpsParameters(bond_dim, 1E-8, 4)
     search_params = SearchParameters(num_states, 0.0)
 
-    for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense,)
+    for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, Sparse)
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
-            for transform ∈ all_lattice_transformations
-                net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
+            for transform ∈ all_lattice_transformations, Lattice ∈ (Square, SquareStar)
+                net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform)
                 ctr = MpsContractor{Strategy}(net, [β/8., β/4., β/2., β], params)
                 sol = low_energy_spectrum(ctr, search_params)
 
@@ -81,8 +78,7 @@
                 @test sol.energies ≈ energy.(Ref(ig), ig_states)
 
                 norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
-                exact_norm_prob = exp.(-β .* (sol.energies .- sol.energies[1]))
-                @test norm_prob ≈ exact_norm_prob
+                @test norm_prob ≈ exp.(-β .* (sol.energies .- sol.energies[1]))
                 clear_memoize_cache()
             end
         end

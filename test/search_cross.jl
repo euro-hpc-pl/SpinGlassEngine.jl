@@ -37,7 +37,7 @@
                 #=norm_prob = exp.(sol.probabilities)
                 exact_norm_prob = exp.(-β .* (sol.energies .- sol.energies[1]))
                 exact_norm_prob = exact_norm_prob./sum(exact_norm_prob)
-                @test norm_prob ≈ exact_norm_prob 
+                @test norm_prob ≈ exact_norm_prob
 =#
                 clear_memoize_cache()
             end

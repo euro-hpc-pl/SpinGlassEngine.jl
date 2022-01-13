@@ -503,8 +503,6 @@ function update_gauges!(ctr::MpsContractor{T}, row::IntOrRational, indβ::Int) w
         n_top = PEPSNode(row + clm[i][end], i)
         ρ = overlap_density_matrix(ψ_top, ψ_bot, i)
         _, _, scale = LinearAlgebra.LAPACK.gebal!('B', ρ)
-        #X = rand(size(ρ, 2)) .+ rand() / 2.0
-        #push!(ctr.peps.gauges.data, n_top => X, n_bot => 1 ./ X)
         push!(ctr.peps.gauges.data, n_top => 1 ./ scale, n_bot => scale)
     end
 

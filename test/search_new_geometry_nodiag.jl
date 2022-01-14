@@ -6,7 +6,7 @@ using TensorOperations
 # end
 
 function bench(instance::String)
-    m = 3
+    m = 2
     n = 2
     t = 1
     L = n * m * t * 2 * 4
@@ -67,13 +67,13 @@ function bench(instance::String)
             # @test sol_peps2.energies ≈ energy.(Ref(ig), ig_states2)
             # println(sol_peps2.energies)
             # clear_memoize_cache()
-            
+
             println("---------- switching to new geometry -------------- ")
             ctr = MpsContractor{Strategy}(network, [β/8, β/4, β/2, β], params)
             sol_peps = low_energy_spectrum(ctr, search_params) #, merge_branches(network))
 
             ig_states = decode_factor_graph_state.(Ref(fg), sol_peps.states)
-            # @test sol_peps.energies ≈ sort(energy.(Ref(ig), ig_states))  # problem with sorting. Are sol_peps.energies sorted by default?
+            @test sol_peps.energies ≈ sort(energy.(Ref(ig), ig_states))  # problem with sorting. Are sol_peps.energies sorted by default?
 
             println(sol_peps.states)
             #push!(energies, sol_peps.energies[begin])
@@ -84,4 +84,4 @@ function bench(instance::String)
     #println(energies)
 end
 
-bench("$(@__DIR__)/instances/pegasus_nondiag/3x2x1.txt")
+bench("$(@__DIR__)/instances/pegasus_nondiag/2x2x1.txt")

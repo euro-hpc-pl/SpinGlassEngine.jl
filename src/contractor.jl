@@ -429,11 +429,11 @@ function conditional_probability(
 
     pl1 = projector(ctr.peps, (i, j-1, 2), (i, j, 1))
     pl2 = projector(ctr.peps, (i, j-1, 2), (i, j, 2))
-    pl, (pl1, pl2) = fuse_projectors((pl1, pl2))
+    _, (pl1, pl2) = fuse_projectors((pl1, pl2))
 
     pu1 = projector(ctr.peps, (i-1, j, 1), (i, j, 1))
     pu2 = projector(ctr.peps, (i-1, j, 1), (i, j, 2))
-    pu, (pu1, pu2) = fuse_projectors((pu1, pu2))
+    _, (pu1, pu2) = fuse_projectors((pu1, pu2))
 
     p1l = projector(ctr.peps, (i, j, 1), (i, j-1 ,2))
     p2l = projector(ctr.peps, (i, j, 2), (i, j-1, 2))
@@ -449,6 +449,7 @@ function conditional_probability(
     eng_up1 = @view e1u[p1u[:], pu1[∂v[j+1]]]
     eng_left2 = @view e2l[p2l[:], pl1[∂v[j]]]
     eng_up2 = @view e2u[p2u[:], pu2[∂v[j+1]]]
+
     en21 = interaction_energy(ctr.peps, (i, j, 2), (i, j, 1))
     p21 = projector(ctr.peps, (i, j, 2), (i, j, 1))
     p12 = projector(ctr.peps, (i, j, 1), (i, j, 2))
@@ -464,15 +465,17 @@ function conditional_probability(
         TT = reshape(en2, (:, 1)) .+ en21
         TT = exp.(-β .* (TT .- minimum(TT)))
         TTT = zeros(size(TT, 1), maximum(pr), size(TT, 2))
-        for ii ∈ pr TTT[:, ii, :] += TT end
+        for i ∈ pr TTT[:, i, :] += TT end
         RT = R * dropdims(sum(TTT, dims=1), dims=1)
         bnd_exp = dropdims(sum(LM[pd[:], :] .* RT', dims=2), dims=2)
         loc_exp = exp.(-β .* (en1 .- minimum(en1)))
-    else  # k == 2
+    elseif k == 2
         en_int = @view en21[p21[:], p12[∂v[end]]]
         en2 = eng_local[2] .+ eng_left2 .+ eng_up2 .+ en_int
         loc_exp = exp.(-β .* (en2 .- minimum(en2)))
         bnd_exp = dropdims(sum(LM[pd[:], :] .* R[:, pr[:]]', dims=2), dims=2)
+    else
+        throw(ArgumentError("Number $k of sub-cluster is incorrect for this architecture."))
     end
 
     probs = loc_exp .* bnd_exp

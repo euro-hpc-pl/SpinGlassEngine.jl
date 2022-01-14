@@ -461,15 +461,20 @@ function conditional_probability(
     if k == 1
         en1 = eng_local1 .+ eng_left1 .+ eng_up1
         en2 = eng_local2 .+ eng_left2 .+ eng_up2
-        T = reshape(en2, (:, 1)) .+ en21
-        @cast TT[σ, r, e] |= T[σ, e] * pr[σ, r]
-        TTT = dropdims(sum(TT, dims=1), dims=1)
-        RT = R * TTT
+        TT = reshape(en2, (:, 1)) .+ en21
+        TT = exp.(-β .* (TT .- minimum(TT)))
+        TTT = zeros(size(TT, 1), maximum(pr), size(TT, 2))
+        for ii in pr
+            TTT[:, ii, :] += TT
+        end
+
+        TTTT = dropdims(sum(TTT, dims=1), dims=1)
+        RT = R * TTTT
         bnd_exp = dropdims(sum(LM[pd[:], :] .* RT', dims=2), dims=2)
         loc_exp = exp.(-β .* (en1 .- minimum(en1)))
     else  # k == 2
         en_int = @view en21[p21[:], p12[∂v[end]]]
-        en2 = eng_local .+ eng_left2 .+ eng_up2 .+ en_int
+        en2 = eng_local2 .+ eng_left2 .+ eng_up2 .+ en_int
         loc_exp = exp.(-β .* (en2 .- minimum(en2)))
         bnd_exp = dropdims(sum(LM[pd[:], :] .* R[:, pr[:]]', dims=2), dims=2)
     end

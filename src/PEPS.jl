@@ -150,13 +150,17 @@ end
 @inline node_neighbors(::Type{Pegasus}, (i, j, k)) = ((i, j-1, 2), (i-1, j, 1))
 
 function update_energy(net::PEPSNetwork{T, S}, σ::Vector{Int}) where {T, S}
+    @infiltrate
     u = node_from_index(net, length(σ)+1)
     en = local_energy(net, u)
     for v ∈ node_neighbors(T, u)
         en += bond_energy(net, u, v, local_state_for_node(net, σ, v))
     end
+    @infiltrate
     if T != Pegasus return en end
     i, j, k = u
     if k != 2 return en end
     en += bond_energy(net, u, (i, j, 1), local_state_for_node(net, σ, (i, j, 1)))
+    @infiltrate
+    en
 end

@@ -40,8 +40,7 @@ function branch_state(network::PEPSNetwork{T, S}, σ::Vector{Int}) where {T, S}
     vcat.(Ref(σ), collect(1:length(local_energy(network, node))))
 end
 
-# TODO: write functions: exact_marginal_probability
-# TODO: write functions: exact_conditional_probabilities
+# TODO: write functions: exact_marginal_probability, exact_conditional_probabilities
 function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T
     pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
     # exact_marginal_prob = exact_marginal_probability(ctr, pσ[end])  # to compare with pσ[begin]

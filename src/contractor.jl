@@ -425,7 +425,6 @@ function conditional_probability(
     M ./= maximum(abs.(M))
 
     @tensor LM[y, z] := L[x] * M[x, y, z]
-    eng_local = local_energy(ctr.peps, (i, j, k))
 
     pl1 = projector(ctr.peps, (i, j-1, 2), (i, j, 1))
     pl2 = projector(ctr.peps, (i, j-1, 2), (i, j, 2))
@@ -445,25 +444,36 @@ function conditional_probability(
     e1l = interaction_energy(ctr.peps, (i, j, 1), (i, j-1, 2))
     e2l = interaction_energy(ctr.peps, (i, j, 2), (i, j-1, 2))
 
-    if k == 1
-        eng_left = @view e1l[p1l[:], pl2[∂v[j]]]
-        eng_up = @view e1u[p1u[:], pu1[∂v[j+1]]]
-        en = eng_local .+ eng_left .+ eng_up
-    else  # k == 2
-        eng_left = @view e2l[p2l[:], pl1[∂v[j]]]
-        eng_up = @view e2u[p2u[:], pu2[∂v[j+1]]]
-        en21 = interaction_energy(ctr.peps, (i, j, 2), (i, j, 1))
-        p21 = projector(ctr.peps, (i, j, 2), (i, j, 1))
-        p12 = projector(ctr.peps, (i, j, 1), (i, j, 2))
-        en_int = @view en21[p21[:], p12[∂v[end]]]
-        en = eng_local .+ eng_left .+ eng_up .+ en_int
-    end
-    loc_exp = exp.(-β .* (en .- minimum(en)))
+    eng_left1 = @view e1l[p1l[:], pl2[∂v[j]]]
+    eng_up1 = @view e1u[p1u[:], pu1[∂v[j+1]]]
+    eng_left2 = @view e2l[p2l[:], pl1[∂v[j]]]
+    eng_up2 = @view e2u[p2u[:], pu2[∂v[j+1]]]
+    en21 = interaction_energy(ctr.peps, (i, j, 2), (i, j, 1))
+    p21 = projector(ctr.peps, (i, j, 2), (i, j, 1))
+    p12 = projector(ctr.peps, (i, j, 1), (i, j, 2))
 
     pr = projector(ctr.peps, (i, j, 2), ((i, j+1, 1), (i, j+1, 2)))
     pd = projector(ctr.peps, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
 
-    bnd_exp = dropdims(sum(LM[pd[:], :] .* R[:, pr[:]]', dims=2), dims=2)
+    eng_local1 = local_energy(ctr.peps, (i, j, 1))
+    eng_local2 = local_energy(ctr.peps, (i, j, 2))
+
+    if k == 1
+        en1 = eng_local1 .+ eng_left1 .+ eng_up1
+        en2 = eng_local2 .+ eng_left2 .+ eng_up2
+        T = reshape(en2, (:, 1)) .+ en21
+        @cast TT[σ, r, e] |= T[σ, e] * pr[σ, r]
+        TTT = dropdims(sum(TT, dims=1), dims=1)
+        RT = R * TTT
+        bnd_exp = dropdims(sum(LM[pd[:], :] .* RT', dims=2), dims=2)
+        loc_exp = exp.(-β .* (en1 .- minimum(en1)))
+    else  # k == 2
+        en_int = @view en21[p21[:], p12[∂v[end]]]
+        en2 = eng_local .+ eng_left2 .+ eng_up2 .+ en_int
+        loc_exp = exp.(-β .* (en2 .- minimum(en2)))
+        bnd_exp = dropdims(sum(LM[pd[:], :] .* R[:, pr[:]]', dims=2), dims=2)
+    end
+
     probs = loc_exp .* bnd_exp
     push!(ctr.statistics, state => error_measure(probs))
     normalize_probability(probs)

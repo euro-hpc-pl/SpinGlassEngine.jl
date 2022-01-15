@@ -449,10 +449,12 @@ function conditional_probability(
 
     if k == 1
         en = [eng_local[k] .+ eng_left[k] .+ eng_up[k] for k ∈ 1:2]
+
         ten = reshape(en[2], (:, 1)) .+ en21
         ten2 = exp.(-β .* (ten .- minimum(ten)))
         ten3 = zeros(size(ten2, 1), maximum(pr), size(ten2, 2))
         for i ∈ pr ten3[:, i, :] += ten2 end
+
         RT = R * dropdims(sum(ten3, dims=1), dims=1)
         bnd_exp = dropdims(sum(LM[pd[:], :] .* RT', dims=2), dims=2)
         loc_exp = exp.(-β .* (en[1] .- minimum(en[1])))
@@ -461,7 +463,7 @@ function conditional_probability(
         loc_exp = exp.(-β .* (en .- minimum(en)))
         bnd_exp = dropdims(sum(LM[pd[:], :] .* R[:, pr[:]]', dims=2), dims=2)
     else
-        throw(ArgumentError("Number $k of sub-clusters is incorrect for this architecture."))
+        throw(ArgumentError("Number $k of sub-clusters is incorrect for this $T."))
     end
 
     probs = loc_exp .* bnd_exp

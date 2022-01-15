@@ -409,7 +409,6 @@ function conditional_probability(
     normalize_probability(loc_exp)
 end
 
-# TODO: simplify this
 function conditional_probability(
     ::Type{T}, ctr::MpsContractor{S}, state::Vector{Int},
 ) where {T <: Pegasus, S}
@@ -427,28 +426,17 @@ function conditional_probability(
 
     @tensor LM[y, z] := L[x] * M[x, y, z]
 
-    pl1 = projector(ctr.peps, (i, j-1, 2), (i, j, 1))
-    pl2 = projector(ctr.peps, (i, j-1, 2), (i, j, 2))
-    _, (pl1, pl2) = fuse_projectors((pl1, pl2))
+    _, (pl1, pl2) = fuse_projectors([projector(ctr.peps, (i, j-1, 2), (i, j, k)) for k ∈ 1:2])
+    _, (pu1, pu2) = fuse_projectors([projector(ctr.peps, (i-1, j, 1), (i, j, k)) for k ∈ 1:2])
 
-    pu1 = projector(ctr.peps, (i-1, j, 1), (i, j, 1))
-    pu2 = projector(ctr.peps, (i-1, j, 1), (i, j, 2))
-    _, (pu1, pu2) = fuse_projectors((pu1, pu2))
+    pl = [projector(ctr.peps, (i, j, k), (i, j-1 ,2)) for k ∈ 1:2]
+    pu = [projector(ctr.peps, (i, j, k), (i-1, j, 1)) for k ∈ 1:2]
 
-    p1l = projector(ctr.peps, (i, j, 1), (i, j-1 ,2))
-    p2l = projector(ctr.peps, (i, j, 2), (i, j-1, 2))
-    p1u = projector(ctr.peps, (i, j, 1), (i-1, j, 1))
-    p2u = projector(ctr.peps, (i, j, 2), (i-1, j, 1))
+    eu = [interaction_energy(ctr.peps, (i, j, k), (i-1, j, 1)) for k ∈ 1:2]
+    el = [interaction_energy(ctr.peps, (i, j, k), (i, j-1, 2)) for k ∈ 1:2]
 
-    e1u = interaction_energy(ctr.peps, (i, j, 1), (i-1, j, 1))
-    e2u = interaction_energy(ctr.peps, (i, j, 2), (i-1, j, 1))
-    e1l = interaction_energy(ctr.peps, (i, j, 1), (i, j-1, 2))
-    e2l = interaction_energy(ctr.peps, (i, j, 2), (i, j-1, 2))
-
-    eng_left1 = @view e1l[p1l[:], pl2[∂v[j]]]
-    eng_up1 = @view e1u[p1u[:], pu1[∂v[j+1]]]
-    eng_left2 = @view e2l[p2l[:], pl1[∂v[j]]]
-    eng_up2 = @view e2u[p2u[:], pu2[∂v[j+1]]]
+    eng_left = [el[1][pl[1][:], pl2[∂v[j]]], el[2][pl[2][:], pl1[∂v[j]]]]
+    eng_up = [eu[1][pu[1][:], pu1[∂v[j+1]]], eu[2][pu[2][:], pu2[∂v[j+1]]]]
 
     en21 = interaction_energy(ctr.peps, (i, j, 2), (i, j, 1))
     p21 = projector(ctr.peps, (i, j, 2), (i, j, 1))
@@ -460,22 +448,20 @@ function conditional_probability(
     eng_local = [local_energy(ctr.peps, (i, j, k)) for k ∈ 1:2]
 
     if k == 1
-        en1 = eng_local[1] .+ eng_left1 .+ eng_up1
-        en2 = eng_local[2] .+ eng_left2 .+ eng_up2
-        TT = reshape(en2, (:, 1)) .+ en21
-        TT = exp.(-β .* (TT .- minimum(TT)))
-        TTT = zeros(size(TT, 1), maximum(pr), size(TT, 2))
-        for i ∈ pr TTT[:, i, :] += TT end
-        RT = R * dropdims(sum(TTT, dims=1), dims=1)
+        en = [eng_local[k] .+ eng_left[k] .+ eng_up[k] for k ∈ 1:2]
+        ten = reshape(en[2], (:, 1)) .+ en21
+        ten2 = exp.(-β .* (ten .- minimum(ten)))
+        ten3 = zeros(size(ten2, 1), maximum(pr), size(ten2, 2))
+        for i ∈ pr ten3[:, i, :] += ten2 end
+        RT = R * dropdims(sum(ten3, dims=1), dims=1)
         bnd_exp = dropdims(sum(LM[pd[:], :] .* RT', dims=2), dims=2)
-        loc_exp = exp.(-β .* (en1 .- minimum(en1)))
+        loc_exp = exp.(-β .* (en[1] .- minimum(en[1])))
     elseif k == 2
-        en_int = @view en21[p21[:], p12[∂v[end]]]
-        en2 = eng_local[2] .+ eng_left2 .+ eng_up2 .+ en_int
-        loc_exp = exp.(-β .* (en2 .- minimum(en2)))
+        en = eng_local[2] .+ eng_left[2] .+ eng_up[2] .+ en21[p21[:], p12[∂v[end]]]
+        loc_exp = exp.(-β .* (en .- minimum(en)))
         bnd_exp = dropdims(sum(LM[pd[:], :] .* R[:, pr[:]]', dims=2), dims=2)
     else
-        throw(ArgumentError("Number $k of sub-cluster is incorrect for this architecture."))
+        throw(ArgumentError("Number $k of sub-clusters is incorrect for this architecture."))
     end
 
     probs = loc_exp .* bnd_exp

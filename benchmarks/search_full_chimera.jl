@@ -13,7 +13,7 @@ function bench(instance::String)
     ground_energy = -3336.773383
 
     β = 3.0
-    bond_dim = 32
+    bond_dim = 16
     δp = 1E-3
     num_states = 1000
 
@@ -35,7 +35,6 @@ function bench(instance::String)
             @time ctr = MpsContractor{Strategy}(network, [β/8, β/4, β/2, β], params)
 
             @time sol = low_energy_spectrum(ctr, search_params, merge_branches(network))
-            println(maximum(ctr.statistics))
 
             @test sol.energies[begin] ≈ ground_energy
 
@@ -44,4 +43,4 @@ function bench(instance::String)
     end
 end
 
-bench("$(@__DIR__)../test/instances/chimera_droplets/2048power/001.txt")
+bench("$(@__DIR__)/../test/instances/chimera_droplets/2048power/001.txt")

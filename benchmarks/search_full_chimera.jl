@@ -13,7 +13,7 @@ function bench(instance::String)
     ground_energy = -3336.773383
 
     β = 3.0
-    bond_dim = 16
+    bond_dim = 32
     δp = 1E-3
     num_states = 1000
 

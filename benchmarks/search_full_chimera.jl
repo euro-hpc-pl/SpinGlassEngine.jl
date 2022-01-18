@@ -44,4 +44,4 @@ function bench(instance::String)
     end
 end
 
-bench("$(@__DIR__)/instances/chimera_droplets/2048power/001.txt")
+bench("$(@__DIR__)../test/instances/chimera_droplets/2048power/001.txt")

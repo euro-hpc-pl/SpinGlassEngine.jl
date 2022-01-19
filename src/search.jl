@@ -82,21 +82,6 @@ function exact_conditional_probabilities(ig, pσ::Vector{Int})
     [sum(P[ind]), P[ind2]]
 end
 
-#=
-marginal
-p = exp.()=beta*E
-p = p/sum(p)
-ind = stan[1:len(sigma)] = sigma
-return sum(p[ind])
-potem obrócić
-reverse_label_map w fg
-for i= 1:N
-rotated_states[:, ri] = state[:,i]
-
-conditional
-do ind a potem sumuję leng(sigma)+1
-=#
-
 function discard_probabilities(psol::Solution, cut_off_prob::Real)
     pcut = maximum(psol.probabilities) + log(cut_off_prob)
     Solution(psol, findall(p -> p >= pcut, psol.probabilities))

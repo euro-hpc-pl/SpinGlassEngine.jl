@@ -15,6 +15,7 @@
         spectrum=full_spectrum,
         cluster_assignment_rule=super_square_lattice((m, n, t))
     )
+
     params = MpsParameters(bond_dim, 1E-8, 4)
     search_params = SearchParameters(num_states, 0.0)
 

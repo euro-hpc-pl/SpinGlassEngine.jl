@@ -32,10 +32,13 @@
                 #for i in states
                 #    exact_marginal_probability(ig, i)
                 #    exact_conditional_probabilities(ig, i)
-                end
-                #@test sol.energies ≈ exact_energies
-                #ig_states = decode_factor_graph_state.(Ref(fg), sol.states)
-                #@test sol.energies ≈ energy.(Ref(ig), ig_states)
+                #end
+                @test sol.energies ≈ exact_energies
+                ig_states = decode_factor_graph_state.(Ref(fg), sol.states)
+                states = decode_state.(Ref(network), sol.states)
+
+                @test sol.energies ≈ energy.(Ref(ig), ig_states) ≈ energy.(Ref(fg), states)
+
 
                 #norm_prob = exp.(sol.probabilities)
                 #exact_norm_prob = exp.(-β .* (sol.energies .- sol.energies[1]))

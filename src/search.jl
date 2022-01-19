@@ -1,5 +1,6 @@
 export AbstractGibbsNetwork, low_energy_spectrum, branch_state, bound_solution
 export merge_branches, Solution, SearchParameters
+export exact_marginal_probability, exact_conditional_probabilities
 
 struct SearchParameters
     max_states::Int
@@ -42,11 +43,61 @@ end
 
 # TODO: write functions: exact_marginal_probability, exact_conditional_probabilities
 function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T
+    println("pσ[begin] ", exp(pσ[begin]))
+    println("conditional prob ", conditional_probability(ctr, pσ[end]))
+    exact_marginal_prob = exact_marginal_probability(ctr, i)
+    println("exact_marginal_prob ", exact_marginal_prob)
+    println("pσ[begin] ", exp(pσ[begin]))
     pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
-    # exact_marginal_prob = exact_marginal_probability(ctr, pσ[end])  # to compare with pσ[begin]
+    #exact_marginal_prob = exact_marginal_probability(ctr, pσ[end])  # to compare with pσ[begin]
     # exact_cond_probs = exact_conditional_probabilities(ctr, pσ[end])
     # to compare with conditional_probability(ctr, pσ[end])
 end
+
+function exact_marginal_probability(fg, pσ::Vector{Int})# where T
+    #fg = ctr.peps.factor_graph
+    fg = factor_graph(ctr.peps)
+    ig_states = decode_factor_graph_state.(Ref(fg), pσ)
+    @test sol.energies ≈ energy.(Ref(ig), ig_states)
+
+    states = Spectrum(ig).states
+    E = Spectrum(ig).energies
+    P = exp.(-1 * E) #ctr.betas
+    P = P./sum(P)
+    st = [s[1:length(pσ)] for s in states]
+    ind = findall(==(pσ), st)
+    sum(P[ind])
+    #println("prob ", sum(P[ind]))
+end
+
+function exact_conditional_probabilities(ig, pσ::Vector{Int})
+    states = Spectrum(ig).states
+    E = Spectrum(ig).energies
+    P = exp.(-1 * E)
+    P = P./sum(P)
+    #println("P ", P)
+    st = [s[1:length(pσ)] for s in states]
+    ind = findall(==(pσ), st)
+    st2 = [s[1:length(pσ)+1] for s in states]
+    ind2 = findall(==(pσ), st2)
+    println("cond ", [sum(P[ind]), P[ind2]])
+    [sum(P[ind]), P[ind2]]
+end
+
+#=
+marginal
+p = exp.()=beta*E
+p = p/sum(p)
+ind = stan[1:len(sigma)] = sigma
+return sum(p[ind])
+potem obrócić
+reverse_label_map w fg
+for i= 1:N
+rotated_states[:, ri] = state[:,i]
+
+conditional
+do ind a potem sumuję leng(sigma)+1
+=#
 
 function discard_probabilities(psol::Solution, cut_off_prob::Real)
     pcut = maximum(psol.probabilities) + log(cut_off_prob)

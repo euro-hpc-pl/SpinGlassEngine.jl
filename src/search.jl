@@ -70,9 +70,16 @@ function exact_marginal_probability(fg, pσ::Vector{Int})# where T
 end
 
 function exact_conditional_probabilities(ig, pσ::Vector{Int})
-    small = exact_marginal_probability(ig, pσ[1:end-1])
-    large = exact_marginal_probability(ig, pσ)
-    P = small/large
+    states = Spectrum(ig).states
+    E = Spectrum(ig).energies
+    P = exp.(-1 * E)
+    P = P./sum(P)
+    st = [s[1:length(pσ)] for s in states]
+    ind = findall(==(pσ), st)
+    st2 = [s[1:length(pσ)+1] for s in states]
+    ind2 = findall(==(pσ), st2)
+    println("cond ", [sum(P[ind]), P[ind2]])
+    [sum(P[ind]), P[ind2]]
 end
 
 #=

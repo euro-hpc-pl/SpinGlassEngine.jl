@@ -71,17 +71,14 @@ function exact_marginal_probability(fg, pσ::Vector{Int})# where T
 end
 
 function exact_conditional_probabilities(ig, pσ::Vector{Int})
-    states = Spectrum(ig).states
-    E = Spectrum(ig).energies
-    P = exp.(-1 * E)
-    P = P./sum(P)
-    #println("P ", P)
+    states = sp.states
+    pdo = exp.(-1.0 * sp.energies)
+    pdo ./= sum(P)
     st = [s[1:length(pσ)] for s in states]
     ind = findall(==(pσ), st)
     st2 = [s[1:length(pσ)+1] for s in states]
     ind2 = findall(==(pσ), st2)
-    println("cond ", [sum(P[ind]), P[ind2]])
-    [sum(P[ind]), P[ind2]]
+    sum(P[ind]), P[ind2]
 end
 
 #=

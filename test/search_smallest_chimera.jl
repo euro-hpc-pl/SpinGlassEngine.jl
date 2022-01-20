@@ -28,23 +28,16 @@
                 network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
                 contractor = MpsContractor{Strategy}(network, [β/8., β/4., β/2., β], params)
                 sol = low_energy_spectrum(contractor, search_params)
-                #states = [[1], [2], [1, 1], [2, 1], [1, 2], [2, 2]]
-                #states = [[-1], [1], [-1, -1], [1, -1], [-1, 1], [1, 1]]
-                #for i in states
-                #    exact_marginal_probability(ig, i)
-                #    exact_conditional_probabilities(ig, i)
-                #end
                 @test sol.energies ≈ exact_energies
                 ig_states = decode_factor_graph_state.(Ref(fg), sol.states)
                 states = decode_state.(Ref(network), sol.states)
 
                 @test sol.energies ≈ energy.(Ref(ig), ig_states) ≈ energy.(Ref(fg), states)
 
-
-                #norm_prob = exp.(sol.probabilities)
-                #exact_norm_prob = exp.(-β .* (sol.energies .- sol.energies[1]))
-                #exact_norm_prob = exact_norm_prob./sum(exact_norm_prob)
-                #@test norm_prob ≈ exact_norm_prob
+                norm_prob = exp.(sol.probabilities)
+                exact_norm_prob = exp.(-β .* (sol.energies .- sol.energies[1]))
+                exact_norm_prob = exact_norm_prob./sum(exact_norm_prob)
+                @test norm_prob ≈ exact_norm_prob
                 clear_memoize_cache()
             end
         end

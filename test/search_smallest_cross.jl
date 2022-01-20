@@ -25,7 +25,7 @@
 
     for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense,)
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
-            for transform ∈ all_lattice_transformations
+            for transform ∈ all_lattice_transformations[[2]]
                 net = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, fg, transform)
                 ctr = MpsContractor{Strategy}(net, [β/8., β/4., β/2., β], params)
                 sol = low_energy_spectrum(ctr, search_params)

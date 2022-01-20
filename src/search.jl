@@ -55,33 +55,26 @@ function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int
     #pσ[begin] .+ log.(exact_cond_probs)
 end
 
-function exact_marginal_probability(ctr::MpsContractor{T}, pσ::Vector{Int}) where T
-    target_state = decode_state(ctr.peps, pσ)
+function exact_marginal_probability(ctr::MpsContractor{T}, σ::Vector{Int}) where T
+    target_state = decode_state(ctr.peps, σ)
     states = [Dict()]
-    for v in vertices(ctr.peps.factor_graph)
+    for v ∈ vertices(ctr.peps.factor_graph)
         new_states = []
-        S = get_prop(ctr.peps.factor_graph, v, :spectrum).energies
-        for st in 1:length(S)
-            for x in states
-                ns = copy(x)
-                push!(ns, v => st)
-                push!(new_states, ns)
-            end
+        for st ∈ 1:length(local_energy(ctr.peps, v)), x ∈ states
+            ns = copy(x)
+            push!(ns, v => st)
+            push!(new_states, ns)
         end
         states = new_states
     end
-    E = energy.(Ref(ctr.peps.factor_graph), states)
-    P = exp.(-ctr.betas[end] * E)
-    P = P./sum(P)
-    ind = [all(s[k] == v for (k,v) in target_state) for s in states]
-    ind = findall(ind)
-    sum(P[ind])
+    prob = exp.(-ctr.betas[end] * energy.(Ref(ctr.peps.factor_graph), states))
+    prob ./= sum(prob)
+    sum(prob[findall(all(s[k] == v for (k, v) in target_state) for s ∈ states)])
 end
 
-function exact_conditional_probabilities(ctr::MpsContractor{T}, pσ::Vector{Int}) where T
-    states = branch_state(ctr.peps, pσ)
-    P = [exact_marginal_probability(ctr, i) for i in states]
-    P = P./sum(P)
+function exact_conditional_probabilities(ctr::MpsContractor{T}, σ::Vector{Int}) where T
+    P = exact_marginal_probability.(Ref(ctr), branch_state(ctr.peps, σ))
+    P ./= sum(P)
 end
 
 function discard_probabilities(psol::Solution, cut_off_prob::Real)

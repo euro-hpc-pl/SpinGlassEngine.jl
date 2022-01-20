@@ -147,11 +147,10 @@ function normalize_probability(probs::Vector{<:Real})
     _normalize(probs)
 end
 
-function decode_state(peps::AbstractGibbsNetwork{S, T}, σ::Vector{Int}, trans::Bool=false) where {S, T}
-    if trans
-        vertex = peps.vertex_map.(iteration_order(peps))
-    else
-        vertex = iteration_order(peps)
-    end
-    Dict(vertex[i] => σ[node_index(peps, vertex[i])] for i ∈ 1:length(σ))
+function decode_state(
+    peps::AbstractGibbsNetwork{S, T}, σ::Vector{Int}, map::Bool=false
+) where {S, T}
+    ver = iteration_order(peps)
+    if map ver = peps.vertex_map.(ver) end
+    Dict(ver[i] => σ[node_index(peps, ver[i])] for i ∈ 1:length(σ))
 end

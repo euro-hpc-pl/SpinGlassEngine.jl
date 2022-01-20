@@ -56,7 +56,7 @@ function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int
 end
 
 function exact_marginal_probability(ctr::MpsContractor{T}, σ::Vector{Int}) where T
-    target_state = decode_state(ctr.peps, σ)
+    target_state = decode_state(ctr.peps, σ, true)
     states = [Dict()]
     for v ∈ vertices(ctr.peps.factor_graph)
         new_states = []

@@ -45,22 +45,20 @@ end
 function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T
     #println("pσ[begin] ", exp(pσ[begin]))
     #println("conditional prob ", conditional_probability(ctr, pσ[end]))
-    #exact_marginal_prob = exact_marginal_probability(ctr, pσ[end])
-    #println("exact_marginal_prob ", exact_marginal_prob)
-    #println("pσ[begin] ", exp(pσ[begin]))
+    exact_marginal_prob = exact_marginal_probability(ctr, pσ[end])
+    println("exact_marginal_prob ", exact_marginal_prob)
+    println("pσ[begin] ", exp(pσ[begin]))
     pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
     #exact_marginal_prob = exact_marginal_probability(ctr, pσ[end])  # to compare with pσ[begin]
     # exact_cond_probs = exact_conditional_probabilities(ctr, pσ[end])
     # to compare with conditional_probability(ctr, pσ[end])
 end
 
-function exact_marginal_probability(fg, pσ::Vector{Int})# where T
-    fg = factor_graph(ctr.peps)
-    ig_states = decode_factor_graph_state.(Ref(fg), pσ)
-    E =  energy(fg, ig_states)
-
-    #states = Spectrum(ig).states
-    #E = Spectrum(ig).energies
+function exact_marginal_probability(ctr::MpsContractor{T}, pσ::Vector{Int}) where T
+    println("sigma ", pσ)
+    if isempty(pσ) return 1.0 end
+    states = decode_state(ctr.peps, pσ)
+    E =  energy(ctr.peps.factor_graph, states)
     P = exp.(-1 * E) #ctr.betas
     P = P./sum(P)
     st = [s[1:length(pσ)] for s in states]
@@ -69,9 +67,9 @@ function exact_marginal_probability(fg, pσ::Vector{Int})# where T
     #println("prob ", sum(P[ind]))
 end
 
-function exact_conditional_probabilities(ig, pσ::Vector{Int})
-    states = Spectrum(ig).states
-    E = Spectrum(ig).energies
+function exact_conditional_probabilities(ctr::MpsContractor{T}, pσ::Vector{Int}) where T
+    states = decode_state(ctr.peps, pσ)
+    E =  energy(ctr.peps.factor_graph, states)
     P = exp.(-1 * E)
     P = P./sum(P)
     st = [s[1:length(pσ)] for s in states]

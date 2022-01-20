@@ -80,7 +80,7 @@ function node_from_index(peps::PEPSNetwork{T, S}, idx::Int) where {T <: Pegasus,
     )
 end
 
-function iteration_order(peps::PEPSNetwork{T, S}) where {T <: Union{Square,SquareStar}, S}
+function iteration_order(peps::PEPSNetwork{T, S}) where {T <: Union{Square, SquareStar}, S}
     [(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols]
 end
 

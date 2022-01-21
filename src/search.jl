@@ -46,35 +46,50 @@ function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int
     #println("exact marginal prob: ", exact_marginal_prob)
     #println("psigma: ", exp(pσ[begin]))
     #@assert exact_marginal_prob ≈ exp(pσ[begin])
-    #exact_cond_probs = exact_conditional_probabilities(ctr, pσ[end])
+    exact_cond_probs = exact_conditional_probabilities(ctr, pσ[end])
     #println("exact cond prob: ", exact_cond_probs)
     #println("conditional prob: ", conditional_probability(ctr, pσ[end]))
-    #@assert exact_cond_probs ≈ conditional_probability(ctr, pσ[end])
+    @assert exact_cond_probs ≈ conditional_probability(ctr, pσ[end])
     pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
 
     #pσ[begin] .+ log.(exact_cond_probs)
 end
 
-function exact_marginal_probability(ctr::MpsContractor{T}, σ::Vector{Int}) where T
-    target_state = decode_state(ctr.peps, σ, true)
-    states = [Dict()]
-    for v ∈ vertices(ctr.peps.factor_graph)
+@memoize function all_states(peps::AbstractGibbsNetwork{S, T}) where {S, T}
+    states = [Dict{S, Int}()]
+    for v ∈ vertices(peps.factor_graph)
         new_states = []
-        for st ∈ 1:length(local_energy(ctr.peps, v)), x ∈ states
+        for st ∈ 1:length(local_energy(peps, v)), x ∈ states
             ns = copy(x)
             push!(ns, v => st)
             push!(new_states, ns)
         end
         states = new_states
     end
-    prob = exp.(-ctr.betas[end] * energy.(Ref(ctr.peps.factor_graph), states))
+    states
+end
+
+function exact_marginal_probability(ctr::MpsContractor{T}, σ::Vector{Int}) where T
+    target_state = decode_state(ctr.peps, σ, true)
+    states = all_states(ctr.peps)
+
+    N = length(states)
+    if N > 100
+        prob = Vector{Float64}(undef, N)
+        Threads.@threads for i ∈ 1:N
+            prob[i] = exp(-ctr.betas[end] * energy(ctr.peps.factor_graph, states[i]))
+        end
+    else
+        prob = exp.(-ctr.betas[end] * energy.(Ref(ctr.peps.factor_graph), states))
+    end
+
     prob ./= sum(prob)
     sum(prob[findall(all(s[k] == v for (k, v) ∈ target_state) for s ∈ states)])
 end
 
 function exact_conditional_probabilities(ctr::MpsContractor{T}, σ::Vector{Int}) where T
-    P = exact_marginal_probability.(Ref(ctr), branch_state(ctr.peps, σ))
-    P ./= sum(P)
+    probs = exact_marginal_probability.(Ref(ctr), branch_state(ctr.peps, σ))
+    probs ./= sum(probs)
 end
 
 function discard_probabilities(psol::Solution, cut_off_prob::Real)

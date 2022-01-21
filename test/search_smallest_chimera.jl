@@ -23,16 +23,18 @@
 
     for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, )
         for Layout ∈ (EnergyGauges, )# GaugesEnergy, EngGaugesEng)
-            for transform ∈ rotation.([0])#all_lattice_transformations
-
+            for transform ∈ all_lattice_transformations[[4]]
+                #2,4,7,8
+                
                 network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
                 contractor = MpsContractor{Strategy}(network, [β/8., β/4., β/2., β], params)
                 sol = low_energy_spectrum(contractor, search_params)
                 @test sol.energies ≈ exact_energies
                 ig_states = decode_factor_graph_state.(Ref(fg), sol.states)
-                states = decode_state.(Ref(network), sol.states)
-
-                @test sol.energies ≈ energy.(Ref(ig), ig_states) ≈ energy.(Ref(fg), states)
+         
+                states = decode_state.(Ref(network), sol.states, true)
+               
+                @test sol.energies ≈ energy.(Ref(ig), ig_states) ≈ sort(energy.(Ref(fg), states))
 
                 norm_prob = exp.(sol.probabilities)
                 exact_norm_prob = exp.(-β .* (sol.energies .- sol.energies[1]))

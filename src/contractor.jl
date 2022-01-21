@@ -117,16 +117,16 @@ end
 @memoize Dict function mpo(
     ctr::MpsContractor{T}, layers::Dict, r::Int, indβ::Int
 ) where T <: AbstractStrategy
-    β = ctr.betas[indβ]
-    sites = collect(keys(layers))
-    ten = Vector{Dict}(undef, length(sites))
-
-    #Threads.@threads for i ∈ 1:length(sites)
-    for i ∈ 1:length(sites)
-        j = sites[i]
-        ten[i] = Dict(dr => tensor(ctr.peps, PEPSNode(r + dr, j), β) for dr ∈ layers[j])
+    mpo = Dict{Site, Dict{Site, Tensor}}()
+    for (site, coordinates) ∈ layers
+        lmpo = Dict{Site, Tensor}()
+        for dr ∈ coordinates
+            ten = tensor(ctr.peps, PEPSNode(r + dr, site), ctr.betas[indβ])
+            push!(lmpo, dr => ten)
+        end
+        push!(mpo, site => lmpo)
     end
-    QMpo(Dict(sites .=> ten))
+    QMpo(mpo)
 end
 
 @memoize Dict function mps_top(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)

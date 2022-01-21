@@ -1,8 +1,6 @@
-export IntOrRational, Node, PEPSNode, AbstractGeometry, AbstractSparsity
+export Node, PEPSNode, AbstractGeometry, AbstractSparsity
 export AbstractTensorsLayout, tensor_map, gauges_list, Dense, Sparse, Gauges
 export Square, SquareStar, GaugesEnergy, EnergyGauges, EngGaugesEng, Pegasus
-
-const IntOrRational = Union{Int, Rational{Int}}
 
 abstract type AbstractGeometry end
 abstract type AbstractSparsity end
@@ -23,21 +21,21 @@ struct EngGaugesEng{T} <: AbstractTensorsLayout end
 const Node = NTuple{N, Int} where N
 
 struct PEPSNode
-    i::IntOrRational
-    j::IntOrRational
+    i::Site
+    j::Site
 
-    function PEPSNode(i::IntOrRational, j::IntOrRational)
+    function PEPSNode(i::Site, j::Site)
         new(denominator(i) == 1 ? numerator(i) : i, denominator(j) == 1 ? numerator(j) : j)
     end
 end
 Node(node::PEPSNode) = (node.i, node.j)
 
 struct SuperPEPSNode
-    i::IntOrRational
-    j::IntOrRational
+    i::Site
+    j::Site
     k::Int
 
-    function SuperPEPSNode(i::IntOrRational, j::IntOrRational, k::Int)
+    function SuperPEPSNode(i::Site, j::Site, k::Int)
         new(denominator(i) == 1 ? numerator(i) : i, denominator(j) == 1 ? numerator(j) : j, k)
     end
 end
@@ -99,8 +97,8 @@ end
 ###    Square geometry     ###
 #-----------------------------
 
-Site(::Type{Dense}) = :site
-Site(::Type{Sparse}) = :sparse_site
+site(::Type{Dense}) = :site
+site(::Type{Sparse}) = :sparse_site
 
 function tensor_map(
     ::Type{Square{T}}, ::Type{S}, nrows::Int, ncols::Int
@@ -108,7 +106,7 @@ function tensor_map(
     map = Dict{PEPSNode, Symbol}()
 
     for i ∈ 1:nrows, j ∈ 1:ncols
-        push!(map, PEPSNode(i, j) => Site(S))
+        push!(map, PEPSNode(i, j) => site(S))
         if j < ncols push!(map, PEPSNode(i, j + 1//2) => :central_h) end
         if i < nrows push!(map, PEPSNode(i + 1//2, j) => :central_v) end
     end
@@ -121,7 +119,7 @@ function tensor_map(
     map = Dict{PEPSNode, Symbol}()
 
     for i ∈ 1:nrows, j ∈ 1:ncols
-        push!(map, PEPSNode(i, j) => Site(S))
+        push!(map, PEPSNode(i, j) => site(S))
         if j < ncols push!(map, PEPSNode(i, j + 1//2) => :central_h) end
         if i < nrows
             push!(
@@ -185,7 +183,7 @@ function tensor_map(
     for i ∈ 1:nrows, j ∈ 1:ncols
         push!(
             map,
-            PEPSNode(i, j) => Site(S),
+            PEPSNode(i, j) => site(S),
             PEPSNode(i, j - 1//2) => Virtual(S),
             PEPSNode(i + 1//2, j) => :central_v
         )
@@ -205,7 +203,7 @@ function tensor_map(
     for i ∈ 1:nrows, j ∈ 1:ncols
         push!(
             map,
-            PEPSNode(i, j) => Site(S),
+            PEPSNode(i, j) => site(S),
             PEPSNode(i, j - 1//2) => Virtual(S),
             PEPSNode(i + 1//5, j) => :sqrt_up,
             PEPSNode(i + 4//5, j) => :sqrt_down
@@ -263,14 +261,14 @@ end
 #------------------------------
 # Geometry: 2 nodes -> 1 TN site. This will work for Chimera.
 
-PegasusSite(::Type{Dense}) = :pegasus_site
-PegasusSite(::Type{Sparse}) = :sparse_pegasus_site
+pegasus_site(::Type{Dense}) = :pegasus_site
+pegasus_site(::Type{Sparse}) = :sparse_pegasus_site
 
 function tensor_map(
     ::Type{Pegasus}, ::Type{S}, nrows::Int, ncols::Int
 ) where S <: AbstractSparsity
     map = Dict{PEPSNode, Symbol}()
-    for i ∈ 1:nrows, j ∈ 1:ncols push!(map, PEPSNode(i, j) => PegasusSite(S)) end
+    for i ∈ 1:nrows, j ∈ 1:ncols push!(map, PEPSNode(i, j) => pegasus_site(S)) end
     map
 end
 

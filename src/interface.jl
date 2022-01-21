@@ -2,7 +2,7 @@ using LabelledGraphs
 
 export AbstractGibbsNetwork, vertex_map, local_energy, interaction_energy, connecting_tensor
 export normalize_probability, boundary_state, local_state_for_node
-export fuse_projectors, initialize_gauges!
+export fuse_projectors, initialize_gauges!, decode_state
 
 # T: type of the vertex of network
 # S: type of the vertex of underlying factor graph
@@ -145,4 +145,13 @@ end
 function normalize_probability(probs::Vector{<:Real})
     if minimum(probs) < 0 return _equalize(probs) end
     _normalize(probs)
+end
+
+function decode_state(
+    peps::AbstractGibbsNetwork{S, T}, σ::Vector{Int}, map::Bool=false
+) where {S, T}
+    ver = iteration_order(peps)
+    if map ver = peps.vertex_map.(ver) end
+    #Dict(ver[i] => σ[node_index(peps, ver[i])] for i ∈ 1:length(σ))
+    Dict(ver[i] => σ[i] for i ∈ 1:length(σ))
 end

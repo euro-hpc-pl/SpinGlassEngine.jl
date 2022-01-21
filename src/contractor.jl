@@ -496,7 +496,7 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: Pegasus
     MpoLayers(main, dress, right)
 end
 
-function update_gauges!(ctr::MpsContractor{T}, row::IntOrRational, indβ::Int) where T
+function update_gauges!(ctr::MpsContractor{T}, row::Site, indβ::Int) where T
     clm = ctr.layers.main
     ψ_top = mps_top(ctr, row, indβ)
     ψ_bot = mps(ctr, row + 1, indβ)

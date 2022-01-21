@@ -74,9 +74,7 @@ function exact_marginal_probability(ctr::MpsContractor{T}, σ::Vector{Int}) wher
     end
 
     prob ./= sum(prob)
-    ind = [all(s[k] == v for (k, v) in target_state) for s in states]
-    ind = findall(ind)
-    sum(prob[ind])
+    sum(prob[findall(all(s[k] == v for (k, v) ∈ target_state) for s ∈ states)])
 end
 
 function exact_conditional_probabilities(ctr::MpsContractor{T}, σ::Vector{Int}) where T

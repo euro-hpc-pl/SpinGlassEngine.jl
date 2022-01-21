@@ -1,5 +1,6 @@
 export AbstractGibbsNetwork, low_energy_spectrum, branch_state, bound_solution
 export merge_branches, Solution, SearchParameters
+export exact_marginal_probability, exact_conditional_probabilities
 
 struct SearchParameters
     max_states::Int
@@ -42,6 +43,45 @@ end
 
 function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T
     pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
+end
+
+@memoize function all_states(peps::AbstractGibbsNetwork{S, T}) where {S, T}
+    states = [Dict{S, Int}()]
+    for v ∈ vertices(peps.factor_graph)
+        new_states = Dict{S, Int}[]
+        for st ∈ 1:length(local_energy(peps, v)), d ∈ states
+            ns = copy(d)
+            push!(ns, v => st)
+            push!(new_states, ns)
+        end
+        states = new_states
+    end
+    states
+end
+
+function exact_marginal_probability(ctr::MpsContractor{T}, σ::Vector{Int}) where T
+    target_state = decode_state(ctr.peps, σ, true)
+    states = all_states(ctr.peps)
+
+    N = length(states)
+    if N > 100
+        prob = Vector{Float64}(undef, N)
+        Threads.@threads for i ∈ 1:N
+            prob[i] = exp(-ctr.betas[end] * energy(ctr.peps.factor_graph, states[i]))
+        end
+    else
+        prob = exp.(-ctr.betas[end] * energy.(Ref(ctr.peps.factor_graph), states))
+    end
+
+    prob ./= sum(prob)
+    ind = [all(s[k] == v for (k, v) in target_state) for s in states]
+    ind = findall(ind)
+    sum(prob[ind])
+end
+
+function exact_conditional_probabilities(ctr::MpsContractor{T}, σ::Vector{Int}) where T
+    probs = exact_marginal_probability.(Ref(ctr), branch_state(ctr.peps, σ))
+    probs ./= sum(probs)
 end
 
 function discard_probabilities(psol::Solution, cut_off_prob::Real)

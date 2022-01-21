@@ -126,7 +126,7 @@ end
         end
         push!(mpo, site => lmpo)
     end
-    QMpo(mpo)
+    QMPO(mpo)
 end
 
 @memoize Dict function mps_top(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)

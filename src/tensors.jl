@@ -1,7 +1,7 @@
 export tensor, Tensor
 
 # This should probably be moved to SpinGlassTensors
-const Tensor = Union{Array{T, N} where N, SparseSiteTensor, SparseVirtualTensor}
+const Tensor = Union{AbstractArray{Float64}, SparseSiteTensor, SparseVirtualTensor}
 
 function tensor(network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, β::Real)
     if v ∉ keys(network.tensors_map) return ones(1, 1) end

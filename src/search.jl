@@ -42,10 +42,10 @@ function branch_state(network::PEPSNetwork{T, S}, σ::Vector{Int}) where {T, S}
 end
 
 function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T
-    exact_marginal_prob = exact_marginal_probability(ctr, pσ[end])
-    @assert exact_marginal_prob ≈ exp(pσ[begin])
-    exact_cond_probs = exact_conditional_probabilities(ctr, pσ[end])
-    @assert exact_cond_probs ≈ conditional_probability(ctr, pσ[end])
+    #exact_marginal_prob = exact_marginal_probability(ctr, pσ[end])
+    #@assert exact_marginal_prob ≈ exp(pσ[begin])
+    #exact_cond_probs = exact_conditional_probabilities(ctr, pσ[end])
+    #@assert exact_cond_probs ≈ conditional_probability(ctr, pσ[end])
     pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
 
     #pσ[begin] .+ log.(exact_cond_probs)
@@ -80,11 +80,7 @@ function exact_marginal_probability(ctr::MpsContractor{T}, σ::Vector{Int}) wher
     end
 
     prob ./= sum(prob)
-    ind = [all(s[k] == v for (k, v) in target_state) for s in states]
-    ind = findall(ind)
-    sum(prob[ind])
-
-    #sum(prob[findall(all(s[k] == v for (k, v) ∈ target_state) for s ∈ states)])
+    sum(prob[findall(all(s[k] == v for (k, v) ∈ target_state) for s ∈ states)])
 end
 
 function exact_conditional_probabilities(ctr::MpsContractor{T}, σ::Vector{Int}) where T

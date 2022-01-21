@@ -38,9 +38,9 @@ using Test
 my_tests = []
 
 push!(my_tests,
-        "operations.jl",
-        "branch_and_bound.jl",
-        "search_MPS.jl",
+        #"operations.jl",
+        #"branch_and_bound.jl",
+        #"search_MPS.jl",
         "search_chimera.jl",
 )
 

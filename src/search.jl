@@ -42,10 +42,12 @@ function branch_state(network::PEPSNetwork{T, S}, σ::Vector{Int}) where {T, S}
 end
 
 function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T
-    #exact_marginal_prob = exact_marginal_probability(ctr, pσ[end])
-    #@assert exact_marginal_prob ≈ exp(pσ[begin])
-    #exact_cond_probs = exact_conditional_probabilities(ctr, pσ[end])
-    #@assert exact_cond_probs ≈ conditional_probability(ctr, pσ[end])
+    exact_marginal_prob = exact_marginal_probability(ctr, pσ[end])
+    println("exact_marginal_prob ", exact_marginal_prob)
+    @assert exact_marginal_prob ≈ exp(pσ[begin])
+    exact_cond_probs = exact_conditional_probabilities(ctr, pσ[end])
+    println("exact_cond_probs ", exact_cond_probs)
+    @assert exact_cond_probs ≈ conditional_probability(ctr, pσ[end])
     pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
 
     #pσ[begin] .+ log.(exact_cond_probs)
@@ -53,9 +55,12 @@ end
 
 @memoize function all_states(peps::AbstractGibbsNetwork{S, T}) where {S, T}
     states = [Dict{S, Int}()]
-    for v ∈ vertices(peps.factor_graph)
+    println("vertices ", vertices(peps.factor_graph))
+    #vv = [(1,1), (2,1), (3,1)] # works for transformations [1,3,5,6]
+    vv = [(1,1), (1,2), (1,3)] # works for transformations [2,4,7,8]
+    for (i, v) ∈ enumerate(vertices(peps.factor_graph))
         new_states = Dict{S, Int}[]
-        for st ∈ 1:length(local_energy(peps, v)), d ∈ states
+        for st ∈ 1:length(local_energy(peps, vv[i])), d ∈ states
             ns = copy(d)
             push!(ns, v => st)
             push!(new_states, ns)
@@ -80,7 +85,10 @@ function exact_marginal_probability(ctr::MpsContractor{T}, σ::Vector{Int}) wher
     end
 
     prob ./= sum(prob)
-    sum(prob[findall(all(s[k] == v for (k, v) ∈ target_state) for s ∈ states)])
+    #sum(prob[findall(all(s[k] == v for (k, v) ∈ target_state) for s ∈ states)])
+    ind = [all(s[k] == v for (k, v) in target_state) for s in states]
+    ind = findall(ind)
+    sum(prob[ind])
 end
 
 function exact_conditional_probabilities(ctr::MpsContractor{T}, σ::Vector{Int}) where T

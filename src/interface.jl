@@ -152,6 +152,6 @@ function decode_state(
 ) where {S, T}
     ver = iteration_order(peps)
     if map ver = peps.vertex_map.(ver) end
-    #Dict(ver1[i] => σ[node_index(peps, ver[i])] for i ∈ 1:length(σ))
-    Dict(ver[i] => σ[i] for i ∈ 1:length(σ))
+    Dict(ver[i] => σ[node_index(peps, ver[i])] for i ∈ 1:length(σ))
+    #Dict(ver[i] => σ[i] for i ∈ 1:length(σ))
 end

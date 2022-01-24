@@ -53,6 +53,7 @@ function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int
     #pσ[begin] .+ log.(exact_cond_probs)
 end
 
+#=
 @memoize function all_states(peps::AbstractGibbsNetwork{S, T}) where {S, T}
     states = [Dict{S, Int}()]
     for (i, v) ∈ enumerate(vertices(peps.factor_graph))
@@ -67,6 +68,14 @@ end
     end
     states
 end
+=#
+
+@memoize function all_states(peps::AbstractGibbsNetwork{S, T}) where {S, T}
+    ver = peps.vertex_map.(vertices(peps.factor_graph))
+    rank = length.(local_energy.(Ref(peps), ver))
+    [Dict(ver .=> σ) for σ ∈ Iterators.product([1:r for r ∈ rank]...)]
+end
+
 
 function exact_marginal_probability(ctr::MpsContractor{T}, σ::Vector{Int}) where T
     target_state = decode_state(ctr.peps, σ, true)
@@ -84,7 +93,7 @@ function exact_marginal_probability(ctr::MpsContractor{T}, σ::Vector{Int}) wher
 
     prob ./= sum(prob)
     #sum(prob[findall(all(s[k] == v for (k, v) ∈ target_state) for s ∈ states)])
-    ind = [all(s[k] == v for (k, v) in target_state) for s in states]
+    ind = [all(s[k] == v for (k, v) ∈ target_state) for s ∈ states]
     ind = findall(ind)
     sum(prob[ind])
 end

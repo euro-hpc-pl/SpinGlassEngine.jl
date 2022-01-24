@@ -89,7 +89,7 @@ function exact_marginal_probability(
             prob[i] = exp(-ctr.betas[end] * energy(ctr.peps.factor_graph, states[i]))
         end
     else
-        prob = exp.(-ctr.betas[end] * energy.(Ref(ctr.peps.factor_graph), states))
+        prob = exp.(-ctr.betas[end] .* energy.(Ref(ctr.peps.factor_graph), states))
     end
     prob ./= sum(prob)
     sum(prob[findall(all(s[k] == v for (k, v) ∈ target_state) for s ∈ states)])

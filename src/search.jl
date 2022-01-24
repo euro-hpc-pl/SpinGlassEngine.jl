@@ -55,12 +55,10 @@ end
 
 @memoize function all_states(peps::AbstractGibbsNetwork{S, T}) where {S, T}
     states = [Dict{S, Int}()]
-    println("vertices ", vertices(peps.factor_graph))
-    #vv = [(1,1), (2,1), (3,1)] # works for transformations [1,3,5,6]
-    vv = [(1,1), (1,2), (1,3)] # works for transformations [2,4,7,8]
     for (i, v) ∈ enumerate(vertices(peps.factor_graph))
         new_states = Dict{S, Int}[]
-        for st ∈ 1:length(local_energy(peps, vv[i])), d ∈ states
+        for st ∈ 1:length(local_energy(peps, reverse(v))), d ∈ states # for transformations [2,4,7,8]
+        #for st ∈ 1:length(local_energy(peps, v)), d ∈ states # for transformations [1,3,5,6]
             ns = copy(d)
             push!(ns, v => st)
             push!(new_states, ns)

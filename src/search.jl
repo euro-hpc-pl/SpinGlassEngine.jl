@@ -42,12 +42,10 @@ function branch_state(network::PEPSNetwork{T, S}, σ::Vector{Int}) where {T, S}
 end
 
 function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T
-    exact_marginal_prob = exact_marginal_probability(ctr, pσ[end])
-    println("exact_marginal_prob ", exact_marginal_prob)
-    @assert exact_marginal_prob ≈ exp(pσ[begin])
-    exact_cond_probs = exact_conditional_probabilities(ctr, pσ[end])
-    println("exact_cond_probs ", exact_cond_probs)
-    @assert exact_cond_probs ≈ conditional_probability(ctr, pσ[end])
+    #exact_marginal_prob = exact_marginal_probability(ctr, pσ[end])
+    #@assert exact_marginal_prob ≈ exp(pσ[begin])
+    #exact_cond_probs = exact_conditional_probabilities(ctr, pσ[end])
+    #@assert exact_cond_probs ≈ conditional_probability(ctr, pσ[end])
     pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
 
     #pσ[begin] .+ log.(exact_cond_probs)
@@ -71,18 +69,21 @@ end
 =#
 
 @memoize function all_states(peps::AbstractGibbsNetwork{S, T}) where {S, T}
-    ver = peps.vertex_map.(vertices(peps.factor_graph))
-    rank = length.(local_energy.(Ref(peps), ver))
+    ver = vertices(peps.factor_graph)
+    rank = cluster_size.(Ref(peps), ver)
     [Dict(ver .=> σ) for σ ∈ Iterators.product([1:r for r ∈ rank]...)]
 end
 
-
-function exact_marginal_probability(ctr::MpsContractor{T}, σ::Vector{Int}) where T
+function exact_marginal_probability(
+    ctr::MpsContractor{T},
+    σ::Vector{Int},
+    switch::Int=100
+) where T
     target_state = decode_state(ctr.peps, σ, true)
     states = all_states(ctr.peps)
 
     N = length(states)
-    if N > 100
+    if N > switch
         prob = Vector{Float64}(undef, N)
         Threads.@threads for i ∈ 1:N
             prob[i] = exp(-ctr.betas[end] * energy(ctr.peps.factor_graph, states[i]))
@@ -90,12 +91,8 @@ function exact_marginal_probability(ctr::MpsContractor{T}, σ::Vector{Int}) wher
     else
         prob = exp.(-ctr.betas[end] * energy.(Ref(ctr.peps.factor_graph), states))
     end
-
     prob ./= sum(prob)
-    #sum(prob[findall(all(s[k] == v for (k, v) ∈ target_state) for s ∈ states)])
-    ind = [all(s[k] == v for (k, v) ∈ target_state) for s ∈ states]
-    ind = findall(ind)
-    sum(prob[ind])
+    sum(prob[findall(all(s[k] == v for (k, v) ∈ target_state) for s ∈ states)])
 end
 
 function exact_conditional_probabilities(ctr::MpsContractor{T}, σ::Vector{Int}) where T

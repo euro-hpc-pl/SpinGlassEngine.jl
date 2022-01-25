@@ -44,25 +44,30 @@ end
 function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T
     exact_marginal_prob = exact_marginal_probability(ctr, pσ[end])
     @assert exact_marginal_prob ≈ exp(pσ[begin])
-    exact_cond_probs = exact_conditional_probabilities(ctr, pσ[end])
-    @assert exact_cond_probs ≈ conditional_probability(ctr, pσ[end])
+    # exact_cond_probs = exact_conditional_probabilities(ctr, pσ[end])
+    # @assert exact_cond_probs ≈ conditional_probability(ctr, pσ[end])
     pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
-
     #pσ[begin] .+ log.(exact_cond_probs)
 end
 
-@memoize function all_states(peps::AbstractGibbsNetwork{S, T}) where {S, T}
-    states = [Dict{S, Int}()]
-    for v ∈ vertices(peps.factor_graph)
-        new_states = Dict{S, Int}[]
-        for st ∈ 1:cluster_size(peps, v), d ∈ states
+@memoize function all_states(factor_graph)
+    states = [Dict()]
+    for v ∈ vertices(factor_graph)
+        new_states = []
+        for st ∈ 1:length(get_prop(factor_graph, v, :spectrum).energies), d ∈ states
             ns = copy(d)
-            push!(ns, peps.vertex_map(v) => st)
+            push!(ns, v => st)
             push!(new_states, ns)
         end
         states = new_states
     end
-    states
+
+    energies = []
+    for st ∈ states
+        push!(energies, energy(factor_graph, st))
+    end
+
+    states, energies
 end
 
 #=
@@ -78,20 +83,18 @@ function exact_marginal_probability(
     σ::Vector{Int},
     switch::Int=100
 ) where T
-    target_state = decode_state(ctr.peps, σ, true)
-    states = all_states(ctr.peps)
+    # σ ma porzadek pepsa
+    # => fgσ to σ z porzadkiem zamienionym na fg (decode)
+    # wszystko inne uzywa tylko fg
 
-    N = length(states)
-    if N > switch
-        prob = Vector{Float64}(undef, N)
-        Threads.@threads for i ∈ 1:N
-            prob[i] = exp(-ctr.betas[end] * energy(ctr.peps.factor_graph, states[i]))
-        end
-    else
-        prob = exp.(-ctr.betas[end] .* energy.(Ref(ctr.peps.factor_graph), states))
-    end
+    target_state = decode_state(ctr.peps, σ, true)
+    states, energies = all_states(ctr.peps.factor_graph)
+
+    prob = exp.(-ctr.betas[end] .* energies)
     prob ./= sum(prob)
-    sum(prob[findall(all(s[k] == v for (k, v) ∈ target_state) for s ∈ states)])
+    satisfy = [all(s[k] == v for (k, v) ∈ target_state) for s ∈ states]
+    idx = findall(satisfy)
+    sum(prob[idx])
 end
 
 function exact_conditional_probabilities(ctr::MpsContractor{T}, σ::Vector{Int}) where T

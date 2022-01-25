@@ -31,8 +31,8 @@
                 ig_states = decode_factor_graph_state.(Ref(fg), sol.states)
                 @test sol.energies ≈ energy.(Ref(ig), ig_states)
 
-                states = decode_state.(Ref(net), sol.states)
-                @test sol.energies ≈ energy.(Ref(fg), states)
+                fg_states = decode_state.(Ref(net), sol.states)
+                @test sol.energies ≈ energy.(Ref(fg), fg_states)
 
                 norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
                 @test norm_prob ≈ exp.(-β .* (sol.energies .- sol.energies[1]))

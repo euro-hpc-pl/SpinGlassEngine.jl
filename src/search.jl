@@ -10,7 +10,6 @@ struct SearchParameters
         new(max_states, cut_off_prob)
     end
 end
-
 struct Solution
     energies::Vector{<:Real}
     states::Vector{Vector{Int}}
@@ -43,64 +42,51 @@ end
 
 function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T
     exact_marginal_prob = exact_marginal_probability(ctr, pσ[end])
-    # @assert exact_marginal_prob ≈ exp(pσ[begin])
+    #@assert exact_marginal_prob ≈ exp(pσ[begin])
     exact_cond_probs = exact_conditional_probabilities(ctr, pσ[end])
-    # @assert exact_cond_probs ≈ conditional_probability(ctr, pσ[end])
-    error = (exact_cond_probs .- conditional_probability(ctr, pσ[end])) ./ exact_cond_probs 
+    #@assert exact_cond_probs ≈ conditional_probability(ctr, pσ[end])
+    error = (exact_cond_probs .- conditional_probability(ctr, pσ[end])) ./ exact_cond_probs
     error = abs.(error .- 1)
     if any(error .> 1e-5)
         println(pσ)
     end
 
-    # pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
-    pσ[begin] .+ log.(exact_cond_probs)
+    pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
+    #pσ[begin] .+ log.(exact_cond_probs)
 end
 
-@memoize function all_states(factor_graph)
+#=
+@memoize function whole_spectrum(factor_graph::LabelledGraph{S, T}) where {S, T}
     states = [Dict()]
     for v ∈ vertices(factor_graph)
         new_states = []
-        for st ∈ 1:length(get_prop(factor_graph, v, :spectrum).energies), d ∈ states
+        for st ∈ 1:cluster_size(factor_graph, v), d ∈ states
             ns = copy(d)
             push!(ns, v => st)
             push!(new_states, ns)
         end
         states = new_states
     end
-
-    energies = []
-    for st ∈ states
-        push!(energies, energy(factor_graph, st))
-    end
-
-    states, energies
-end
-
-#=
-@memoize function all_states(peps::AbstractGibbsNetwork{S, T}) where {S, T}
-    ver = vertices(peps.factor_graph)
-    rank = cluster_size.(Ref(peps), ver)
-    [Dict(peps.vertex_map.(ver) .=> σ) for σ ∈ Iterators.product([1:r for r ∈ rank]...)]
+    states, energy.(Ref(factor_graph), states)
 end
 =#
+@memoize function spectrum(factor_graph::LabelledGraph{S, T}) where {S, T}
+    ver = vertices(factor_graph)
+    rank = cluster_size.(Ref(factor_graph), ver)
+    states = [Dict(ver .=> σ) for σ ∈ Iterators.product([1:r for r ∈ rank]...)]
+    energy.(Ref(factor_graph), states), states
+end
 
 function exact_marginal_probability(
     ctr::MpsContractor{T},
-    σ::Vector{Int},
-    switch::Int=100
+    σ::Vector{Int}
 ) where T
-    # σ ma porzadek pepsa
-    # => fgσ to σ z porzadkiem zamienionym na fg (decode)
-    # wszystko inne uzywa tylko fg
-
     target_state = decode_state(ctr.peps, σ, true)
-    states, energies = all_states(ctr.peps.factor_graph)
+    energies, states = spectrum(ctr.peps.factor_graph)
 
     prob = exp.(-ctr.betas[end] .* energies)
     prob ./= sum(prob)
-    satisfy = [all(s[k] == v for (k, v) ∈ target_state) for s ∈ states]
-    idx = findall(satisfy)
-    sum(prob[idx])
+    sum(prob[findall([all(s[k] == v for (k, v) ∈ target_state) for s ∈ states])])
 end
 
 function exact_conditional_probabilities(ctr::MpsContractor{T}, σ::Vector{Int}) where T

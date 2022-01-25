@@ -148,9 +148,8 @@ function normalize_probability(probs::Vector{<:Real})
 end
 
 function decode_state(
-    peps::AbstractGibbsNetwork{S, T}, σ::Vector{Int}, map::Bool=false
+    peps::AbstractGibbsNetwork{S, T}, σ::Vector{Int}, reorder_peps_to_fg::Bool=false
 ) where {S, T}
-    ver = vertices(peps.factor_graph)
-    if map ver = peps.vertex_map.(ver) end
-    Dict(ver[i] => σ[i] for i ∈ 1:length(σ))
+    nodes = reorder_peps_to_fg ? peps.vertex_map.(iteration_order(peps)) : vertices(peps.factor_graph)
+    Dict(node => st for (st, node) in zip(σ, nodes))
 end

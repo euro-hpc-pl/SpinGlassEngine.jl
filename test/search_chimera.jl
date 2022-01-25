@@ -77,8 +77,8 @@
                 ig_states = decode_factor_graph_state.(Ref(fg), sol.states)
                 @test sol.energies ≈ energy.(Ref(ig), ig_states)
 
-                dstates = decode_state.(Ref(net), sol.states)
-                @test sol.energies ≈ energy.(Ref(fg), dstates)
+                fg_states = decode_state.(Ref(net), sol.states)
+                @test sol.energies ≈ energy.(Ref(fg), fg_states)
 
                 for (i, σ) ∈ enumerate(sol.states) @test σ ∈ exact_states[deg[i]] end
 

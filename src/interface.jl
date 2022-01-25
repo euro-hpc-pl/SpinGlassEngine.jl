@@ -69,8 +69,8 @@ function local_energy(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, 
     spectrum(network, vertex).energies
 end
 
-function cluster_size(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T}
-    length(local_energy(network, vertex))
+function SpinGlassNetworks.cluster_size(net::AbstractGibbsNetwork{S, T}, v::S) where {S, T}
+    length(local_energy(net, v))
 end
 
 function interaction_energy(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
@@ -148,8 +148,8 @@ function normalize_probability(probs::Vector{<:Real})
 end
 
 function decode_state(
-    peps::AbstractGibbsNetwork{S, T}, σ::Vector{Int}, reorder_peps_to_fg::Bool=false
+    peps::AbstractGibbsNetwork{S, T}, σ::Vector{Int}, fg_order::Bool=false
 ) where {S, T}
-    nodes = reorder_peps_to_fg ? peps.vertex_map.(iteration_order(peps)) : vertices(peps.factor_graph)
-    Dict(node => st for (st, node) in zip(σ, nodes))
+    nodes = fg_order ? peps.vertex_map.(iteration_order(peps)) : vertices(peps.factor_graph)
+    Dict(nodes[1:length(σ)] .=> σ)
 end

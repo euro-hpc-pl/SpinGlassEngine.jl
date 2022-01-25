@@ -51,23 +51,6 @@ function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int
     #pσ[begin] .+ log.(exact_cond_probs)
 end
 
-#=
-@memoize function all_states(peps::AbstractGibbsNetwork{S, T}) where {S, T}
-    states = [Dict{S, Int}()]
-    for (i, v) ∈ enumerate(vertices(peps.factor_graph))
-        new_states = Dict{S, Int}[]
-        for st ∈ 1:length(local_energy(peps, reverse(v))), d ∈ states # for transformations [2,4,7,8]
-        #for st ∈ 1:length(local_energy(peps, v)), d ∈ states # for transformations [1,3,5,6]
-            ns = copy(d)
-            push!(ns, v => st)
-            push!(new_states, ns)
-        end
-        states = new_states
-    end
-    states
-end
-=#
-
 @memoize function all_states(peps::AbstractGibbsNetwork{S, T}) where {S, T}
     ver = vertices(peps.factor_graph)
     rank = cluster_size.(Ref(peps), ver)

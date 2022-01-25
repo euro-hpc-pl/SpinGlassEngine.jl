@@ -66,7 +66,7 @@
 
     for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, Sparse)
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
-            for Lattice ∈ (Square, SquareStar), transform ∈ all_lattice_transformations[[1,3,5,6]]
+            for Lattice ∈ (Square, SquareStar), transform ∈ all_lattice_transformations
 
                 net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform)
                 ctr = MpsContractor{Strategy}(net, [β/8., β/4., β/2., β], params)

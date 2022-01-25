@@ -478,6 +478,7 @@ function clear_memoize_cache()
     empty!(memoize_cache(mps))
     empty!(memoize_cache(mps_top))
     empty!(memoize_cache(dressed_mps))
+    empty!(memoize_cache(all_states)) # to be remove
 end
 
 function error_measure(probs)

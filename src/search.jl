@@ -43,11 +43,17 @@ end
 
 function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T
     exact_marginal_prob = exact_marginal_probability(ctr, pσ[end])
-    @assert exact_marginal_prob ≈ exp(pσ[begin])
-    # exact_cond_probs = exact_conditional_probabilities(ctr, pσ[end])
+    # @assert exact_marginal_prob ≈ exp(pσ[begin])
+    exact_cond_probs = exact_conditional_probabilities(ctr, pσ[end])
     # @assert exact_cond_probs ≈ conditional_probability(ctr, pσ[end])
-    pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
-    #pσ[begin] .+ log.(exact_cond_probs)
+    error = (exact_cond_probs .- conditional_probability(ctr, pσ[end])) ./ exact_cond_probs 
+    error = abs.(error .- 1)
+    if any(error .> 1e-5)
+        println(pσ)
+    end
+
+    # pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
+    pσ[begin] .+ log.(exact_cond_probs)
 end
 
 @memoize function all_states(factor_graph)

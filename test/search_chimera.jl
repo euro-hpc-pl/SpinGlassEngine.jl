@@ -73,8 +73,10 @@
                 sol = low_energy_spectrum(ctr, search_params)
 
                 @test sol.energies ≈ exact_energies
+
                 ig_states = decode_factor_graph_state.(Ref(fg), sol.states)
                 @test sol.energies ≈ energy.(Ref(ig), ig_states)
+
                 dstates = decode_state.(Ref(net), sol.states)
                 @test sol.energies ≈ energy.(Ref(fg), dstates)
 

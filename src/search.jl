@@ -42,20 +42,36 @@ function branch_state(network::PEPSNetwork{T, S}, σ::Vector{Int}) where {T, S}
 end
 
 function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T
-    #exact_marginal_prob = exact_marginal_probability(ctr, pσ[end])
-    #@assert exact_marginal_prob ≈ exp(pσ[begin])
-    #exact_cond_probs = exact_conditional_probabilities(ctr, pσ[end])
-    #@assert exact_cond_probs ≈ conditional_probability(ctr, pσ[end])
+    exact_marginal_prob = exact_marginal_probability(ctr, pσ[end])
+    @assert exact_marginal_prob ≈ exp(pσ[begin])
+    exact_cond_probs = exact_conditional_probabilities(ctr, pσ[end])
+    @assert exact_cond_probs ≈ conditional_probability(ctr, pσ[end])
     pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
 
     #pσ[begin] .+ log.(exact_cond_probs)
 end
 
 @memoize function all_states(peps::AbstractGibbsNetwork{S, T}) where {S, T}
+    states = [Dict{S, Int}()]
+    for v ∈ vertices(peps.factor_graph)
+        new_states = Dict{S, Int}[]
+        for st ∈ 1:cluster_size(peps, v), d ∈ states
+            ns = copy(d)
+            push!(ns, peps.vertex_map(v) => st)
+            push!(new_states, ns)
+        end
+        states = new_states
+    end
+    states
+end
+
+#=
+@memoize function all_states(peps::AbstractGibbsNetwork{S, T}) where {S, T}
     ver = vertices(peps.factor_graph)
     rank = cluster_size.(Ref(peps), ver)
-    [Dict(ver .=> σ) for σ ∈ Iterators.product([1:r for r ∈ rank]...)]
+    [Dict(peps.vertex_map.(ver) .=> σ) for σ ∈ Iterators.product([1:r for r ∈ rank]...)]
 end
+=#
 
 function exact_marginal_probability(
     ctr::MpsContractor{T},

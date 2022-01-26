@@ -42,8 +42,9 @@ function bench(instance::String)
         for transform ∈ rotation.([180])
             println((Strategy, Sparsity, transform))
 
-            network = PEPSNetwork{Pegasus, Sparsity}(m, n, fg, transform)
+            #network = PEPSNetwork{Pegasus, Sparsity}(m, n, fg, transform)
             network2 = PEPSNetwork{Square{EnergyGauges}, Sparsity}(m, n, fg2, transform)
+            network = PEPSNetwork{SquareStar{EnergyGauges}, Sparsity}(m, n, fg2, transform)
 
             # for ii in 1:3, jj in 1:2
             #     to = tensor(network2, PEPSNode(ii, jj), β)
@@ -72,10 +73,14 @@ function bench(instance::String)
             ctr = MpsContractor{Strategy}(network, [β/8, β/4, β/2, β], params)
             sol_peps = low_energy_spectrum(ctr, search_params) #, merge_branches(network))
 
-            ig_states = decode_factor_graph_state.(Ref(fg), sol_peps.states)
-            @test sol_peps.energies ≈ sort(energy.(Ref(ig), ig_states))  # problem with sorting. Are sol_peps.energies sorted by default?
+            ig_states = decode_factor_graph_state.(Ref(fg2), sol_peps.states)
+            @test sol_peps.energies ≈ energy.(Ref(ig), ig_states)  # problem with sorting. Are sol_peps.energies sorted by default?
 
             println(sol_peps.states)
+
+            norm_prob = exp.(sol_peps.probabilities .- sol_peps.probabilities[1])
+            @test norm_prob ≈ exp.(-β .* (sol_peps.energies .- sol_peps.energies[1]))
+
             #push!(energies, sol_peps.energies[begin])
             clear_memoize_cache()
         end

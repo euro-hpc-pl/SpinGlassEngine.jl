@@ -9,7 +9,7 @@ mutable struct PEPSNetwork{
     n::Int
     nrows::Int
     ncols::Int
-    tensors_map::Dict
+    tensors_map::Dict{PEPSNode, Symbol}
     gauges::Gauges{T}
 
     function PEPSNetwork{T, S}(

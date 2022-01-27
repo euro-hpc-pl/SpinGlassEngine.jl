@@ -16,7 +16,7 @@ function bench(instance::String)
     β = 2.0
     bond_dim = 16
     δp = 1e-4
-    num_states = 1
+    num_states = 1024
 
     ig = ising_graph(instance)
     fg = factor_graph(
@@ -42,9 +42,9 @@ function bench(instance::String)
         for transform ∈ rotation.([180])
             println((Strategy, Sparsity, transform))
 
-            #network = PEPSNetwork{Pegasus, Sparsity}(m, n, fg, transform)
+            net = PEPSNetwork{Pegasus, Sparsity}(m, n, fg, transform)
             net2 = PEPSNetwork{Square{EnergyGauges}, Sparsity}(m, n, fg2, transform)
-            net = PEPSNetwork{SquareStar{EnergyGauges}, Sparsity}(m, n, fg2, transform)
+            #net = PEPSNetwork{SquareStar{EnergyGauges}, Sparsity}(m, n, fg2, transform)
 
             ctr2 = MpsContractor{Strategy}(net2, [β/8, β/4, β/2, β], params)
             sol_peps2 = low_energy_spectrum(ctr2, search_params) #merge_branches(network2))
@@ -57,16 +57,23 @@ function bench(instance::String)
             ctr = MpsContractor{Strategy}(net, [β/8, β/4, β/2, β], params)
             sol_peps = low_energy_spectrum(ctr, search_params) #, merge_branches(network))
 
-            ig_states = decode_factor_graph_state.(Ref(fg2), sol_peps.states)
-            @test sol_peps.energies ≈ energy.(Ref(ig), ig_states)
+            ig_states = decode_factor_graph_state.(Ref(fg), sol_peps.states)
+            #println("sol_peps.energies ", sol_peps.energies)
+            fg_states = decode_state.(Ref(net), sol_peps.states)
+            #@test sol_peps.energies ≈ energy.(Ref(fg), fg_states)
+            #@test energy.(Ref(fg), fg_states) ≈ energy.(Ref(ig), ig_states)  
+            #@test sort(energy.(Ref(fg), fg_states))[1:100] ≈ sol_peps2.energies[1:100]
+            @test sort(energy.(Ref(fg), fg_states))[1:100] ≈ sort(sol_peps.energies)[1:100]
 
-            norm_prob = exp.(sol_peps.probabilities .- sol_peps.probabilities[1])
-            @test norm_prob ≈ exp.(-β .* (sol_peps.energies .- sol_peps.energies[1]))
+            #norm_prob = exp.(sol_peps.probabilities .- sol_peps.probabilities[1])
+            #@test norm_prob ≈ exp.(-β .* (sol_peps.energies .- sol_peps.energies[1]))
 
             push!(energies, sol_peps.energies[begin])
             clear_memoize_cache()
+            
         end
     end
+    
     @test all(e -> e ≈ first(energies), energies)
 end
 

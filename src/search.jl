@@ -43,16 +43,16 @@ end
 function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T
     exact_marginal_prob = exact_marginal_probability(ctr, pσ[end])
     #@assert exact_marginal_prob ≈ exp(pσ[begin])
-    exact_cond_probs = exact_conditional_probabilities(ctr, pσ[end])
+    #exact_cond_probs = exact_conditional_probabilities(ctr, pσ[end])
     #@assert exact_cond_probs ≈ conditional_probability(ctr, pσ[end])
-    cond_prob = conditional_probability(ctr, pσ[end])
+    #cond_prob = conditional_probability(ctr, pσ[end])
     prob = pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
 
-    if !(exact_cond_probs ≈ conditional_probability(ctr, pσ[end]))
-        println("ERROR")
-    end
-    println(pσ)
-    @infiltrate
+    #if !(exact_cond_probs ≈ conditional_probability(ctr, pσ[end]))
+    #    println("ERROR")
+    #end
+    #println(pσ)
+    #@infiltrate
     prob
     #pσ[begin] .+ log.(exact_cond_probs)
 end

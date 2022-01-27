@@ -43,50 +43,31 @@ function bench(instance::String)
             println((Strategy, Sparsity, transform))
 
             #network = PEPSNetwork{Pegasus, Sparsity}(m, n, fg, transform)
-            network2 = PEPSNetwork{Square{EnergyGauges}, Sparsity}(m, n, fg2, transform)
-            network = PEPSNetwork{SquareStar{EnergyGauges}, Sparsity}(m, n, fg2, transform)
+            net2 = PEPSNetwork{Square{EnergyGauges}, Sparsity}(m, n, fg2, transform)
+            net = PEPSNetwork{SquareStar{EnergyGauges}, Sparsity}(m, n, fg2, transform)
 
-            # for ii in 1:3, jj in 1:2
-            #     to = tensor(network2, PEPSNode(ii, jj), β)
-            #     tl = tensor(network2, PEPSNode(ii, jj - 1//2), β)
-            #     tu = tensor(network2, PEPSNode(ii - 1//2, jj), β)
-            #     @tensor too[k, l, m, n] := tl[k, x] * tu[l, y] * to[x, y, m, n]
+            ctr2 = MpsContractor{Strategy}(net2, [β/8, β/4, β/2, β], params)
+            sol_peps2 = low_energy_spectrum(ctr2, search_params) #merge_branches(network2))
 
-            #     tn = tensor(network, PEPSNode(ii, jj), β)
-            #     # # println(aa)
-            #     println("---------------")
-            #     println(tn ./ too)
-            # end
-
-            # println(tn ./ too)
-            # println("---------------")
-
-            # ctr2 = MpsContractor{Strategy}(network2, [β/8, β/4, β/2, β], params)
-            # sol_peps2 = low_energy_spectrum(ctr2, search_params) #merge_branches(network2))
-
-            # ig_states2 = decode_factor_graph_state.(Ref(fg2), sol_peps2.states)
-            # @test sol_peps2.energies ≈ energy.(Ref(ig), ig_states2)
-            # println(sol_peps2.energies)
-            # clear_memoize_cache()
+            ig_states2 = decode_factor_graph_state.(Ref(fg2), sol_peps2.states)
+            @test sol_peps2.energies ≈ energy.(Ref(ig), ig_states2)
+            clear_memoize_cache()
 
             println("---------- switching to new geometry -------------- ")
-            ctr = MpsContractor{Strategy}(network, [β/8, β/4, β/2, β], params)
+            ctr = MpsContractor{Strategy}(net, [β/8, β/4, β/2, β], params)
             sol_peps = low_energy_spectrum(ctr, search_params) #, merge_branches(network))
 
             ig_states = decode_factor_graph_state.(Ref(fg2), sol_peps.states)
-            @test sol_peps.energies ≈ energy.(Ref(ig), ig_states)  # problem with sorting. Are sol_peps.energies sorted by default?
-
-            println(sol_peps.states)
+            @test sol_peps.energies ≈ energy.(Ref(ig), ig_states)
 
             norm_prob = exp.(sol_peps.probabilities .- sol_peps.probabilities[1])
             @test norm_prob ≈ exp.(-β .* (sol_peps.energies .- sol_peps.energies[1]))
 
-            #push!(energies, sol_peps.energies[begin])
+            push!(energies, sol_peps.energies[begin])
             clear_memoize_cache()
         end
     end
-    #@test all(e -> e ≈ first(energies), energies)
-    #println(energies)
+    @test all(e -> e ≈ first(energies), energies)
 end
 
 bench("$(@__DIR__)/instances/pegasus_nondiag/2x2x1.txt")

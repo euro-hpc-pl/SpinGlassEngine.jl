@@ -351,7 +351,8 @@ function conditional_probability(
     eng_up = @view eng_pu[pu[:], ∂v[j+1]]
 
     en = eng_local .+ eng_left .+ eng_up
-    loc_exp = exp.(-β .* (en .- minimum(en)))
+    en_min = minimum(en)
+    loc_exp = exp.(-β .* (en .- en_min))
 
     pr = projector(ctr.peps, (i, j), (i, j+1))
     pd = projector(ctr.peps, (i, j), (i+1, j))
@@ -390,7 +391,8 @@ function conditional_probability(
     eng_diag = @view eng_pd[pd[:], ∂v[2*j+1]]
 
     en = eng_local .+ eng_left .+ eng_diag .+ eng_up
-    loc_exp = exp.(-β .* (en .- minimum(en)))
+    en_min = minimum(en)
+    loc_exp = exp.(-β .* (en .- en_min))
 
     p_lb = projector(ctr.peps, (i, j-1), (i+1, j))
     p_rb = projector(ctr.peps, (i, j), (i+1, j-1))
@@ -451,16 +453,19 @@ function conditional_probability(
         en = [eng_local[k] .+ eng_left[k] .+ eng_up[k] for k ∈ 1:2]
 
         ten = reshape(en[2], (:, 1)) .+ en21
-        ten2 = exp.(-β .* (ten .- minimum(ten)))
+        ten_min = minimum(ten)
+        ten2 = exp.(-β .* (ten .- ten_min))
         ten3 = zeros(size(ten2, 1), maximum(pr), size(ten2, 2))
         for i ∈ pr ten3[:, i, :] += ten2 end
 
         RT = R * dropdims(sum(ten3, dims=1), dims=1)
         bnd_exp = dropdims(sum(LM[pd[:], :] .* RT', dims=2), dims=2)
-        loc_exp = exp.(-β .* (en[1] .- minimum(en[1])))
+        en_min = minimum(en[1])
+        loc_exp = exp.(-β .* (en[1] .- en_min))
     elseif k == 2
         en = eng_local[2] .+ eng_left[2] .+ eng_up[2] .+ en21[p21[:], p12[∂v[end]]]
-        loc_exp = exp.(-β .* (en .- minimum(en)))
+        en_min = minimum(en)
+        loc_exp = exp.(-β .* (en .- en_min))
         bnd_exp = dropdims(sum(LM[pd[:], :] .* R[:, pr[:]]', dims=2), dims=2)
     else
         throw(ArgumentError("Number $k of sub-clusters is incorrect for this $T."))

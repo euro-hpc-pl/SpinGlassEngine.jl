@@ -1,6 +1,21 @@
-export Node, PEPSNode, AbstractGeometry, AbstractSparsity
-export AbstractTensorsLayout, tensor_map, gauges_list, Dense, Sparse, Gauges
-export Square, SquareStar, GaugesEnergy, EnergyGauges, EngGaugesEng, Pegasus
+export
+       Node,
+       PEPSNode,
+       int_or_rational,
+       AbstractGeometry,
+       AbstractSparsity,
+       AbstractTensorsLayout,
+       tensor_map,
+       gauges_list,
+       Dense,
+       Sparse,
+       Gauges,
+       Square,
+       SquareStar,
+       GaugesEnergy,
+       EnergyGauges,
+       EngGaugesEng,
+       Pegasus
 
 abstract type AbstractGeometry end
 abstract type AbstractSparsity end
@@ -20,12 +35,13 @@ struct EngGaugesEng{T} <: AbstractTensorsLayout end
 
 const Node = NTuple{N, Int} where N
 
+@inline int_or_rational(i::Site) = denominator(i) == 1 ? numerator(i) : i
 struct PEPSNode
     i::Site
     j::Site
 
     function PEPSNode(i::Site, j::Site)
-        new(denominator(i) == 1 ? numerator(i) : i, denominator(j) == 1 ? numerator(j) : j)
+        new(int_or_rational(i), int_or_rational(j))
     end
 end
 Node(node::PEPSNode) = (node.i, node.j)

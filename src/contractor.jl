@@ -21,8 +21,8 @@ struct MpsParameters
 
     MpsParameters(bd=typemax(Int), ϵ=1E-8, sw=4) = new(bd, ϵ, sw)
 end
-layout(network::PEPSNetwork{T, S}) where {T, S} = T
-sparsity(network::PEPSNetwork{T, S}) where {T, S} = S
+layout(net::PEPSNetwork{T, S}) where {T, S} = T
+sparsity(net::PEPSNetwork{T, S}) where {T, S} = S
 
 mutable struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
     peps::PEPSNetwork{T, S} where {T, S}
@@ -38,75 +38,57 @@ end
 strategy(ctr::MpsContractor{T}) where {T} = T
 
 function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EnergyGauges}
-    main, right = [Dict{Site, Sites}() for _ ∈ 1:2]
-
-    for i ∈ 1:ncols push!(main, i => (-1//6, 0, 3//6, 4//6)) end
+    main = Dict{Site, Sites}(i => (-1//6, 0, 3//6, 4//6) for i ∈ 1:ncols)
     for i ∈ 1:ncols - 1 push!(main, i + 1//2 => (0,)) end
 
-    for i ∈ 1:ncols push!(right, i => (-3//6, 0)) end
+    right = Dict{Site, Sites}(i => (-3//6, 0) for i ∈ 1:ncols)
     for i ∈ 1:ncols - 1 push!(right, i + 1//2 => (0,)) end
 
     MpoLayers(main, Dict(i => (3//6, 4//6) for i ∈ 1:ncols), right)
 end
 
 function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EnergyGauges}
-    main, dress, right = [Dict{Site, Sites}() for _ ∈ 1:3]
-
-    for i ∈ 1//2:1//2:ncols
-        ii = denominator(i) == 1 ? numerator(i) : i
-        push!(main, ii => (-1//6, 0, 3//6, 4//6))
-        push!(dress, ii => (3//6, 4//6))
-        push!(right, ii => (-3//6, 0))
-    end
-    MpoLayers(main, dress, right)
+    MpoLayers(
+        Dict(int_or_rational(i) => (-1//6, 0, 3//6, 4//6) for i ∈ 1//2:1//2:ncols),
+        Dict(int_or_rational(i) => (3//6, 4//6) for i ∈ 1//2:1//2:ncols),
+        Dict(int_or_rational(i) => (-3//6, 0) for i ∈ 1//2:1//2:ncols)
+    )
 end
 
 function MpoLayers(::Type{T}, ncols::Int) where T <: Square{GaugesEnergy}
-    main, right = [Dict{Site, Sites}() for _ ∈ 1:2]
-
-    for i ∈ 1:ncols push!(main, i => (-4//6, -1//2, 0, 1//6)) end
+    main = Dict{Site, Sites}(i => (-4//6, -1//2, 0, 1//6) for i ∈ 1:ncols)
     for i ∈ 1:ncols - 1 push!(main, i + 1//2 => (0,)) end
 
-    for i ∈ 1:ncols push!(right, i => (-3//6, 0)) end
+    right = Dict{Site, Sites}(i => (-3//6, 0) for i ∈ 1:ncols)
     for i ∈ 1:ncols - 1 push!(right, i + 1//2 => (0,)) end
 
     MpoLayers(main, Dict(i => (1//6,) for i ∈ 1:ncols), right)
 end
 
 function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{GaugesEnergy}
-    main, dress, right = [Dict{Site, Sites}() for _ ∈ 1:3]
-
-    for i ∈ 1//2:1//2:ncols
-        ii = denominator(i) == 1 ? numerator(i) : i
-        push!(main, ii => (-4//6, -1//2, 0, 1//6))
-        push!(dress, ii => (1//6, ))
-        push!(right, ii => (-3//6, 0))
-    end
-    MpoLayers(main, dress, right)
+    MpoLayers(
+        Dict(int_or_rational(i) => (-4//6, -1//2, 0, 1//6) for i ∈ 1//2:1//2:ncols),
+        Dict(int_or_rational(i) => (1//6,) for i ∈ 1//2:1//2:ncols),
+        Dict(int_or_rational(i) => (-3//6, 0) for i ∈ 1//2:1//2:ncols)
+    )
 end
 
 function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EngGaugesEng}
-    main, right = [Dict{Site, Sites}() for _ ∈ 1:2]
-
-    for i ∈ 1:ncols push!(main, i => (-2//5, -1//5, 0, 1//5, 2//5)) end
+    main = Dict{Site, Sites}(i => (-2//5, -1//5, 0, 1//5, 2//5) for i ∈ 1:ncols)
     for i ∈ 1:ncols - 1 push!(main, i + 1//2 => (0,)) end
 
-    for i ∈ 1:ncols push!(right, i => (-4//5, -1//5, 0)) end
+    right = Dict{Site, Sites}(i => (-4//5, -1//5, 0) for i ∈ 1:ncols)
     for i ∈ 1:ncols - 1 push!(right, i + 1//2 => (0,)) end
 
     MpoLayers(main, Dict(i => (1//5, 2//5) for i ∈ 1:ncols), right)
 end
 
 function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EngGaugesEng}
-    main, dress, right = [Dict{Site, Sites}() for _ ∈ 1:3]
-
-    for i ∈ 1//2:1//2:ncols
-        ii = denominator(i) == 1 ? numerator(i) : i
-        push!(main, ii => (-2//5, -1//5, 0, 1//5, 2//5))
-        push!(dress, ii => (1//5, 2//5))
-        push!(right, ii => (-4//5, -1//5, 0))
-    end
-    MpoLayers(main, dress, right)
+    MpoLayers(
+        Dict(int_or_rational(i) => (-2//5, -1//5, 0, 1//5, 2//5) for i ∈ 1//2:1//2:ncols),
+        Dict(int_or_rational(i) => (1//5, 2//5) for i ∈ 1//2:1//2:ncols),
+        Dict(int_or_rational(i) => (-4//5, -1//5, 0) for i ∈ 1//2:1//2:ncols)
+    )
 end
 
 @memoize Dict function mpo(

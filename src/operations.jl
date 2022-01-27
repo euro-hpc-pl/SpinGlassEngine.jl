@@ -1,4 +1,8 @@
-export LatticeTransformation, rotation, reflection, all_lattice_transformations
+export
+       LatticeTransformation,
+       rotation,
+       reflection,
+       all_lattice_transformations
 
 struct LatticeTransformation
     permutation::NTuple{4, Int}

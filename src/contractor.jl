@@ -1,19 +1,25 @@
-export SVDTruncate, MPSAnnealing, MpoLayers, MpsParameters, MpsContractor
-export clear_memoize_cache, mps_top, mps, update_gauges!
+export
+       SVDTruncate,
+       MPSAnnealing,
+       MpoLayers,
+       MpsParameters,
+       MpsContractor,
+       clear_memoize_cache,
+       mps_top,
+       mps,
+       update_gauges!
 
 abstract type AbstractContractor end
 abstract type AbstractStrategy end
 
 struct SVDTruncate <: AbstractStrategy end
 struct MPSAnnealing <: AbstractStrategy end
-
 struct MpoLayers
     main::Dict{Site, Sites}
     dress::Dict{Site, Sites}
     right::Dict{Site, Sites}
 end
 
-MpoLayers
 struct MpsParameters
     bond_dimension::Int
     variational_tol::Real
@@ -28,10 +34,10 @@ mutable struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
     betas::Vector{<:Real}
     params::MpsParameters
     layers::MpoLayers
-    statistics::Dict
+    statistics::Dict{Vector{Int}, <:Real}
 
-    function MpsContractor{T}(peps, betas, params) where T
-        new(peps, betas, params, MpoLayers(layout(peps), peps.ncols), Dict())
+    function MpsContractor{T}(net, βs, params) where T
+        new(net, βs, params, MpoLayers(layout(net), net.ncols), Dict{Vector{Int}, Real}())
     end
 end
 strategy(ctr::MpsContractor{T}) where {T} = T
@@ -469,13 +475,11 @@ function error_measure(probs)
 end
 
 function MpoLayers(::Type{T}, ncols::Int) where T <: Pegasus
-    main, dress, right = Dict(), Dict(), Dict()
-    for i ∈ 1:ncols
-        push!(main, i => (-1//3, 0, 1//3))
-        push!(dress, i => (1//3))
-        push!(right, i => (0, ))
-    end
-    MpoLayers(main, dress, right)
+    MpoLayers(
+        Dict(i => (-1//3, 0, 1//3) for i ∈ 1:ncols),
+        Dict(i => (1//3,) for i ∈ 1:ncols),
+        Dict(i => (0,) for i ∈ 1:ncols)
+    )
 end
 
 function update_gauges!(ctr::MpsContractor{T}, row::Site, indβ::Int) where T

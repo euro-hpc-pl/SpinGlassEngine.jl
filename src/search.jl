@@ -1,6 +1,13 @@
-export AbstractGibbsNetwork, low_energy_spectrum, branch_state, bound_solution
-export merge_branches, Solution, SearchParameters
-export exact_marginal_probability, exact_conditional_probabilities
+export
+       AbstractGibbsNetwork,
+       low_energy_spectrum,
+       branch_state,
+       bound_solution,
+       merge_branches,
+       Solution,
+       SearchParameters,
+       exact_marginal_probability,
+       exact_conditional_probabilities
 
 struct SearchParameters
     max_states::Int

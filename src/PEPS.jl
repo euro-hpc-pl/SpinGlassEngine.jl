@@ -1,4 +1,7 @@
-export PEPSNetwork, node_from_index, iteration_order
+export
+       PEPSNetwork,
+       node_from_index,
+       iteration_order
 
 mutable struct PEPSNetwork{
     T <: AbstractGeometry, S <: AbstractSparsity

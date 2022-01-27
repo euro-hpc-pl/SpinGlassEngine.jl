@@ -1,7 +1,7 @@
 export
+       site,
        Node,
        PEPSNode,
-       int_or_rational,
        AbstractGeometry,
        AbstractSparsity,
        AbstractTensorsLayout,
@@ -35,14 +35,12 @@ struct EngGaugesEng{T} <: AbstractTensorsLayout end
 
 const Node = NTuple{N, Int} where N
 
-@inline int_or_rational(i::Site) = denominator(i) == 1 ? numerator(i) : i
+@inline site(i::Site) = denominator(i) == 1 ? numerator(i) : i
 struct PEPSNode
     i::Site
     j::Site
 
-    function PEPSNode(i::Site, j::Site)
-        new(int_or_rational(i), int_or_rational(j))
-    end
+    PEPSNode(i::Site, j::Site) = new(site(i), site(j))
 end
 Node(node::PEPSNode) = (node.i, node.j)
 

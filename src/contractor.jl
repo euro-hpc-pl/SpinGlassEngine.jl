@@ -23,7 +23,6 @@ struct MpsParameters
 end
 layout(net::PEPSNetwork{T, S}) where {T, S} = T
 sparsity(net::PEPSNetwork{T, S}) where {T, S} = S
-
 mutable struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
     peps::PEPSNetwork{T, S} where {T, S}
     betas::Vector{<:Real}
@@ -49,9 +48,9 @@ end
 
 function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EnergyGauges}
     MpoLayers(
-        Dict(int_or_rational(i) => (-1//6, 0, 3//6, 4//6) for i ∈ 1//2:1//2:ncols),
-        Dict(int_or_rational(i) => (3//6, 4//6) for i ∈ 1//2:1//2:ncols),
-        Dict(int_or_rational(i) => (-3//6, 0) for i ∈ 1//2:1//2:ncols)
+        Dict(site(i) => (-1//6, 0, 3//6, 4//6) for i ∈ 1//2:1//2:ncols),
+        Dict(site(i) => (3//6, 4//6) for i ∈ 1//2:1//2:ncols),
+        Dict(site(i) => (-3//6, 0) for i ∈ 1//2:1//2:ncols)
     )
 end
 
@@ -67,9 +66,9 @@ end
 
 function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{GaugesEnergy}
     MpoLayers(
-        Dict(int_or_rational(i) => (-4//6, -1//2, 0, 1//6) for i ∈ 1//2:1//2:ncols),
-        Dict(int_or_rational(i) => (1//6,) for i ∈ 1//2:1//2:ncols),
-        Dict(int_or_rational(i) => (-3//6, 0) for i ∈ 1//2:1//2:ncols)
+        Dict(site(i) => (-4//6, -1//2, 0, 1//6) for i ∈ 1//2:1//2:ncols),
+        Dict(site(i) => (1//6,) for i ∈ 1//2:1//2:ncols),
+        Dict(site(i) => (-3//6, 0) for i ∈ 1//2:1//2:ncols)
     )
 end
 
@@ -85,9 +84,9 @@ end
 
 function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EngGaugesEng}
     MpoLayers(
-        Dict(int_or_rational(i) => (-2//5, -1//5, 0, 1//5, 2//5) for i ∈ 1//2:1//2:ncols),
-        Dict(int_or_rational(i) => (1//5, 2//5) for i ∈ 1//2:1//2:ncols),
-        Dict(int_or_rational(i) => (-4//5, -1//5, 0) for i ∈ 1//2:1//2:ncols)
+        Dict(site(i) => (-2//5, -1//5, 0, 1//5, 2//5) for i ∈ 1//2:1//2:ncols),
+        Dict(site(i) => (1//5, 2//5) for i ∈ 1//2:1//2:ncols),
+        Dict(site(i) => (-4//5, -1//5, 0) for i ∈ 1//2:1//2:ncols)
     )
 end
 

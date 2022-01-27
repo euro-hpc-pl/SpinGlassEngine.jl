@@ -147,7 +147,9 @@ end
 @inline function node_neighbors(::Type{SquareStar{T}}, (i, j)) where T
     ((i, j-1), (i-1, j), (i-1, j-1), (i-1, j+1))
 end
-@inline node_neighbors(::Type{Pegasus}, (i, j, k)) = ((i, j-1, 1), (i-1, j, 2), (i, j-1, 2), (i-1, j, 1))
+@inline function node_neighbors(::Type{Pegasus}, (i, j, k))
+     ((i, j-1, 1), (i-1, j, 2), (i, j-1, 2), (i-1, j, 1))
+end
 
 function update_energy(net::PEPSNetwork{T, S}, σ::Vector{Int}) where {T, S}
     u = node_from_index(net, length(σ)+1)

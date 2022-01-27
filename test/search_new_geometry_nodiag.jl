@@ -58,22 +58,20 @@ function bench(instance::String)
             sol_peps = low_energy_spectrum(ctr, search_params) #, merge_branches(network))
 
             ig_states = decode_factor_graph_state.(Ref(fg), sol_peps.states)
-            #println("sol_peps.energies ", sol_peps.energies)
             fg_states = decode_state.(Ref(net), sol_peps.states)
-            #@test sol_peps.energies ≈ energy.(Ref(fg), fg_states)
-            #@test energy.(Ref(fg), fg_states) ≈ energy.(Ref(ig), ig_states)  
+            @test energy.(Ref(fg), fg_states) ≈ energy.(Ref(ig), ig_states)
             #@test sort(energy.(Ref(fg), fg_states))[1:100] ≈ sol_peps2.energies[1:100]
-            @test sort(energy.(Ref(fg), fg_states))[1:100] ≈ sort(sol_peps.energies)[1:100]
+            @test sort(energy.(Ref(fg), fg_states))[1:1] ≈ sort(sol_peps.energies)[1:1]
 
             #norm_prob = exp.(sol_peps.probabilities .- sol_peps.probabilities[1])
             #@test norm_prob ≈ exp.(-β .* (sol_peps.energies .- sol_peps.energies[1]))
 
             push!(energies, sol_peps.energies[begin])
             clear_memoize_cache()
-            
+
         end
     end
-    
+
     @test all(e -> e ≈ first(energies), energies)
 end
 

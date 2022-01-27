@@ -1,8 +1,17 @@
 using LabelledGraphs
 
-export AbstractGibbsNetwork, vertex_map, local_energy, interaction_energy, connecting_tensor
-export normalize_probability, boundary_state, local_state_for_node
-export fuse_projectors, initialize_gauges!, decode_state
+export
+       AbstractGibbsNetwork,
+       vertex_map,
+       local_energy,
+       interaction_energy,
+       connecting_tensor,
+       normalize_probability,
+       boundary_state,
+       local_state_for_node,
+       fuse_projectors,
+       initialize_gauges!,
+       decode_state
 
 # T: type of the vertex of network
 # S: type of the vertex of underlying factor graph

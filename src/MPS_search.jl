@@ -1,4 +1,6 @@
-export solve, low_energy_spectrum
+export
+       solve,
+       low_energy_spectrum
 
 _make_left_env(ψ::AbstractMPS, k::Int) = ones(eltype(ψ), 1, k)
 _make_LL(ψ::AbstractMPS, b::Int, k::Int, d::Int) = zeros(eltype(ψ), b, k, d)

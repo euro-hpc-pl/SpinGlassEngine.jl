@@ -41,7 +41,7 @@ function branch_state(network::PEPSNetwork{T, S}, σ::Vector{Int}) where {T, S}
 end
 
 function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T
-    exact_marginal_prob = exact_marginal_probability(ctr, pσ[end])
+    #exact_marginal_prob = exact_marginal_probability(ctr, pσ[end])
     #@assert exact_marginal_prob ≈ exp(pσ[begin])
     #exact_cond_probs = exact_conditional_probabilities(ctr, pσ[end])
     #@assert exact_cond_probs ≈ conditional_probability(ctr, pσ[end])
@@ -57,21 +57,6 @@ function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int
     #pσ[begin] .+ log.(exact_cond_probs)
 end
 
-#=
-@memoize function whole_spectrum(factor_graph::LabelledGraph{S, T}) where {S, T}
-    states = [Dict()]
-    for v ∈ vertices(factor_graph)
-        new_states = []
-        for st ∈ 1:cluster_size(factor_graph, v), d ∈ states
-            ns = copy(d)
-            push!(ns, v => st)
-            push!(new_states, ns)
-        end
-        states = new_states
-    end
-    states, energy.(Ref(factor_graph), states)
-end
-=#
 @memoize function spectrum(factor_graph::LabelledGraph{S, T}) where {S, T}
     ver = vertices(factor_graph)
     rank = cluster_size.(Ref(factor_graph), ver)

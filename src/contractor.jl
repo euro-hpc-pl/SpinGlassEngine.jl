@@ -8,11 +8,12 @@ struct SVDTruncate <: AbstractStrategy end
 struct MPSAnnealing <: AbstractStrategy end
 
 struct MpoLayers
-    main::Dict
-    dress::Dict
-    right::Dict
+    main::Dict{Site, Sites}
+    dress::Dict{Site, Sites}
+    right::Dict{Site, Sites}
 end
 
+MpoLayers
 struct MpsParameters
     bond_dimension::Int
     variational_tol::Real
@@ -37,21 +38,19 @@ end
 strategy(ctr::MpsContractor{T}) where {T} = T
 
 function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EnergyGauges}
-    main, dress, right = Dict(), Dict(), Dict()
+    main, right = [Dict{Site, Sites}() for _ ∈ 1:2]
 
     for i ∈ 1:ncols push!(main, i => (-1//6, 0, 3//6, 4//6)) end
     for i ∈ 1:ncols - 1 push!(main, i + 1//2 => (0,)) end
 
-    dress = Dict(i => (3//6, 4//6) for i ∈ 1:ncols)
-
     for i ∈ 1:ncols push!(right, i => (-3//6, 0)) end
     for i ∈ 1:ncols - 1 push!(right, i + 1//2 => (0,)) end
 
-    MpoLayers(main, dress, right)
+    MpoLayers(main, Dict(i => (3//6, 4//6) for i ∈ 1:ncols), right)
 end
 
 function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EnergyGauges}
-    main, dress, right = Dict(), Dict(), Dict()
+    main, dress, right = [Dict{Site, Sites}() for _ ∈ 1:3]
 
     for i ∈ 1//2:1//2:ncols
         ii = denominator(i) == 1 ? numerator(i) : i
@@ -63,47 +62,43 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EnergyGauges}
 end
 
 function MpoLayers(::Type{T}, ncols::Int) where T <: Square{GaugesEnergy}
-    main, dress, right = Dict(), Dict(), Dict()
+    main, right = [Dict{Site, Sites}() for _ ∈ 1:2]
 
     for i ∈ 1:ncols push!(main, i => (-4//6, -1//2, 0, 1//6)) end
     for i ∈ 1:ncols - 1 push!(main, i + 1//2 => (0,)) end
 
-    dress = Dict(i => (1//6,) for i ∈ 1:ncols)
-
     for i ∈ 1:ncols push!(right, i => (-3//6, 0)) end
     for i ∈ 1:ncols - 1 push!(right, i + 1//2 => (0,)) end
 
-    MpoLayers(main, dress, right)
+    MpoLayers(main, Dict(i => (1//6,) for i ∈ 1:ncols), right)
 end
 
 function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{GaugesEnergy}
-    main, dress, right = Dict(), Dict(), Dict()
+    main, dress, right = [Dict{Site, Sites}() for _ ∈ 1:3]
 
     for i ∈ 1//2:1//2:ncols
         ii = denominator(i) == 1 ? numerator(i) : i
         push!(main, ii => (-4//6, -1//2, 0, 1//6))
-        push!(dress, ii => (1//6))
+        push!(dress, ii => (1//6, ))
         push!(right, ii => (-3//6, 0))
     end
     MpoLayers(main, dress, right)
 end
 
 function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EngGaugesEng}
-    main, dress, right = Dict(), Dict(), Dict()
+    main, right = [Dict{Site, Sites}() for _ ∈ 1:2]
 
     for i ∈ 1:ncols push!(main, i => (-2//5, -1//5, 0, 1//5, 2//5)) end
     for i ∈ 1:ncols - 1 push!(main, i + 1//2 => (0,)) end
 
-    dress = Dict(i => (1//5, 2//5) for i ∈ 1:ncols)
-
     for i ∈ 1:ncols push!(right, i => (-4//5, -1//5, 0)) end
     for i ∈ 1:ncols - 1 push!(right, i + 1//2 => (0,)) end
 
-    MpoLayers(main, dress, right)
+    MpoLayers(main, Dict(i => (1//5, 2//5) for i ∈ 1:ncols), right)
 end
 
 function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EngGaugesEng}
-    main, dress, right = Dict(), Dict(), Dict()
+    main, dress, right = [Dict{Site, Sites}() for _ ∈ 1:3]
 
     for i ∈ 1//2:1//2:ncols
         ii = denominator(i) == 1 ? numerator(i) : i

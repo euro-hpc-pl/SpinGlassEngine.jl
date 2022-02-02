@@ -2,6 +2,7 @@ using SpinGlassNetworks
 using SpinGlassTensors
 using SpinGlassEngine
 using Memoize
+using NLsolve
 
 m = 4
 n = 4
@@ -30,53 +31,36 @@ search_params = SearchParameters(num_states, δp)
 Strategy = SVDTruncate
 @testset "Updating gauges works correctly." begin
     for Layout ∈ (GaugesEnergy, ), transform ∈ rotation.([0])
-        println((Strategy, Layout, transform))
 
-        network_d = PEPSNetwork{Square{Layout}, Dense}(m, n, fg, transform, :id)
-        network_s = PEPSNetwork{Square{Layout}, Sparse}(m, n, fg, transform, :id)
-        ctr_d = MpsContractor{Strategy}(network_d, [β/8, β/4, β/2, β], params)
-        ctr_s = MpsContractor{Strategy}(network_s, [β/8, β/4, β/2, β], params)
+        net = PEPSNetwork{Square{Layout}, Dense}(m, n, fg, transform, :id)
+        ctr = MpsContractor{Strategy}(net, [β/8, β/4, β/2, β], params)
 
-        @testset "Overlaps calculated differently agree" begin
+        @testset "Overlaps calculated differently are the same." begin
             indβ = 3
             for i ∈ 1:m-1
-                ψ_top = mps_top(ctr_d, i, indβ)
-                ψ_bot = mps(ctr_d, i+1, indβ)
+                ψ_top = mps_top(ctr, i, indβ)
+                ψ_bot = mps(ctr, i+1, indβ)
                 overlap = tr(overlap_density_matrix(ψ_top, ψ_bot, indβ))
                 @test overlap ≈ ψ_bot * ψ_top
-                println("overlap ", overlap)
             end
         end
 
-        @testset "Test update_gauges" begin
-            indβ = 4
-            overlap_python = [0.2637787707674837, 0.2501621729619047, 0.2951954406837012]
+        @testset "Numerical gauge optimization." begin
+            b, t  = rand(m), rand(m)
+            b ./= sum(b)
+            t ./= sum(t)
+            x0 = rand(length(b))
 
-            for i ∈ vcat(1:m-1)#, m-1:-1:1)
-                ψ_top = mps_top(ctr_d, i, indβ)
-                ψ_bot = mps(ctr_d, i+1, indβ)
-                overlap1 = ψ_top * ψ_bot
-                #@test overlap1 ≈ overlap_python[i]
-                @test isapprox(overlap1, overlap_python[i], atol=1e-5)
-                println("overlap1 ", overlap1)
-                println("#(cache mps) = ", length(memoize_cache(mps)))
-                println("#(cache mps_top) = ", length(memoize_cache(mps_top)))
-
-                update_gauges!(ctr_d, i, indβ)
-                update_gauges!(ctr_d, i, indβ)
-                update_gauges!(ctr_d, i, indβ)
-
-                ψ_top = mps_top(ctr_d, i, indβ)
-                ψ_bot = mps(ctr_d, i+1, indβ)
-                overlap2 = ψ_top * ψ_bot
-                println(overlap1, ' ', overlap2)
-
-                println("#(cache mps after) = ", length(memoize_cache(mps)))
-                println("#(cache mps_top after) = ", length(memoize_cache(mps_top)))
-                
-                clear_memoize_cache()
+            function fun!(F, x)
+                y = 1.0 ./ x
+                z = (t .* x) .* dot(b, y) .- (b .* y) .* dot(b, x)
+                for (i, e) ∈ enumerate(z) F[i] = e end
             end
+            r = nlsolve(fun!, x0)
+            @test converged(r)
+
         end
+
         clear_memoize_cache()
     end
 end

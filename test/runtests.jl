@@ -48,10 +48,10 @@ push!(my_tests,
         #"search_cross.jl",
         #"search_pegasus.jl",
         #"search_pegasus_nodiag.jl",
-        #"search_new_geometry_nodiag.jl", # work in progress
+        "search_new_geometry_nodiag.jl", # work in progress
         #"chimera_overlap.jl",
         #"gauges.jl",
-        "gauges_2.jl",
+        #"gauges_2.jl",
         #"search_smallest_cross.jl",
 )
 

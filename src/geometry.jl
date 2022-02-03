@@ -49,9 +49,7 @@ struct SuperPEPSNode
     j::Site
     k::Int
 
-    function SuperPEPSNode(i::Site, j::Site, k::Int)
-        new(denominator(i) == 1 ? numerator(i) : i, denominator(j) == 1 ? numerator(j) : j, k)
-    end
+    SuperPEPSNode(i::Site, j::Site, k::Int) = new(site(i), site(j), k)
 end
 Node(node::SuperPEPSNode) = (node.i, node.j, node.k)
 

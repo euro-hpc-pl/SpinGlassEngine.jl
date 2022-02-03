@@ -16,7 +16,7 @@ function bench(instance::String)
     β = 2.0
     bond_dim = 16
     δp = 1e-4
-    num_states = 1024
+    num_states = 10
 
     ig = ising_graph(instance)
     fg = factor_graph(
@@ -61,7 +61,9 @@ function bench(instance::String)
             fg_states = decode_state.(Ref(net), sol_peps.states)
             @test energy.(Ref(fg), fg_states) ≈ energy.(Ref(ig), ig_states)
             #@test sort(energy.(Ref(fg), fg_states))[1:100] ≈ sol_peps2.energies[1:100]
-            @test sort(energy.(Ref(fg), fg_states))[1:1] ≈ sort(sol_peps.energies)[1:1]
+            println("fg energy: ", energy.(Ref(fg), fg_states))
+            println("peps energy: ", sol_peps.energies)
+            @test sort(energy.(Ref(fg), fg_states))[1:10] ≈ sol_peps.energies[1:10]
 
             #norm_prob = exp.(sol_peps.probabilities .- sol_peps.probabilities[1])
             #@test norm_prob ≈ exp.(-β .* (sol_peps.energies .- sol_peps.energies[1]))

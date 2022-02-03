@@ -31,8 +31,8 @@ function boundary(network::AbstractGibbsNetwork{S, T}, node::S) where {S, T}
     not_implmented("boundary_at_splitting_node")
 end
 
-function node_index(network::AbstractGibbsNetwork{S, T}, node::S) where {S, T}
-    not_implmented("node_index")
+function index_from_node(network::AbstractGibbsNetwork{S, T}, node::S) where {S, T}
+    not_implmented("index_from_node")
 end
 
 function update_energy(network::AbstractGibbsNetwork{S, T}, σ::Vector{Int}) where {S, T}
@@ -126,7 +126,7 @@ end
 function local_state_for_node(
     network::AbstractGibbsNetwork{S, T}, σ::Vector{Int}, w::S
 ) where {S, T}
-    k = node_index(network, w)
+    k = index_from_node(network, w)
     0 < k <= length(σ) ? σ[k] : 1
 end
 

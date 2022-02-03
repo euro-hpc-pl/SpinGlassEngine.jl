@@ -2,7 +2,6 @@ using SpinGlassNetworks
 using SpinGlassTensors
 using SpinGlassEngine
 using Memoize
-using NLsolve
 
 m = 4
 n = 4
@@ -43,21 +42,6 @@ Strategy = SVDTruncate
                 overlap = tr(overlap_density_matrix(ψ_top, ψ_bot, indβ))
                 @test overlap ≈ ψ_bot * ψ_top
             end
-        end
-
-        @testset "Numerical gauge optimization." begin
-            b, t  = rand(m), rand(m)
-            b ./= sum(b)
-            t ./= sum(t)
-            x0 = rand(length(b))
-
-            function fun!(F, x)
-                y = 1.0 ./ x
-                z = (t .* x) .* dot(b, y) .- (b .* y) .* dot(b, x)
-                for (i, e) ∈ enumerate(z) F[i] = e end
-            end
-            r = nlsolve(fun!, x0)
-            @test converged(r)
         end
         clear_memoize_cache()
     end

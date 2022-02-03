@@ -4,6 +4,7 @@ export
        index_from_node,
        iteration_order
 
+const SquareOrStar = Union{Square, SquareStar}
 mutable struct PEPSNetwork{
     T <: AbstractGeometry, S <: AbstractSparsity
 } <: AbstractGibbsNetwork{Node, PEPSNode}
@@ -63,11 +64,7 @@ function projectors(net::PEPSNetwork{T, S}, vertex::Node) where {T <: Pegasus, S
     )
 end
 
-function index_from_node(peps::PEPSNetwork{T, S}, node::Node) where {T <: Square, S}
-    peps.ncols * (node[begin] - 1) + node[end]
-end
-
-function index_from_node(peps::PEPSNetwork{T, S}, node::Node) where {T <: SquareStar, S}
+function index_from_node(peps::PEPSNetwork{T, S}, node::Node) where {T <: SquareOrStar, S}
     peps.ncols * (node[begin] - 1) + node[end]
 end
 

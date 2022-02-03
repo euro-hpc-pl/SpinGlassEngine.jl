@@ -30,7 +30,7 @@ function bench(instance::String)
     energies = Float64[]
     for Strategy ∈ (MPSAnnealing, ), Sparsity ∈ (Dense, )
         for Layout ∈ (GaugesEnergy, EnergyGauges, EngGaugesEng), trans ∈ all_lattice_transformations
-            println((Strategy, Sparsity, Layout, transform))
+            println((Strategy, Sparsity, Layout, trans))
 
             @time network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, trans)
             @time ctr = MpsContractor{Strategy}(network, [β/8, β/4, β/2, β], params)

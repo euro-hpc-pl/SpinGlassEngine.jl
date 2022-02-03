@@ -42,17 +42,17 @@ push!(my_tests,
         #"branch_and_bound.jl",
         #"ising_MPS.jl",
         #"search_MPS.jl",
-        "search_chimera.jl",
+        #"search_chimera.jl",
         #"search_smallest_chimera.jl",
-        "search_full_chimera.jl",
+        #"search_full_chimera.jl",
         #"search_cross.jl",
         #"search_pegasus.jl",
         #"search_pegasus_nodiag.jl",
-        #"search_new_geometry_nodiag.jl", # work in progress
+        "search_new_geometry_nodiag.jl", # work in progress
         #"chimera_overlap.jl",
         #"gauges.jl",
         #"gauges_2.jl",
-        "search_smallest_cross.jl",
+        #"search_smallest_cross.jl",
 )
 
 for my_test in my_tests

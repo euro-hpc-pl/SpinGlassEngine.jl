@@ -1,6 +1,7 @@
 export
        PEPSNetwork,
        node_from_index,
+       index_from_node,
        iteration_order
 
 mutable struct PEPSNetwork{
@@ -62,8 +63,16 @@ function projectors(net::PEPSNetwork{T, S}, vertex::Node) where {T <: Pegasus, S
     )
 end
 
-function node_index(peps::AbstractGibbsNetwork{T, S}, node::Node) where {T, S}
+function index_from_node(peps::PEPSNetwork{T, S}, node::Node) where {T <: Square, S}
     peps.ncols * (node[begin] - 1) + node[end]
+end
+
+function index_from_node(peps::PEPSNetwork{T, S}, node::Node) where {T <: SquareStar, S}
+    peps.ncols * (node[begin] - 1) + node[end]
+end
+
+function index_from_node(peps::PEPSNetwork{T, S}, node::Node) where {T <: Pegasus, S}
+    2 * peps.ncols * (node[1] - 1) + 2 * (node[2]-1) + node[3]
 end
 
 mod_wo_zero(k, m) = k % m == 0 ? m : k % m

@@ -58,9 +58,7 @@ Strategy = SVDTruncate
             end
             r = nlsolve(fun!, x0)
             @test converged(r)
-
         end
-
         clear_memoize_cache()
     end
 end

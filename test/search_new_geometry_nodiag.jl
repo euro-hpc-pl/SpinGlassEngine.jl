@@ -60,10 +60,12 @@ function bench(instance::String)
             ig_states = decode_factor_graph_state.(Ref(fg), sol_peps.states)
             fg_states = decode_state.(Ref(net), sol_peps.states)
             @test energy.(Ref(fg), fg_states) ≈ energy.(Ref(ig), ig_states)
-            #@test sort(energy.(Ref(fg), fg_states))[1:100] ≈ sol_peps2.energies[1:100]
-            println("fg energy: ", energy.(Ref(fg), fg_states))
-            println("peps energy: ", sol_peps.energies)
-            @test sort(energy.(Ref(fg), fg_states))[1:10] ≈ sol_peps.energies[1:10]
+            #@test energy.(Ref(fg), fg_states)[1:100] ≈ sol_peps2.energies[1:100]
+
+            println(sol_peps)
+            println(energy(fg, decode_state(net, [2, 2, 2, 2, 2, 1, 2, 1])))
+            println(energy(ig, decode_factor_graph_state(fg, [2, 2, 2, 2, 2, 1, 2, 1])))
+            @test energy.(Ref(fg), fg_states)[1:10] ≈ sol_peps.energies[1:10]
 
             #norm_prob = exp.(sol_peps.probabilities .- sol_peps.probabilities[1])
             #@test norm_prob ≈ exp.(-β .* (sol_peps.energies .- sol_peps.energies[1]))

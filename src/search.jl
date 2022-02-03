@@ -179,11 +179,16 @@ function low_energy_spectrum(
 
     # Sort using energies as keys
     outer_perm = sortperm(sol.energies)
-    Solution(
+    sol = Solution(
         sol.energies[outer_perm],
         [σ[inner_perm] for σ ∈ sol.states[outer_perm]],
         sol.probabilities[outer_perm],
         sol.degeneracy[outer_perm],
         sol.largest_discarded_probability
     )
+
+    @assert sol.energies ≈ energy.(
+        Ref(ctr.peps.factor_graph), decode_state.(Ref(ctr.peps), sol.states)
+    )
+    sol
 end

@@ -384,7 +384,9 @@ function conditional_probability(
     @cast LMX2[b, c, d] := LMX[(b, c), d] (b ∈ 1:maximum(p_lb), c ∈ 1:maximum(p_rb))
 
     for σ ∈ 1:length(loc_exp)
-        lmx = @view LMX2[p_lb[∂v[2*j-1]], p_rb[σ], :]
+        # lmx = @view LMX2[p_lb[∂v[2*j-1]], p_rb[σ], :]
+        # ∂v[2*j-1]
+        lmx = @view LMX2[∂v[2*j-1], p_rb[σ], :]
         m = @view M[:, pd[σ], :]
         r = @view R[:, pr[σ]]
         loc_exp[σ] *= (lmx' * m * r)[]

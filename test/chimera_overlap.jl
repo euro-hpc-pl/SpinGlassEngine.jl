@@ -18,7 +18,7 @@ num_states = 1000
 
 instance = "$(@__DIR__)/instances/chimera_droplets/128power/001.txt"
 
-@time fg = factor_graph(
+fg = factor_graph(
     ising_graph(instance),
     max_cl_states,
     spectrum=brute_force,
@@ -31,63 +31,33 @@ search_params = SearchParameters(num_states, δp)
 Strategy = SVDTruncate
 @testset "Compare the results for GaugesEnergy with Python" begin
     for Layout ∈ (GaugesEnergy, ), transform ∈ rotation.([0])
-        println((Strategy, Layout, transform))
+        network_d = PEPSNetwork{Square{Layout}, Dense}(m, n, fg, transform)
+        network_s = PEPSNetwork{Square{Layout}, Sparse}(m, n, fg, transform)
+        ctr_d = MpsContractor{Strategy}(network_d, [β/8, β/4, β/2, β], params)
+        ctr_s = MpsContractor{Strategy}(network_s, [β/8, β/4, β/2, β], params)
 
-        @time network_d = PEPSNetwork{Square{Layout}, Dense}(m, n, fg, transform)
-        @time network_s = PEPSNetwork{Square{Layout}, Sparse}(m, n, fg, transform)
-        @time ctr_d = MpsContractor{Strategy}(network_d, [β/8, β/4, β/2, β], params)
-        @time ctr_s = MpsContractor{Strategy}(network_s, [β/8, β/4, β/2, β], params)
-#=
-        for i in 1:n
-            @testset "Overlap <mps_dense|mps_sparse>" begin
-            psi_bottom_d = mps(ctr_d, i, 4)
-            psi_bottom_s = mps(ctr_s, i, 4)
-            @test psi_bottom_d * psi_bottom_s ≈ 1.0
-            end
-            @testset "Overlap <mps_top_dense|mps_top_sparse>" begin
-            psi_top_d = mps_top(ctr_d, i, 4)
-            psi_top_s = mps_top(ctr_s, i, 4)
-            @test psi_top_d * psi_top_s ≈ 1.0
-            end
-        end
-=#
         @testset "Compare the results for Dense with Python" begin
             overlap_python = [0.2637787707674837, 0.2501621729619047, 0.2951954406837012]
             for i in 1:n-1
                 psi_top = mps_top(ctr_d, i, 4)
                 psi_bottom = mps(ctr_d, i+1, 4)
                 overlap =  psi_top * psi_bottom
-                #@test overlap ≈ overlap_python[i] 
                 @test isapprox(overlap, overlap_python[i], atol=1e-5)
             end
         end
-#=
-        @testset "Compare the results for Sparse with Python" begin
-            overlap_python = [0.2637787707674837, 0.2501621729619047, 0.2951954406837012]
-            for i in 1:n-1
-                psi_top = mps_top(ctr_s, i, 4)
-                psi_bottom = mps(ctr_s, i+1, 4)
-                overlap = psi_top * psi_bottom
-                #@test overlap ≈ overlap_python[i] 
-                #@test isapprox(overlap, overlap_python[i], atol=1e-5)
-            end
-        end
-        =#
         clear_memoize_cache()
-            
     end
 end
 
 @testset "Compare the results for EnergyGauges with Python" begin
     overlap_python = [0.18603559878582027, 0.36463028391550056, 0.30532555472025247]
     for Sparsity ∈ (Dense, ), transform ∈ rotation.([0]) #Sparse
-        @time network = PEPSNetwork{Square{EnergyGauges}, Sparsity}(m, n, fg, transform)
-        @time ctr = MpsContractor{Strategy}(network, [β/8, β/4, β/2, β], params)
+        net = PEPSNetwork{Square{EnergyGauges}, Sparsity}(m, n, fg, transform)
+        ctr = MpsContractor{Strategy}(net, [β/8, β/4, β/2, β], params)
         for i in 1:n-1
             psi_top = mps_top(ctr, i, 4)
             psi_bottom = mps(ctr, i+1, 4)
             overlap = psi_top * psi_bottom
-            #@test overlap ≈ overlap_python[i] 
             @test isapprox(overlap, overlap_python[i], atol=1e-5)
         end
         clear_memoize_cache()

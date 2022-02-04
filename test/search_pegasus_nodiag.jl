@@ -17,6 +17,7 @@ function bench(instance::String)
     num_states = 1000
 
     @time ig = ising_graph(instance)
+
     @time fg = factor_graph(
         ig,
         max_cl_states,
@@ -27,21 +28,18 @@ function bench(instance::String)
     search_params = SearchParameters(num_states, δp)
 
     # Solve using PEPS search
-    energies = Float64[]
-    for Strategy ∈ (MPSAnnealing, ), Sparsity ∈ (Dense, )
-        for Layout ∈ (GaugesEnergy, EnergyGauges, EngGaugesEng), trans ∈ all_lattice_transformations
-            println((Strategy, Sparsity, Layout, trans))
-
-            @time network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, trans)
-            @time ctr = MpsContractor{Strategy}(network, [β/8, β/4, β/2, β], params)
-
-            @time sol_peps = low_energy_spectrum(ctr, search_params, merge_branches(network))
-
-            push!(energies, sol_peps.energies[begin])
+    energies = Vector{Float64}[]
+    for Strategy ∈ (SVDTruncate, MPSAnnealing), transform ∈ all_lattice_transformations
+        for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng), Sparsity ∈ (Dense, )
+            net = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, fg, transform)
+            ctr = MpsContractor{Strategy}(net, [β/8, β/4, β/2, β], params)
+            sol_peps = low_energy_spectrum(ctr, search_params, merge_branches(net))
+            push!(energies, sol_peps.energies)
             clear_memoize_cache()
         end
     end
     @test all(e -> e ≈ first(energies), energies)
+    println(energies[1])
 end
 
 bench("$(@__DIR__)/instances/pegasus_nondiag/4x4.txt")

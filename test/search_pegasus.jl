@@ -16,7 +16,7 @@ function bench(instance::String)
     δp = 1E-4
     num_states = 1000
 
-    @time ig = ising_graph(instance)
+    ig = ising_graph(instance)
     @time fg = factor_graph(
         ig,
         max_cl_states,
@@ -27,21 +27,18 @@ function bench(instance::String)
     search_params = SearchParameters(num_states, δp)
 
     # Solve using PEPS search
-    energies = Float64[]
-    for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, )
-        for Layout ∈ (GaugesEnergy, ), transform ∈ all_lattice_transformations
-            println((Strategy, Sparsity, Layout, transform))
-
-            @time net = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, fg, transform)
-            @time ctr = MpsContractor{Strategy}(net, [β/8, β/4, β/2, β], params)
-
-            @time sol_peps = low_energy_spectrum(ctr, search_params, merge_branches(net))
-
-            push!(energies, sol_peps.energies[begin])
+    energies = Vector{Float64}[]
+    for Strategy ∈ (SVDTruncate, MPSAnnealing), transform ∈ all_lattice_transformations
+        for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng), Sparsity ∈ (Dense, )
+            net = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, fg, transform)
+            ctr = MpsContractor{Strategy}(net, [β/8, β/4, β/2, β], params)
+            sol_peps = low_energy_spectrum(ctr, search_params, merge_branches(net))
+            push!(energies, sol_peps.energies)
             clear_memoize_cache()
         end
     end
-    println(energies)
+    @test all(e -> e ≈ first(energies), energies)
+    println(energies[1])
 end
 
 # best ground found: -59.65625

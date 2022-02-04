@@ -23,25 +23,21 @@ function bench(instance::String)
         spectrum=brute_force,
         cluster_assignment_rule=super_square_lattice((m, n, t))
     )
-
     params = MpsParameters(bond_dim, 1E-8, 10)
     search_params = SearchParameters(num_states, δp)
 
+    energies = Vector{Float64}[]
     for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense,)
         for Layout ∈ (EnergyGauges, ), transform ∈ rotation.([0])
-            println((Strategy, Sparsity, Layout, transform))
-
-            @time network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
-            @time ctr = MpsContractor{Strategy}(network, [β/8, β/4, β/2, β], params)
-
-            @time sol = low_energy_spectrum(ctr, search_params, merge_branches(network))
-            println(maximum(ctr.statistics))
-
+            net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
+            ctr = MpsContractor{Strategy}(net, [β/8, β/4, β/2, β], params)
+            sol = low_energy_spectrum(ctr, search_params, merge_branches(net))
             @test sol.energies[begin] ≈ ground_energy
-
+            push!(energies, sol.energies)
             clear_memoize_cache()
         end
     end
+    @test all(e -> e ≈ first(energies), energies)
 end
 
 bench("$(@__DIR__)/instances/chimera_droplets/2048power/001.txt")

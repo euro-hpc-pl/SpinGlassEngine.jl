@@ -64,6 +64,7 @@
     params = MpsParameters(bond_dim, 1E-8, 4)
     search_params = SearchParameters(num_states, 0.0)
 
+    energies = Vector{Float64}[]
     for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, Sparse)
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
             for Lattice ∈ (Square, SquareStar), transform ∈ all_lattice_transformations
@@ -84,8 +85,11 @@
 
                 norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
                 @test norm_prob ≈ exp.(-β .* (sol.energies .- sol.energies[1]))
+
+                push!(energies, sol.energies)
                 clear_memoize_cache()
             end
         end
     end
+    @test all(e -> e ≈ first(energies), energies)
 end

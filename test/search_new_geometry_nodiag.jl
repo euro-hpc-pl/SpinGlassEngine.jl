@@ -9,7 +9,6 @@ function bench(instance::String)
     m = 2
     n = 2
     t = 1
-    L = n * m * t * 2 * 4
 
     max_cl_states = 2^2
 
@@ -19,13 +18,13 @@ function bench(instance::String)
     num_states = 100
 
     ig = ising_graph(instance)
+
     fg = factor_graph(
         ig,
         # max_cl_states,
         spectrum=full_spectrum, #_gpu, # rm _gpu to use CPU
         cluster_assignment_rule=pegasus_lattice((m, n, t))
     )
-
     fg2 = factor_graph(
         ig,
         # max_cl_states,
@@ -48,6 +47,11 @@ function bench(instance::String)
 
             sol = low_energy_spectrum(ctr, search_params)#, merge_branches(net))
             sol2 = low_energy_spectrum(ctr2, search_params)#, merge_branches(net2))
+
+            ig_states = decode_factor_graph_state.(Ref(fg), sol.states)
+            @test sol.energies ≈ energy.(Ref(ig), ig_states)
+            fg_states = decode_state.(Ref(net), sol.states)
+            @test sol.energies ≈ energy.(Ref(fg), fg_states)
 
             @test sol.energies ≈ sol2.energies
             #@test sol.states == sol2.states

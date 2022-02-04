@@ -5,9 +5,9 @@
     m, n, t = 2, 4, 3
     L = n * m * t
 
-    β = 2.0
+    β = 3.0
     bond_dim = 16
-    num_states = 3
+    num_states = 128
 
     instance = "$(@__DIR__)/instances/pathological/cross_$(m)_$(n)_mdd.txt"
 
@@ -24,7 +24,7 @@
     #for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Sparse, Dense)
     for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense,)
         for Layout ∈ (EnergyGauges, ) # GaugesEnergy, EngGaugesEng)
-            for transform ∈ all_lattice_transformations[[3]], Lattice ∈ (SquareStar, )
+            for transform ∈ all_lattice_transformations, Lattice ∈ (SquareStar, )
                 net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform)
                 ctr = MpsContractor{Strategy}(net, [β/2, β], params)
                 sol = low_energy_spectrum(ctr, search_params)
@@ -37,7 +37,14 @@
                 @test sol.energies ≈ energy.(Ref(fg), states)
 
                 norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
-                @test norm_prob ≈ exp.(-β .* (sol.energies .- sol.energies[1]))
+                exact_prob = exp.(-β .* (sol.energies .- sol.energies[1]))
+                unequal = [!(x ≈ y) for (x, y) in zip(norm_prob, exp.(-β .* (sol.energies .- sol.energies[1])))]
+                inds = findall(unequal)
+                println(inds)
+                println(sol.states[inds])
+                println(norm_prob[inds]./exact_prob[inds])
+
+                @test norm_prob ≈ exact_prob
 
                 clear_memoize_cache()
             end

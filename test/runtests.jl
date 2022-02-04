@@ -45,7 +45,7 @@ push!(my_tests,
         #"search_chimera.jl",
         #"search_smallest_chimera.jl",
         #"search_full_chimera.jl",
-        #"search_cross.jl",
+        "search_cross.jl",
         #"search_pegasus.jl",
         #"search_pegasus_nodiag.jl",
         #"search_new_geometry_nodiag.jl", # work in progress

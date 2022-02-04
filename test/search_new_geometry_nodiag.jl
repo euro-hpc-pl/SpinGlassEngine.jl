@@ -46,8 +46,8 @@ function bench(instance::String)
             ctr = MpsContractor{Strategy}(net, [β/8, β/4, β/2, β], params)
             ctr2 = MpsContractor{Strategy}(net2, [β/8, β/4, β/2, β], params)
 
-            sol = low_energy_spectrum(ctr, search_params) #, merge_branches(network))
-            sol2 = low_energy_spectrum(ctr2, search_params) #merge_branches(network2))
+            sol = low_energy_spectrum(ctr, search_params)#, merge_branches(net))
+            sol2 = low_energy_spectrum(ctr2, search_params)#, merge_branches(net2))
 
             @test sol.energies ≈ sol2.energies
             #@test sol.states == sol2.states

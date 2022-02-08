@@ -14,12 +14,15 @@ abstract type AbstractStrategy end
 
 struct SVDTruncate <: AbstractStrategy end
 struct MPSAnnealing <: AbstractStrategy end
+
+"Distinguishes different layers of MPO that are used by the contraction algorithm."
 struct MpoLayers
     main::Dict{Site, Sites}
     dress::Dict{Site, Sites}
     right::Dict{Site, Sites}
 end
 
+"Encapsulate control parameters for the MPO-MPS scheme used to contract the peps network."
 struct MpsParameters
     bond_dimension::Int
     variational_tol::Real
@@ -27,8 +30,14 @@ struct MpsParameters
 
     MpsParameters(bd=typemax(Int), ϵ=1E-8, sw=4) = new(bd, ϵ, sw)
 end
+
+"Gives the layout used to construct the peps network."
 layout(net::PEPSNetwork{T, S}) where {T, S} = T
+
+"Gives the sparsity used to construct peps network."
 sparsity(net::PEPSNetwork{T, S}) where {T, S} = S
+
+"Tells how to contract the peps network using the MPO-MPS scheme."
 mutable struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
     peps::PEPSNetwork{T, S} where {T, S}
     betas::Vector{<:Real}
@@ -40,6 +49,8 @@ mutable struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
         new(net, βs, params, MpoLayers(layout(net), net.ncols), Dict{Vector{Int}, Real}())
     end
 end
+
+"Gives the strategy to be used to contract peps network."
 strategy(ctr::MpsContractor{T}) where {T} = T
 
 function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EnergyGauges}

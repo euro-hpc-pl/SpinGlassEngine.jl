@@ -56,6 +56,10 @@ function bench(instance::String)
             @test sol.energies ≈ sol2.energies
             #@test sol.states == sol2.states
 
+            #norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
+            #@test norm_prob ≈ exp.(-β .* (sol.energies .- sol.energies[1]))
+
+
             push!(energies, sol.energies)
             clear_memoize_cache()
         end

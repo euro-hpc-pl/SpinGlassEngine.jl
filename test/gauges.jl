@@ -10,7 +10,7 @@ t = 8
 L = n * m * t
 max_cl_states = 2^(t-0)
 
-β = 0.5
+β = 1
 bond_dim = 16
 δp = 1E-3
 num_states = 1000
@@ -41,6 +41,28 @@ Strategy = SVDTruncate
                 ψ_bot = mps(ctr, i+1, indβ)
                 overlap = tr(overlap_density_matrix(ψ_top, ψ_bot, indβ))
                 @test overlap ≈ ψ_bot * ψ_top
+            end
+        end
+        clear_memoize_cache()
+
+        @testset "Gauges are correctly optimized and updated." begin
+            indβ = 4
+            for _ in 1:2
+                for i ∈ 1:m-1
+                    println("i: ", i)
+                    ψ_top = mps_top(ctr, i, indβ)
+                    ψ_bot = mps(ctr, i+1, indβ)
+                    overlap1 = tr(overlap_density_matrix(ψ_top, ψ_bot, indβ))
+                    @test overlap1 ≈ ψ_bot * ψ_top
+        
+                    update_gauges!(ctr, i, indβ)
+
+                    #ψ_top = mps_top(ctr, i, indβ)
+                    #ψ_bot = mps(ctr, i+1, indβ)
+                    overlap2 = tr(overlap_density_matrix(ψ_top, ψ_bot, indβ))
+
+                    println(overlap1, ' ', overlap2)
+                end
             end
         end
         clear_memoize_cache()

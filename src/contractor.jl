@@ -53,6 +53,7 @@ end
 "Gives the strategy to be used to contract peps network."
 strategy(ctr::MpsContractor{T}) where {T} = T
 
+"Defines the MPO layers for the Square geometry with the EnergyGauges layout."
 function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EnergyGauges}
     main = Dict{Site, Sites}(i => (-1//6, 0, 3//6, 4//6) for i ∈ 1:ncols)
     for i ∈ 1:ncols - 1 push!(main, i + 1//2 => (0,)) end
@@ -63,6 +64,7 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EnergyGauges}
     MpoLayers(main, Dict(i => (3//6, 4//6) for i ∈ 1:ncols), right)
 end
 
+"Defines the MPO layers for the SquareStar geometry with the EnergyGauges layout."
 function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EnergyGauges}
     MpoLayers(
         Dict(site(i) => (-1//6, 0, 3//6, 4//6) for i ∈ 1//2:1//2:ncols),
@@ -71,6 +73,7 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EnergyGauges}
     )
 end
 
+"Defines the MPO layers for the Square geometry with the GaugesEnergy layout."
 function MpoLayers(::Type{T}, ncols::Int) where T <: Square{GaugesEnergy}
     main = Dict{Site, Sites}(i => (-4//6, -1//2, 0, 1//6) for i ∈ 1:ncols)
     for i ∈ 1:ncols - 1 push!(main, i + 1//2 => (0,)) end
@@ -81,6 +84,7 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: Square{GaugesEnergy}
     MpoLayers(main, Dict(i => (1//6,) for i ∈ 1:ncols), right)
 end
 
+"Defines the MPO layers for the SquareStar geometry with the GaugesEnergy layout."
 function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{GaugesEnergy}
     MpoLayers(
         Dict(site(i) => (-4//6, -1//2, 0, 1//6) for i ∈ 1//2:1//2:ncols),
@@ -89,6 +93,7 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{GaugesEnergy}
     )
 end
 
+"Defines the MPO layers for the Square geometry with the EngGaugesEng layout."
 function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EngGaugesEng}
     main = Dict{Site, Sites}(i => (-2//5, -1//5, 0, 1//5, 2//5) for i ∈ 1:ncols)
     for i ∈ 1:ncols - 1 push!(main, i + 1//2 => (0,)) end
@@ -99,6 +104,7 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EngGaugesEng}
     MpoLayers(main, Dict(i => (1//5, 2//5) for i ∈ 1:ncols), right)
 end
 
+"Defines the MPO layers for the SquareStar geometry with the EngGaugesEng layout."
 function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EngGaugesEng}
     MpoLayers(
         Dict(site(i) => (-2//5, -1//5, 0, 1//5, 2//5) for i ∈ 1//2:1//2:ncols),
@@ -107,8 +113,9 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EngGaugesEng}
     )
 end
 
+"Construct (and memoize) MPO given layers."
 @memoize Dict function mpo(
-    ctr::MpsContractor{T}, layers::Dict, r::Int, indβ::Int
+    ctr::MpsContractor{T}, layers::Dict{Site, Sites}, r::Int, indβ::Int
 ) where T <: AbstractStrategy
     mpo = Dict{Site, Dict{Site, Tensor}}()
     for (site, coordinates) ∈ layers
@@ -122,6 +129,7 @@ end
     QMpo(mpo)
 end
 
+"Construct (and memoize) top MPS using SVD for a given row."
 @memoize Dict function mps_top(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
     if i < 1
         W = mpo(ctr, ctr.layers.main, 1, indβ)
@@ -145,6 +153,7 @@ end
     ψ0
 end
 
+"Construct (and memoize) (bottom) MPS using SVD for a given row."
 @memoize Dict function mps(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
     if i > ctr.peps.nrows
         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
@@ -167,6 +176,7 @@ end
     ψ0
 end
 
+"Construct (and memoize) (bottom) MPS using Annealing for a given row."
 @memoize Dict function mps(ctr::MpsContractor{MPSAnnealing}, i::Int, indβ::Int)
     if i > ctr.peps.nrows
         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
@@ -193,10 +203,12 @@ end
     ψ0
 end
 
+"Construct dressed MPS for a given row and strategy."
 function dressed_mps(ctr::MpsContractor{T}, i::Int) where T <: AbstractStrategy
     dressed_mps(ctr, i, length(ctr.betas))
 end
 
+"Construct (and memoize) dressed MPS for a given row and strategy."
 @memoize Dict function dressed_mps(
     ctr::MpsContractor{T}, i::Int, indβ::Int
 ) where T <: AbstractStrategy
@@ -205,6 +217,7 @@ end
     W * ψ
 end
 
+"Construct (and memoize) right environment for a given node."
 @memoize Dict function right_env(
     ctr::MpsContractor{T}, i::Int, ∂v::Vector{Int}, indβ::Int
 ) where T <: AbstractStrategy

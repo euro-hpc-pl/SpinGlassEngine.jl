@@ -555,25 +555,24 @@ function update_gauges!(ctr::MpsContractor{T}, row::Site, indβ::Int) where T
 end
 =#
 function update_gauges!(
-    ctr::MpsContractor{T}, 
-    row::Site, 
-    indβ::Int, 
+    ctr::MpsContractor{T},
+    row::Site,
+    indβ::Int,
     tol::Real=1E-4,
     max_sweeps::Int=10
-    ) where T
+) where T
     clm = ctr.layers.main
     ψ_top = mps_top(ctr, row, indβ)
     ψ_bot = mps(ctr, row + 1, indβ)
-    gauges = optimize_gauges_for_overlaps!(ψ_top, ψ_bot, tol, max_sweeps)
+    gauges = optimize_gauges_for_overlaps!!(ψ_top, ψ_bot, tol, max_sweeps)
     for i ∈ ψ_top.sites
         g = gauges[i]
-        g_inv = 1 ./ g
+        g_inv = 1.0 ./ g
         n_bot = PEPSNode(row + 1 + clm[i][begin], i)
         n_top = PEPSNode(row + clm[i][end], i)
         g_top = ctr.peps.gauges.data[n_top] .* g
         g_bot = ctr.peps.gauges.data[n_bot] .* g_inv
         push!(ctr.peps.gauges.data, n_top => g_top, n_bot => g_bot)
-
     end
 
     for ind ∈ 1:indβ
@@ -584,6 +583,3 @@ function update_gauges!(
         delete!(memoize_cache(mpo), (ctr, ctr.layers.right, row, ind))
     end
 end
-
-
-

@@ -54,11 +54,14 @@ Strategy = SVDTruncate
                     ψ_bot = mps(ctr, i+1, indβ)
                     overlap1 = tr(overlap_density_matrix(ψ_top, ψ_bot, indβ))
                     @test overlap1 ≈ ψ_bot * ψ_top
-        
+
                     update_gauges!(ctr, i, indβ)
 
-                    #ψ_top = mps_top(ctr, i, indβ)
-                    #ψ_bot = mps(ctr, i+1, indβ)
+                    empty!(memoize_cache(mps))
+                    empty!(memoize_cache(mps_top))
+
+                    ψ_top = mps_top(ctr, i, indβ)
+                    ψ_bot = mps(ctr, i+1, indβ)
                     overlap2 = tr(overlap_density_matrix(ψ_top, ψ_bot, indβ))
 
                     println(overlap1, ' ', overlap2)

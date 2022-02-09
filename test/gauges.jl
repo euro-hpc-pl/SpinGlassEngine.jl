@@ -47,25 +47,24 @@ Strategy = SVDTruncate
 
         @testset "Gauges are correctly optimized and updated." begin
             indβ = 4
-            for _ in 1:2
-                for i ∈ 1:m-1
-                    println("i: ", i)
-                    ψ_top = mps_top(ctr, i, indβ)
-                    ψ_bot = mps(ctr, i+1, indβ)
-                    overlap1 = tr(overlap_density_matrix(ψ_top, ψ_bot, indβ))
-                    @test overlap1 ≈ ψ_bot * ψ_top
+            for _ in 1:2, i ∈ 1:m-1
+                println("i: ", i)
+                ψ_top = mps_top(ctr, i, indβ)
+                ψ_bot = mps(ctr, i+1, indβ)
+                overlap1 = tr(overlap_density_matrix(ψ_top, ψ_bot, indβ))
+                @test overlap1 ≈ ψ_bot * ψ_top
 
-                    update_gauges!(ctr, i, indβ)
+                update_gauges!(ctr, i, indβ)
 
-                    empty!(memoize_cache(mps))
-                    empty!(memoize_cache(mps_top))
+                empty!(memoize_cache(mps))
+                empty!(memoize_cache(mps_top))
 
-                    ψ_top = mps_top(ctr, i, indβ)
-                    ψ_bot = mps(ctr, i+1, indβ)
-                    overlap2 = tr(overlap_density_matrix(ψ_top, ψ_bot, indβ))
+                ψ_top2 = mps_top(ctr, i, indβ)
+                ψ_bot2 = mps(ctr, i+1, indβ)
 
-                    println(overlap1, ' ', overlap2)
-                end
+                overlap2 = tr(overlap_density_matrix(ψ_top2, ψ_bot2, indβ))
+
+                println(overlap1, ' ', overlap2)
             end
         end
         clear_memoize_cache()

@@ -515,22 +515,16 @@ function update_gauges!(ctr::MpsContractor{T}, row::Site, indβ::Int) where T
     end
 end
 =#
-
+#=
 function update_gauges!(ctr::MpsContractor{T}, row::Site, indβ::Int) where T
     clm = ctr.layers.main
     ψ_top = mps_top(ctr, row, indβ)
     ψ_bot = mps(ctr, row + 1, indβ)
-    #mpo_top = mpo(ctr, clm, row + 1, indβ)
-    #mpo_bot = mpo(ctr, clm, row, indβ)
-    #env_top = Environment(ψ_top, mpo_top, ψ_top)
-    #env_bot - Environment(ψ_bot, mpo_bot, ψ_bot)
+
     for i ∈ ψ_top.sites
         n_bot = PEPSNode(row + 1 + clm[i][begin], i)
         n_top = PEPSNode(row + clm[i][end], i)
-        #update_env_right!(env_top, i)
-        #update_env_left!(env_top, i)
-        #update_env_right!(env_bot, i)
-        #update_env_left!(env_bot, i)
+
         ρ_t = overlap_density_matrix(ψ_top, ψ_top, i)
         ρ_b = overlap_density_matrix(ψ_bot, ψ_bot, i)
 
@@ -546,3 +540,37 @@ function update_gauges!(ctr::MpsContractor{T}, row::Site, indβ::Int) where T
         delete!(memoize_cache(mpo), (ctr, ctr.layers.right, row, ind))
     end
 end
+=#
+function update_gauges!(
+    ctr::MpsContractor{T}, 
+    row::Site, 
+    indβ::Int, 
+    tol::Real=1E-4,
+    max_sweeps::Int=10
+    ) where T
+    clm = ctr.layers.main
+    ψ_top = mps_top(ctr, row, indβ)
+    ψ_bot = mps(ctr, row + 1, indβ)
+    gauges = optimize_gauges_for_overlaps!(ψ_top, ψ_bot, tol, max_sweeps)
+    for i ∈ ψ_top.sites
+        g = gauges[i]
+        g_inv = 1 ./ g
+        n_bot = PEPSNode(row + 1 + clm[i][begin], i)
+        n_top = PEPSNode(row + clm[i][end], i)
+        g_top = ctr.peps.gauges.data[n_top] .* g
+        g_bot = ctr.peps.gauges.data[n_bot] .* g_inv
+        push!(ctr.peps.gauges.data, n_top => g_top, n_bot => g_bot)
+
+    end
+
+    for ind ∈ 1:indβ
+        for i ∈ row:ctr.peps.nrows delete!(memoize_cache(mps_top), (ctr, i, ind)) end
+        for i ∈ 1:row+1 delete!(memoize_cache(mps), (ctr, i, ind)) end
+        delete!(memoize_cache(mpo), (ctr, ctr.layers.main, row, ind))
+        delete!(memoize_cache(mpo), (ctr, ctr.layers.dress, row, ind))
+        delete!(memoize_cache(mpo), (ctr, ctr.layers.right, row, ind))
+    end
+end
+
+
+

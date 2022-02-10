@@ -1,5 +1,4 @@
 export
-       AbstractGibbsNetwork,
        low_energy_spectrum,
        branch_state,
        bound_solution,

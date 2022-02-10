@@ -1,5 +1,4 @@
-export
-       Pegasus
+export Pegasus
 
 struct Pegasus <: AbstractGeometry end
 
@@ -27,7 +26,6 @@ function Pegasus(m::Int, n::Int)
 end
 
 # Geometry: 2 nodes -> 1 TN site. This will work for Chimera.
-
 pegasus_site(::Type{Dense}) = :pegasus_site
 pegasus_site(::Type{Sparse}) = :sparse_pegasus_site
 

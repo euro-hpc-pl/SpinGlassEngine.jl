@@ -29,7 +29,6 @@ const Node = NTuple{N, Int} where N
 struct PEPSNode
     i::Site
     j::Site
-
     PEPSNode(i::Site, j::Site) = new(site(i), site(j))
 end
 Node(node::PEPSNode) = (node.i, node.j)
@@ -49,7 +48,6 @@ struct GaugeInfo
     attached_leg::Int
     type::Symbol
 end
-
 struct Gauges{T <: AbstractGeometry}
     data::Dict{PEPSNode, AbstractArray{<:Real}}
     info::Vector{GaugeInfo}

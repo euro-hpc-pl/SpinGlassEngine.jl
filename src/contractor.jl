@@ -53,7 +53,6 @@ end
 "Gives the strategy to be used to contract peps network."
 strategy(ctr::MpsContractor{T}) where {T} = T
 
-
 "Construct (and memoize) MPO given layers."
 @memoize Dict function mpo(
     ctr::MpsContractor{T}, layers::Dict{Site, Sites}, r::Int, indβ::Int
@@ -271,7 +270,6 @@ function conditional_probability(ctr::MpsContractor{S}, w::Vector{Int}) where S
     conditional_probability(layout(ctr.peps), ctr, w)
 end
 
-
 function clear_memoize_cache()
     empty!(memoize_cache(left_env))
     empty!(memoize_cache(right_env))
@@ -288,54 +286,6 @@ function error_measure(probs)
     return 0.0
 end
 
-#=
-function update_gauges!(ctr::MpsContractor{T}, row::Site, indβ::Int) where T
-    clm = ctr.layers.main
-    ψ_top = mps_top(ctr, row, indβ)
-    ψ_bot = mps(ctr, row + 1, indβ)
-    for i ∈ ψ_top.sites
-        n_bot = PEPSNode(row + 1 + clm[i][begin], i)
-        n_top = PEPSNode(row + clm[i][end], i)
-        ρ = overlap_density_matrix(ψ_top, ψ_bot, i)
-        _, _, scale = LinearAlgebra.LAPACK.gebal!('S', ρ)
-        push!(ctr.peps.gauges.data, n_top => 1 ./ scale, n_bot => scale)
-    end
-
-    for ind ∈ 1:indβ
-        for i ∈ row:ctr.peps.nrows delete!(memoize_cache(mps_top), (ctr, i, ind)) end
-        for i ∈ 1:row+1 delete!(memoize_cache(mps), (ctr, i, ind)) end
-        delete!(memoize_cache(mpo), (ctr, ctr.layers.main, row, ind))
-        delete!(memoize_cache(mpo), (ctr, ctr.layers.dress, row, ind))
-        delete!(memoize_cache(mpo), (ctr, ctr.layers.right, row, ind))
-    end
-end
-=#
-#=
-function update_gauges!(ctr::MpsContractor{T}, row::Site, indβ::Int) where T
-    clm = ctr.layers.main
-    ψ_top = mps_top(ctr, row, indβ)
-    ψ_bot = mps(ctr, row + 1, indβ)
-
-    for i ∈ ψ_top.sites
-        n_bot = PEPSNode(row + 1 + clm[i][begin], i)
-        n_top = PEPSNode(row + clm[i][end], i)
-
-        ρ_t = overlap_density_matrix(ψ_top, ψ_top, i)
-        ρ_b = overlap_density_matrix(ψ_bot, ψ_bot, i)
-
-        gauge = sqrt.(sqrt.(ρ_b./ρ_t))
-        push!(ctr.peps.gauges.data, n_top => gauge, n_bot => 1 ./ gauge)
-    end
-
-    for ind ∈ 1:indβ
-        for i ∈ row:ctr.peps.nrows delete!(memoize_cache(mps_top), (ctr, i, ind)) end
-        for i ∈ 1:row+1 delete!(memoize_cache(mps), (ctr, i, ind)) end
-        delete!(memoize_cache(mpo), (ctr, ctr.layers.main, row, ind))
-        delete!(memoize_cache(mpo), (ctr, ctr.layers.dress, row, ind))
-        delete!(memoize_cache(mpo), (ctr, ctr.layers.right, row, ind))
-    end
-end
-=#
 function update_gauges!(
     ctr::MpsContractor{T},
     row::Site,

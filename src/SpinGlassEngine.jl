@@ -27,12 +27,14 @@ function LinearAlgebra.dot(ψ::AbstractMPS, state::Union{Vector, NTuple})
     tr(C)
 end
 
-include("geometry.jl")
 include("operations.jl")
-include("interface.jl")
-include("MPS_search.jl")
+include("geometry.jl")
 include("PEPS.jl")
 include("contractor.jl")
+include("square.jl")
+include("square_star.jl")
+include("pegasus.jl")
+include("MPS_search.jl")
 include("tensors.jl")
 include("search.jl")
 

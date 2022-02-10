@@ -165,7 +165,7 @@ function low_energy_spectrum(
 
     # Start branch and bound search
     sol = empty_solution()
-    @showprogress "Search: " for _ ∈ 1:nv(factor_graph(ctr.peps))
+    @showprogress "Search: " for _ ∈ 1:nv(ctr.peps.factor_graph)
         sol = branch_solution(sol, ctr, sparams.cut_off_prob)
         sol = bound_solution(sol, sparams.max_states, merge_strategy)
         # _clear_cache(network, sol) # TODO: make it work properly
@@ -173,7 +173,7 @@ function low_energy_spectrum(
 
     # Translate variable order (from network to factor graph)
     inner_perm = sortperm([
-        factor_graph(ctr.peps).reverse_label_map[idx]
+        ctr.peps.factor_graph.reverse_label_map[idx]
         for idx ∈ ctr.peps.vertex_map.(iteration_order(ctr.peps))
     ])
 

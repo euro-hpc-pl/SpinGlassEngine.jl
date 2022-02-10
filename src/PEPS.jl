@@ -52,9 +52,9 @@ mutable struct PEPSNetwork{
     end
 end
 
-
 mod_wo_zero(k, m) = k % m == 0 ? m : k % m
-
+ones_like(x::Number) = one(typeof(x))
+ones_like(x::AbstractArray) = ones(eltype(x), size(x))
 
 function bond_energy(net::AbstractGibbsNetwork{T, S}, u::Node, v::Node, σ::Int) where {T, S}
     fg_u, fg_v = net.vertex_map(u), net.vertex_map(v)
@@ -73,7 +73,6 @@ function bond_energy(net::AbstractGibbsNetwork{T, S}, u::Node, v::Node, σ::Int)
     end
     vec(energies)
 end
-
 
 function projector(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
     fg = network.factor_graph
@@ -123,8 +122,6 @@ function interaction_energy(network::AbstractGibbsNetwork{S, T}, v::S, w::S) whe
         zeros(1, 1)
     end
 end
-ones_like(x::Number) = one(typeof(x))
-ones_like(x::AbstractArray) = ones(eltype(x), size(x))
 
 function boundary_index(
     net::AbstractGibbsNetwork{S, T},

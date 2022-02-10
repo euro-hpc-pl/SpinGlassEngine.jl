@@ -1,5 +1,4 @@
-export
-       SquareStar
+export SquareStar
 
 struct SquareStar{T <: AbstractTensorsLayout} <: AbstractGeometry end
 
@@ -123,8 +122,7 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EngGaugesEng}
     )
 end
 
-
-# TODO: rewrite this using brodcasting
+# TODO: rewrite this using brodcasting if possible
 function conditional_probability(
     ::Type{T}, ctr::MpsContractor{S}, state::Vector{Int},
 ) where {T <: SquareStar, S}

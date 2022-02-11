@@ -296,7 +296,9 @@ function update_gauges!(
     clm = ctr.layers.main
     ψ_top = mps_top(ctr, row, indβ)
     ψ_bot = mps(ctr, row + 1, indβ)
+
     gauges = optimize_gauges_for_overlaps!!(ψ_top, ψ_bot, tol, max_sweeps)
+
     for i ∈ ψ_top.sites
         g = gauges[i]
         g_inv = 1.0 ./ g
@@ -310,8 +312,10 @@ function update_gauges!(
     for ind ∈ 1:indβ
         for i ∈ row:ctr.peps.nrows delete!(memoize_cache(mps_top), (ctr, i, ind)) end
         for i ∈ 1:row+1 delete!(memoize_cache(mps), (ctr, i, ind)) end
-        delete!(memoize_cache(mpo), (ctr, ctr.layers.main, row, ind))
-        delete!(memoize_cache(mpo), (ctr, ctr.layers.dress, row, ind))
-        delete!(memoize_cache(mpo), (ctr, ctr.layers.right, row, ind))
+        for i ∈ row:row+1
+            delete!(memoize_cache(mpo), (ctr, ctr.layers.main, i, ind))
+            delete!(memoize_cache(mpo), (ctr, ctr.layers.dress, i, ind))
+            delete!(memoize_cache(mpo), (ctr, ctr.layers.right, i, ind))
+        end
     end
 end

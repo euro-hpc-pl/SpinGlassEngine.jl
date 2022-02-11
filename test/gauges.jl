@@ -27,46 +27,47 @@ fg = factor_graph(
 params = MpsParameters(bond_dim, 1E-8, 10)
 search_params = SearchParameters(num_states, δp)
 
-Strategy = SVDTruncate
 @testset "Updating gauges works correctly." begin
-    for Layout ∈ (GaugesEnergy, ), transform ∈ rotation.([0])
+for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense,) # MPSAnnealing Sparse
+    for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
+        for Lattice ∈ (Square, ), transform ∈ all_lattice_transformations  # SquareStar
+            net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform, :id)
+            ctr = MpsContractor{Strategy}(net, [β/8, β/4, β/2, β], params)
 
-        net = PEPSNetwork{Square{Layout}, Dense}(m, n, fg, transform, :id)
-        ctr = MpsContractor{Strategy}(net, [β/8, β/4, β/2, β], params)
+            @testset "Overlaps calculated differently are the same." begin
+                indβ = 3
+                for i ∈ 1:m-1
+                    ψ_top = mps_top(ctr, i, indβ)
+                    ψ_bot = mps(ctr, i+1, indβ)
+                    overlap = tr(overlap_density_matrix(ψ_top, ψ_bot, indβ))
+                    @test overlap ≈ ψ_bot * ψ_top
+                end
+            end
+            clear_memoize_cache()
 
-        @testset "Overlaps calculated differently are the same." begin
-            indβ = 3
-            for i ∈ 1:m-1
-                ψ_top = mps_top(ctr, i, indβ)
-                ψ_bot = mps(ctr, i+1, indβ)
-                overlap = tr(overlap_density_matrix(ψ_top, ψ_bot, indβ))
-                @test overlap ≈ ψ_bot * ψ_top
+            @testset "Gauges are correctly optimized and updated." begin
+                indβ = 4
+                for _ in 1:3, i ∈ 1:m-1
+                    ψ_top = mps_top(ctr, i, indβ)
+                    ψ_bot = mps(ctr, i+1, indβ)
+
+                    overlap_old = ψ_top * ψ_bot
+
+                    update_gauges!(ctr, i, indβ)
+                    # ψ_bot and ψ_top are updated in place though memoize !!!!!
+                    overlap_new = ψ_bot * ψ_top
+
+                    # should be calculated from scratch with updated gauges
+                    ψ_top2 = mps_top(ctr, i, indβ) 
+                    ψ_bot2 = mps(ctr, i+1, indβ)
+
+                    overlap_new2 = ψ_top2 * ψ_bot2
+                    @test abs((overlap_new - overlap_new2) / overlap_new) < 1e-4
+                    @test overlap_new > overlap_old
+                end
+                clear_memoize_cache()
             end
         end
-        clear_memoize_cache()
-
-        @testset "Gauges are correctly optimized and updated." begin
-            indβ = 4
-            for _ in 1:2, i ∈ 1:m-1
-                println("i: ", i)
-                ψ_top = mps_top(ctr, i, indβ)
-                ψ_bot = mps(ctr, i+1, indβ)
-                overlap1 = tr(overlap_density_matrix(ψ_top, ψ_bot, indβ))
-                @test overlap1 ≈ ψ_bot * ψ_top
-
-                update_gauges!(ctr, i, indβ)
-
-                empty!(memoize_cache(mps))
-                empty!(memoize_cache(mps_top))
-
-                ψ_top2 = mps_top(ctr, i, indβ)
-                ψ_bot2 = mps(ctr, i+1, indβ)
-
-                overlap2 = tr(overlap_density_matrix(ψ_top2, ψ_bot2, indβ))
-
-                println(overlap1, ' ', overlap2)
-            end
-        end
-        clear_memoize_cache()
     end
+end
 end

@@ -91,9 +91,7 @@ function _apply_exponent!(
     D = typeof(M).name.wrapper(I(physical_dim(ψ, i)))
 
     J = get_prop(ig, i, j, :J)
-    σ = local_basis(ψ, i)
-    η = local_basis(ψ, j)'
-    C = exp.(-0.5 * dβ * σ *J * η)
+    C = exp.(-0.5 * dβ * local_basis(ψ, i) *J * local_basis(ψ, j)')
 
     if j == last
         @cast M̃[(x, a), σ, b] := C[x, σ] * M[a, σ, b]
@@ -119,7 +117,8 @@ end
 
 function purifications(χ::T, ϕ::T) where {T <: AbstractMPS}
     S = promote_type(eltype(χ), eltype(ϕ))
-    ψ = MPS(S, length(ϕ))
+    ψ = T.name.wrapper(S, length(ϕ))
+
     for (i, (A, B)) ∈ enumerate(zip(χ, ϕ))
         @cast C[(l, l̃), σ, (r, r̃)] := A[l, σ, r] * B[l̃, σ, r̃]
         ψ[i] = C
@@ -145,12 +144,12 @@ function _apply_gates(
         end
 
         if bond_dimension(ρ) > Dcut
-            ρ = SpinGlassTensors.compress(ρ, Dcut, var_ϵ, sweeps)
+            ρ = compress(ρ, Dcut, var_ϵ, sweeps)
             is_right = true
         end
     end
 
-    if !is_right SpinGlassTensors.canonise!(ρ, :right) end
+    if !is_right canonise!(ρ, :right) end
     ρ
 end
 
@@ -182,7 +181,7 @@ function SpinGlassTensors.MPS(
         @showprogress "MPS build: " for _ ∈ 1:k
             ρ = purifications(ρ)
             if bond_dimension(ρ) > Dcut
-                ρ = SpinGlassTensors.compress(ρ, Dcut, var_ϵ, sweeps)
+                ρ = compress(ρ, Dcut, var_ϵ, sweeps)
                 is_right = true
             end
         end
@@ -198,7 +197,7 @@ function SpinGlassTensors.MPS(
             end
         end
     end
-    if !is_right SpinGlassTensors.canonise!(ρ, :right) end
+    if !is_right canonise!(ρ, :right) end
     ρ
 end
 

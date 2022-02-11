@@ -1,16 +1,15 @@
 module SpinGlassEngine
 
-using Base: Tuple
+using MKL
 using SpinGlassTensors
 using SpinGlassNetworks
 using TensorOperations
 using TensorCast
 using MetaGraphs
 using Memoize
-using LinearAlgebra, MKL
+using LinearAlgebra
 using LightGraphs
 using ProgressMeter
-#using Infiltrator
 
 # to be remove
 function SpinGlassNetworks.local_basis(ψ::AbstractMPS, i::Int)

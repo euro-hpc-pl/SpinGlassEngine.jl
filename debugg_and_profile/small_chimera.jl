@@ -30,7 +30,7 @@ function bench(instance::String)
 
     net = PEPSNetwork{Square{EnergyGauges}, Sparse}(m, n, fg, rotation(0))
     ctr = MpsContractor{SVDTruncate}(net, [β/8, β/4, β/2, β], params)
-    sol = low_energy_spectrum(ctr, search_params)#, merge_branches(net))
+    sol = low_energy_spectrum(ctr, search_params)#, merge_branches(ctr))
 
     @assert sol.energies[begin] ≈ ground_energy
     clear_memoize_cache()

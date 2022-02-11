@@ -42,9 +42,9 @@ function bench(instance_dir::String, out_path::String)
                   
                 data = try
 
-                    network = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
-                    ctr = MpsContractor{Strategy}(network, [β], params)
-                    times = @elapsed sol = low_energy_spectrum(ctr, search_params, merge_branches(network))
+                    net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
+                    ctr = MpsContractor{Strategy}(net, [β], params)
+                    times = @elapsed sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 
                     data = DataFrame(:i => i, :β => β, :Strategy => Strategy,
                     :Sparsity => Sparsity, :Layout => Layout,

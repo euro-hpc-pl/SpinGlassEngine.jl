@@ -45,12 +45,14 @@ mutable struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
     layers::MpoLayers
     statistics::Dict{Vector{Int}, <:Real}
     iteration_order::Vector
+    current_node
 
     function MpsContractor{T}(net, βs, params) where T
         ml = MpoLayers(layout(net), net.ncols)
         stat = Dict{Vector{Int}, Real}()
-        ord = MPS_contractor_iteration_order(net)
-        new(net, βs, params, ml, stat, ord)
+        ord = MpsContractor_iteration_order(net)
+        node = ord[begin]
+        new(net, βs, params, ml, stat, ord, node)
     end
 end
 

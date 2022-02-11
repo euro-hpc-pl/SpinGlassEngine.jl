@@ -145,7 +145,7 @@ function node_from_index(peps::PEPSNetwork{T, S}, idx::Int) where {T <: Pegasus,
     )
 end
 
-function MPS_contractor_iteration_order(peps::PEPSNetwork{T, S}) where {T <: Pegasus, S}
+function MpsContractor_iteration_order(peps::PEPSNetwork{T, S}) where {T <: Pegasus, S}
     [(i, j, k) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols for k ∈ 1:2]
 end
 

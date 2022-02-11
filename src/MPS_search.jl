@@ -79,8 +79,7 @@ end
 function _apply_bias!(ψ::AbstractMPS, ig::LabelledGraph, dβ::Number, i::Int)
     M = ψ[i]
     h = get_prop(ig, i, :h)
-    σ = local_basis(ψ, i)
-    v = exp.(-0.5 * dβ * h * σ)
+    v = exp.(-0.5 * dβ * h * local_basis(ψ, i))
     @cast M[x, σ, y] = M[x, σ, y] * v[σ]
     ψ[i] = M
 end

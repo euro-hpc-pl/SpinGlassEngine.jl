@@ -8,12 +8,14 @@ export
        projectors,
        node_from_index,
        index_from_node,
-       iteration_order,
+       MPS_contractor_iteration_order,
        boundary,
        update_energy
 
+"Defines Square geometry with a given layout."
 struct Square{T <: AbstractTensorsLayout} <: AbstractGeometry end
 
+"Creates Square geometry as a LabelledGraph."
 function Square(m::Int, n::Int)
     labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
     LabelledGraph(labels, grid((m, n)))
@@ -22,6 +24,7 @@ end
 site(::Type{Dense}) = :site
 site(::Type{Sparse}) = :sparse_site
 
+"Assigns type of tensor to a PEPS node coordinates for a given Layout and Sparsity."
 function tensor_map(
     ::Type{Square{T}}, ::Type{S}, nrows::Int, ncols::Int
 ) where {T <: Union{GaugesEnergy, EnergyGauges}, S <: AbstractSparsity}
@@ -35,6 +38,7 @@ function tensor_map(
     map
 end
 
+"Assigns type of tensor to a PEPS node coordinates for a given Layout and Sparsity."
 function tensor_map(
     ::Type{Square{T}}, ::Type{S}, nrows::Int, ncols::Int
 ) where {T <: EngGaugesEng, S <: AbstractSparsity}
@@ -54,6 +58,7 @@ function tensor_map(
     map
 end
 
+"Assigns gauges and corresponding information to GaugeInfo structure for a given Layout."
 function gauges_list(::Type{Square{T}}, nrows::Int, ncols::Int) where T <: GaugesEnergy
     [
         GaugeInfo(
@@ -66,6 +71,7 @@ function gauges_list(::Type{Square{T}}, nrows::Int, ncols::Int) where T <: Gauge
     ]
 end
 
+"Assigns gauges and corresponding information to GaugeInfo structure for a given Layout."
 function gauges_list(::Type{Square{T}}, nrows::Int, ncols::Int) where T <: EnergyGauges
     [
         GaugeInfo(
@@ -78,6 +84,7 @@ function gauges_list(::Type{Square{T}}, nrows::Int, ncols::Int) where T <: Energ
     ]
 end
 
+"Assigns gauges and corresponding information to GaugeInfo structure for a given Layout."
 function gauges_list(::Type{Square{T}}, nrows::Int, ncols::Int) where T <: EngGaugesEng
     [
         GaugeInfo(
@@ -123,6 +130,7 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EngGaugesEng}
     MpoLayers(main, Dict(i => (1//5, 2//5) for i ∈ 1:ncols), right)
 end
 
+"Calculates conditional probability for a Square Layout."
 function conditional_probability(
     ::Type{T}, ctr::MpsContractor{S}, state::Vector{Int},
 ) where {T <: Square, S}
@@ -162,6 +170,7 @@ function conditional_probability(
     normalize_probability(probs)
 end
 
+"Returns rojectors."
 function projectors(network::PEPSNetwork{T, S}, vertex::Node) where {T <: Square, S}
     i, j = vertex
     projector.(Ref(network), Ref(vertex), ((i, j-1), (i-1, j), (i, j+1), (i+1, j)))
@@ -175,7 +184,7 @@ function node_from_index(peps::PEPSNetwork{T, S}, index::Int) where {T <: Square
     ((index - 1) ÷ peps.ncols + 1, mod_wo_zero(index, peps.ncols))
 end
 
-function iteration_order(peps::PEPSNetwork{T, S}) where {T <: Square, S}
+function MPS_contractor_iteration_order(peps::PEPSNetwork{T, S}) where {T <: Square, S}
     [(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols]
 end
 

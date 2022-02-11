@@ -370,6 +370,6 @@ function local_state_for_node(
     ctr::MpsContractor{T}, σ::Vector{Int}, w::S
 ) where {T, S}
     k = get(ctr.node_search_index, w, 0)
-    #0 < k <= length(σ) ? σ[k] : 1
-    0 < k ? σ[k] : 1  # we shouldnt be asking for node with k > length(σ)
+    0 < k <= length(σ) ? σ[k] : 1
+    # 0 < k ? σ[k] : 1  # likely we shouldnt be asking for node with k > length(σ)
 end

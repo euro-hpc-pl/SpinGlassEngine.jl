@@ -47,14 +47,10 @@ mutable struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
     iteration_order::Vector
 
     function MpsContractor{T}(net, βs, params) where T
-        new(
-            net, 
-            βs, 
-            params, 
-            MpoLayers(layout(net), net.ncols), 
-            Dict{Vector{Int}, Real}(), 
-            MPS_contractor_iteration_order(net)
-        )
+        ml = MpoLayers(layout(net), net.ncols)
+        stat = Dict{Vector{Int}, Real}()
+        ord = MPS_contractor_iteration_order(net)
+        new(net, βs, params, ml, stat, ord)
     end
 end
 
@@ -307,7 +303,7 @@ function update_gauges!(
 
 
     gauges = optimize_gauges_for_overlaps!!(ψ_top, ψ_bot, tol, max_sweeps)
-    # ψ_top, ψ_bot are changed in place. 
+    # ψ_top, ψ_bot are changed in place.
     # This might affect previous initializations of  ψ_top, ψ_bot, as they are read from memoize
     for i ∈ ψ_top.sites
         g = gauges[i]

@@ -46,20 +46,7 @@ function branch_state(ctr::MpsContractor{T}, σ::Vector{Int}) where {T, S}
 end
 
 function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T
-    #exact_marginal_prob = exact_marginal_probability(ctr, pσ[end])
-    #@assert exact_marginal_prob ≈ exp(pσ[begin])
-    #exact_cond_probs = exact_conditional_probabilities(ctr, pσ[end])
-    #@assert exact_cond_probs ≈ conditional_probability(ctr, pσ[end])
-    #cond_prob = conditional_probability(ctr, pσ[end])
-    prob = pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
-
-    #if !(exact_cond_probs ≈ conditional_probability(ctr, pσ[end]))
-    #    println("ERROR")
-    #end
-    #println(pσ)
-    #@infiltrate
-    prob
-    #pσ[begin] .+ log.(exact_cond_probs)
+    pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
 end
 
 @memoize function spectrum(factor_graph::LabelledGraph{S, T}) where {S, T}
@@ -75,7 +62,6 @@ function exact_marginal_probability(
 ) where T
     target_state = decode_state(ctr.peps, σ, true)
     energies, states = spectrum(ctr.peps.factor_graph)
-
     prob = exp.(-ctr.betas[end] .* energies)
     prob ./= sum(prob)
     sum(prob[findall([all(s[k] == v for (k, v) ∈ target_state) for s ∈ states])])
@@ -168,7 +154,7 @@ function low_energy_spectrum(
         ctr.current_node = node
         sol = branch_solution(sol, ctr, sparams.cut_off_prob)
         sol = bound_solution(sol, sparams.max_states, merge_strategy)
-        # _clear_cache(network, sol) # TODO: make it work properly
+        # _clear_cache(ctr, sol) # TODO: make it work properly
     end
 
     # Translate variable order (from network to factor graph)
@@ -187,6 +173,7 @@ function low_energy_spectrum(
         sol.largest_discarded_probability
     )
 
+    # Final check if energies and states much each other
     @assert sol.energies ≈ energy.(
         Ref(ctr.peps.factor_graph), decode_state.(Ref(ctr.peps), sol.states)
     )

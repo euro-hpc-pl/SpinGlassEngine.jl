@@ -148,7 +148,9 @@ end
 function tensor(
     network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, β::Real, ::Val{:gauge_h}
 )
-    Diagonal(network.gauges.data[v])
+    # TODO: verify if adding Diagonal to Tensor union would be better
+    # Diagonal(network.gauges.data[v])
+    diagm(network.gauges.data[v])
 end
 
 function Base.size(

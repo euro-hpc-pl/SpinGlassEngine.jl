@@ -43,7 +43,7 @@ end
 
 function branch_state(ctr::MpsContractor{T}, σ::Vector{Int}) where {T, S}
     node = ctr.iteration_order[length(σ) + 1]
-    vcat.(Ref(σ), collect(1:length(local_energy(ctr.peps, node))))
+    vcat.(Ref(σ), collect(1:cluster_size(ctr.peps, node)))
 end
 
 function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T

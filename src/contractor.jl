@@ -7,7 +7,8 @@ export
        clear_memoize_cache,
        mps_top,
        mps,
-       update_gauges!
+       update_gauges!,
+       boundary_state
 
 abstract type AbstractContractor end
 abstract type AbstractStrategy end
@@ -336,4 +337,39 @@ function update_gauges!(
         end
     end
     overlap
+end
+
+function boundary_index(
+    ctr::MpsContractor{T},
+    nodes::Tuple{S, Union{S, NTuple{N, S}}},
+    σ::Vector{Int}
+) where {S, T, N}
+    v, w = nodes
+    state = local_state_for_node(ctr, σ, v)
+    if ctr.peps.vertex_map(v) ∉ vertices(ctr.peps.factor_graph) return ones_like(state) end
+    projector(ctr.peps, v, w)[state]
+end
+
+function boundary_index(
+    ctr::MpsContractor{T}, nodes::NTuple{4, S}, σ::Vector{Int}
+) where {S, T}
+    v, w, k, l = nodes
+    pv = projector(ctr.peps, v, w)
+    i = boundary_index(ctr, (v, w), σ)
+    j = boundary_index(ctr, (k, l), σ)
+    (j - 1) * maximum(pv) + i
+end
+
+function boundary_state(
+    ctr::MpsContractor{T}, σ::Vector{Int}, node::S
+) where {T, S}
+    boundary_index.(Ref(ctr), boundary(ctr.peps, node), Ref(σ))
+end
+
+function local_state_for_node(
+    ctr::MpsContractor{T}, σ::Vector{Int}, w::S
+) where {T, S}
+    k = get(ctr.node_search_index, w, 0)
+    #0 < k <= length(σ) ? σ[k] : 1
+    0 < k ? σ[k] : 1  # we shouldnt be asking for node with k > length(σ)
 end

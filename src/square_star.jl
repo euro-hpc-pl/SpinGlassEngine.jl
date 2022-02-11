@@ -128,7 +128,7 @@ function conditional_probability(
 ) where {T <: SquareStar, S}
     indβ, β = length(ctr.betas), last(ctr.betas)
     i, j = ctr.current_node
-    ∂v = boundary_state(ctr.peps, state, (i, j))
+    ∂v = boundary_state(ctr, state, (i, j))
 
     L = left_env(ctr, i, ∂v[1:2*j-2], indβ)
     R = right_env(ctr, i, ∂v[(2*j+3):(2*ctr.peps.ncols+2)], indβ)
@@ -181,9 +181,6 @@ function projectors(network::PEPSNetwork{T, S}, vertex::Node) where {T <: Square
     projector.(Ref(network), Ref(vertex), nbrs)
 end
 
-function index_from_node(peps::PEPSNetwork{T, S}, node::Node) where {T <: SquareStar, S}
-    peps.ncols * (node[begin] - 1) + node[end]
-end
 
 function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: SquareStar, S}
     [(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols]
@@ -213,7 +210,7 @@ function update_energy(
     i, j = ctr.current_node
     en = local_energy(net, (i, j))
     for v ∈ ((i, j-1), (i-1, j), (i-1, j-1), (i-1, j+1))
-        en += bond_energy(net, (i, j), v, local_state_for_node(net, σ, v))
+        en += bond_energy(net, (i, j), v, local_state_for_node(ctr, σ, v))
     end
     en
 end

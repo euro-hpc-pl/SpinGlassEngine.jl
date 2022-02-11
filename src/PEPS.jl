@@ -6,7 +6,7 @@ export
        interaction_energy,
        connecting_tensor,
        normalize_probability,
-       boundary_state,
+    #    boundary_state,
        local_state_for_node,
        fuse_projectors,
        initialize_gauges!,
@@ -123,39 +123,6 @@ function interaction_energy(network::AbstractGibbsNetwork{S, T}, v::S, w::S) whe
     end
 end
 
-function boundary_index(
-    net::AbstractGibbsNetwork{S, T},
-    nodes::Tuple{S, Union{S, NTuple{N, S}}},
-    σ::Vector{Int}
-) where {S, T, N}
-    v, w = nodes
-    state = local_state_for_node(net, σ, v)
-    if net.vertex_map(v) ∉ vertices(net.factor_graph) return ones_like(state) end
-    projector(net, v, w)[state]
-end
-
-function boundary_index(
-    network::AbstractGibbsNetwork{S, T}, nodes::NTuple{4, S}, σ::Vector{Int}
-) where {S, T}
-    v, w, k, l = nodes
-    pv = projector(network, v, w)
-    i = boundary_index(network, (v, w), σ)
-    j = boundary_index(network, (k, l), σ)
-    (j - 1) * maximum(pv) + i
-end
-
-function boundary_state(
-    network::AbstractGibbsNetwork{S, T}, σ::Vector{Int}, node::S
-) where {S, T}
-    boundary_index.(Ref(network), boundary(network, node), Ref(σ))
-end
-
-function local_state_for_node(
-    network::AbstractGibbsNetwork{S, T}, σ::Vector{Int}, w::S
-) where {S, T}
-    k = index_from_node(network, w)
-    0 < k <= length(σ) ? σ[k] : 1
-end
 
 function is_compatible(factor_graph::LabelledGraph, network_graph::LabelledGraph)
     all(has_edge(network_graph, src(edge), dst(edge)) for edge ∈ edges(factor_graph))

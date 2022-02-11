@@ -56,15 +56,16 @@ for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, )
 
                     overlap_old = ψ_top * ψ_bot
 
-                    update_gauges!(ctr, i, indβ)
-                    # ψ_bot and ψ_top are updated in place though memoize !!!!!
-                    overlap_new = ψ_bot * ψ_top
+                    overlap_new = update_gauges!(ctr, i, indβ)
+                    # assert that ψ_bot and ψ_top are not updated in place though memoize!
+                    overlap_old2 = ψ_bot * ψ_top
 
                     # should be calculated from scratch with updated gauges
                     ψ_top2 = mps_top(ctr, i, indβ)
                     ψ_bot2 = mps(ctr, i+1, indβ)
 
                     overlap_new2 = ψ_top2 * ψ_bot2
+                    @test overlap_old ≈ overlap_old2
                     @test abs((overlap_new - overlap_new2) / overlap_new) < 1e-4
                     @test overlap_new > overlap_old
                 end

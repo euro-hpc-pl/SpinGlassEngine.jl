@@ -186,6 +186,6 @@ end
 function decode_state(
     peps::AbstractGibbsNetwork{S, T}, σ::Vector{Int}, fg_order::Bool=false
 ) where {S, T}
-    nodes = fg_order ? peps.vertex_map.(MpsContractor_iteration_order(peps)) : vertices(peps.factor_graph)
+    nodes = fg_order ? peps.vertex_map.(nodes_search_order_Mps(peps)) : vertices(peps.factor_graph)
     Dict(nodes[1:length(σ)] .=> σ)
 end

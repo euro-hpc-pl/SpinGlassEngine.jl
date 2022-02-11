@@ -62,7 +62,7 @@ function conditional_probability(
     ::Type{T}, ctr::MpsContractor{S}, state::Vector{Int},
 ) where {T <: Pegasus, S}
     indβ, β = length(ctr.betas), last(ctr.betas)
-    i, j, k = node_from_index(ctr.peps, length(state)+1)
+    i, j, k = ctr.current_node
     ∂v = boundary_state(ctr.peps, state, (i, j))
 
     L = left_env(ctr, i, ∂v[1:j-1], indβ)
@@ -137,15 +137,8 @@ function index_from_node(peps::PEPSNetwork{T, S}, node::Node) where {T <: Pegasu
     2 * peps.ncols * (node[1] - 1) + 2 * (node[2]-1) + node[3]
 end
 
-function node_from_index(peps::PEPSNetwork{T, S}, idx::Int) where {T <: Pegasus, S}
-    (
-        (idx - 1) ÷ (2 * peps.ncols) + 1,
-        mod_wo_zero((idx - 1) ÷ 2 + 1, peps.ncols),
-        mod_wo_zero(idx, 2)
-    )
-end
 
-function MpsContractor_iteration_order(peps::PEPSNetwork{T, S}) where {T <: Pegasus, S}
+function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: Pegasus, S}
     [(i, j, k) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols for k ∈ 1:2]
 end
 
@@ -159,8 +152,10 @@ function boundary(peps::PEPSNetwork{T, S}, node::Node) where {T <: Pegasus, S}
     )
 end
 
-function update_energy(net::PEPSNetwork{T, S}, σ::Vector{Int})  where {T <: Pegasus, S}
-    i, j, k = node_from_index(net, length(σ)+1)
+function update_energy(
+    ::Type{T}, ctr::MpsContractor{S}, σ::Vector{Int}) where {T <: Pegasus, S}
+    net = ctr.peps
+    i, j, k = ctr.current_node
     en = local_energy(net, (i, j, k))
     for v ∈ ((i, j-1, 1), (i-1, j, 2), (i, j-1, 2), (i-1, j, 1))
         en += bond_energy(net, (i, j, k), v, local_state_for_node(net, σ, v))

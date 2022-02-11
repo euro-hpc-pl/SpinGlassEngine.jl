@@ -32,7 +32,8 @@ for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, )
     # MPSAnnealing MethodError: no method matching mps_top(::MpsContractor{MPSAnnealing}, ::Int64, ::Int64)
     # Sparse MethodError: no method matching contract_down(::SparseSiteTensor, ::Array{Float64, 3})
     for Layout ∈ (EnergyGauges, ) # GaugesEnergy, EngGaugesEng)
-        for Lattice ∈ ( SquareStar,), transform ∈ (all_lattice_transformations[1],)  #  SquareStar not passing
+        for Lattice ∈ (Square,), transform ∈ (all_lattice_transformations[1],)  
+            #  SquareStar not passing -- fix dot(QMps, QMps)
             net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform, :id)
             ctr = MpsContractor{Strategy}(net, [β/8, β/4, β/2, β], params)
 

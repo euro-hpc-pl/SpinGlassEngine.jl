@@ -297,7 +297,10 @@ function update_gauges!(
     ψ_top = mps_top(ctr, row, indβ)
     ψ_bot = mps(ctr, row + 1, indβ)
 
+
     gauges = optimize_gauges_for_overlaps!!(ψ_top, ψ_bot, tol, max_sweeps)
+    # ψ_top, ψ_bot are changed in place. 
+    # This might affect previous initializations of  ψ_top, ψ_bot, as they are read from memoize
 
     for i ∈ ψ_top.sites
         g = gauges[i]

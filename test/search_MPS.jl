@@ -21,7 +21,7 @@
         schedule = fill(dβ, Int(ceil(β/dβ)))
         ψ = MPS(igp, Dcut, var_ϵ, max_sweeps, schedule)
         states, lprob, _ = solve(ψ, max_states)
-        @test sort(energy(states[1:to_show], igp)) ≈ expected_energies
+        @test sort(energy(igp, states[1:to_show])) ≈ expected_energies
     end
 
     @testset "with purification" begin

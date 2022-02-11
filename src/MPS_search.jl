@@ -17,7 +17,7 @@ function low_energy_spectrum(
     ψ = MPS(igp, Dcut, var_ϵ, max_sweeps, dβ, β, schedule)
     states, probs, ldp = solve(ψ, num_states)
 
-    en = energy(states, igp)
+    en = energy(igp, states)
     idx = sortperm(en)
     Solution(en[idx], states[idx], probs[idx], [0], ldp)
 end

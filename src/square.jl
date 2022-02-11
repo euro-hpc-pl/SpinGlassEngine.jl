@@ -6,7 +6,6 @@ export
        MpoLayers,
        conditional_probability,
        projectors,
-       index_from_node,
        nodes_search_order_Mps,
        boundary,
        update_energy
@@ -135,7 +134,7 @@ function conditional_probability(
 ) where {T <: Square, S}
     indβ, β = length(ctr.betas), last(ctr.betas)
     i, j = ctr.current_node
-    ∂v = boundary_state(ctr.peps, state, (i, j))
+    ∂v = boundary_state(ctr, state, (i, j))
 
     L = left_env(ctr, i, ∂v[1:j-1], indβ)
     R = right_env(ctr, i, ∂v[(j+2):(ctr.peps.ncols+1)], indβ)
@@ -175,10 +174,6 @@ function projectors(network::PEPSNetwork{T, S}, vertex::Node) where {T <: Square
     projector.(Ref(network), Ref(vertex), ((i, j-1), (i-1, j), (i, j+1), (i+1, j)))
 end
 
-function index_from_node(peps::PEPSNetwork{T, S}, node::Node) where {T <: Square, S}
-    peps.ncols * (node[begin] - 1) + node[end]
-end
-
 
 function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: Square, S}
     [(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols]
@@ -200,7 +195,7 @@ function update_energy(
     i, j = ctr.current_node
     en = local_energy(net, (i, j))
     for v ∈ ((i, j-1), (i-1, j))
-        en += bond_energy(net, (i, j), v, local_state_for_node(net, σ, v))
+        en += bond_energy(net, (i, j), v, local_state_for_node(ctr, σ, v))
     end
     en
 end

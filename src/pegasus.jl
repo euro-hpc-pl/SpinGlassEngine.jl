@@ -63,7 +63,7 @@ function conditional_probability(
 ) where {T <: Pegasus, S}
     indβ, β = length(ctr.betas), last(ctr.betas)
     i, j, k = ctr.current_node
-    ∂v = boundary_state(ctr.peps, state, (i, j))
+    ∂v = boundary_state(ctr, state, (i, j))
 
     L = left_env(ctr, i, ∂v[1:j-1], indβ)
     R = right_env(ctr, i, ∂v[(j+2):(ctr.peps.ncols+1)], indβ)
@@ -133,10 +133,6 @@ function projectors(net::PEPSNetwork{T, S}, vertex::Node) where {T <: Pegasus, S
     )
 end
 
-function index_from_node(peps::PEPSNetwork{T, S}, node::Node) where {T <: Pegasus, S}
-    2 * peps.ncols * (node[1] - 1) + 2 * (node[2]-1) + node[3]
-end
-
 
 function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: Pegasus, S}
     [(i, j, k) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols for k ∈ 1:2]
@@ -158,10 +154,10 @@ function update_energy(
     i, j, k = ctr.current_node
     en = local_energy(net, (i, j, k))
     for v ∈ ((i, j-1, 1), (i-1, j, 2), (i, j-1, 2), (i-1, j, 1))
-        en += bond_energy(net, (i, j, k), v, local_state_for_node(net, σ, v))
+        en += bond_energy(net, (i, j, k), v, local_state_for_node(ctr, σ, v))
     end
     if k != 2 return en end
-    en += bond_energy(net, (i, j, k), (i, j, 1), local_state_for_node(net, σ, (i, j, 1)))
+    en += bond_energy(net, (i, j, k), (i, j, 1), local_state_for_node(ctr, σ, (i, j, 1)))
     en
 end
 

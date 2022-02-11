@@ -44,9 +44,17 @@ mutable struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
     params::MpsParameters
     layers::MpoLayers
     statistics::Dict{Vector{Int}, <:Real}
+    iteration_order::Vector
 
     function MpsContractor{T}(net, βs, params) where T
-        new(net, βs, params, MpoLayers(layout(net), net.ncols), Dict{Vector{Int}, Real}())
+        new(
+            net, 
+            βs, 
+            params, 
+            MpoLayers(layout(net), net.ncols), 
+            Dict{Vector{Int}, Real}(), 
+            MPS_contractor_iteration_order(net)
+        )
     end
 end
 
@@ -301,10 +309,10 @@ function update_gauges!(
     gauges = optimize_gauges_for_overlaps!!(ψ_top, ψ_bot, tol, max_sweeps)
     # ψ_top, ψ_bot are changed in place. 
     # This might affect previous initializations of  ψ_top, ψ_bot, as they are read from memoize
-
     for i ∈ ψ_top.sites
         g = gauges[i]
         g_inv = 1.0 ./ g
+        # TODO: Here we use convention that clm = ctr.layers.main is beginning and ending with matching gauges
         n_bot = PEPSNode(row + 1 + clm[i][begin], i)
         n_top = PEPSNode(row + clm[i][end], i)
         g_top = ctr.peps.gauges.data[n_top] .* g

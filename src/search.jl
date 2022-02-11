@@ -37,13 +37,13 @@ function Solution(
     )
 end
 
-function branch_energy(peps::PEPSNetwork{T, S}, eσ::Tuple{<:Real, Vector{Int}}) where {T, S}
-    eσ[begin] .+ update_energy(peps, eσ[end])
+function branch_energy(ctr::MpsContractor{T}, eσ::Tuple{<:Real, Vector{Int}}) where {T, S}
+    eσ[begin] .+ update_energy(ctr.peps, eσ[end])
 end
 
-function branch_state(network::PEPSNetwork{T, S}, σ::Vector{Int}) where {T, S}
-    node = node_from_index(network, length(σ) + 1)
-    vcat.(Ref(σ), collect(1:length(local_energy(network, node))))
+function branch_state(ctr::MpsContractor{T}, σ::Vector{Int}) where {T, S}
+    node = ctr.iteration_order[length(σ) + 1]
+    vcat.(Ref(σ), collect(1:length(local_energy(ctr.peps, node))))
 end
 
 function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T
@@ -93,22 +93,24 @@ function discard_probabilities(psol::Solution, cut_off_prob::Real)
 end
 
 function branch_solution(psol::Solution, ctr::T, δprob::Real) where T <: AbstractContractor
-    node = node_from_index(ctr.peps, length(psol.states[begin]) + 1)
+    node = ctr.iteration_order[length(psol.states[begin]) + 1]
+    num_states = cluster_size(ctr.peps, node)
     discard_probabilities(
         Solution(
-            vcat(branch_energy.(Ref(ctr.peps), zip(psol.energies, psol.states))...),
-            vcat(branch_state.(Ref(ctr.peps), psol.states)...),
+            vcat(branch_energy.(Ref(ctr), zip(psol.energies, psol.states))...),
+            vcat(branch_state.(Ref(ctr), psol.states)...),
             vcat(branch_probability.(Ref(ctr), zip(psol.probabilities, psol.states))...),
-            repeat(psol.degeneracy, inner=length(local_energy(ctr.peps, node))),
+            repeat(psol.degeneracy, inner=num_states),
             psol.largest_discarded_probability
         ),
         δprob
     )
 end
 
-function merge_branches(network::AbstractGibbsNetwork{S, T}) where {S, T}
+function merge_branches(ctr::MpsContractor{T}) where {T}
     function _merge(psol::Solution)
-        node = node_from_index(network, length(psol.states[1])+1)
+        network = ctr.peps
+        node = ctr.iteration_order[length(psol.states[1])+1]
         boundaries = hcat(boundary_state.(Ref(network), psol.states, Ref(node))...)'
         _, indices = SpinGlassNetworks.unique_dims(boundaries, 1)
 
@@ -164,7 +166,7 @@ function low_energy_spectrum(
 
     # Start branch and bound search
     sol = empty_solution()
-    @showprogress "Search: " for _ ∈ 1:nv(ctr.peps.factor_graph)
+    @showprogress "Search: " for node ∈ ctr.iteration_order
         sol = branch_solution(sol, ctr, sparams.cut_off_prob)
         sol = bound_solution(sol, sparams.max_states, merge_strategy)
         # _clear_cache(network, sol) # TODO: make it work properly
@@ -173,7 +175,7 @@ function low_energy_spectrum(
     # Translate variable order (from network to factor graph)
     inner_perm = sortperm([
         ctr.peps.factor_graph.reverse_label_map[idx]
-        for idx ∈ ctr.peps.vertex_map.(iteration_order(ctr.peps))
+        for idx ∈ ctr.peps.vertex_map.(ctr.iteration_order)
     ])
 
     # Sort using energies as keys

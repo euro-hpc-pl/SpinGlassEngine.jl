@@ -117,9 +117,9 @@ end
 @memoize Dict function mpo(
     ctr::MpsContractor{T}, layers::Dict, r::Int, indβ::Int
 ) where T <: AbstractStrategy
-    mpo = Dict{Site, Dict{Site, Tensor}}()
+    mpo = Dict{Site, Dict{Site, Tensor{Float64}}}()
     for (site, coordinates) ∈ layers
-        lmpo = Dict{Site, Tensor}()
+        lmpo = Dict{Site, Tensor{Float64}}()
         for dr ∈ coordinates
             ten = tensor(ctr.peps, PEPSNode(r + dr, site), ctr.betas[indβ])
             push!(lmpo, dr => ten)
@@ -161,6 +161,7 @@ end
     ψ = mps(ctr, i+1, indβ)
     W = mpo(ctr, ctr.layers.main, i, indβ)
 
+    # TODO: Ask Bartek why this fails
     ψ0 = dot(W, ψ)
     truncate!(ψ0, :left, ctr.params.bond_dimension)
     compress!(

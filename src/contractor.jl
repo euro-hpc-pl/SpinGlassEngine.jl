@@ -303,8 +303,10 @@ function update_gauges!(
     ψ_top = mps_top(ctr, row, indβ)
     ψ_bot = mps(ctr, row + 1, indβ)
 
-
+    ψ_top = deepcopy(ψ_top)
+    ψ_bot = deepcopy(ψ_bot)
     gauges = optimize_gauges_for_overlaps!!(ψ_top, ψ_bot, tol, max_sweeps)
+    overlap = ψ_top * ψ_bot # overlap could be calculated in optimize_gauges_for_overlaps!!
     # ψ_top, ψ_bot are changed in place.
     # This might affect previous initializations of  ψ_top, ψ_bot, as they are read from memoize
     for i ∈ ψ_top.sites
@@ -327,4 +329,5 @@ function update_gauges!(
             delete!(memoize_cache(mpo), (ctr, ctr.layers.right, i, ind))
         end
     end
+    overlap
 end

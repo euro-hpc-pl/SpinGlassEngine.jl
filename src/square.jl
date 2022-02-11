@@ -6,9 +6,8 @@ export
        MpoLayers,
        conditional_probability,
        projectors,
-       node_from_index,
        index_from_node,
-       MpsContractor_iteration_order,
+       nodes_search_order_Mps,
        boundary,
        update_energy
 
@@ -135,7 +134,7 @@ function conditional_probability(
     ::Type{T}, ctr::MpsContractor{S}, state::Vector{Int},
 ) where {T <: Square, S}
     indβ, β = length(ctr.betas), last(ctr.betas)
-    i, j = node_from_index(ctr.peps, length(state)+1)
+    i, j = ctr.current_node
     ∂v = boundary_state(ctr.peps, state, (i, j))
 
     L = left_env(ctr, i, ∂v[1:j-1], indβ)
@@ -180,11 +179,8 @@ function index_from_node(peps::PEPSNetwork{T, S}, node::Node) where {T <: Square
     peps.ncols * (node[begin] - 1) + node[end]
 end
 
-function node_from_index(peps::PEPSNetwork{T, S}, index::Int) where {T <: Square, S}
-    ((index - 1) ÷ peps.ncols + 1, mod_wo_zero(index, peps.ncols))
-end
 
-function MpsContractor_iteration_order(peps::PEPSNetwork{T, S}) where {T <: Square, S}
+function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: Square, S}
     [(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols]
 end
 
@@ -197,8 +193,11 @@ function boundary(peps::PEPSNetwork{T, S}, node::Node) where {T <: Square, S}
     )
 end
 
-function update_energy(net::PEPSNetwork{T, S}, σ::Vector{Int})  where {T <: Square, S}
-    i, j = node_from_index(net, length(σ)+1)
+function update_energy(
+    ::Type{T}, ctr::MpsContractor{S}, σ::Vector{Int},
+) where {T <: Square, S}
+    net = ctr.peps
+    i, j = ctr.current_node
     en = local_energy(net, (i, j))
     for v ∈ ((i, j-1), (i-1, j))
         en += bond_energy(net, (i, j), v, local_state_for_node(net, σ, v))

@@ -44,15 +44,17 @@ mutable struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
     params::MpsParameters
     layers::MpoLayers
     statistics::Dict{Vector{Int}, <:Real}
-    iteration_order::Vector
+    nodes_search_order::Vector
+    node_search_index::Dict
     current_node
 
     function MpsContractor{T}(net, βs, params) where T
         ml = MpoLayers(layout(net), net.ncols)
         stat = Dict{Vector{Int}, Real}()
-        ord = MpsContractor_iteration_order(net)
+        ord = nodes_search_order_Mps(net)
+        enum_ord = Dict(node => i for (i, node) ∈ enumerate(ord))
         node = ord[begin]
-        new(net, βs, params, ml, stat, ord, node)
+        new(net, βs, params, ml, stat, ord, enum_ord, node)
     end
 end
 
@@ -274,6 +276,10 @@ end
 
 function conditional_probability(ctr::MpsContractor{S}, w::Vector{Int}) where S
     conditional_probability(layout(ctr.peps), ctr, w)
+end
+
+function update_energy(ctr::MpsContractor{S}, w::Vector{Int}) where S
+    update_energy(layout(ctr.peps), ctr, w)
 end
 
 function clear_memoize_cache()

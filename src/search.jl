@@ -38,7 +38,7 @@ function Solution(
 end
 
 function branch_energy(ctr::MpsContractor{T}, eσ::Tuple{<:Real, Vector{Int}}) where {T, S}
-    eσ[begin] .+ update_energy(ctr.peps, eσ[end])
+    eσ[begin] .+ update_energy(ctr, eσ[end])
 end
 
 function branch_state(ctr::MpsContractor{T}, σ::Vector{Int}) where {T, S}
@@ -150,7 +150,7 @@ function low_energy_spectrum(
 
     # Start branch and bound search
     sol = empty_solution()
-    @showprogress "Search: " for node ∈ ctr.iteration_order
+    @showprogress "Search: " for node ∈ ctr.nodes_search_order
         ctr.current_node = node
         sol = branch_solution(sol, ctr, sparams.cut_off_prob)
         sol = bound_solution(sol, sparams.max_states, merge_strategy)
@@ -160,7 +160,7 @@ function low_energy_spectrum(
     # Translate variable order (from network to factor graph)
     inner_perm = sortperm([
         ctr.peps.factor_graph.reverse_label_map[idx]
-        for idx ∈ ctr.peps.vertex_map.(ctr.iteration_order)
+        for idx ∈ ctr.peps.vertex_map.(ctr.nodes_search_order)
     ])
 
     # Sort using energies as keys

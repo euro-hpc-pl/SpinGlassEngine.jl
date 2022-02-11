@@ -17,15 +17,15 @@ function SpinGlassNetworks.local_basis(ψ::AbstractMPS, i::Int)
     SpinGlassNetworks.local_basis(physical_dim(ψ, i))
 end
 
-# to be remove
-function LinearAlgebra.dot(ψ::AbstractMPS, state::Union{Vector, NTuple})
-    C = I
-    for (M, σ) ∈ zip(ψ, state)
-        i = idx(σ)
-        C = M[:, i, :]' * (C * M[:, i, :])
-    end
-    tr(C)
-end
+# # to be remove
+# function LinearAlgebra.dot(ψ::AbstractMPS, state::Union{Vector, NTuple})
+#     C = I
+#     for (M, σ) ∈ zip(ψ, state)
+#         i = idx(σ)
+#         C = M[:, i, :]' * (C * M[:, i, :])
+#     end
+#     tr(C)
+# end
 
 include("geometry.jl")
 include("operations.jl")

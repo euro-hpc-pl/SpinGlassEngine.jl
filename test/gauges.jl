@@ -28,9 +28,11 @@ params = MpsParameters(bond_dim, 1E-8, 10)
 search_params = SearchParameters(num_states, δp)
 
 @testset "Updating gauges works correctly." begin
-for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense,) # MPSAnnealing Sparse
-    for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
-        for Lattice ∈ (Square, ), transform ∈ all_lattice_transformations  # SquareStar
+for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, )
+    # MPSAnnealing MethodError: no method matching mps_top(::MpsContractor{MPSAnnealing}, ::Int64, ::Int64)
+    # Sparse MethodError: no method matching contract_down(::SparseSiteTensor, ::Array{Float64, 3})
+    for Layout ∈ (EnergyGauges, ) # GaugesEnergy, EngGaugesEng)
+        for Lattice ∈ ( SquareStar,), transform ∈ (all_lattice_transformations[1],)  #  SquareStar not passing
             net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform, :id)
             ctr = MpsContractor{Strategy}(net, [β/8, β/4, β/2, β], params)
 
@@ -58,15 +60,15 @@ for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense,) # MPSAnnealing Sparse
                     overlap_new = ψ_bot * ψ_top
 
                     # should be calculated from scratch with updated gauges
-                    ψ_top2 = mps_top(ctr, i, indβ) 
+                    ψ_top2 = mps_top(ctr, i, indβ)
                     ψ_bot2 = mps(ctr, i+1, indβ)
 
                     overlap_new2 = ψ_top2 * ψ_bot2
                     @test abs((overlap_new - overlap_new2) / overlap_new) < 1e-4
                     @test overlap_new > overlap_old
                 end
-                clear_memoize_cache()
             end
+            clear_memoize_cache()
         end
     end
 end

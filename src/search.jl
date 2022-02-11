@@ -42,8 +42,7 @@ function branch_energy(ctr::MpsContractor{T}, eσ::Tuple{<:Real, Vector{Int}}) w
 end
 
 function branch_state(ctr::MpsContractor{T}, σ::Vector{Int}) where {T, S}
-    node = ctr.iteration_order[length(σ) + 1]
-    vcat.(Ref(σ), collect(1:cluster_size(ctr.peps, node)))
+    vcat.(Ref(σ), collect(1:cluster_size(ctr.peps, ctr.current_node)))
 end
 
 function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T
@@ -93,8 +92,7 @@ function discard_probabilities(psol::Solution, cut_off_prob::Real)
 end
 
 function branch_solution(psol::Solution, ctr::T, δprob::Real) where T <: AbstractContractor
-    node = ctr.iteration_order[length(psol.states[begin]) + 1]
-    num_states = cluster_size(ctr.peps, node)
+    num_states = cluster_size(ctr.peps, ctr.current_node)
     discard_probabilities(
         Solution(
             vcat(branch_energy.(Ref(ctr), zip(psol.energies, psol.states))...),
@@ -110,7 +108,7 @@ end
 function merge_branches(ctr::MpsContractor{T}) where {T}
     function _merge(psol::Solution)
         network = ctr.peps
-        node = ctr.iteration_order[length(psol.states[1])+1]
+        node = ctr.current_node
         boundaries = hcat(boundary_state.(Ref(network), psol.states, Ref(node))...)'
         _, indices = SpinGlassNetworks.unique_dims(boundaries, 1)
 
@@ -167,6 +165,7 @@ function low_energy_spectrum(
     # Start branch and bound search
     sol = empty_solution()
     @showprogress "Search: " for node ∈ ctr.iteration_order
+        ctr.current_node = node
         sol = branch_solution(sol, ctr, sparams.cut_off_prob)
         sol = bound_solution(sol, sparams.max_states, merge_strategy)
         # _clear_cache(network, sol) # TODO: make it work properly

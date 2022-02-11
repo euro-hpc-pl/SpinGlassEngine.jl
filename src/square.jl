@@ -8,7 +8,7 @@ export
        projectors,
        node_from_index,
        index_from_node,
-       MPS_contractor_iteration_order,
+       MpsContractor_iteration_order,
        boundary,
        update_energy
 
@@ -184,7 +184,7 @@ function node_from_index(peps::PEPSNetwork{T, S}, index::Int) where {T <: Square
     ((index - 1) ÷ peps.ncols + 1, mod_wo_zero(index, peps.ncols))
 end
 
-function MPS_contractor_iteration_order(peps::PEPSNetwork{T, S}) where {T <: Square, S}
+function MpsContractor_iteration_order(peps::PEPSNetwork{T, S}) where {T <: Square, S}
     [(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols]
 end
 

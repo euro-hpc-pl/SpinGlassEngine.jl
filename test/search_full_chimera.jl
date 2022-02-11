@@ -31,7 +31,7 @@ function bench(instance::String)
         for Layout ∈ (EnergyGauges, ), transform ∈ rotation.([0])
             net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
             ctr = MpsContractor{Strategy}(net, [β/8, β/4, β/2, β], params)
-            sol = low_energy_spectrum(ctr, search_params, merge_branches(net))
+            sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
             @test sol.energies[begin] ≈ ground_energy
             push!(energies, sol.energies)
             clear_memoize_cache()

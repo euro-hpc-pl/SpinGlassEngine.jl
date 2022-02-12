@@ -93,7 +93,6 @@ end
 
 function merge_branches(ctr::MpsContractor{T}) where {T}
     function _merge(psol::Solution)
-        network = ctr.peps
         node = ctr.current_node
         boundaries = hcat(boundary_state.(Ref(ctr), psol.states, Ref(node))...)'
         _, indices = SpinGlassNetworks.unique_dims(boundaries, 1)

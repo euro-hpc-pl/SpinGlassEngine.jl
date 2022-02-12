@@ -181,7 +181,6 @@ function projectors(network::PEPSNetwork{T, S}, vertex::Node) where {T <: Square
     projector.(Ref(network), Ref(vertex), nbrs)
 end
 
-
 function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: SquareStar, S}
     [(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols]
 end

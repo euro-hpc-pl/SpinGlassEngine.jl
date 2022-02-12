@@ -133,7 +133,6 @@ function projectors(net::PEPSNetwork{T, S}, vertex::Node) where {T <: Pegasus, S
     )
 end
 
-
 function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: Pegasus, S}
     [(i, j, k) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols for k ∈ 1:2]
 end

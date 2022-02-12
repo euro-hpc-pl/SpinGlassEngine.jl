@@ -6,7 +6,6 @@ export
        interaction_energy,
        connecting_tensor,
        normalize_probability,
-    #    boundary_state,
        local_state_for_node,
        fuse_projectors,
        initialize_gauges!,
@@ -122,7 +121,6 @@ function interaction_energy(network::AbstractGibbsNetwork{S, T}, v::S, w::S) whe
         zeros(1, 1)
     end
 end
-
 
 function is_compatible(factor_graph::LabelledGraph, network_graph::LabelledGraph)
     all(has_edge(network_graph, src(edge), dst(edge)) for edge ∈ edges(factor_graph))

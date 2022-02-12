@@ -174,7 +174,6 @@ function projectors(network::PEPSNetwork{T, S}, vertex::Node) where {T <: Square
     projector.(Ref(network), Ref(vertex), ((i, j-1), (i-1, j), (i, j+1), (i+1, j)))
 end
 
-
 function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: Square, S}
     [(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols]
 end

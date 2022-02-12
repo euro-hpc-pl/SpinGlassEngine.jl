@@ -46,12 +46,12 @@ push!(my_tests,
         #"search_smallest_chimera.jl", # OK except MPSAnnealing
         #"search_full_chimera.jl", #OK, all heuristics to be checked
         "search_cross.jl", # OK, all heuristics to be checked
-        #"search_pegasus.jl", # OK
-        #"search_pegasus_nodiag.jl", # OK
-        "search_new_geometry_nodiag.jl", # NO
+        "search_pegasus.jl", # OK
+        "search_pegasus_nodiag.jl", # OK
+        #"search_new_geometry_nodiag.jl", # NO
         #"chimera_overlap.jl", # OK
-        "gauges.jl", # OK
-        "search_smallest_cross.jl", # OK
+        #"gauges.jl", # OK
+        #"search_smallest_cross.jl", # OK
 )
 
 for my_test in my_tests

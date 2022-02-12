@@ -45,9 +45,9 @@ mutable struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
     params::MpsParameters
     layers::MpoLayers
     statistics::Dict{Vector{Int}, <:Real}
-    nodes_search_order::Vector
-    node_search_index::Dict
-    current_node
+    nodes_search_order::Vector{Node}
+    node_search_index::Dict{Node, Int}
+    current_node::Node
 
     function MpsContractor{T}(net, βs, params) where T
         ml = MpoLayers(layout(net), net.ncols)
@@ -62,7 +62,7 @@ end
 "Gives the strategy to be used to contract peps network."
 strategy(ctr::MpsContractor{T}) where {T} = T
 
-"Construct (and memoize) MPO given layers."
+"Construct (and memoize) MPO for a given layers."
 @memoize Dict function mpo(
     ctr::MpsContractor{T}, layers::Dict{Site, Sites}, r::Int, indβ::Int
 ) where T <: AbstractStrategy
@@ -141,6 +141,7 @@ end
         ψ0 = IdentityQMps(local_dims(W, :up), ctr.params.bond_dimension)
         canonise!(ψ0, :left)
     end
+
     compress!(
         ψ0,
         W,
@@ -290,7 +291,6 @@ function clear_memoize_cache()
     empty!(memoize_cache(mps))
     empty!(memoize_cache(mps_top))
     empty!(memoize_cache(dressed_mps))
-    empty!(memoize_cache(spectrum)) # to be remove
 end
 
 function error_measure(probs)
@@ -312,14 +312,14 @@ function update_gauges!(
 
     ψ_top = deepcopy(ψ_top)
     ψ_bot = deepcopy(ψ_bot)
+
     gauges = optimize_gauges_for_overlaps!!(ψ_top, ψ_bot, tol, max_sweeps)
-    overlap = ψ_top * ψ_bot # overlap could be calculated in optimize_gauges_for_overlaps!!
-    # ψ_top, ψ_bot are changed in place.
-    # This might affect previous initializations of  ψ_top, ψ_bot, as they are read from memoize
+    overlap = ψ_top * ψ_bot
+
     for i ∈ ψ_top.sites
         g = gauges[i]
         g_inv = 1.0 ./ g
-        # TODO: Here we use convention that clm = ctr.layers.main is beginning and ending with matching gauges
+        # Here we use convention that clm = ctr.layers.main with beginning and ending with matching gauges
         n_bot = PEPSNode(row + 1 + clm[i][begin], i)
         n_top = PEPSNode(row + clm[i][end], i)
         g_top = ctr.peps.gauges.data[n_top] .* g

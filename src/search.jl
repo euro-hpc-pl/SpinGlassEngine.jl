@@ -153,7 +153,7 @@ function low_energy_spectrum(
         ctr.current_node = node
         sol = branch_solution(sol, ctr, sparams.cut_off_prob)
         sol = bound_solution(sol, sparams.max_states, merge_strategy)
-        # _clear_cache(ctr, sol) # TODO: make it work properly
+        # TODO: clear memoize cache
     end
 
     # Translate variable order (from network to factor graph)

@@ -123,7 +123,7 @@ function conditional_probability(
     normalize_probability(probs)
 end
 
-function projectors(net::PEPSNetwork{T, S}, vertex::Node) where {T <: Pegasus, S}
+function projectors_site_tensor(net::PEPSNetwork{T, S}, vertex::Node) where {T <: Pegasus, S}
     i, j = vertex
     (
         projector(net, (i, j-1, 2), ((i, j, 1), (i, j, 2))),
@@ -137,12 +137,12 @@ function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: Pegasus, S}
     [(i, j, k) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols for k ∈ 1:2]
 end
 
-function boundary(peps::PEPSNetwork{T, S}, node::Node) where {T <: Pegasus, S}
+function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: Pegasus, S}
     i, j = node
     vcat(
         [((i, k, 1), ((i+1, k, 1), (i+1, k, 2))) for k ∈ 1:j-1]...,
         ((i, (j-1), 2), ((i, j, 1), (i, j, 2))),
-        [((i-1, k, 1), ((i, k, 1), (i, k, 2))) for k ∈ j:peps.ncols]...,
+        [((i-1, k, 1), ((i, k, 1), (i, k, 2))) for k ∈ j:ctr.peps.ncols]...,
         ((i, j, 1), (i, j, 2))
     )
 end
@@ -228,11 +228,11 @@ end
 function Base.size(
     network::PEPSNetwork{Pegasus, T}, node::PEPSNode, ::Val{:pegasus_site}
 ) where T <: AbstractSparsity
-    maximum.(projectors(network, Node(node)))
+    maximum.(projectors_site_tensor(network, Node(node)))
 end
 
 function Base.size(
     network::PEPSNetwork{Pegasus, T}, node::PEPSNode, ::Val{:sparse_pegasus_site}
 ) where T <: AbstractSparsity
-    maximum.(projectors(network, Node(node)))
+    maximum.(projectors_site_tensor(network, Node(node)))
 end

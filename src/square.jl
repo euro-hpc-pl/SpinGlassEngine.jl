@@ -5,7 +5,7 @@ export
        gauges_list,
        MpoLayers,
        conditional_probability,
-       projectors,
+       projectors_site_tensor,
        nodes_search_order_Mps,
        boundary,
        update_energy
@@ -168,8 +168,8 @@ function conditional_probability(
     normalize_probability(probs)
 end
 
-"Returns rojectors."
-function projectors(network::PEPSNetwork{T, S}, vertex::Node) where {T <: Square, S}
+
+function projectors_site_tensor(network::PEPSNetwork{T, S}, vertex::Node) where {T <: Square, S}
     i, j = vertex
     projector.(Ref(network), Ref(vertex), ((i, j-1), (i-1, j), (i, j+1), (i+1, j)))
 end
@@ -178,12 +178,13 @@ function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: Square, S}
     [(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols]
 end
 
-function boundary(peps::PEPSNetwork{T, S}, node::Node) where {T <: Square, S}
+
+function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: Square, S}
     i, j = node
     vcat(
         [((i, k), (i+1, k)) for k ∈ 1:j-1]...,
         ((i, j-1), (i, j)),
-        [((i-1, k), (i, k)) for k ∈ j:peps.ncols]...
+        [((i-1, k), (i, k)) for k ∈ j:ctr.peps.ncols]...
     )
 end
 

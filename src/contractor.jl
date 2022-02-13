@@ -363,8 +363,14 @@ end
 function boundary_state(
     ctr::MpsContractor{T}, σ::Vector{Int}, node::S
 ) where {T, S}
-    boundary_index.(Ref(ctr), boundary(ctr.peps, node), Ref(σ))
+    boundary_index.(Ref(ctr), boundary(ctr, node), Ref(σ))
 end
+
+
+function boundary(ctr::MpsContractor{T}, node::Node) where T
+    boundary(layout(ctr.peps), ctr, node)
+end
+
 
 function local_state_for_node(
     ctr::MpsContractor{T}, σ::Vector{Int}, w::S

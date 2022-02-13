@@ -2,24 +2,107 @@ export Node, PEPSNode, AbstractGeometry, AbstractSparsity
 export AbstractTensorsLayout, tensor_map, gauges_list, Dense, Sparse, Gauges
 export Square, SquareStar, GaugesEnergy, EnergyGauges, EngGaugesEng, Pegasus
 
+"""
+$(TYPEDEF)
+
+$(TYPEDFIELDS)
+
+"""
 abstract type AbstractGeometry end
+
+"""
+$(TYPEDEF)
+
+$(TYPEDFIELDS)
+
+"""
 abstract type AbstractSparsity end
+
+"""
+$(TYPEDEF)
+
+$(TYPEDFIELDS)
+
+"""
 abstract type AbstractTensorsLayout end
 
+"""
+$(TYPEDEF)
+
+$(TYPEDFIELDS)
+
+"""
 struct SquareStar{T <: AbstractTensorsLayout} <: AbstractGeometry end
+
+"""
+$(TYPEDEF)
+
+$(TYPEDFIELDS)
+
+"""
 struct Square{T <: AbstractTensorsLayout} <: AbstractGeometry end
 
+"""
+$(TYPEDEF)
+
+$(TYPEDFIELDS)
+
+"""
 struct Pegasus <: AbstractGeometry end
 
+"""
+$(TYPEDEF)
+
+$(TYPEDFIELDS)
+
+"""
 struct Dense <: AbstractSparsity end
+
+"""
+$(TYPEDEF)
+
+$(TYPEDFIELDS)
+
+"""
 struct Sparse <: AbstractSparsity end
 
+"""
+$(TYPEDEF)
+
+$(TYPEDFIELDS)
+
+"""
 struct GaugesEnergy{T} <: AbstractTensorsLayout end
+
+"""
+$(TYPEDEF)
+
+$(TYPEDFIELDS)
+
+"""
 struct EnergyGauges{T} <: AbstractTensorsLayout end
+
+"""
+$(TYPEDEF)
+
+$(TYPEDFIELDS)
+
+"""
 struct EngGaugesEng{T} <: AbstractTensorsLayout end
 
+"""
+```julia
+const Node = NTuple{N, Int} where N
+```
+"""
 const Node = NTuple{N, Int} where N
 
+"""
+$(TYPEDEF)
+
+$(TYPEDFIELDS)
+
+"""
 struct PEPSNode
     i::Site
     j::Site
@@ -28,8 +111,19 @@ struct PEPSNode
         new(denominator(i) == 1 ? numerator(i) : i, denominator(j) == 1 ? numerator(j) : j)
     end
 end
+
+"""
+$(TYPEDSIGNATURES)
+
+"""
 Node(node::PEPSNode) = (node.i, node.j)
 
+"""
+$(TYPEDEF)
+
+$(TYPEDFIELDS)
+
+"""
 struct SuperPEPSNode
     i::Site
     j::Site
@@ -39,8 +133,19 @@ struct SuperPEPSNode
         new(denominator(i) == 1 ? numerator(i) : i, denominator(j) == 1 ? numerator(j) : j, k)
     end
 end
+
+"""
+$(TYPEDSIGNATURES)
+
+"""
 Node(node::SuperPEPSNode) = (node.i, node.j, node.k)
 
+"""
+$(TYPEDEF)
+
+$(TYPEDFIELDS)
+
+"""
 struct GaugeInfo
     positions::NTuple{2, PEPSNode}
     attached_tensor::PEPSNode
@@ -48,20 +153,38 @@ struct GaugeInfo
     type::Symbol
 end
 
+"""
+$(TYPEDEF)
+
+$(TYPEDFIELDS)
+
+"""
 struct Gauges{T <: AbstractGeometry}
     data::Dict
     info::Vector{GaugeInfo}
-
+    """
+    ```julia
+    function Gauges{T}(nrows::Int, ncols::Int) where T <: AbstractGeometry
+    ```
+    """
     function Gauges{T}(nrows::Int, ncols::Int) where T <: AbstractGeometry
         new(Dict(), gauges_list(T, nrows, ncols))
     end
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function Square(m::Int, n::Int)
     labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
     LabelledGraph(labels, grid((m, n)))
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function SquareStar(m::Int, n::Int)
     lg = Square(m, n)
     for i ∈ 1:m-1, j ∈ 1:n-1
@@ -71,6 +194,10 @@ function SquareStar(m::Int, n::Int)
     lg
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function Pegasus(m::Int, n::Int)
     labels = [(i, j, k) for j ∈ 1:n for i ∈ 1:m for k ∈ 1:2]
     lg = LabelledGraph(labels)
@@ -97,9 +224,22 @@ end
 ###    Square geometry     ###
 #-----------------------------
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 site(::Type{Dense}) = :site
+
+"""
+$(TYPEDSIGNATURES)
+
+"""
 site(::Type{Sparse}) = :sparse_site
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function tensor_map(
     ::Type{Square{T}}, ::Type{S}, nrows::Int, ncols::Int
 ) where {T <: Union{GaugesEnergy, EnergyGauges}, S <: AbstractSparsity}
@@ -113,6 +253,10 @@ function tensor_map(
     map
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function tensor_map(
     ::Type{Square{T}}, ::Type{S}, nrows::Int, ncols::Int
 ) where {T <: EngGaugesEng, S <: AbstractSparsity}
@@ -132,6 +276,10 @@ function tensor_map(
     map
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function gauges_list(::Type{Square{T}}, nrows::Int, ncols::Int) where T <: GaugesEnergy
     [
         GaugeInfo(
@@ -144,6 +292,10 @@ function gauges_list(::Type{Square{T}}, nrows::Int, ncols::Int) where T <: Gauge
     ]
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function gauges_list(::Type{Square{T}}, nrows::Int, ncols::Int) where T <: EnergyGauges
     [
         GaugeInfo(
@@ -156,6 +308,10 @@ function gauges_list(::Type{Square{T}}, nrows::Int, ncols::Int) where T <: Energ
     ]
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function gauges_list(::Type{Square{T}}, nrows::Int, ncols::Int) where T <: EngGaugesEng
     [
         GaugeInfo(
@@ -172,9 +328,22 @@ end
 ###    SquareStar geometry     ###
 #---------------------------------
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 Virtual(::Type{Dense}) = :virtual
+
+"""
+$(TYPEDSIGNATURES)
+
+"""
 Virtual(::Type{Sparse}) = :sparse_virtual
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function tensor_map(
     ::Type{SquareStar{T}}, ::Type{S}, nrows::Int, ncols::Int
 ) where {T <: Union{EnergyGauges, GaugesEnergy}, S <: AbstractSparsity}
@@ -195,6 +364,10 @@ function tensor_map(
     map
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function tensor_map(
     ::Type{SquareStar{T}}, ::Type{S}, nrows::Int, ncols::Int
 ) where {T <: EngGaugesEng, S <: AbstractSparsity}
@@ -220,6 +393,10 @@ function tensor_map(
     map
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function gauges_list(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T <: GaugesEnergy
     [
         GaugeInfo(
@@ -232,6 +409,10 @@ function gauges_list(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T <: G
     ]
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function gauges_list(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T <: EnergyGauges
     [
         GaugeInfo(
@@ -244,6 +425,10 @@ function gauges_list(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T <: E
     ]
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function gauges_list(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T <: EngGaugesEng
     [
         GaugeInfo(
@@ -261,9 +446,22 @@ end
 #------------------------------
 # Geometry: 2 nodes -> 1 TN site. This will work for Chimera.
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 pegasus_site(::Type{Dense}) = :pegasus_site
+
+"""
+$(TYPEDSIGNATURES)
+
+"""
 pegasus_site(::Type{Sparse}) = :sparse_pegasus_site
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function tensor_map(
     ::Type{Pegasus}, ::Type{S}, nrows::Int, ncols::Int
 ) where S <: AbstractSparsity
@@ -272,6 +470,10 @@ function tensor_map(
     map
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function gauges_list(::Type{Pegasus}, nrows::Int, ncols::Int)
     [
         GaugeInfo(

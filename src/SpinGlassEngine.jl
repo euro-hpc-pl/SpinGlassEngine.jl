@@ -10,6 +10,7 @@ using Memoize
 using LinearAlgebra, MKL
 using LightGraphs
 using ProgressMeter
+using DocStringExtensions
 #using Infiltrator
 
 # to be remove

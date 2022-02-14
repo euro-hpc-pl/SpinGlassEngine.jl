@@ -170,7 +170,7 @@ function conditional_probability(
     normalize_probability(loc_exp)
 end
 
-function projectors(network::PEPSNetwork{T, S}, vertex::Node) where {T <: SquareStar, S}
+function projectors_site_tensor(network::PEPSNetwork{T, S}, vertex::Node) where {T <: SquareStar, S}
     i, j = vertex
     nbrs = (
         ((i+1, j-1), (i, j-1), (i-1, j-1)),
@@ -185,7 +185,7 @@ function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: SquareStar,
     [(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols]
 end
 
-function boundary(peps::PEPSNetwork{T, S}, node::Node) where {T <: SquareStar, S}
+function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: SquareStar, S}
     i, j = node
     vcat(
         [
@@ -198,7 +198,7 @@ function boundary(peps::PEPSNetwork{T, S}, node::Node) where {T <: SquareStar, S
         ((i-1, j), (i, j)),
         [
             [((i-1, k-1), (i, k), (i-1, k), (i, k-1)), ((i-1, k), (i, k))]
-            for k ∈ (j+1):peps.ncols
+            for k ∈ (j+1):ctr.peps.ncols
         ]...
     )
 end

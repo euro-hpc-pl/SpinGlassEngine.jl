@@ -125,6 +125,34 @@ end
     ψ0
 end
 
+"Construct (and memoize) (bottom) top MPS using Annealing for a given row."
+@memoize Dict function mps_top(ctr::MpsContractor{MPSAnnealing}, i::Int, indβ::Int)
+    if i < 1
+        W = mpo(ctr, ctr.layers.main, 1, indβ)
+        return IdentityQMps(local_dims(W, :up))
+    end
+
+    ψ = mps_top(ctr, i-1, indβ)
+    W = mpo(ctr, ctr.layers.main, i, indβ)
+
+    if indβ > 1
+        ψ0 = mps_top(ctr, i, indβ-1)
+    else
+        ψ0 = IdentityQMps(local_dims(W, :up), ctr.params.bond_dimension)
+        canonise!(ψ0, :left)
+    end
+    compress!(
+        ψ0,
+        W,
+        ψ,
+        ctr.params.bond_dimension,
+        ctr.params.variational_tol,
+        ctr.params.max_num_sweeps,
+        :c
+    )
+    ψ0
+end
+
 "Construct (and memoize) (bottom) MPS using Annealing for a given row."
 @memoize Dict function mps(ctr::MpsContractor{MPSAnnealing}, i::Int, indβ::Int)
     if i > ctr.peps.nrows

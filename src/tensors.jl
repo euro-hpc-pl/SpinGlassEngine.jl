@@ -15,7 +15,7 @@ function tensor(
 ) where T <: AbstractGeometry
     en = local_energy(network, Node(v))
     loc_exp = exp.(-β .* (en .- minimum(en)))
-    projs = projectors(network, Node(v))
+    projs = projectors_site_tensor(network, Node(v))
     A = zeros(maximum.(projs))
     for (σ, lexp) ∈ enumerate(loc_exp) A[getindex.(projs, Ref(σ))...] += lexp end
     A
@@ -25,13 +25,13 @@ function tensor(
     network::PEPSNetwork{T, Sparse}, v::PEPSNode, β::Real, ::Val{:sparse_site}
 ) where T <: AbstractGeometry
     en = local_energy(network, Node(v))
-    SparseSiteTensor(exp.(-β .* (en .- minimum(en))), projectors(network, Node(v)))
+    SparseSiteTensor(exp.(-β .* (en .- minimum(en))), projectors_site_tensor(network, Node(v)))
 end
 
 function Base.size(
     network::PEPSNetwork{T, Dense}, v::PEPSNode, ::Union{Val{:site}, Val{:sparse_site}}
 ) where T <: AbstractGeometry
-    maximum.(projectors(network, Node(v)))
+    maximum.(projectors_site_tensor(network, Node(v)))
 end
 
 function tensor(

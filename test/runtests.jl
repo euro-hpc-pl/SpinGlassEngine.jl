@@ -42,10 +42,10 @@ push!(my_tests,
         #"branch_and_bound.jl",
         #"ising_MPS.jl",
         #"search_MPS.jl",
-        #"search_chimera.jl", # OK
+        "search_chimera.jl", # OK
         #"search_smallest_chimera.jl", # OK except MPSAnnealing
         #"search_full_chimera.jl", #OK, all heuristics to be checked
-        #"search_cross.jl", # OK, all heuristics to be checked
+        "search_cross.jl", # OK, all heuristics to be checked
         #"search_pegasus.jl", # OK
         #"search_pegasus_nodiag.jl", # OK
         #"search_new_geometry_nodiag.jl", # NO

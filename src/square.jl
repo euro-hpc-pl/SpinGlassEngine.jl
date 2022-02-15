@@ -134,7 +134,7 @@ function conditional_probability(
 ) where {T <: Square, S}
     indβ, β = length(ctr.betas), last(ctr.betas)
     i, j = ctr.current_node
-    ∂v = boundary_state(ctr, state, (i, j))
+    ∂v = boundary_state(ctr, state, (i, j))  # this likely should be always called from current_node
 
     L = left_env(ctr, i, ∂v[1:j-1], indβ)
     R = right_env(ctr, i, ∂v[(j+2):(ctr.peps.ncols+1)], indβ)

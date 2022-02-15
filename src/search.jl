@@ -6,7 +6,7 @@ export
        Solution,
        SearchParameters,
        exact_marginal_probability,
-       exact_conditional_probabilities
+       exact_conditional_probability
 
 struct SearchParameters
     max_states::Int
@@ -46,7 +46,10 @@ function branch_state(ctr::MpsContractor{T}, σ::Vector{Int}) where {T, S}
 end
 
 function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T
-    pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
+    if !( exact_conditional_probability(ctr, pσ[end]) ≈ conditional_probability(ctr, pσ[end]) )
+        println(pσ[end], exact_conditional_probability(ctr, pσ[end]), conditional_probability(ctr, pσ[end]))
+    end
+    pσ[begin] .+ log.(exact_conditional_probability(ctr, pσ[end]))
 end
 
 @memoize function spectrum(factor_graph::LabelledGraph{S, T}) where {S, T}
@@ -67,8 +70,8 @@ function exact_marginal_probability(
     sum(prob[findall([all(s[k] == v for (k, v) ∈ target_state) for s ∈ states])])
 end
 
-function exact_conditional_probabilities(ctr::MpsContractor{T}, σ::Vector{Int}) where T
-    probs = exact_marginal_probability.(Ref(ctr), branch_state(ctr.peps, σ))
+function exact_conditional_probability(ctr::MpsContractor{T}, σ::Vector{Int}) where T
+    probs = exact_marginal_probability.(Ref(ctr), branch_state(ctr, σ))
     probs ./= sum(probs)
 end
 

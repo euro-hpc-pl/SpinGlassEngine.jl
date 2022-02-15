@@ -276,14 +276,6 @@ end
     L
 end
 
-function conditional_probability(ctr::MpsContractor{S}, w::Vector{Int}) where S
-    conditional_probability(layout(ctr.peps), ctr, w)
-end
-
-function update_energy(ctr::MpsContractor{S}, w::Vector{Int}) where S
-    update_energy(layout(ctr.peps), ctr, w)
-end
-
 function clear_memoize_cache()
     empty!(memoize_cache(left_env))
     empty!(memoize_cache(right_env))
@@ -339,6 +331,24 @@ function update_gauges!(
     overlap
 end
 
+function conditional_probability(ctr::MpsContractor{S}, w::Vector{Int}) where S
+    conditional_probability(layout(ctr.peps), ctr, w)
+end
+
+function update_energy(ctr::MpsContractor{S}, w::Vector{Int}) where S
+    update_energy(layout(ctr.peps), ctr, w)
+end
+
+function boundary_state(
+    ctr::MpsContractor{T}, σ::Vector{Int}, node::S
+) where {T, S}
+    boundary_index.(Ref(ctr), boundary(ctr, node), Ref(σ))
+end
+
+function boundary(ctr::MpsContractor{T}, node::Node) where T
+    boundary(layout(ctr.peps), ctr, node)
+end
+
 function boundary_index(
     ctr::MpsContractor{T},
     nodes::Tuple{S, Union{S, NTuple{N, S}}},
@@ -350,6 +360,7 @@ function boundary_index(
     projector(ctr.peps, v, w)[state]
 end
 
+""" boundary index formed from outer product of two projectors"""
 function boundary_index(
     ctr::MpsContractor{T}, nodes::NTuple{4, S}, σ::Vector{Int}
 ) where {S, T}
@@ -360,22 +371,10 @@ function boundary_index(
     (j - 1) * maximum(pv) + i
 end
 
-function boundary_state(
-    ctr::MpsContractor{T}, σ::Vector{Int}, node::S
-) where {T, S}
-    boundary_index.(Ref(ctr), boundary(ctr, node), Ref(σ))
-end
-
-
-function boundary(ctr::MpsContractor{T}, node::Node) where T
-    boundary(layout(ctr.peps), ctr, node)
-end
-
-
 function local_state_for_node(
     ctr::MpsContractor{T}, σ::Vector{Int}, w::S
 ) where {T, S}
     k = get(ctr.node_search_index, w, 0)
     0 < k <= length(σ) ? σ[k] : 1
-    # 0 < k ? σ[k] : 1  # likely we shouldnt be asking for node with k > length(σ)
+    # 0 < k ? σ[k] : 1  # likely we shouldnt be asking for node with k > length(σ) -- but this does not work
 end

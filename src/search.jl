@@ -46,10 +46,10 @@ function branch_state(ctr::MpsContractor{T}, σ::Vector{Int}) where {T, S}
 end
 
 function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T
-    if !( exact_conditional_probability(ctr, pσ[end]) ≈ conditional_probability(ctr, pσ[end]) )
-        println(pσ[end], exact_conditional_probability(ctr, pσ[end]), conditional_probability(ctr, pσ[end]))
-    end
-    pσ[begin] .+ log.(exact_conditional_probability(ctr, pσ[end]))
+    # if !( exact_conditional_probability(ctr, pσ[end]) ≈ conditional_probability(ctr, pσ[end]) )
+    #     println(pσ[end], exact_conditional_probability(ctr, pσ[end]), conditional_probability(ctr, pσ[end]))
+    # end
+    pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
 end
 
 @memoize function spectrum(factor_graph::LabelledGraph{S, T}) where {S, T}

@@ -15,7 +15,7 @@ function bench(instance::String)
     β = 1
     bond_dim = 64
     δp = 1e-10
-    num_states = 10
+    num_states = 128
 
     ig = ising_graph(instance)
 
@@ -53,25 +53,21 @@ function bench(instance::String)
             fg_states = decode_state.(Ref(net), sol.states)
             @test sol.energies ≈ energy.(Ref(fg), fg_states)
 
-            #@test sol.energies ≈ sol2.energies
-            #@test sol.states == sol2.states
+            @test sol.energies ≈ sol2.energies
 
             norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
             exct_prob = exp.(-β .* (sol.energies .- sol.energies[1]))
-            #for (a, b, c, d) in zip(norm_prob, sol.energies, sol.states, exct_prob)
-            #    println(a ./ d, " ", b, " ", c)
-            #end
-            # @test norm_prob ≈ exct_prob
+
+            @test norm_prob ≈ exct_prob
             push!(energies, sol.energies)
 
-            ψ1 = mps(ctr, 2, 4)
-            ψ1_top = mps_top(ctr, 1, 4)
+            # ψ1 = mps(ctr, 2, 4)
+            # ψ1_top = mps_top(ctr, 1, 4)
 
-            ψ2 = mps(ctr2, 2, 4)
-            ψ2_top = mps_top(ctr2, 1, 4)
-            println("overlap = ", ψ1 * ψ2)
-            println("overlap = ", ψ1_top * ψ2_top)
-            # println(size(ψ1[1]))
+            # ψ2 = mps(ctr2, 2, 4)
+            # ψ2_top = mps_top(ctr2, 1, 4)
+            # println("overlap = ", ψ1 * ψ2)
+            # println("overlap = ", ψ1_top * ψ2_top)
 
             clear_memoize_cache()
         end

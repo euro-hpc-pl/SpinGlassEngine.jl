@@ -66,7 +66,7 @@ function conditional_probability(
     ∂v = boundary_state(ctr, state, ctr.current_node)
 
     L = left_env(ctr, i, ∂v[1:j-1], indβ)
-    R = right_env(ctr, i, ∂v[(j+2):(ctr.peps.ncols+1)], indβ)
+    R = right_env(ctr, i, ∂v[(j+4):end], indβ)
     M = dressed_mps(ctr, i, indβ)[j]
 
     L ./= maximum(abs.(L))
@@ -75,44 +75,60 @@ function conditional_probability(
 
     @tensor LM[y, z] := L[x] * M[x, y, z]
 
-    _, (pl1, pl2) = fuse_projectors([projector(ctr.peps, (i, j-1, 2), (i, j, k)) for k ∈ 1:2])
-    pl = [projector(ctr.peps, (i, j, k), (i, j-1, 2)) for k ∈ 1:2]
-    el = [interaction_energy(ctr.peps, (i, j, k), (i, j-1, 2)) for k ∈ 1:2]
-
-    _, (pu1, pu2) = fuse_projectors([projector(ctr.peps, (i-1, j, 1), (i, j, k)) for k ∈ 1:2])
-    pu = [projector(ctr.peps, (i, j, k), (i-1, j, 1)) for k ∈ 1:2]
-    eu = [interaction_energy(ctr.peps, (i, j, k), (i-1, j, 1)) for k ∈ 1:2]
-
-    eng_left = [el[1][pl[1][:], pl1[∂v[j]]], el[2][pl[2][:], pl2[∂v[j]]]]
-    eng_up = [eu[1][pu[1][:], pu1[∂v[j+1]]], eu[2][pu[2][:], pu2[∂v[j+1]]]]
-
-    en21 = interaction_energy(ctr.peps, (i, j, 2), (i, j, 1))
-    p21 = projector(ctr.peps, (i, j, 2), (i, j, 1))
-    p12 = projector(ctr.peps, (i, j, 1), (i, j, 2))
-
-    pr = projector(ctr.peps, (i, j, 2), ((i, j+1, 1), (i, j+1, 2)))
-    pd = projector(ctr.peps, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
-
-    eng_local = [local_energy(ctr.peps, (i, j, k)) for k ∈ 1:2]
 
     if k == 1
-        en = [eng_local[k] .+ eng_left[k] .+ eng_up[k] for k ∈ 1:2]
+        eng_loc = [local_energy(ctr.peps, (i, j, k)) for k ∈ 1:2]
+        el = [interaction_energy(ctr.peps, (i, j, k), (i, j-1, 2)) for k ∈ 1:2]
+        pl = [projector(ctr.peps, (i, j, k), (i, j-1, 2)) for k ∈ 1:2]
+        eng_l = [@view el[k][pl[k][:], ∂v[j-1+k]] for k ∈ 1:2]
+        eu = [interaction_energy(ctr.peps, (i, j, k), (i-1, j, 1)) for k ∈ 1:2]
+        pu = [projector(ctr.peps, (i, j, k), (i-1, j, 1)) for k ∈ 1:2]
+        eng_u = [@view eu[k][pu[k][:], ∂v[j+1+k]] for k ∈ 1:2]
+
+        en = [eng_loc[k] .+ eng_l[k] .+ eng_u[k] for k ∈ 1:2]
+
+        en21 = interaction_energy(ctr.peps, (i, j, 2), (i, j, 1))
+        p21 = projector(ctr.peps, (i, j, 2), (i, j, 1))
+        p12 = projector(ctr.peps, (i, j, 1), (i, j, 2))
+
+        pr = projector(ctr.peps, (i, j, 2), ((i, j+1, 1), (i, j+1, 2)))
+        pd = projector(ctr.peps, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
 
         ten = reshape(en[2], (:, 1)) .+ en21[p21[:], :]
         ten_min = minimum(ten)
         ten2 = exp.(-β .* (ten .- ten_min))
-        ten3 = zeros(size(ten2, 1), maximum(pr), size(ten2, 2))
-        for i ∈ pr ten3[:, i, :] += ten2 end
-
-        RT = R * dropdims(sum(ten3, dims=1), dims=1)
+        ten3 = zeros(maximum(pr), size(ten2, 2))  # maximum(pr), maximum(p12)
+        for s2 ∈ 1:length(en[2])
+            ten3[pr[s2], :] += ten2[s2, :]
+        end
+        RT = R * ten3
         bnd_exp = dropdims(sum(LM[pd[:], :] .* RT[:, p12[:]]', dims=2), dims=2)
         en_min = minimum(en[1])
         loc_exp = exp.(-β .* (en[1] .- en_min))
     else  # k == 2
-        en = eng_local[2] .+ eng_left[2] .+ eng_up[2] .+ en21[p21[:], ∂v[end]]
+        eng_loc = local_energy(ctr.peps, (i, j, 2))
+
+        el = interaction_energy(ctr.peps, (i, j, 2), (i, j-1, 2))
+        pl = projector(ctr.peps, (i, j, 2), (i, j-1, 2))
+        eng_l = @view el[pl[:], ∂v[j]]
+
+        eu = interaction_energy(ctr.peps, (i, j, 2), (i-1, j, 1))
+        pu = projector(ctr.peps, (i, j, 2), (i-1, j, 1))
+        eng_u = @view eu[pu[:], ∂v[j+3]]
+
+        e21 = interaction_energy(ctr.peps, (i, j, 2), (i, j, 1))
+        p21 = projector(ctr.peps, (i, j, 2), (i, j, 1))
+        eng_21 = @view e21[p21[:], ∂v[j+2]]
+
+        en = eng_loc .+ eng_l .+ eng_u .+ eng_21
         en_min = minimum(en)
         loc_exp = exp.(-β .* (en .- en_min))
-        bnd_exp = dropdims(sum(LM[pd[:], :] .* R[:, pr[:]]', dims=2), dims=2)
+
+        pr = projector(ctr.peps, (i, j, 2), ((i, j+1, 1), (i, j+1, 2)))
+        lmx = @view LM[∂v[j+1], :]
+
+        @tensor lmxR[y] := lmx[x] * R[x, y]
+        bnd_exp = lmxR[pr[:]]
     end
 
     probs = loc_exp .* bnd_exp
@@ -128,12 +144,26 @@ end
 
 function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: Pegasus, S}
     i, j, k = node
-    vcat(
-        [((i, m, 1), ((i+1, m, 1), (i+1, m, 2))) for m ∈ 1:j-1]...,
-        ((i, j-1, 2), ((i, j, 1), (i, j, 2))),
-        [((i-1, m, 1), ((i, m, 1), (i, m, 2))) for m ∈ j:ctr.peps.ncols]...,
-        ((i, j, 1), (i, j, 2))
-    )
+    if k == 1
+        bnd = vcat(
+            [((i, m, 1), ((i+1, m, 1), (i+1, m, 2))) for m ∈ 1:j-1]...,
+            ((i, j-1, 2), (i, j, 1)),
+            ((i, j-1, 2), (i, j, 2)),
+            ((i-1, j, 1), (i, j, 1)),
+            ((i-1, j, 1), (i, j, 2)),
+            [((i-1, m, 1), ((i, m, 1), (i, m, 2))) for m ∈ j+1:ctr.peps.ncols]...
+        )
+    else  # k == 2
+        bnd = vcat(
+            [((i, m, 1), ((i+1, m, 1), (i+1, m, 2))) for m ∈ 1:j-1]...,
+            ((i, j-1, 2), (i, j, 2)),
+            ((i, j, 1), ((i+1, j, 1), (i+1, j, 2))),
+            ((i, j, 1), (i, j, 2)),
+            ((i-1, j, 1), (i, j, 2)),
+            [((i-1, m, 1), ((i, m, 1), (i, m, 2))) for m ∈ j+1:ctr.peps.ncols]...
+        )
+    end
+    bnd
 end
 
 function update_energy(
@@ -158,7 +188,7 @@ function tensor(
     en1 = local_energy(network, (i, j, 1))
     en2 = local_energy(network, (i, j, 2))
     en12 = interaction_energy(network, (i, j, 1), (i, j, 2))
-    eloc = zeros(length(en1), length(en2))
+    eloc = zeros(length(en2), length(en1))
     p1 = projector(network, (i, j, 1), (i, j, 2))
     p2 = projector(network, (i, j, 2), (i, j, 1))
 

@@ -28,12 +28,10 @@ params = MpsParameters(bond_dim, 1E-8, 10)
 search_params = SearchParameters(num_states, δp)
 
 @testset "Updating gauges works correctly." begin
-for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, )
+for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, Sparse) #MPSAnnealing
     # MPSAnnealing MethodError: no method matching mps_top(::MpsContractor{MPSAnnealing}, ::Int64, ::Int64)
-    # Sparse MethodError: no method matching contract_down(::SparseSiteTensor, ::Array{Float64, 3})
-    for Layout ∈ (EnergyGauges, ) # GaugesEnergy, EngGaugesEng)
-        for Lattice ∈ (Square,), transform ∈ (all_lattice_transformations[1],)  
-            #  SquareStar not passing -- fix dot(QMps, QMps)
+    for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
+        for Lattice ∈ (Square, SquareStar), transform ∈ all_lattice_transformations
             net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform, :id)
             ctr = MpsContractor{Strategy}(net, [β/8, β/4, β/2, β], params)
 

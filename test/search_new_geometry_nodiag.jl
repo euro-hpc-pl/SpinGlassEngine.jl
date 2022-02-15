@@ -12,10 +12,10 @@ function bench(instance::String)
 
     max_cl_states = 2^2
 
-    β = 1.0
-    bond_dim = 16
-    δp = 1e-4
-    num_states = 100
+    β = 1
+    bond_dim = 64
+    δp = 1e-10
+    num_states = 10
 
     ig = ising_graph(instance)
 
@@ -37,8 +37,8 @@ function bench(instance::String)
 
     # Solve using PEPS search
     energies = Vector{Float64}[]
-    for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, )
-        for tran ∈ rotation.([180]), Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
+    for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, )
+        for tran ∈ rotation.([180]), Layout ∈ (GaugesEnergy, )
             net = PEPSNetwork{Pegasus, Sparsity}(m, n, fg, tran)
             net2 = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg2, tran)
 
@@ -53,14 +53,26 @@ function bench(instance::String)
             fg_states = decode_state.(Ref(net), sol.states)
             @test sol.energies ≈ energy.(Ref(fg), fg_states)
 
-            @test sol.energies ≈ sol2.energies
+            #@test sol.energies ≈ sol2.energies
             #@test sol.states == sol2.states
 
-            #norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
-            #@test norm_prob ≈ exp.(-β .* (sol.energies .- sol.energies[1]))
-
-
+            norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
+            exct_prob = exp.(-β .* (sol.energies .- sol.energies[1]))
+            #for (a, b, c, d) in zip(norm_prob, sol.energies, sol.states, exct_prob)
+            #    println(a ./ d, " ", b, " ", c)
+            #end
+            # @test norm_prob ≈ exct_prob
             push!(energies, sol.energies)
+
+            ψ1 = mps(ctr, 2, 4)
+            ψ1_top = mps_top(ctr, 1, 4)
+
+            ψ2 = mps(ctr2, 2, 4)
+            ψ2_top = mps_top(ctr2, 1, 4)
+            println("overlap = ", ψ1 * ψ2)
+            println("overlap = ", ψ1_top * ψ2_top)
+            # println(size(ψ1[1]))
+
             clear_memoize_cache()
         end
     end

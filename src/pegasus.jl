@@ -63,7 +63,7 @@ function conditional_probability(
 ) where {T <: Pegasus, S}
     indβ, β = length(ctr.betas), last(ctr.betas)
     i, j, k = ctr.current_node
-    ∂v = boundary_state(ctr, state, (i, j))
+    ∂v = boundary_state(ctr, state, ctr.current_node)
 
     L = left_env(ctr, i, ∂v[1:j-1], indβ)
     R = right_env(ctr, i, ∂v[(j+2):(ctr.peps.ncols+1)], indβ)
@@ -76,15 +76,14 @@ function conditional_probability(
     @tensor LM[y, z] := L[x] * M[x, y, z]
 
     _, (pl1, pl2) = fuse_projectors([projector(ctr.peps, (i, j-1, 2), (i, j, k)) for k ∈ 1:2])
-    _, (pu1, pu2) = fuse_projectors([projector(ctr.peps, (i-1, j, 1), (i, j, k)) for k ∈ 1:2])
-
-    pl = [projector(ctr.peps, (i, j, k), (i, j-1 ,2)) for k ∈ 1:2]
-    pu = [projector(ctr.peps, (i, j, k), (i-1, j, 1)) for k ∈ 1:2]
-
-    eu = [interaction_energy(ctr.peps, (i, j, k), (i-1, j, 1)) for k ∈ 1:2]
+    pl = [projector(ctr.peps, (i, j, k), (i, j-1, 2)) for k ∈ 1:2]
     el = [interaction_energy(ctr.peps, (i, j, k), (i, j-1, 2)) for k ∈ 1:2]
 
-    eng_left = [el[1][pl[1][:], pl2[∂v[j]]], el[2][pl[2][:], pl1[∂v[j]]]]
+    _, (pu1, pu2) = fuse_projectors([projector(ctr.peps, (i-1, j, 1), (i, j, k)) for k ∈ 1:2])
+    pu = [projector(ctr.peps, (i, j, k), (i-1, j, 1)) for k ∈ 1:2]
+    eu = [interaction_energy(ctr.peps, (i, j, k), (i-1, j, 1)) for k ∈ 1:2]
+
+    eng_left = [el[1][pl[1][:], pl1[∂v[j]]], el[2][pl[2][:], pl2[∂v[j]]]]
     eng_up = [eu[1][pu[1][:], pu1[∂v[j+1]]], eu[2][pu[2][:], pu2[∂v[j+1]]]]
 
     en21 = interaction_energy(ctr.peps, (i, j, 2), (i, j, 1))
@@ -99,23 +98,21 @@ function conditional_probability(
     if k == 1
         en = [eng_local[k] .+ eng_left[k] .+ eng_up[k] for k ∈ 1:2]
 
-        ten = reshape(en[2], (:, 1)) .+ en21
+        ten = reshape(en[2], (:, 1)) .+ en21[p21[:], :]
         ten_min = minimum(ten)
         ten2 = exp.(-β .* (ten .- ten_min))
         ten3 = zeros(size(ten2, 1), maximum(pr), size(ten2, 2))
         for i ∈ pr ten3[:, i, :] += ten2 end
 
         RT = R * dropdims(sum(ten3, dims=1), dims=1)
-        bnd_exp = dropdims(sum(LM[pd[:], :] .* RT', dims=2), dims=2)
+        bnd_exp = dropdims(sum(LM[pd[:], :] .* RT[:, p12[:]]', dims=2), dims=2)
         en_min = minimum(en[1])
         loc_exp = exp.(-β .* (en[1] .- en_min))
-    elseif k == 2
-        en = eng_local[2] .+ eng_left[2] .+ eng_up[2] .+ en21[p21[:], p12[∂v[end]]]
+    else  # k == 2
+        en = eng_local[2] .+ eng_left[2] .+ eng_up[2] .+ en21[p21[:], ∂v[end]]
         en_min = minimum(en)
         loc_exp = exp.(-β .* (en .- en_min))
         bnd_exp = dropdims(sum(LM[pd[:], :] .* R[:, pr[:]]', dims=2), dims=2)
-    else
-        throw(ArgumentError("Number $k of sub-clusters is incorrect for this $T."))
     end
 
     probs = loc_exp .* bnd_exp
@@ -123,26 +120,18 @@ function conditional_probability(
     normalize_probability(probs)
 end
 
-function projectors_site_tensor(net::PEPSNetwork{T, S}, vertex::Node) where {T <: Pegasus, S}
-    i, j = vertex
-    (
-        projector(net, (i, j-1, 2), ((i, j, 1), (i, j, 2))),
-        projector(net, (i-1, j, 1), ((i, j, 1), (i, j, 2))),
-        projector(net, (i, j, 2), ((i, j+1, 1), (i, j+1, 2))),
-        projector(net, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
-    )
-end
+
 
 function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: Pegasus, S}
     [(i, j, k) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols for k ∈ 1:2]
 end
 
 function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: Pegasus, S}
-    i, j = node
+    i, j, k = node
     vcat(
-        [((i, k, 1), ((i+1, k, 1), (i+1, k, 2))) for k ∈ 1:j-1]...,
-        ((i, (j-1), 2), ((i, j, 1), (i, j, 2))),
-        [((i-1, k, 1), ((i, k, 1), (i, k, 2))) for k ∈ j:ctr.peps.ncols]...,
+        [((i, m, 1), ((i+1, m, 1), (i+1, m, 2))) for m ∈ 1:j-1]...,
+        ((i, j-1, 2), ((i, j, 1), (i, j, 2))),
+        [((i-1, m, 1), ((i, m, 1), (i, m, 2))) for m ∈ j:ctr.peps.ncols]...,
         ((i, j, 1), (i, j, 2))
     )
 end
@@ -152,7 +141,7 @@ function update_energy(
     net = ctr.peps
     i, j, k = ctr.current_node
     en = local_energy(net, (i, j, k))
-    for v ∈ ((i, j-1, 1), (i-1, j, 2), (i, j-1, 2), (i-1, j, 1))
+    for v ∈ ((i, j-1, 2), (i-1, j, 1))
         en += bond_energy(net, (i, j, k), v, local_state_for_node(ctr, σ, v))
     end
     if k != 2 return en end
@@ -160,7 +149,7 @@ function update_energy(
     en
 end
 
-# cluster-cluster energies atttached from left and top
+# cluster-cluster energies attached from left and top
 function tensor(
     network::PEPSNetwork{Pegasus, T}, node::PEPSNode, β::Real, ::Val{:pegasus_site}
 ) where T <: AbstractSparsity
@@ -216,7 +205,7 @@ function tensor(
         lu = reshape(le1u[p1u[s1], :], 1, :) .* reshape(le2u[p2u[s2], :], 1, :)
         A[:, :, pr[s2], pd[s1]] += loc_exp[s2, s1] .* (ll .* lu)
     end
-    A
+    A ./ maximum(A)
 end
 
 # function tensor(
@@ -224,6 +213,16 @@ end
 # ) where T <: AbstractSparsity
 #     ## TO BE ADDED
 # end
+
+function projectors_site_tensor(net::PEPSNetwork{T, S}, vertex::Node) where {T <: Pegasus, S}
+    i, j = vertex
+    (
+        projector(net, (i, j-1, 2), ((i, j, 1), (i, j, 2))),
+        projector(net, (i-1, j, 1), ((i, j, 1), (i, j, 2))),
+        projector(net, (i, j, 2), ((i, j+1, 1), (i, j+1, 2))),
+        projector(net, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
+    )
+end
 
 function Base.size(
     network::PEPSNetwork{Pegasus, T}, node::PEPSNode, ::Val{:pegasus_site}

@@ -138,7 +138,7 @@ end
     if indβ > 1
         ψ0 = mps_top(ctr, i, indβ-1)
     else
-        ψ0 = IdentityQMps(local_dims(W, :up), ctr.params.bond_dimension)
+        ψ0 = IdentityQMps(local_dims(W, :down), ctr.params.bond_dimension)
         canonise!(ψ0, :left)
     end
     compress!(

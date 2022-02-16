@@ -1,8 +1,8 @@
-export Pegasus
+export Pegasus_nd
 
-struct Pegasus <: AbstractGeometry end
+struct Pegasus_nd <: AbstractGeometry end
 
-function Pegasus(m::Int, n::Int)
+function Pegasus_nd(m::Int, n::Int)
     labels = [(i, j, k) for j ∈ 1:n for i ∈ 1:m for k ∈ 1:2]
     lg = LabelledGraph(labels)
     for i ∈ 1:m, j ∈ 1:n add_edge!(lg, (i, j, 1), (i, j, 2)) end
@@ -30,14 +30,14 @@ pegasus_site(::Type{Dense}) = :pegasus_site
 pegasus_site(::Type{Sparse}) = :sparse_pegasus_site
 
 function tensor_map(
-    ::Type{Pegasus}, ::Type{S}, nrows::Int, ncols::Int
+    ::Type{Pegasus_nd}, ::Type{S}, nrows::Int, ncols::Int
 ) where S <: AbstractSparsity
     map = Dict{PEPSNode, Symbol}()
     for i ∈ 1:nrows, j ∈ 1:ncols push!(map, PEPSNode(i, j) => pegasus_site(S)) end
     map
 end
 
-function gauges_list(::Type{Pegasus}, nrows::Int, ncols::Int)
+function gauges_list(::Type{Pegasus_nd}, nrows::Int, ncols::Int)
     [
         GaugeInfo(
             (PEPSNode(i + 1//3, j), PEPSNode(i + 2//3, j)),
@@ -49,7 +49,7 @@ function gauges_list(::Type{Pegasus}, nrows::Int, ncols::Int)
     ]
 end
 
-function MpoLayers(::Type{T}, ncols::Int) where T <: Pegasus
+function MpoLayers(::Type{T}, ncols::Int) where T <: Pegasus_nd
     MpoLayers(
         Dict(i => (-1//3, 0, 1//3) for i ∈ 1:ncols),
         Dict(i => (1//3,) for i ∈ 1:ncols),
@@ -60,7 +60,7 @@ end
 
 function conditional_probability(
     ::Type{T}, ctr::MpsContractor{S}, state::Vector{Int},
-) where {T <: Pegasus, S}
+) where {T <: Pegasus_nd, S}
     indβ, β = length(ctr.betas), last(ctr.betas)
     i, j, k = ctr.current_node
     ∂v = boundary_state(ctr, state, ctr.current_node)
@@ -138,11 +138,11 @@ end
 
 
 
-function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: Pegasus, S}
+function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: Pegasus_nd, S}
     [(i, j, k) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols for k ∈ 1:2]
 end
 
-function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: Pegasus, S}
+function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: Pegasus_nd, S}
     i, j, k = node
     if k == 1
         bnd = vcat(
@@ -167,7 +167,7 @@ function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: Pega
 end
 
 function update_energy(
-    ::Type{T}, ctr::MpsContractor{S}, σ::Vector{Int}) where {T <: Pegasus, S}
+    ::Type{T}, ctr::MpsContractor{S}, σ::Vector{Int}) where {T <: Pegasus_nd, S}
     net = ctr.peps
     i, j, k = ctr.current_node
     en = local_energy(net, (i, j, k))
@@ -181,7 +181,7 @@ end
 
 # cluster-cluster energies attached from left and top
 function tensor(
-    network::PEPSNetwork{Pegasus, T}, node::PEPSNode, β::Real, ::Val{:pegasus_site}
+    network::PEPSNetwork{Pegasus_nd, T}, node::PEPSNode, β::Real, ::Val{:pegasus_site}
 ) where T <: AbstractSparsity
     i, j = node.i, node.j
 
@@ -239,12 +239,12 @@ function tensor(
 end
 
 # function tensor(
-#     network::PEPSNetwork{Pegasus, T}, node::PEPSNode, β::Real, ::Val{:sparse_pegasus_site}
+#     network::PEPSNetwork{Pegasus_nd, T}, node::PEPSNode, β::Real, ::Val{:sparse_pegasus_site}
 # ) where T <: AbstractSparsity
 #     ## TO BE ADDED
 # end
 
-function projectors_site_tensor(net::PEPSNetwork{T, S}, vertex::Node) where {T <: Pegasus, S}
+function projectors_site_tensor(net::PEPSNetwork{T, S}, vertex::Node) where {T <: Pegasus_nd, S}
     i, j = vertex
     (
         projector(net, (i, j-1, 2), ((i, j, 1), (i, j, 2))),
@@ -255,13 +255,13 @@ function projectors_site_tensor(net::PEPSNetwork{T, S}, vertex::Node) where {T <
 end
 
 function Base.size(
-    network::PEPSNetwork{Pegasus, T}, node::PEPSNode, ::Val{:pegasus_site}
+    network::PEPSNetwork{Pegasus_nd, T}, node::PEPSNode, ::Val{:pegasus_site}
 ) where T <: AbstractSparsity
     maximum.(projectors_site_tensor(network, Node(node)))
 end
 
 function Base.size(
-    network::PEPSNetwork{Pegasus, T}, node::PEPSNode, ::Val{:sparse_pegasus_site}
+    network::PEPSNetwork{Pegasus_nd, T}, node::PEPSNode, ::Val{:sparse_pegasus_site}
 ) where T <: AbstractSparsity
     maximum.(projectors_site_tensor(network, Node(node)))
 end

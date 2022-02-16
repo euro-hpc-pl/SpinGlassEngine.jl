@@ -39,7 +39,7 @@ function bench(instance::String)
     energies = Vector{Float64}[]
     for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, )
         for tran ∈ rotation.([180]), Layout ∈ (GaugesEnergy, )
-            net = PEPSNetwork{Pegasus, Sparsity}(m, n, fg, tran)
+            net = PEPSNetwork{Pegasus_nd, Sparsity}(m, n, fg, tran)
             net2 = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg2, tran)
 
             ctr = MpsContractor{Strategy}(net, [β/8, β/4, β/2, β], params)

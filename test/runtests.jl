@@ -48,9 +48,10 @@ push!(my_tests,
         #"search_cross.jl", # OK, all heuristics to be checked
         #"search_pegasus.jl", # OK
         #"search_pegasus_nodiag.jl", # OK
-        "search_new_geometry_nodiag.jl", # NO
+        #"search_new_geometry_nodiag.jl", # NO
         #"chimera_overlap.jl", # OK
-        #"gauges.jl", # OK
+        "gauges.jl", # OK
+        #"gauges2.jl", # OK
         #"search_smallest_cross.jl", # OK
 )
 

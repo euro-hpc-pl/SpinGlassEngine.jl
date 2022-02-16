@@ -3,8 +3,8 @@ using SpinGlassTensors
 using SpinGlassEngine
 
 function bench(instance::String)
-    m = 16
-    n = 16
+    m = 8
+    n = 8
     t = 8
 
     L = n * m * t
@@ -40,4 +40,4 @@ function bench(instance::String)
     @test all(e -> e ≈ first(energies), energies)
 end
 
-bench("$(@__DIR__)/instances/chimera_droplets/2048power/001.txt")
+bench("$(@__DIR__)/instances/chimera_droplets/512power/001.txt")

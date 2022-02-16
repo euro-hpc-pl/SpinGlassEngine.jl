@@ -182,7 +182,7 @@ function projectors_site_tensor(network::PEPSNetwork{T, S}, vertex::Node) where 
 end
 
 function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: SquareStar, S}
-    [(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols]
+    ([(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols], (peps.nrows+1, 1))
 end
 
 function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: SquareStar, S}

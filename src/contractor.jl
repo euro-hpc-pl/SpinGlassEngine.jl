@@ -46,16 +46,17 @@ mutable struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
     layers::MpoLayers
     statistics::Dict{Vector{Int}, <:Real}
     nodes_search_order::Vector{Node}
+    node_outside::Node
     node_search_index::Dict{Node, Int}
     current_node::Node
 
     function MpsContractor{T}(net, βs, params) where T
         ml = MpoLayers(layout(net), net.ncols)
         stat = Dict{Vector{Int}, Real}()
-        ord = nodes_search_order_Mps(net)
+        ord, node_out = nodes_search_order_Mps(net)
         enum_ord = Dict(node => i for (i, node) ∈ enumerate(ord))
         node = ord[begin]
-        new(net, βs, params, ml, stat, ord, enum_ord, node)
+        new(net, βs, params, ml, stat, ord, node_out, enum_ord, node)
     end
 end
 

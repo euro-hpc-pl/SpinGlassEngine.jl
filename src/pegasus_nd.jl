@@ -136,10 +136,8 @@ function conditional_probability(
     normalize_probability(probs)
 end
 
-
-
 function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: Pegasus_nd, S}
-    [(i, j, k) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols for k ∈ 1:2]
+    ([(i, j, k) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols for k ∈ 1:2], (peps.nrows+1, 1, 1))
 end
 
 function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: Pegasus_nd, S}

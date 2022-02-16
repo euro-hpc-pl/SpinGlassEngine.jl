@@ -28,8 +28,7 @@ params = MpsParameters(bond_dim, 1E-8, 10)
 search_params = SearchParameters(num_states, δp)
 
 @testset "Updating gauges works correctly." begin
-for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, Sparse) #MPSAnnealing
-    # MPSAnnealing MethodError: no method matching mps_top(::MpsContractor{MPSAnnealing}, ::Int64, ::Int64)
+for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, Sparse) 
     for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
         for Lattice ∈ (Square, SquareStar), transform ∈ all_lattice_transformations
             net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform, :id)

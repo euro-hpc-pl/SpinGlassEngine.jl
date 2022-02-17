@@ -8,6 +8,7 @@ export
        mps_top,
        mps,
        update_gauges!,
+       update_gauges_with_balancing!,
        boundary_state
 
 abstract type AbstractContractor end
@@ -348,6 +349,32 @@ function update_gauges!(
         push!(ctr.peps.gauges.data, n_top => g_top, n_bot => g_bot)
     end
 
+    for ind ∈ 1:indβ
+        for i ∈ row:ctr.peps.nrows delete!(memoize_cache(mps_top), (ctr, i, ind)) end
+        for i ∈ 1:row+1 delete!(memoize_cache(mps), (ctr, i, ind)) end
+        for i ∈ row:row+1
+            delete!(memoize_cache(mpo), (ctr, ctr.layers.main, i, ind))
+            delete!(memoize_cache(mpo), (ctr, ctr.layers.dress, i, ind))
+            delete!(memoize_cache(mpo), (ctr, ctr.layers.right, i, ind))
+        end
+    end
+    overlap
+end
+
+function update_gauges_with_balancing!(ctr::MpsContractor{T}, row::Site, indβ::Int) where T
+    clm = ctr.layers.main
+    ψ_top = mps_top(ctr, row, indβ)
+    ψ_bot = mps(ctr, row + 1, indβ)
+    ψ_top = deepcopy(ψ_top)
+    ψ_bot = deepcopy(ψ_bot)
+    for i ∈ ψ_top.sites
+        n_bot = PEPSNode(row + 1 + clm[i][begin], i)
+        n_top = PEPSNode(row + clm[i][end], i)
+        ρ = overlap_density_matrix(ψ_top, ψ_bot, i)
+        _, _, scale = LinearAlgebra.LAPACK.gebal!('S', ρ)
+        push!(ctr.peps.gauges.data, n_top => 1 ./ scale, n_bot => scale)
+    end
+    overlap = ψ_top * ψ_bot
     for ind ∈ 1:indβ
         for i ∈ row:ctr.peps.nrows delete!(memoize_cache(mps_top), (ctr, i, ind)) end
         for i ∈ 1:row+1 delete!(memoize_cache(mps), (ctr, i, ind)) end

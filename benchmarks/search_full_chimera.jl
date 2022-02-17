@@ -36,7 +36,7 @@ function bench(instance::String)
 
             @time sol = low_energy_spectrum(ctr, search_params, merge_branches(network))
 
-            @test sol.energies[begin] ≈ ground_energy
+            @assert sol.energies[begin] ≈ ground_energy
 
             clear_memoize_cache()
         end

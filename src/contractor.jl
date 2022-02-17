@@ -1,18 +1,56 @@
 export SVDTruncate, MPSAnnealing, MpoLayers, MpsParameters, MpsContractor
 export clear_memoize_cache, mps_top, mps, update_gauges!
 
+"""
+$(TYPEDEF)
+
+$(TYPEDFIELDS)
+
+"""
 abstract type AbstractContractor end
+
+"""
+$(TYPEDEF)
+
+$(TYPEDFIELDS)
+
+"""
 abstract type AbstractStrategy end
 
+"""
+$(TYPEDEF)
+
+$(TYPEDFIELDS)
+
+"""
 struct SVDTruncate <: AbstractStrategy end
+
+"""
+$(TYPEDEF)
+
+$(TYPEDFIELDS)
+
+"""
 struct MPSAnnealing <: AbstractStrategy end
 
+"""
+$(TYPEDEF)
+
+$(TYPEDFIELDS)
+
+"""
 struct MpoLayers
     main::Dict
     dress::Dict
     right::Dict
 end
 
+"""
+$(TYPEDEF)
+
+$(TYPEDFIELDS)
+
+"""
 struct MpsParameters
     bond_dimension::Int
     variational_tol::Real
@@ -20,9 +58,25 @@ struct MpsParameters
 
     MpsParameters(bd=typemax(Int), ϵ=1E-8, sw=4) = new(bd, ϵ, sw)
 end
+
+"""
+$(TYPEDSIGNATURES)
+
+"""
 layout(network::PEPSNetwork{T, S}) where {T, S} = T
+
+"""
+$(TYPEDSIGNATURES)
+
+"""
 sparsity(network::PEPSNetwork{T, S}) where {T, S} = S
 
+"""
+$(TYPEDEF)
+
+$(TYPEDFIELDS)
+
+"""
 mutable struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
     peps::PEPSNetwork{T, S} where {T, S}
     betas::Vector{<:Real}
@@ -30,12 +84,27 @@ mutable struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
     layers::MpoLayers
     statistics::Dict
 
+    """
+    ```julia
+    function MpsContractor{T}(peps, betas, params) where T
+    ```
+
+    """
     function MpsContractor{T}(peps, betas, params) where T
         new(peps, betas, params, MpoLayers(layout(peps), peps.ncols), Dict())
     end
 end
+
+"""
+$(TYPEDSIGNATURES)
+
+"""
 strategy(ctr::MpsContractor{T}) where {T} = T
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EnergyGauges}
     main, dress, right = Dict(), Dict(), Dict()
 
@@ -50,6 +119,10 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EnergyGauges}
     MpoLayers(main, dress, right)
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EnergyGauges}
     main, dress, right = Dict(), Dict(), Dict()
 
@@ -62,6 +135,10 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EnergyGauges}
     MpoLayers(main, dress, right)
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function MpoLayers(::Type{T}, ncols::Int) where T <: Square{GaugesEnergy}
     main, dress, right = Dict(), Dict(), Dict()
 
@@ -76,6 +153,10 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: Square{GaugesEnergy}
     MpoLayers(main, dress, right)
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{GaugesEnergy}
     main, dress, right = Dict(), Dict(), Dict()
 
@@ -88,6 +169,10 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{GaugesEnergy}
     MpoLayers(main, dress, right)
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EngGaugesEng}
     main, dress, right = Dict(), Dict(), Dict()
 
@@ -102,6 +187,10 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EngGaugesEng}
     MpoLayers(main, dress, right)
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EngGaugesEng}
     main, dress, right = Dict(), Dict(), Dict()
 
@@ -114,6 +203,10 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EngGaugesEng}
     MpoLayers(main, dress, right)
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 @memoize Dict function mpo(
     ctr::MpsContractor{T}, layers::Dict, r::Int, indβ::Int
 ) where T <: AbstractStrategy
@@ -129,6 +222,10 @@ end
     QMPO(mpo)
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 @memoize Dict function mps_top(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
     if i < 1
         W = mpo(ctr, ctr.layers.main, 1, indβ)
@@ -152,6 +249,10 @@ end
     ψ0
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 @memoize Dict function mps(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
     if i > ctr.peps.nrows
         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
@@ -175,6 +276,10 @@ end
     ψ0
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 @memoize Dict function mps(ctr::MpsContractor{MPSAnnealing}, i::Int, indβ::Int)
     if i > ctr.peps.nrows
         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
@@ -201,10 +306,18 @@ end
     ψ0
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function dressed_mps(ctr::MpsContractor{T}, i::Int) where T <: AbstractStrategy
     dressed_mps(ctr, i, length(ctr.betas))
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 @memoize Dict function dressed_mps(
     ctr::MpsContractor{T}, i::Int, indβ::Int
 ) where T <: AbstractStrategy
@@ -213,6 +326,10 @@ end
     W * ψ
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 @memoize Dict function right_env(
     ctr::MpsContractor{T}, i::Int, ∂v::Vector{Int}, indβ::Int
 ) where T <: AbstractStrategy
@@ -240,6 +357,10 @@ end
     RR
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function _update_reduced_env_right(
     RE::AbstractArray{Float64, 2}, m::Int, M::Dict, B::AbstractArray{Float64, 3}
 )
@@ -260,6 +381,10 @@ function _update_reduced_env_right(
     _update_reduced_env_right(K, RE, M[0], B)
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function _update_reduced_env_right(
     K::AbstractArray{Float64, 1},
     RE::AbstractArray{Float64, 2},
@@ -270,6 +395,10 @@ function _update_reduced_env_right(
     R
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function _update_reduced_env_right(
     K::AbstractArray{Float64, 1},
     RE::AbstractArray{Float64, 2},
@@ -289,6 +418,10 @@ function _update_reduced_env_right(
     R
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function _update_reduced_env_right(
     K::AbstractArray{Float64, 1},
     RE::AbstractArray{Float64, 2},
@@ -307,6 +440,10 @@ function _update_reduced_env_right(
     R
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 @memoize Dict function left_env(
     ctr::MpsContractor{T}, i::Int, ∂v::Vector{Int}, indβ::Int
 ) where T
@@ -321,10 +458,18 @@ end
     L
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function conditional_probability(ctr::MpsContractor{S}, w::Vector{Int}) where S
     conditional_probability(layout(ctr.peps), ctr, w)
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function conditional_probability(
     ::Type{T}, ctr::MpsContractor{S}, state::Vector{Int},
 ) where {T <: Square, S}
@@ -364,6 +509,10 @@ function conditional_probability(
 end
 
 # TODO: rewrite this using brodcasting
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function conditional_probability(
     ::Type{T}, ctr::MpsContractor{S}, state::Vector{Int},
 ) where {T <: SquareStar, S}
@@ -410,6 +559,10 @@ function conditional_probability(
     normalize_probability(loc_exp)
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function conditional_probability(
     ::Type{T}, ctr::MpsContractor{S}, state::Vector{Int},
 ) where {T <: Pegasus, S}
@@ -472,6 +625,10 @@ function conditional_probability(
     normalize_probability(probs)
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function clear_memoize_cache()
     empty!(memoize_cache(left_env))
     empty!(memoize_cache(right_env))
@@ -481,12 +638,20 @@ function clear_memoize_cache()
     empty!(memoize_cache(dressed_mps))
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function error_measure(probs)
     if maximum(probs) <= 0 return 2.0 end
     if minimum(probs) < 0 return abs(minimum(probs)) / maximum(abs.(probs)) end
     return 0.0
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function MpoLayers(::Type{T}, ncols::Int) where T <: Pegasus
     main, dress, right = Dict(), Dict(), Dict()
     for i ∈ 1:ncols
@@ -497,6 +662,10 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: Pegasus
     MpoLayers(main, dress, right)
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function update_gauges!(ctr::MpsContractor{T}, row::Site, indβ::Int) where T
     clm = ctr.layers.main
     ψ_top = mps_top(ctr, row, indβ)

@@ -1,5 +1,11 @@
 export PEPSNetwork, node_from_index, iteration_order
 
+"""
+$(TYPEDEF)
+
+$(TYPEDFIELDS)
+
+"""
 mutable struct PEPSNetwork{
     T <: AbstractGeometry, S <: AbstractSparsity
 } <: AbstractGibbsNetwork{Node, PEPSNode}
@@ -33,11 +39,19 @@ mutable struct PEPSNetwork{
     end
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function projectors(network::PEPSNetwork{T, S}, vertex::Node) where {T <: Square, S}
     i, j = vertex
     projector.(Ref(network), Ref(vertex), ((i, j-1), (i-1, j), (i, j+1), (i+1, j)))
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function projectors(network::PEPSNetwork{T, S}, vertex::Node) where {T <: SquareStar, S}
     i, j = vertex
     nbrs = (
@@ -49,6 +63,10 @@ function projectors(network::PEPSNetwork{T, S}, vertex::Node) where {T <: Square
     projector.(Ref(network), Ref(vertex), nbrs)
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function projectors(net::PEPSNetwork{T, S}, vertex::Node) where {T <: Pegasus, S}
     i, j = vertex
     (
@@ -59,19 +77,40 @@ function projectors(net::PEPSNetwork{T, S}, vertex::Node) where {T <: Pegasus, S
     )
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function node_index(peps::AbstractGibbsNetwork{T, S}, node::Node) where {T, S}
     peps.ncols * (node[begin] - 1) + node[end]
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 mod_wo_zero(k, m) = k % m == 0 ? m : k % m
+
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function node_from_index(peps::PEPSNetwork{T, S}, index::Int) where {T <: Square, S}
     ((index - 1) ÷ peps.ncols + 1, mod_wo_zero(index, peps.ncols))
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function node_from_index(peps::PEPSNetwork{T, S}, index::Int) where {T <: SquareStar, S}
     ((index - 1) ÷ peps.ncols + 1, mod_wo_zero(index, peps.ncols))
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function node_from_index(peps::PEPSNetwork{T, S}, idx::Int) where {T <: Pegasus, S}
     (
         (idx - 1) ÷ (2 * peps.ncols) + 1,
@@ -80,14 +119,26 @@ function node_from_index(peps::PEPSNetwork{T, S}, idx::Int) where {T <: Pegasus,
     )
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function iteration_order(peps::PEPSNetwork{T, S}) where {T <: Union{Square, SquareStar}, S}
     [(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols]
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function iteration_order(peps::PEPSNetwork{T, S}) where {T <: Pegasus, S}
     [(i, j, k) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols for k ∈ 1:2]
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function boundary(peps::PEPSNetwork{T, S}, node::Node) where {T <: Square, S}
     i, j = node
     vcat(
@@ -97,6 +148,10 @@ function boundary(peps::PEPSNetwork{T, S}, node::Node) where {T <: Square, S}
     )
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function boundary(peps::PEPSNetwork{T, S}, node::Node) where {T <: SquareStar, S}
     i, j = node
     vcat(
@@ -115,6 +170,10 @@ function boundary(peps::PEPSNetwork{T, S}, node::Node) where {T <: SquareStar, S
     )
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function boundary(peps::PEPSNetwork{T, S}, node::Node) where {T <: Pegasus, S}
     i, j = node
     vcat(
@@ -125,6 +184,10 @@ function boundary(peps::PEPSNetwork{T, S}, node::Node) where {T <: Pegasus, S}
     )
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function bond_energy(net::AbstractGibbsNetwork{T, S}, u::Node, v::Node, σ::Int) where {T, S}
     fg_u, fg_v = net.vertex_map(u), net.vertex_map(v)
     if has_edge(net.factor_graph, fg_u, fg_v)
@@ -143,12 +206,30 @@ function bond_energy(net::AbstractGibbsNetwork{T, S}, u::Node, v::Node, σ::Int)
     vec(energies)
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 @inline node_neighbors(::Type{Square{T}}, (i, j)) where {T} = ((i, j-1), (i-1, j))
+
+"""
+$(TYPEDSIGNATURES)
+
+"""
 @inline function node_neighbors(::Type{SquareStar{T}}, (i, j)) where T
     ((i, j-1), (i-1, j), (i-1, j-1), (i-1, j+1))
 end
+
+"""
+$(TYPEDSIGNATURES)
+
+"""
 @inline node_neighbors(::Type{Pegasus}, (i, j, k)) = ((i, j-1, 2), (i-1, j, 1))
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function update_energy(net::PEPSNetwork{T, S}, σ::Vector{Int}) where {T, S}
     u = node_from_index(net, length(σ)+1)
     en = local_energy(net, u)

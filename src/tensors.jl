@@ -1,15 +1,27 @@
 export tensor
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function tensor(network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, β::Real)
     if v ∉ keys(network.tensors_map) return ones(1, 1) end
     tensor(network, v, β, Val(network.tensors_map[v]))
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function Base.size(network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode)
     if v ∉ keys(network.tensors_map) return (1, 1) end
     size(network, v, Val(network.tensors_map[v]))
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function tensor(
     network::PEPSNetwork{T, Dense}, v::PEPSNode, β::Real, ::Val{:site}
 ) where T <: AbstractGeometry
@@ -21,6 +33,10 @@ function tensor(
     A
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function tensor(
     network::PEPSNetwork{T, Sparse}, v::PEPSNode, β::Real, ::Val{:sparse_site}
 ) where T <: AbstractGeometry
@@ -28,12 +44,20 @@ function tensor(
     SparseSiteTensor(exp.(-β .* (en .- minimum(en))), projectors(network, Node(v)))
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function Base.size(
     network::PEPSNetwork{T, Dense}, v::PEPSNode, ::Union{Val{:site}, Val{:sparse_site}}
 ) where T <: AbstractGeometry
     maximum.(projectors(network, Node(v)))
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function tensor(
     net::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, β::Real, ::Val{:central_v}
 )
@@ -41,6 +65,10 @@ function tensor(
     connecting_tensor(net, (i, node.j), (i+1, node.j), β)
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function Base.size(
     network::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, ::Val{:central_v}
 )
@@ -48,6 +76,10 @@ function Base.size(
     size(interaction_energy(network, (i, node.j), (i+1, node.j)))
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function tensor(
     net::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, β::Real, ::Val{:central_h}
 )
@@ -55,6 +87,10 @@ function tensor(
     connecting_tensor(net, (node.i, j), (node.i, j+1), β)
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function Base.size(
     network::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, ::Val{:central_h}
 )
@@ -62,6 +98,10 @@ function Base.size(
     size(interaction_energy(network, (node.i, j), (node.i, j+1)))
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function tensor(
     network::PEPSNetwork{SquareStar{T}, S}, node::PEPSNode, β::Real, ::Val{:central_d}
 ) where {T <: AbstractTensorsLayout, S <: AbstractSparsity}
@@ -72,6 +112,10 @@ function tensor(
     A
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function Base.size(
     network::PEPSNetwork{SquareStar{T}, S}, node::PEPSNode, ::Val{:central_d}
 ) where {T <: AbstractTensorsLayout, S <: AbstractSparsity}
@@ -81,6 +125,10 @@ function Base.size(
     (u * ũ, d * d̃)
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function tensor(
     network::PEPSNetwork{SquareStar{T}, Dense}, node::PEPSNode, β::Real, ::Val{:virtual}
 ) where T <: AbstractTensorsLayout
@@ -109,6 +157,10 @@ function tensor(
     AA
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function tensor(
     net::PEPSNetwork{SquareStar{T}, Sparse}, node::PEPSNode, β::Real, ::Val{:sparse_virtual}
 ) where T <: AbstractTensorsLayout
@@ -128,6 +180,10 @@ function tensor(
     SparseVirtualTensor(h, (vec(p_lb), vec(p_l), vec(p_lt), vec(p_rb), vec(p_r), vec(p_rt)))
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function tensor(
     network::PEPSNetwork{SquareStar{T}, Dense}, node::PEPSNode, ::Val{:virtual}
 ) where T <: AbstractTensorsLayout
@@ -145,6 +201,10 @@ function tensor(
     (length(p_l), maximum(p_lt) * maximum(p_rt), length(p_r), maximum(p_rb) * maximum(p_lb))
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function tensor(
     network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, β::Real, ::Val{:gauge_h}
 )
@@ -153,6 +213,10 @@ function tensor(
     diagm(network.gauges.data[v])
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function Base.size(
     network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, ::Val{:gauge_h}
 )
@@ -160,6 +224,10 @@ function Base.size(
     (u, u)
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function connecting_tensor(
     network::AbstractGibbsNetwork{Node, PEPSNode}, v::Node, w::Node, β::Real
 )
@@ -167,6 +235,10 @@ function connecting_tensor(
     exp.(-β .* (en .- minimum(en)))
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function sqrt_tensor_up(
     network::AbstractGibbsNetwork{Node, PEPSNode}, v::Node, w::Node, β::Real
 )
@@ -174,6 +246,10 @@ function sqrt_tensor_up(
     U * Diagonal(sqrt.(Σ))
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function sqrt_tensor_down(
     network::AbstractGibbsNetwork{Node, PEPSNode}, v::Node, w::Node, β::Real
 )
@@ -181,6 +257,10 @@ function sqrt_tensor_down(
     Diagonal(sqrt.(Σ)) * V'
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function tensor(
     network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, β::Real, ::Val{:sqrt_up}
 )
@@ -189,6 +269,10 @@ function tensor(
     sqrt_tensor_up(network, (i, j), (i+1, j), β)
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function Base.size(
     network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, ::Val{:sqrt_up}
 )
@@ -198,6 +282,10 @@ function Base.size(
     (u, min(d, u))
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function tensor(
     network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, β::Real, ::Val{:sqrt_down}
 )
@@ -206,6 +294,10 @@ function tensor(
     sqrt_tensor_down(network, (i, j), (i+1, j), β)
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function Base.size(
     network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, ::Val{:sqrt_down}
 )
@@ -215,6 +307,10 @@ function Base.size(
     (min(u, d), d)
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function tensor(
     network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, β::Real, ::Val{:sqrt_up_d}
 )
@@ -222,6 +318,10 @@ function tensor(
     U * Diagonal(sqrt.(Σ))
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function Base.size(
     network::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, ::Val{:sqrt_up_d}
 )
@@ -231,6 +331,10 @@ function Base.size(
     (u * ũ, min(u * ũ, d * d̃))
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function tensor(
     network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, β::Real, ::Val{:sqrt_down_d}
 )
@@ -238,6 +342,10 @@ function tensor(
     Diagonal(sqrt.(Σ)) * V'
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function Base.size(
     network::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, ::Val{:sqrt_down_d}
 )
@@ -250,6 +358,10 @@ end
 #-------------- Pegasus --------------
 
 # cluster-cluster energies atttached from left and top
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function tensor(
     network::PEPSNetwork{Pegasus, T}, node::PEPSNode, β::Real, ::Val{:pegasus_site}
 ) where T <: AbstractSparsity
@@ -314,12 +426,20 @@ end
 #     ## TO BE ADDED
 # end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function Base.size(
     network::PEPSNetwork{Pegasus, T}, node::PEPSNode, ::Val{:pegasus_site}
 ) where T <: AbstractSparsity
     maximum.(projectors(network, Node(node)))
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function Base.size(
     network::PEPSNetwork{Pegasus, T}, node::PEPSNode, ::Val{:sparse_pegasus_site}
 ) where T <: AbstractSparsity

@@ -11,6 +11,10 @@ using LinearAlgebra
 using LightGraphs
 using ProgressMeter
 
+using DocStringExtensions
+#using Infiltrator
+
+
 # to be remove
 function SpinGlassNetworks.local_basis(ψ::AbstractMPS, i::Int)
     SpinGlassNetworks.local_basis(physical_dim(ψ, i))

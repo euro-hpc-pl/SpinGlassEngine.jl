@@ -2,6 +2,12 @@ export AbstractGibbsNetwork, low_energy_spectrum, branch_state, bound_solution
 export merge_branches, Solution, SearchParameters
 export exact_marginal_probability, exact_conditional_probabilities
 
+"""
+$(TYPEDEF)
+
+$(TYPEDFIELDS)
+
+"""
 struct SearchParameters
     max_states::Int
     cut_off_prob::Real
@@ -11,6 +17,12 @@ struct SearchParameters
     end
 end
 
+"""
+$(TYPEDEF)
+
+$(TYPEDFIELDS)
+
+"""
 struct Solution
     energies::Vector{<:Real}
     states::Vector{Vector{Int}}
@@ -18,8 +30,17 @@ struct Solution
     degeneracy::Vector{Int}
     largest_discarded_probability::Real
 end
+
+"""
+$(TYPEDSIGNATURES)
+
+"""
 empty_solution() = Solution([0.0], [Vector{Int}[]], [0.0], [1], -Inf)
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function Solution(
     sol::Solution, idx::Vector{Int}, ldp::Real=sol.largest_discarded_probability
 )
@@ -32,19 +53,35 @@ function Solution(
     )
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function branch_energy(peps::PEPSNetwork{T, S}, eσ::Tuple{<:Real, Vector{Int}}) where {T, S}
     eσ[begin] .+ update_energy(peps, eσ[end])
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function branch_state(network::PEPSNetwork{T, S}, σ::Vector{Int}) where {T, S}
     node = node_from_index(network, length(σ) + 1)
     vcat.(Ref(σ), collect(1:length(local_energy(network, node))))
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T
     pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 @memoize function all_states(peps::AbstractGibbsNetwork{S, T}) where {S, T}
     states = [Dict{S, Int}()]
     for v ∈ vertices(peps.factor_graph)
@@ -59,6 +96,10 @@ end
     states
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function exact_marginal_probability(ctr::MpsContractor{T}, σ::Vector{Int}) where T
     target_state = decode_state(ctr.peps, σ, true)
     states = all_states(ctr.peps)
@@ -77,16 +118,28 @@ function exact_marginal_probability(ctr::MpsContractor{T}, σ::Vector{Int}) wher
     sum(prob[findall(all(s[k] == v for (k, v) ∈ target_state) for s ∈ states)])
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function exact_conditional_probabilities(ctr::MpsContractor{T}, σ::Vector{Int}) where T
     probs = exact_marginal_probability.(Ref(ctr), branch_state(ctr.peps, σ))
     probs ./= sum(probs)
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function discard_probabilities(psol::Solution, cut_off_prob::Real)
     pcut = maximum(psol.probabilities) + log(cut_off_prob)
     Solution(psol, findall(p -> p >= pcut, psol.probabilities))
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function branch_solution(psol::Solution, ctr::T, δprob::Real) where T <: AbstractContractor
     node = node_from_index(ctr.peps, length(psol.states[begin]) + 1)
     discard_probabilities(
@@ -101,6 +154,10 @@ function branch_solution(psol::Solution, ctr::T, δprob::Real) where T <: Abstra
     )
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function merge_branches(network::AbstractGibbsNetwork{S, T}) where {S, T}
     function _merge(psol::Solution)
         node = node_from_index(network, length(psol.states[1])+1)
@@ -135,8 +192,17 @@ function merge_branches(network::AbstractGibbsNetwork{S, T}) where {S, T}
     end
     _merge
 end
+
+"""
+$(TYPEDSIGNATURES)
+
+"""
 no_merge(partial_sol::Solution) = partial_sol
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function bound_solution(psol::Solution, max_states::Int, merge_strategy=no_merge)
     if length(psol.probabilities) <= max_states
         probs = vcat(psol.probabilities, -Inf)
@@ -151,6 +217,10 @@ function bound_solution(psol::Solution, max_states::Int, merge_strategy=no_merge
 end
 
 #TODO: incorporate "going back" move to improve alghoritm
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function low_energy_spectrum(
     ctr::T, sparams::SearchParameters, merge_strategy=no_merge
 ) where T <: AbstractContractor

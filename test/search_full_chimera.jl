@@ -13,7 +13,7 @@ function bench(instance::String)
     #ground_energy = -3336.773383 # for chimera 2048
     #ground_energy = -1881.226667 # for chimera 1152
     ground_energy = -846.960013 # for chimera 512
-    
+
     β = 5.0
     bond_dim = 32
     δp = 1E-8

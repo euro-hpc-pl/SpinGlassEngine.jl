@@ -54,6 +54,8 @@ for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, Sparse)
                     overlap_old = ψ_top * ψ_bot
 
                     overlap_new = update_gauges!(ctr, i, indβ)
+                    #overlap_new = update_gauges_with_balancing!(ctr, i, indβ)
+
                     # assert that ψ_bot and ψ_top are not updated in place though memoize!
                     overlap_old2 = ψ_bot * ψ_top
 

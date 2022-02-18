@@ -121,7 +121,8 @@ function merge_branches(ctr::MpsContractor{T}) where {T}
 
             push!(energies, nsol.energies[best_idx])
             push!(states, nsol.states[best_idx])
-            push!(probs, nsol.probabilities[best_idx])
+            push!(probs, nsol.probabilities[best_idx]) ## base probs on all states with the same boundary
+            # using fit to log(prob) = - beta * eng + a0
             push!(degeneracy, nsol.degeneracy[best_idx])
             start = stop + 1
         end

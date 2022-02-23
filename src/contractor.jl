@@ -269,9 +269,8 @@ $(TYPEDSIGNATURES)
         ψ0,
         W,
         ψ,
-        ctr.params.bond_dimension,
-        ctr.params.variational_tol,
-        ctr.params.max_num_sweeps
+        tol=ctr.params.variational_tol,
+        max_sweeps=ctr.params.max_num_sweeps
     )
     ψ0
 end
@@ -346,13 +345,13 @@ $(TYPEDSIGNATURES)
 
     RR = _update_reduced_env_right(R̃, ∂v[1], M, B)
 
-    ls_mps = _left_nbrs_site(site, ϕ.sites)
-    ls = _left_nbrs_site(site, W.sites)
+    ls_mps = left_nbrs_site(site, ϕ.sites)
+    ls = left_nbrs_site(site, W.sites)
 
     while ls > ls_mps
         M0 = W[ls][0]  # TODO: make this consistent
         @tensor RR[x, y] := M0[y, z] * RR[x, z]
-        ls = _left_nbrs_site(ls, W.sites)
+        ls = left_nbrs_site(ls, W.sites)
     end
     RR
 end

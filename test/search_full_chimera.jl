@@ -14,10 +14,12 @@ function bench(instance::String)
     #ground_energy = -1881.226667 # for chimera 1152
     ground_energy = -846.960013 # for chimera 512
 
-    β = 5.0
+    β = 6.0
     bond_dim = 32
-    δp = 1E-8
-    num_states = 1000
+    dE = 5
+    δp = 0.001
+    #1E-4*exp(-β * dE)
+    num_states = 1024
 
     @time fg = factor_graph(
         ising_graph(instance),
@@ -34,26 +36,27 @@ function bench(instance::String)
             net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
             #ctr = MpsContractor{Strategy}(net, [β/8, β/4, β/2, β], params)
             ctr = MpsContractor{Strategy}(net, [β/6, β/3, β/2, β], params)
-            println("statistics1 ", ctr.statistics)
             indβ = [1, 2, 3, 4]
+            #=
             for j in indβ
                 for i ∈ 1:m-1
                     ψ_top = mps_top(ctr, i, j)
                     ψ_bot = mps(ctr, i+1, j)
                     overlap_old = ψ_top * ψ_bot
                     overlap_new = update_gauges!(ctr, i, j)
-                    println(overlap_old, "  ", overlap_new)
+                    #println(overlap_old, "  ", overlap_new)
                 end
-                println("------------------")
+                #println("------------------")
             end
+            =#
             sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
-            println("statistics ", ctr.statistics)
+            println("statistics ", maximum(values(ctr.statistics)))
             println("prob ", sol.probabilities)
             println("largest discarded prob ", sol.largest_discarded_probability)
             println("states ", sol.states)
             println("degeneracy ", sol.degeneracy)
-            println("=================")
-            @test sol.energies[begin] ≈ ground_energy
+            println("energy ", sol.energies[begin])
+            #@test sol.energies[begin] ≈ ground_energy
             push!(energies, sol.energies)
             clear_memoize_cache()
         end

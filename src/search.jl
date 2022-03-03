@@ -77,7 +77,8 @@ end
 
 function discard_probabilities(psol::Solution, cut_off_prob::Real)
     pcut = maximum(psol.probabilities) + log(cut_off_prob)
-    Solution(psol, findall(p -> p >= pcut, psol.probabilities))
+    sol = Solution(psol.energies, psol.states, psol.probabilities, psol.degeneracy, pcut)
+    Solution(sol, findall(p -> p >= pcut, psol.probabilities))
 end
 
 function branch_solution(psol::Solution, ctr::T, δprob::Real) where T <: AbstractContractor
@@ -118,11 +119,16 @@ function merge_branches(ctr::MpsContractor{T}) where {T}
                 stop = stop + 1
             end
             best_idx = argmin(@view nsol.energies[start:stop]) + start - 1
+            
+            #b = -ctr.betas[end] .* nsol.energies[start:stop] .- nsol.probabilities[start:stop] # this should be const
+            c = Statistics.median(ctr.betas[end] .* nsol.energies[start:stop] .+ nsol.probabilities[start:stop])
+            new_prob = -ctr.betas[end] .* nsol.energies[best_idx] .+ c ## base probs on all states with the same boundary
+            # using fit to log(prob) = - beta * eng + a0
 
             push!(energies, nsol.energies[best_idx])
             push!(states, nsol.states[best_idx])
-            push!(probs, nsol.probabilities[best_idx]) ## base probs on all states with the same boundary
-            # using fit to log(prob) = - beta * eng + a0
+            push!(probs, new_prob)
+            #push!(probs, nsol.probabilities[best_idx]) 
             push!(degeneracy, nsol.degeneracy[best_idx])
             start = stop + 1
         end

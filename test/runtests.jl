@@ -5,6 +5,7 @@ using LightGraphs
 using LinearAlgebra
 using TensorCast
 using MetaGraphs
+using Statistics
 
 disable_logging(LogLevel(1))
 
@@ -52,7 +53,9 @@ push!(my_tests,
         #"chimera_overlap.jl", # OK
         #"gauges.jl", # OK
         #"gauges2.jl", # OK
+        #"gauges3.jl",
         #"search_smallest_cross.jl", # OK
+        #"chimera2048.jl",
 )
 
 for my_test in my_tests

@@ -398,9 +398,6 @@ function update_gauges!(
     overlap
 end
 
-function update_gauges!(ctr::MpsContractor{T, NoUpdate}, row::Site, indβ::Int) where T
-end
-
 function conditional_probability(ctr::MpsContractor{S}, w::Vector{Int}) where S
     conditional_probability(layout(ctr.peps), ctr, w)
 end

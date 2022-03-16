@@ -26,6 +26,7 @@ fg = factor_graph(
 
 params = MpsParameters(bond_dim, 1E-8, 10)
 search_params = SearchParameters(num_states, δp)
+Gauge = NoUpdate
 
 @testset "Updating gauges works correctly." begin
 for Sparsity ∈ (Dense,)# Sparse) #MPSAnnealing
@@ -33,8 +34,8 @@ for Sparsity ∈ (Dense,)# Sparse) #MPSAnnealing
     for Layout ∈ (EnergyGauges,)# GaugesEnergy, EngGaugesEng)
         for Lattice ∈ (Square, SquareStar), transform ∈ all_lattice_transformations[[1]]
             net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform, :id)
-            ctr_svd = MpsContractor{SVDTruncate}(net, [β/8, β/4, β/2, β], params)
-            ctr_anneal = MpsContractor{MPSAnnealing}(net, [β/8, β/4, β/2, β], params)
+            ctr_svd = MpsContractor{SVDTruncate, Gauge}(net, [β/8, β/4, β/2, β], params)
+            ctr_anneal = MpsContractor{MPSAnnealing, Gauge}(net, [β/8, β/4, β/2, β], params)
 
             @testset "Overlaps calculated differently are the same." begin
                 indβ = 3

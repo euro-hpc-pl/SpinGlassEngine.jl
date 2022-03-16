@@ -34,6 +34,7 @@ function bench(instance::String)
 
     params = MpsParameters(bond_dim, 1E-8, 10)
     search_params = SearchParameters(num_states, δp)
+    Gauge = NoUpdate
 
     # Solve using PEPS search
     energies = Vector{Float64}[]
@@ -42,8 +43,8 @@ function bench(instance::String)
             net = PEPSNetwork{Pegasus_nd, Sparsity}(m, n, fg, tran)
             net2 = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg2, tran)
 
-            ctr = MpsContractor{Strategy}(net, [β/8, β/4, β/2, β], params)
-            ctr2 = MpsContractor{Strategy}(net2, [β/8, β/4, β/2, β], params)
+            ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], params)
+            ctr2 = MpsContractor{Strategy, Gauge}(net2, [β/8, β/4, β/2, β], params)
 
             sol = low_energy_spectrum(ctr, search_params)#, merge_branches(ctr))
             sol2 = low_energy_spectrum(ctr2, search_params)#, merge_branches(ctr2))

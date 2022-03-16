@@ -4,6 +4,9 @@ export
        MpoLayers,
        MpsParameters,
        MpsContractor,
+       NoUpdate,
+       GaugeStrategy,
+       GaugeStrategyWithBalancing,
        clear_memoize_cache,
        mps_top,
        mps,
@@ -13,9 +16,13 @@ export
 
 abstract type AbstractContractor end
 abstract type AbstractStrategy end
+abstract type AbstractGauge end
 
 struct SVDTruncate <: AbstractStrategy end
 struct MPSAnnealing <: AbstractStrategy end
+struct GaugeStrategyWithBalancing <: AbstractGauge end
+struct GaugeStrategy <: AbstractGauge end
+struct NoUpdate <: AbstractGauge end
 
 "Distinguishes different layers of MPO that are used by the contraction algorithm."
 struct MpoLayers
@@ -40,7 +47,7 @@ layout(net::PEPSNetwork{T, S}) where {T, S} = T
 sparsity(net::PEPSNetwork{T, S}) where {T, S} = S
 
 "Tells how to contract the peps network using the MPO-MPS scheme."
-mutable struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
+mutable struct MpsContractor{T <: AbstractStrategy, R <: AbstractGauge} <: AbstractContractor
     peps::PEPSNetwork{T, S} where {T, S}
     betas::Vector{<:Real}
     params::MpsParameters
@@ -51,7 +58,7 @@ mutable struct MpsContractor{T <: AbstractStrategy} <: AbstractContractor
     node_search_index::Dict{Node, Int}
     current_node::Node
 
-    function MpsContractor{T}(net, βs, params) where T
+    function MpsContractor{T, R}(net, βs, params) where {T, R}
         ml = MpoLayers(layout(net), net.ncols)
         stat = Dict{Vector{Int}, Real}()
         ord, node_out = nodes_search_order_Mps(net)
@@ -322,7 +329,7 @@ function error_measure(probs)
 end
 
 function update_gauges!(
-    ctr::MpsContractor{T},
+    ctr::MpsContractor{T, GaugeStrategy},
     row::Site,
     indβ::Int,
     tol::Real=1E-4,
@@ -361,7 +368,11 @@ function update_gauges!(
     overlap
 end
 
-function update_gauges_with_balancing!(ctr::MpsContractor{T}, row::Site, indβ::Int) where T
+function update_gauges!(
+    ctr::MpsContractor{T, GaugeStrategyWithBalancing}, 
+    row::Site, 
+    indβ::Int
+    ) where T
     clm = ctr.layers.main
     ψ_top = mps_top(ctr, row, indβ)
     ψ_bot = mps(ctr, row + 1, indβ)
@@ -385,6 +396,9 @@ function update_gauges_with_balancing!(ctr::MpsContractor{T}, row::Site, indβ::
         end
     end
     overlap
+end
+
+function update_gauges!(ctr::MpsContractor{T, NoUpdate}, row::Site, indβ::Int) where T
 end
 
 function conditional_probability(ctr::MpsContractor{S}, w::Vector{Int}) where S

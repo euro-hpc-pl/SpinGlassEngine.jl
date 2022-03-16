@@ -29,12 +29,13 @@ params = MpsParameters(bond_dim, 1E-8, 10)
 search_params = SearchParameters(num_states, δp)
 
 Strategy = SVDTruncate
+Gauge = NoUpdate
 @testset "Compare the results for GaugesEnergy with Python" begin
     for Layout ∈ (GaugesEnergy, ), transform ∈ rotation.([0])
         network_d = PEPSNetwork{Square{Layout}, Dense}(m, n, fg, transform)
         network_s = PEPSNetwork{Square{Layout}, Sparse}(m, n, fg, transform)
-        ctr_d = MpsContractor{Strategy}(network_d, [β/8, β/4, β/2, β], params)
-        ctr_s = MpsContractor{Strategy}(network_s, [β/8, β/4, β/2, β], params)
+        ctr_d = MpsContractor{Strategy, Gauge}(network_d, [β/8, β/4, β/2, β], params)
+        ctr_s = MpsContractor{Strategy, Gauge}(network_s, [β/8, β/4, β/2, β], params)
 
         @testset "Compare the results for Dense with Python" begin
             overlap_python = [0.2637787707674837, 0.2501621729619047, 0.2951954406837012]
@@ -53,7 +54,7 @@ end
     overlap_python = [0.18603559878582027, 0.36463028391550056, 0.30532555472025247]
     for Sparsity ∈ (Dense, ), transform ∈ rotation.([0]) #Sparse
         net = PEPSNetwork{Square{EnergyGauges}, Sparsity}(m, n, fg, transform)
-        ctr = MpsContractor{Strategy}(net, [β/8, β/4, β/2, β], params)
+        ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], params)
         for i in 1:n-1
             psi_top = mps_top(ctr, i, 4)
             psi_bottom = mps(ctr, i+1, 4)

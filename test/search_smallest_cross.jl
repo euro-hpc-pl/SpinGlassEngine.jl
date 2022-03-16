@@ -20,12 +20,13 @@
     )
     params = MpsParameters(bond_dim, 1E-8, 4)
     search_params = SearchParameters(num_states, 0.0)
+    Gauge = NoUpdate
 
     for Strategy ∈ (SVDTruncate,MPSAnnealing), Sparsity ∈ (Dense,Sparse)
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
             for transform ∈ all_lattice_transformations
                 net = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, fg, transform)
-                ctr = MpsContractor{Strategy}(net, [β/8., β/4., β/2., β], params)
+                ctr = MpsContractor{Strategy, Gauge}(net, [β/8., β/4., β/2., β], params)
                 sol = low_energy_spectrum(ctr, search_params)
 
                 ig_states = decode_factor_graph_state.(Ref(fg), sol.states)

@@ -11,13 +11,12 @@ disable_logging(LogLevel(1))
 
 
 function bench(instance_dir::String, out_path::String)
-    m = 8
-    n = 8
+    m = 12
+    n = 12
     t = 8
     
     L = n * m * t
     max_cl_states = 2^(t-0)
-
 
     bond_dim = 32
     dE = 5
@@ -25,10 +24,9 @@ function bench(instance_dir::String, out_path::String)
     num_states = 10000
     betas = collect(2:2:14)
 
-    dir = cd(instance_dir)
     count = 0
 
-    for (i, instance) ∈ enumerate(readdir(join=true))
+    for (i, instance) ∈ enumerate(readdir(instance_dir, join=true))
 
         fg = factor_graph(
         ising_graph(instance),
@@ -75,10 +73,13 @@ function bench(instance_dir::String, out_path::String)
             end
         end
     end
+
 end
 
+@info "Benchmarking Started"
 
 bench(
-    "$(@__DIR__)/instances/chimera_droplets/512power",
-    "$(@__DIR__)/chimera512.csv"
+    "$(@__DIR__)/instances/chimera_droplets/1152power",
+    "$(@__DIR__)/chimera1152.csv"
     )
+

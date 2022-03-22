@@ -1,3 +1,5 @@
+using LinearAlgebra
+using Base.Threads
 using MKL
 using SpinGlassEngine
 using SpinGlassNetworks
@@ -26,10 +28,10 @@ function bench(instance_dir::String, out_path::String)
 
     count = 0
 
-    for (i, instance) ∈ enumerate(readdir(instance_dir, join=true))
+    @threads for instance ∈ readdir(instance_dir, join=false)
 
         fg = factor_graph(
-        ising_graph(instance),
+        ising_graph(instance_dir*instance), # * is concatenation for strings
         max_cl_states,
         spectrum=brute_force,
         cluster_assignment_rule=super_square_lattice((m, n, t)))
@@ -49,17 +51,18 @@ function bench(instance_dir::String, out_path::String)
                     ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], params)
                     times = @elapsed sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 
-                    data = DataFrame(:i => i, :β => β, :Layout => Layout,
-                    :transform => transform, :energies => sol.energies[1:1],
-                    :time => times)
+                    data = DataFrame(:i => instance, :β => β, :Layout => Layout,
+                    :transform => transform, :energies => sol.energies[1:1], 
+                    :probability => sol.probabilities, :largest_discarded_probability => sol.largest_discarded_probability,
+                    :statistic => maximum(values(ctr.statistics)), :time => times)
 
                     data
 
                 catch e 
                     
-                    data = DataFrame(:i => i, :β => β, :Layout => Layout,
-                    :transform => transform, :energies => e,
-                    :time => "ERROR")
+                    data = DataFrame(:i => instance, :β => β, :Layout => Layout,
+                    :transform => transform, :energies => e, :probability => "", :largest_discarded_probability => "",
+                    :statistic => "", :time => "")
                         
                     data
                 

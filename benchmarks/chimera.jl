@@ -11,17 +11,17 @@ disable_logging(LogLevel(1))
 
 
 function bench(instance_dir::String, out_path::String)
-    m = 12
-    n = 12
+    m = 8
+    n = 8
     t = 8
     
     L = n * m * t
     max_cl_states = 2^(t-0)
 
     bond_dim = 32
-    dE = 5
+    dE = 1
     
-    num_states = 10000
+    num_states = 1000
     betas = collect(2:2:14)
 
     count = 0
@@ -49,18 +49,19 @@ function bench(instance_dir::String, out_path::String)
                     ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], params)
                     times = @elapsed sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 
-                    data = DataFrame(:i => i, :β => β, :Layout => Layout,
-                    :transform => transform, :energies => sol.energies[1:1],
-                    :time => times)
+
+                    data = DataFrame(:i => i+74, :β => β, :Layout => Layout,
+                    :transform => transform, :energies => sol.energies[1:1], 
+                    :probability => sol.probabilities, :largest_discarded_probability => sol.largest_discarded_probability,
+                    :statistic => maximum(values(ctr.statistics)), :time => times)
 
                     data
 
                 catch e 
                     
-
-                    data = DataFrame(:i => i, :β => β, :Layout => Layout,
-                    :transform => transform, :energies => "ERROR",
-                    :time => "ERROR")
+                    data = DataFrame(:i => i+74, :β => β, :Layout => Layout,
+                    :transform => transform, :energies => e, :probability => "", :largest_discarded_probability => "",
+                    :statistic => "", :time => "")
                         
                     data
                 
@@ -79,7 +80,7 @@ end
 @info "Benchmarking Started"
 
 bench(
-    "$(@__DIR__)/instances/chimera_droplets/1152power",
-    "$(@__DIR__)/chimera1152.csv"
+    "$(@__DIR__)/75",
+    "$(@__DIR__)/results/chimera512_75.csv"
     )
 

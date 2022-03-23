@@ -82,3 +82,5 @@ i;β;Layout;transform;energies;probability;largest_discarded_probability;statist
 031.txt;2;GaugesEnergy;LatticeTransformation((1, 2, 3, 4), false);-823.7599890000001;-11.555524733368657;-25.06845019833886;0.0;360.34731093
 081.txt;2;GaugesEnergy;LatticeTransformation((1, 2, 3, 4), false);-816.5333469999998;-19.400343456452447;-32.91326892142256;1.1370222794281096e-5;415.118799128
 001.txt;2;GaugesEnergy;LatticeTransformation((4, 1, 2, 3), true);-846.960013;-16.959956892190576;-30.472882357160806;0.0;436.910887881
+061.txt;2;GaugesEnergy;LatticeTransformation((4, 1, 2, 3), true);-820.0000259999999;-22.21073012762531;-35.72365559259562;0.0;394.827557559
+011.txt;2;GaugesEnergy;LatticeTransformation((4, 1, 2, 3), true);-850.16001;-21.423766596319183;-34.93669206128951;0.0;360.822685887

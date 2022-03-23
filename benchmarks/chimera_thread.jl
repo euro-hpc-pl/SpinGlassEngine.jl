@@ -85,6 +85,6 @@ end
 
 bench(
     "$(@__DIR__)/instances/chimera_droplets/512power",
-    "$(@__DIR__)/results/chimera512.csv"
+    "$(@__DIR__)/chimera512.csv"
     )
 

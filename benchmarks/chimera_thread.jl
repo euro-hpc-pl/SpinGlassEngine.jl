@@ -28,13 +28,12 @@ function bench(instance_dir::String, out_path::String)
 
     count = 0
 
-    #@threads for instance ∈ readdir(instance_dir, join=false)
     all_instances = readdir(instance_dir, join=false)
     @threads for k ∈ 1:length(all_instances) 
         instance = all_instances[k]
 
         fg = factor_graph(
-        ising_graph(instance_dir * "/" * instance), # * is concatenation for strings
+        ising_graph(instance_dir * "/" * instance), 
         max_cl_states,
         spectrum=brute_force,
         cluster_assignment_rule=super_square_lattice((m, n, t)))
@@ -45,11 +44,10 @@ function bench(instance_dir::String, out_path::String)
         for β ∈ betas, Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, )
             for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng), transform ∈ all_lattice_transformations
 
-                δp = 1E-5*exp(-β * dE)  
+                δp = 1E-5 * exp(-β * dE)  
                 search_params = SearchParameters(num_states, δp)
 
                 data = try
-
                     net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
                     ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], params)
                     times = @elapsed sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
@@ -58,27 +56,20 @@ function bench(instance_dir::String, out_path::String)
                     :transform => transform, :energies => sol.energies[1:1], 
                     :probability => sol.probabilities, :largest_discarded_probability => sol.largest_discarded_probability,
                     :statistic => maximum(values(ctr.statistics)), :time => times)
-
                     data
 
-                catch e 
-                    
+                catch e                 
                     data = DataFrame(:i => instance, :β => β, :Layout => Layout,
                     :transform => transform, :energies => e, :probability => "", :largest_discarded_probability => "",
                     :statistic => "", :time => "")
-                        
                     data
-                
                 end
                 println(data)
-                CSV.write(out_path, data, delim = ';', append = count != 0)
-                
+                CSV.write(out_path, data, delim = ';', append = count != 0)  
                 count += 1
-                
             end
         end
     end
-
 end
 
 @info "Benchmarking Started"

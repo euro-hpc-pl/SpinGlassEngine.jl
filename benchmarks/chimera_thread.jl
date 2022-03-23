@@ -21,9 +21,9 @@ function bench(instance_dir::String, out_path::String)
     max_cl_states = 2^(t-0)
 
     bond_dim = 32
-    dE = 5
+    dE = 1
     
-    num_states = 10000
+    num_states = 1000
     betas = collect(2:2:14)
 
     count = 0

@@ -10,7 +10,7 @@ using DataFrames
 
 
 disable_logging(LogLevel(1))
-
+BLAS.set_num_threads(1)
 
 function bench(instance_dir::String, out_path::String)
     m = 8
@@ -26,11 +26,18 @@ function bench(instance_dir::String, out_path::String)
     num_states = 1000
     betas = collect(2:2:14)
 
-    count = 0
+    data = DataFrame(i = Any[], β = Any[], Layout = Any[] , transform = Any[], energies = Any[], probability = Any[], 
+    largest_discarded_probability = Any[], statistic = Any[], time = Any[])
+
+    
+    output_path(i) = joinpath(out_path, "chimera512_$i.csv")
 
     all_instances = readdir(instance_dir, join=false)
     @threads for k ∈ 1:length(all_instances) 
+
         instance = all_instances[k]
+        
+        CSV.write(output_path(threadid()), data, delim = ';', append = false)  
 
         fg = factor_graph(
         ising_graph(instance_dir * "/" * instance), 
@@ -44,6 +51,7 @@ function bench(instance_dir::String, out_path::String)
         for β ∈ betas, Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, )
             for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng), transform ∈ all_lattice_transformations
 
+
                 δp = 1E-5 * exp(-β * dE)  
                 search_params = SearchParameters(num_states, δp)
 
@@ -56,17 +64,18 @@ function bench(instance_dir::String, out_path::String)
                     :transform => transform, :energies => sol.energies[1:1], 
                     :probability => sol.probabilities, :largest_discarded_probability => sol.largest_discarded_probability,
                     :statistic => maximum(values(ctr.statistics)), :time => times)
+
                     data
 
                 catch e                 
                     data = DataFrame(:i => instance, :β => β, :Layout => Layout,
                     :transform => transform, :energies => e, :probability => "", :largest_discarded_probability => "",
                     :statistic => "", :time => "")
+
                     data
                 end
+                CSV.write(output_path(threadid()), data, delim = ';', append = true)  
                 println(data)
-                CSV.write(out_path, data, delim = ';', append = count != 0)  
-                count += 1
             end
         end
     end
@@ -76,6 +85,6 @@ end
 
 bench(
     "$(@__DIR__)/instances/chimera_droplets/512power",
-    "$(@__DIR__)/chimera512.csv"
+    "$(@__DIR__)"
     )
 

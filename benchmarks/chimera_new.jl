@@ -28,10 +28,13 @@ function bench(instance_dir::String, out_path::String)
 
     count = 0
 
-    @threads for instance ∈ readdir(instance_dir, join=false)
+    #@threads for instance ∈ readdir(instance_dir, join=false)
+    all_instances = readdir(instance_dir, join=false)
+    @threads for k ∈ 1:length(all_instances) 
+        instance = all_instances[k]
 
         fg = factor_graph(
-        ising_graph(instance_dir*instance), # * is concatenation for strings
+        ising_graph(instance_dir * "/" * instance), # * is concatenation for strings
         max_cl_states,
         spectrum=brute_force,
         cluster_assignment_rule=super_square_lattice((m, n, t)))

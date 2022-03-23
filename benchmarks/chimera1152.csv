@@ -1,0 +1,21 @@
+i;β;Layout;transform;energies;time
+1;2;EnergyGauges;LatticeTransformation((1, 2, 3, 4), false);-1881.226693000001;196.844399709
+1;2;EnergyGauges;LatticeTransformation((4, 1, 2, 3), true);-1881.2000270000005;122.969632276
+1;2;EnergyGauges;LatticeTransformation((3, 4, 1, 2), false);-1881.2266930000008;95.781045707
+1;2;EnergyGauges;LatticeTransformation((2, 3, 4, 1), true);-1881.2266929999998;113.880093932
+1;2;EnergyGauges;LatticeTransformation((4, 3, 2, 1), false);-1881.226693;111.861186773
+1;2;EnergyGauges;LatticeTransformation((2, 1, 4, 3), false);-1881.2266929999996;109.085570115
+1;2;EnergyGauges;LatticeTransformation((1, 4, 3, 2), true);-1881.2266889999999;110.835927471
+1;2;EnergyGauges;LatticeTransformation((3, 2, 1, 4), true);-1881.2266929999998;96.659263184
+1;2;GaugesEnergy;LatticeTransformation((1, 2, 3, 4), false);-1881.226693000001;65.718705277
+1;2;GaugesEnergy;LatticeTransformation((4, 1, 2, 3), true);-1881.2000310000005;67.01107734
+1;2;GaugesEnergy;LatticeTransformation((3, 4, 1, 2), false);-1881.2266930000008;79.333460422
+1;2;GaugesEnergy;LatticeTransformation((2, 3, 4, 1), true);-1881.2266929999998;108.444079572
+1;2;GaugesEnergy;LatticeTransformation((4, 3, 2, 1), false);-1881.226693;58.38578341
+1;2;GaugesEnergy;LatticeTransformation((2, 1, 4, 3), false);-1881.2266889999996;114.460617767
+1;2;GaugesEnergy;LatticeTransformation((1, 4, 3, 2), true);-1881.2266929999998;84.33260434
+1;2;GaugesEnergy;LatticeTransformation((3, 2, 1, 4), true);-1881.2266929999998;194.79077846
+1;2;EngGaugesEng;LatticeTransformation((1, 2, 3, 4), false);-1829.0133650000012;242.181237715
+1;2;EngGaugesEng;LatticeTransformation((4, 1, 2, 3), true);-1881.2000310000005;180.980831419
+1;2;EngGaugesEng;LatticeTransformation((3, 4, 1, 2), false);-1881.2266930000008;160.405428533
+1;2;EngGaugesEng;LatticeTransformation((2, 3, 4, 1), true);-1881.2266929999998;194.233904456

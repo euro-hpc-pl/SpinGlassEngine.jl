@@ -24,12 +24,16 @@ function bench(instance_dir::String, out_path::String)
     num_states = 1000
     betas = collect(2:2:14)
 
-    count = 0
+    data = DataFrame(i = Any[], β = Any[], Layout = Any[] , transform = Any[], energies = Any[], probability = Any[], 
+    largest_discarded_probability = Any[], statistic = Any[], time = Any[])
 
-    for (i, instance) ∈ enumerate(readdir(instance_dir, join=true))
+    CSV.write(out_path, data, delim = ';', append = false)
+
+
+    for (i, instance) ∈ enumerate(readdir(instance_dir, join=false))
 
         fg = factor_graph(
-        ising_graph(instance),
+        ising_graph(instance_dir * "/" * instance),
         max_cl_states,
         spectrum=brute_force,
         cluster_assignment_rule=super_square_lattice((m, n, t)))
@@ -50,7 +54,7 @@ function bench(instance_dir::String, out_path::String)
                     times = @elapsed sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 
 
-                    data = DataFrame(:i => i+74, :β => β, :Layout => Layout,
+                    data = DataFrame(:i => instance, :β => β, :Layout => Layout,
                     :transform => transform, :energies => sol.energies[1:1], 
                     :probability => sol.probabilities, :largest_discarded_probability => sol.largest_discarded_probability,
                     :statistic => maximum(values(ctr.statistics)), :time => times)
@@ -59,7 +63,7 @@ function bench(instance_dir::String, out_path::String)
 
                 catch e 
                     
-                    data = DataFrame(:i => i+74, :β => β, :Layout => Layout,
+                    data = DataFrame(:i => instance, :β => β, :Layout => Layout,
                     :transform => transform, :energies => e, :probability => "", :largest_discarded_probability => "",
                     :statistic => "", :time => "")
                         
@@ -67,9 +71,8 @@ function bench(instance_dir::String, out_path::String)
                 
                 end
                 println(data)
-                CSV.write(out_path, data, delim = ';', append = count != 0)
+                CSV.write(out_path, data, delim = ';', append = true)
                 
-                count += 1
                 
             end
         end
@@ -80,7 +83,7 @@ end
 @info "Benchmarking Started"
 
 bench(
-    "$(@__DIR__)/75",
-    "$(@__DIR__)/results/chimera512_75.csv"
+    "$(@__DIR__)/instances/chimera_droplets/512power",
+    "$(@__DIR__)/chimera512.csv"
     )
 

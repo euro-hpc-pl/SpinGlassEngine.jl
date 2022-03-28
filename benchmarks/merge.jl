@@ -4,7 +4,7 @@ using DataFrames
 function merge(csv_dir::String, out_path::String)
 
     data = DataFrame()
-    for (i, csv) ∈ enumerate(readdir(csv_dir, join=true))
+    for csv ∈ readdir(csv_dir, join=true)
         row = DataFrame(CSV.File(csv, delim = ";"))
         data = vcat(data, row, cols=:union)
     end

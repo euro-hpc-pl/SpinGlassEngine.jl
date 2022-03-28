@@ -12,6 +12,6 @@ function merge(csv_dir::String, out_path::String)
 end
 
 merge(
-    "$(@__DIR__)/results/512power",
-    "$(@__DIR__)/results/merged.csv"
-    )
+    "$(@__DIR__)/results/512power/tmp",
+    "$(@__DIR__)/results/512power/merged.csv"
+)

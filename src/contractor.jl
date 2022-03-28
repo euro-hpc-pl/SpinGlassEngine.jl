@@ -72,7 +72,7 @@ end
 strategy(ctr::MpsContractor{T}) where {T} = T
 
 "Construct (and memoize) MPO for a given layers."
-@memoize Dict function mpo(
+@memoize ThreadSafeDict function mpo(
     ctr::MpsContractor{T}, layers::Dict{Site, Sites}, r::Int, indβ::Int
 ) where T <: AbstractStrategy
     mpo = Dict{Site, Dict{Site, Tensor}}()
@@ -88,7 +88,7 @@ strategy(ctr::MpsContractor{T}) where {T} = T
 end
 
 "Construct (and memoize) top MPS using SVD for a given row."
-@memoize Dict function mps_top(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
+@memoize ThreadSafeDict function mps_top(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
     if i < 1
         W = mpo(ctr, ctr.layers.main, 1, indβ)
         return IdentityQMps(local_dims(W, :up))
@@ -112,7 +112,7 @@ end
 end
 
 "Construct (and memoize) (bottom) MPS using SVD for a given row."
-@memoize Dict function mps(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
+@memoize ThreadSafeDict function mps(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
     if i > ctr.peps.nrows
         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
         return IdentityQMps(local_dims(W, :down))
@@ -135,7 +135,7 @@ end
 end
 
 "Construct (and memoize) (bottom) top MPS using Annealing for a given row."
-@memoize Dict function mps_top(ctr::MpsContractor{MPSAnnealing}, i::Int, indβ::Int)
+@memoize ThreadSafeDict function mps_top(ctr::MpsContractor{MPSAnnealing}, i::Int, indβ::Int)
     if i < 1
         W = mpo(ctr, ctr.layers.main, 1, indβ)
         return IdentityQMps(local_dims(W, :up))
@@ -163,7 +163,7 @@ end
 end
 
 "Construct (and memoize) (bottom) MPS using Annealing for a given row."
-@memoize Dict function mps(ctr::MpsContractor{MPSAnnealing}, i::Int, indβ::Int)
+@memoize ThreadSafeDict function mps(ctr::MpsContractor{MPSAnnealing}, i::Int, indβ::Int)
     if i > ctr.peps.nrows
         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
         return IdentityQMps(local_dims(W, :down))
@@ -196,7 +196,7 @@ function dressed_mps(ctr::MpsContractor{T}, i::Int) where T <: AbstractStrategy
 end
 
 "Construct (and memoize) dressed MPS for a given row and strategy."
-@memoize Dict function dressed_mps(
+@memoize ThreadSafeDict function dressed_mps(
     ctr::MpsContractor{T}, i::Int, indβ::Int
 ) where T <: AbstractStrategy
     ψ = mps(ctr, i+1, indβ)
@@ -205,7 +205,7 @@ end
 end
 
 "Construct (and memoize) right environment for a given node."
-@memoize Dict function right_env(
+@memoize ThreadSafeDict function right_env(
     ctr::MpsContractor{T}, i::Int, ∂v::Vector{Int}, indβ::Int
 ) where T <: AbstractStrategy
     l = length(∂v)
@@ -299,7 +299,7 @@ function _update_reduced_env_right(
     R
 end
 
-@memoize Dict function left_env(
+@memoize ThreadSafeDict function left_env(
     ctr::MpsContractor{T}, i::Int, ∂v::Vector{Int}, indβ::Int
 ) where T
     l = length(∂v)
@@ -369,8 +369,8 @@ function update_gauges!(
 end
 
 function update_gauges!(
-    ctr::MpsContractor{T, GaugeStrategyWithBalancing}, 
-    row::Site, 
+    ctr::MpsContractor{T, GaugeStrategyWithBalancing},
+    row::Site,
     indβ::Int
     ) where T
     clm = ctr.layers.main

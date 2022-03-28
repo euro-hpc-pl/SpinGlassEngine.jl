@@ -7,6 +7,7 @@ using TensorOperations
 using TensorCast
 using MetaGraphs
 using Memoize
+using ThreadSafeDicts
 using LinearAlgebra, MKL
 using LightGraphs
 using ProgressMeter

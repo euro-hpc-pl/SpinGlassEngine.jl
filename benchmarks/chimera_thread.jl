@@ -66,7 +66,6 @@ function bench(loc_instance::String)
                 net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
                 ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], params)
                 times = @elapsed sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
-                # Just to make sure
                 clear_memoize_cache()
 
                 data = DataFrame(
@@ -106,8 +105,7 @@ end
 
 @info "Benchmarking Started"
 
-all_instances = readdir(INSTANCE_DIR, join=false)
-@threads for idx ∈ 1:length(all_instances)
-    instance = all_instances[idx]
-    bench(instance)
+instances = readdir(INSTANCE_DIR, join=false)
+@threads for idx ∈ 1:length(instances)
+    bench(instances[idx])
 end

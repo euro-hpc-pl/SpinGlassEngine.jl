@@ -1,0 +1,106 @@
+using LinearAlgebra
+using MKL
+using Base.Threads
+using SpinGlassEngine
+using SpinGlassNetworks
+using SpinGlassTensors
+using Logging
+using CSV
+using DataFrames
+
+
+INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/512power"
+OUTPUT_DIR = "$(@__DIR__)/results/512power"
+
+BETAS = collect(2:2:14)
+LAYOUT = (EnergyGauges, GaugesEnergy, EngGaugesEng)
+TRANSFORM = all_lattice_transformations
+
+GAUGE = NoUpdate
+STRATEGY = SVDTruncate
+SPARSITY = Dense
+
+MAX_STATES = 1000
+BOND_DIM = 32
+DE = 1.0
+
+MAX_SWEEPS = 10
+VAR_TOL = 1E-8
+
+disable_logging(LogLevel(1))
+BLAS.set_num_threads(1)
+
+function chimera_sim(inst, trans, β, Layout)
+    m, n, t = 8, 8, 8
+    max_cl_states = 2 ^ t
+
+    δp = 1E-5 * exp(-β * DE)
+
+    fg = factor_graph(
+        ising_graph(INSTANCE_DIR * "/" * inst),
+        max_cl_states,
+        spectrum=brute_force,
+        cluster_assignment_rule=super_square_lattice((m, n, t))
+    )
+
+    params = MpsParameters(BOND_DIM, VAR_TOL, MAX_SWEEPS)
+    search_params = SearchParameters(MAX_STATES, δp)
+
+    net = PEPSNetwork{Square{Layout}, SPARSITY}(m, n, fg, trans)
+    ctr = MpsContractor{STRATEGY, GAUGE}(net, [β/6, β/3, β/2, β], params)
+    sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+    clear_memoize_cache()
+    sol, ctr
+end
+
+function run_bench(inst::String)
+    for β ∈ BETAS, t ∈ TRANSFORM, l ∈ LAYOUT
+
+        hash_name = hash(string(inst, BETAS, TRANSFORM, LAYOUT))
+        out_path = string(OUTPUT_DIR, "/", hash_name, ".csv")
+
+        if !isfile(out_path)
+            data = try
+                tic_toc = @elapsed sol, ctr = chimera_sim(inst, t, β, l)
+
+                data = DataFrame(
+                    :instance => inst,
+                    :β => β,
+                    :Layout => l,
+                    :transform => t,
+                    :energy => sol.energies[begin],
+                    :probabilities => sol.probabilities,
+                    :discarded_probability => sol.largest_discarded_probability,
+                    :statistic => maximum(values(ctr.statistics)),
+                    :max_states => MAX_STATES,
+                    :bond_dim => BOND_DIM,
+                    :de => DE,
+                    :max_sweeps => MAX_SWEEPS,
+                    :var_tol => VAR_TOL,
+                    :time => tic_toc
+                )
+            catch err
+                data = DataFrame(
+                    :instance => inst,
+                    :β => β,
+                    :Layout => l,
+                    :transform => t,
+                    :error => err
+                )
+            end
+
+            println(data)
+            CSV.write(out_path, data, delim = ';', append = false)
+        end #if
+    end
+end
+
+
+instances = readdir(INSTANCE_DIR, join=false)
+N = length(instances)
+
+println("Starting benchmarking on $N instances.")
+@threads for i ∈ 1:N
+    println("Processing $i ....")
+    run_bench(instances[i])
+end

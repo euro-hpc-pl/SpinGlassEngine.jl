@@ -10,7 +10,7 @@ using DataFrames
 
 
 INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/512power"
-OUTPUT_DIR = "$(@__DIR__)/results/512power"
+OUTPUT_DIR = "$(@__DIR__)/results/512power/tmp"
 
 BETAS = collect(2:2:14)
 LAYOUT = (EnergyGauges, GaugesEnergy, EngGaugesEng)

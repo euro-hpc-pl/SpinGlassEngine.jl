@@ -103,10 +103,10 @@ end
 
 
 instances = readdir(INSTANCE_DIR, join=false)
-N = length(instances)
+K = length(instances)
 
-println("Starting benchmarking on $N instances.")
-@threads for i ∈ 1:N
+println("Starting benchmarking on $K instances.")
+@threads for i ∈ 1:K
     println("Processing $i ....")
     run_bench(instances[i])
 end

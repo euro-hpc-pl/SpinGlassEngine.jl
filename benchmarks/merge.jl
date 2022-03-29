@@ -1,11 +1,11 @@
 using CSV
 using DataFrames
 
-#INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/512power"
-INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/1152power"
+#OUT_FILE = "$(@__DIR__)/results/512power/merged.csv"
+OUT_FILE  = "$(@__DIR__)/results/1152power/merged.csv"
 
-#OUTPUT_DIR = "$(@__DIR__)/results/512power/tmp"
-OUTPUT_DIR = "$(@__DIR__)/results/1152power/tmp"
+#CSV_DIR = "$(@__DIR__)/results/512power/tmp"
+CSV_DIR = "$(@__DIR__)/results/1152power/tmp"
 
 function merge(csv_dir::String, out_path::String)
 
@@ -17,4 +17,4 @@ function merge(csv_dir::String, out_path::String)
     CSV.write(out_path, data, delim = ';')
 end
 
-merge(INSTANCE_DIR, OUTPUT_DIR)
+merge(CSV_DIR, OUT_FILE)

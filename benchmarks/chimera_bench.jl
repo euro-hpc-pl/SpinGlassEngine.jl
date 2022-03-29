@@ -10,9 +10,9 @@ using DataFrames
 
 
 M, N, T = 8, 8, 8
-#M, N, T = 12, 12, 8
-
 INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/512power"
+
+#M, N, T = 12, 12, 8
 #INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/1152power"
 
 OUTPUT_DIR = "$(@__DIR__)/results/512power/tmp"

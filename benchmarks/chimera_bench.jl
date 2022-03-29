@@ -9,8 +9,11 @@ using CSV
 using DataFrames
 
 
-INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/512power"
-OUTPUT_DIR = "$(@__DIR__)/results/512power/tmp"
+#INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/512power"
+INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/1152power"
+
+#OUTPUT_DIR = "$(@__DIR__)/results/512power/tmp"
+OUTPUT_DIR = "$(@__DIR__)/results/1152power/tmp"
 
 BETAS = collect(2:2:14)
 LAYOUT = (EnergyGauges, GaugesEnergy, EngGaugesEng)
@@ -31,7 +34,8 @@ disable_logging(LogLevel(1))
 BLAS.set_num_threads(1)
 
 function chimera_sim(inst, trans, β, Layout)
-    m, n, t = 8, 8, 8
+   #m, n, t = 8, 8, 8
+    m, n, t = 12, 12, 8
     max_cl_states = 2 ^ t
 
     δp = 1E-5 * exp(-β * DE)

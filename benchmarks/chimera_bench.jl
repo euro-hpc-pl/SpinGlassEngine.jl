@@ -9,6 +9,9 @@ using CSV
 using DataFrames
 
 
+M, N, T = 8, 8, 8
+#M, N, T = 12, 12, 8
+
 INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/512power"
 #INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/1152power"
 
@@ -34,9 +37,8 @@ disable_logging(LogLevel(1))
 BLAS.set_num_threads(1)
 
 function chimera_sim(inst, trans, β, Layout)
-    m, n, t = 8, 8, 8
-    #m, n, t = 12, 12, 8
-    max_cl_states = 2 ^ t
+
+    max_cl_states = 2 ^ T
 
     δp = 1E-5 * exp(-β * DE)
 
@@ -44,7 +46,7 @@ function chimera_sim(inst, trans, β, Layout)
         ising_graph(INSTANCE_DIR * "/" * inst),
         max_cl_states,
         spectrum=brute_force,
-        cluster_assignment_rule=super_square_lattice((m, n, t))
+        cluster_assignment_rule=super_square_lattice((M, N, T))
     )
 
     params = MpsParameters(BOND_DIM, VAR_TOL, MAX_SWEEPS)

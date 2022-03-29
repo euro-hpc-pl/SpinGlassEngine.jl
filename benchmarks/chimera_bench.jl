@@ -9,11 +9,11 @@ using CSV
 using DataFrames
 
 
-#INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/512power"
-INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/1152power"
+INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/512power"
+#INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/1152power"
 
-#OUTPUT_DIR = "$(@__DIR__)/results/512power/tmp"
-OUTPUT_DIR = "$(@__DIR__)/results/1152power/tmp"
+OUTPUT_DIR = "$(@__DIR__)/results/512power/tmp"
+#OUTPUT_DIR = "$(@__DIR__)/results/1152power/tmp"
 
 BETAS = collect(2:2:14)
 LAYOUT = (EnergyGauges, GaugesEnergy, EngGaugesEng)
@@ -34,8 +34,8 @@ disable_logging(LogLevel(1))
 BLAS.set_num_threads(1)
 
 function chimera_sim(inst, trans, β, Layout)
-   #m, n, t = 8, 8, 8
-    m, n, t = 12, 12, 8
+    m, n, t = 8, 8, 8
+    #m, n, t = 12, 12, 8
     max_cl_states = 2 ^ t
 
     δp = 1E-5 * exp(-β * DE)
@@ -60,7 +60,7 @@ end
 function run_bench(inst::String)
     for β ∈ BETAS, t ∈ TRANSFORM, l ∈ LAYOUT
 
-        hash_name = hash(string(inst, BETAS, TRANSFORM, LAYOUT))
+        hash_name = hash(string(inst, β, t, l))
         out_path = string(OUTPUT_DIR, "/", hash_name, ".csv")
 
         if !isfile(out_path)

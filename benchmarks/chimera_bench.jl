@@ -65,7 +65,9 @@ function run_bench(inst::String)
         hash_name = hash(string(inst, β, t, l))
         out_path = string(OUTPUT_DIR, "/", hash_name, ".csv")
 
-        if !isfile(out_path)
+        if isfile(out_path)
+            println("Skipping for $β, $t, $l.")
+        else
             data = try
                 tic_toc = @elapsed sol, ctr = chimera_sim(inst, t, β, l)
 

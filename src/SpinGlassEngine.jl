@@ -6,7 +6,7 @@ using SpinGlassNetworks
 using TensorOperations
 using TensorCast
 using MetaGraphs
-using Memoize
+using Memoization
 using ThreadSafeDicts
 using LinearAlgebra, MKL
 using LightGraphs

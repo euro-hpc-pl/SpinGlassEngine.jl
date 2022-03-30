@@ -9,14 +9,13 @@ using CSV
 using DataFrames
 
 
-M, N, T = 8, 8, 8
-INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/512power"
+#M, N, T = 8, 8, 8
+#INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/512power"
+#OUTPUT_DIR = "$(@__DIR__)/results/512power/tmp"
 
-#M, N, T = 12, 12, 8
-#INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/1152power"
-
-OUTPUT_DIR = "$(@__DIR__)/results/512power/tmp"
-#OUTPUT_DIR = "$(@__DIR__)/results/1152power/tmp"
+M, N, T = 12, 12, 8
+INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/1152power"
+OUTPUT_DIR = "$(@__DIR__)/results/1152power/tmp"
 
 BETAS = collect(2:2:14)
 LAYOUT = (EnergyGauges, GaugesEnergy, EngGaugesEng)
@@ -34,7 +33,7 @@ MAX_SWEEPS = 10
 VAR_TOL = 1E-8
 
 disable_logging(LogLevel(1))
-BLAS.set_num_threads(1)
+#BLAS.set_num_threads(1)
 
 function chimera_sim(inst, trans, β, Layout)
 
@@ -110,7 +109,8 @@ K = length(instances)
 @time begin
     println("Starting benchmarking on $K instances.")
 
-    @threads for i ∈ 1:K
+    #@threads
+    for i ∈ 1:K
         println("Processing $i ....")
         run_bench(instances[i])
     end

@@ -1,6 +1,6 @@
+using MPI
 using LinearAlgebra
 using MKL
-using Base.Threads
 using SpinGlassEngine
 using SpinGlassNetworks
 using SpinGlassTensors
@@ -8,6 +8,9 @@ using Logging
 using CSV
 using DataFrames
 
+MPI.Init()
+size = MPI.Comm_size(MPI.COMM_WORLD)
+rank = MPI.Comm_rank(MPI.COMM_WORLD)
 
 #M, N, T = 8, 8, 8
 #INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/512power"
@@ -33,7 +36,7 @@ MAX_SWEEPS = 10
 VAR_TOL = 1E-8
 
 disable_logging(LogLevel(1))
-#BLAS.set_num_threads(1)
+BLAS.set_num_threads(1)
 
 function chimera_sim(inst, trans, β, Layout)
 
@@ -109,9 +112,10 @@ K = length(instances)
 @time begin
     println("Starting benchmarking on $K instances.")
 
-    #@threads
-    for i ∈ 1:K
-        println("Processing $i ....")
+    for i ∈ (1+rank):size:K
+
+        println("Processing $i by rank $rank ...")
         run_bench(instances[i])
     end
+    MPI.finalize()
 end

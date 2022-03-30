@@ -37,7 +37,8 @@ function bench(instance::String)
                 ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], params)
                 #ctr = MpsContractor{Strategy}(net, [β/6, β/3, β/2, β], params)
                 indβ = [1, 2, 3]
-                
+
+                #=
                 if Gauge!= NoUpdate
                     for j in indβ
                         for i ∈ 1:m-1
@@ -50,8 +51,9 @@ function bench(instance::String)
                         #println("------------------")
                     end
                 end
-                
-                sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+                =#
+
+                @time sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
                 println("statistics ", maximum(values(ctr.statistics)))
                 println("prob ", sol.probabilities)
                 println("largest discarded prob ", sol.largest_discarded_probability)
@@ -60,7 +62,7 @@ function bench(instance::String)
                 println("energy ", sol.energies[begin])
                 #@test sol.energies[begin] ≈ ground_energy
                 push!(energies, sol.energies)
-                clear_memoize_cache()
+                #clear_memoize_cache()
             end
         end
     end

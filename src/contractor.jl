@@ -351,21 +351,21 @@ function update_gauges!(
         g_bot = ctr.peps.gauges.data[n_bot] .* g_inv
         push!(ctr.peps.gauges.data, n_top => g_top, n_bot => g_bot)
     end
-    #=
+
     for ind ∈ 1:indβ
         for i ∈ row:ctr.peps.nrows
-            delete!(memoize_cache(mps_top), (ctr, i, ind))
+            delete!(Memoization.caches[mps_top], ((ctr, i, ind), ()))
         end
         for i ∈ 1:row+1
-            delete!(memoize_cache(mps), (ctr, i, ind))
+            delete!(Memoization.caches[mps], ((ctr, i, ind), ()))
         end
         for i ∈ row:row+1
-            delete!(memoize_cache(mpo), (ctr, ctr.layers.main, i, ind))
-            delete!(memoize_cache(mpo), (ctr, ctr.layers.dress, i, ind))
-            delete!(memoize_cache(mpo), (ctr, ctr.layers.right, i, ind))
+            cmpo = Memoization.caches[mpo]
+            delete!(cmpo, ((ctr, ctr.layers.main, i, ind), ()))
+            delete!(cmpo, ((ctr, ctr.layers.dress, i, ind), ()))
+            delete!(cmpo, ((ctr, ctr.layers.right, i, ind), ()))
         end
     end
-    =#
     overlap
 end
 
@@ -387,21 +387,22 @@ function update_gauges!(
         push!(ctr.peps.gauges.data, n_top => 1 ./ scale, n_bot => scale)
     end
     overlap = ψ_top * ψ_bot
-    #=
+
+    # This is repeated, simplification necessary
     for ind ∈ 1:indβ
         for i ∈ row:ctr.peps.nrows
-            delete!(memoize_cache(mps_top), (ctr, i, ind))
+            delete!(Memoization.caches[mps_top], ((ctr, i, ind), ()))
         end
         for i ∈ 1:row+1
-            delete!(memoize_cache(mps), (ctr, i, ind))
+            delete!(Memoization.caches[mps], ((ctr, i, ind), ()))
         end
         for i ∈ row:row+1
-            delete!(memoize_cache(mpo), (ctr, ctr.layers.main, i, ind))
-            delete!(memoize_cache(mpo), (ctr, ctr.layers.dress, i, ind))
-            delete!(memoize_cache(mpo), (ctr, ctr.layers.right, i, ind))
+            cmpo = Memoization.caches[mpo]
+            delete!(cmpo, ((ctr, ctr.layers.main, i, ind), ()))
+            delete!(cmpo, ((ctr, ctr.layers.dress, i, ind), ()))
+            delete!(cmpo, ((ctr, ctr.layers.right, i, ind), ()))
         end
     end
-    =#
     overlap
 end
 

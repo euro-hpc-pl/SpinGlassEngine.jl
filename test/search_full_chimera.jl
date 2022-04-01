@@ -3,22 +3,22 @@ using SpinGlassTensors
 using SpinGlassEngine
 
 function bench(instance::String)
-    m = 8
-    n = 8
+    m = 16
+    n = 16
     t = 8
 
     L = n * m * t
     max_cl_states = 2^(t-0)
 
-    #ground_energy = -3336.773383 # for chimera 2048
+    ground_energy = -3336.773383 # for chimera 2048
     #ground_energy = -1881.226667 # for chimera 1152
-    ground_energy = -846.960013 # for chimera 512
+    #ground_energy = -846.960013 # for chimera 512
 
     β = 8.0
     bond_dim = 32
     dE = 5
-    δp = 1E-5*exp(-β * dE)
-    num_states = 1000000
+    δp = 1E-5 * exp(-β * dE)
+    num_states = 10000
 
     @time fg = factor_graph(
         ising_graph(instance),
@@ -53,7 +53,7 @@ function bench(instance::String)
                 end
                 =#
 
-                @time sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+                @allocated sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
                 println("statistics ", maximum(values(ctr.statistics)))
                 println("prob ", sol.probabilities)
                 println("largest discarded prob ", sol.largest_discarded_probability)
@@ -69,4 +69,5 @@ function bench(instance::String)
     @test all(e -> e ≈ first(energies), energies)
 end
 
-bench("$(@__DIR__)/instances/chimera_droplets/512power/001.txt")
+bench("$(@__DIR__)/instances/chimera_droplets/2048power/001.txt")
+#bench("$(@__DIR__)/instances/chimera_droplets/512power/001.txt")

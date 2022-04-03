@@ -20,7 +20,7 @@ M, N, T = 12, 12, 8
 INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/1152power"
 OUTPUT_DIR = "$(@__DIR__)/results/1152power/tmp"
 
-BETAS = collect(2:2:14)
+BETAS = collect(2:2:14)[1]
 LAYOUT = (EnergyGauges, )# GaugesEnergy, EngGaugesEng)
 TRANSFORM = (all_lattice_transformations[1], )
 
@@ -112,9 +112,9 @@ K = length(instances)
 @time begin
     println("Starting benchmarking on $K instances.")
 
-    for i ∈ [1, 2] #(1+rank):size:K
+    for i ∈ (1+rank):size:K
 
         println("Processing $i by rank $rank ...")
-        run_bench(instances[i])
+        @allocated run_bench(instances[i])
     end
 end

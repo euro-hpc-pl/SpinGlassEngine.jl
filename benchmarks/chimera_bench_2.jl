@@ -22,7 +22,7 @@ OUTPUT_DIR = "$(@__DIR__)/results/1152power/tmp"
 
 BETAS = collect(2:2:14)
 LAYOUT = (EnergyGauges, GaugesEnergy, EngGaugesEng)
-TRANSFORM = (all_lattice_transformations, )
+TRANSFORM = all_lattice_transformations
 
 GAUGE = NoUpdate
 STRATEGY = SVDTruncate

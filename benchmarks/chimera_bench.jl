@@ -115,6 +115,7 @@ K = length(instances)
     for i ∈ (1+rank):size:K
 
         println("Processing $i by rank $rank ...")
-        @allocated run_bench(instances[i])
+        run_bench(instances[i])
+        GC.gc()
     end
 end

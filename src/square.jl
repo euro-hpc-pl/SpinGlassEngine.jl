@@ -252,6 +252,7 @@ end
 """
 $(TYPEDSIGNATURES)
 
+
 """
 function update_energy(
     ::Type{T}, ctr::MpsContractor{S}, σ::Vector{Int},

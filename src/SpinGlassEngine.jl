@@ -12,6 +12,7 @@ using LinearAlgebra, MKL
 using LightGraphs
 using ProgressMeter
 using Statistics
+using DocStringExtensions
 #using Infiltrator
 
 # to be remove

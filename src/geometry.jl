@@ -25,8 +25,16 @@ struct EngGaugesEng{T} <: AbstractTensorsLayout end
 
 const Node = NTuple{N, Int} where N
 
+"""
+$(TYPEDSIGNATURES)
+"""
 @inline site(i::Site) = denominator(i) == 1 ? numerator(i) : i
-"Node for the Square and SquareStar."
+
+"""
+$(TYPEDSIGNATURES)
+
+Node for the Square and SquareStar.
+"""
 struct PEPSNode
     i::Site
     j::Site
@@ -34,7 +42,11 @@ struct PEPSNode
 end
 Node(node::PEPSNode) = (node.i, node.j)
 
-"Node for the Pegasus type."
+"""
+$(TYPEDSIGNATURES)
+
+Node for the Pegasus type.
+"""
 struct SuperPEPSNode
     i::Site
     j::Site
@@ -44,7 +56,11 @@ struct SuperPEPSNode
 end
 Node(node::SuperPEPSNode) = (node.i, node.j, node.k)
 
-"Defines information how to create gauges."
+"""
+$(TYPEDSIGNATURES)
+
+Defines information how to create gauges.
+"""
 struct GaugeInfo
     positions::NTuple{2, PEPSNode}
     attached_tensor::PEPSNode
@@ -52,7 +68,11 @@ struct GaugeInfo
     type::Symbol
 end
 
-"Stores gauges and corresponding information."
+"""
+$(TYPEDSIGNATURES)
+
+Stores gauges and corresponding information.
+"""
 struct Gauges{T <: AbstractGeometry}
     data::Dict{PEPSNode, AbstractArray{<:Real}}
     info::Vector{GaugeInfo}

@@ -2,6 +2,9 @@ export Pegasus_nd
 
 struct Pegasus_nd <: AbstractGeometry end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function Pegasus_nd(m::Int, n::Int)
     labels = [(i, j, k) for j ∈ 1:n for i ∈ 1:m for k ∈ 1:2]
     lg = LabelledGraph(labels)
@@ -25,10 +28,21 @@ function Pegasus_nd(m::Int, n::Int)
     lg
 end
 
-# Geometry: 2 nodes -> 1 TN site. This will work for Chimera.
+"""
+$(TYPEDSIGNATURES)
+
+Geometry: 2 nodes -> 1 TN site. This will work for Chimera.
+"""
 pegasus_site(::Type{Dense}) = :pegasus_site
+
+"""
+$(TYPEDSIGNATURES)
+"""
 pegasus_site(::Type{Sparse}) = :sparse_pegasus_site
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function tensor_map(
     ::Type{Pegasus_nd}, ::Type{S}, nrows::Int, ncols::Int
 ) where S <: AbstractSparsity
@@ -37,6 +51,9 @@ function tensor_map(
     map
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function gauges_list(::Type{Pegasus_nd}, nrows::Int, ncols::Int)
     [
         GaugeInfo(
@@ -49,6 +66,9 @@ function gauges_list(::Type{Pegasus_nd}, nrows::Int, ncols::Int)
     ]
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function MpoLayers(::Type{T}, ncols::Int) where T <: Pegasus_nd
     MpoLayers(
         Dict(i => (-1//3, 0, 1//3) for i ∈ 1:ncols),
@@ -57,7 +77,9 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: Pegasus_nd
     )
 end
 
-
+"""
+$(TYPEDSIGNATURES)
+"""
 function conditional_probability(
     ::Type{T}, ctr::MpsContractor{S}, state::Vector{Int},
 ) where {T <: Pegasus_nd, S}
@@ -136,10 +158,16 @@ function conditional_probability(
     normalize_probability(probs)
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: Pegasus_nd, S}
     ([(i, j, k) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols for k ∈ 1:2], (peps.nrows+1, 1, 1))
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: Pegasus_nd, S}
     i, j, k = node
     if k == 1
@@ -164,6 +192,9 @@ function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: Pega
     bnd
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function update_energy(
     ::Type{T}, ctr::MpsContractor{S}, σ::Vector{Int}) where {T <: Pegasus_nd, S}
     net = ctr.peps
@@ -177,7 +208,11 @@ function update_energy(
     en
 end
 
-# cluster-cluster energies attached from left and top
+"""
+$(TYPEDSIGNATURES)
+
+cluster-cluster energies attached from left and top
+"""
 function tensor(
     network::PEPSNetwork{Pegasus_nd, T}, node::PEPSNode, β::Real, ::Val{:pegasus_site}
 ) where T <: AbstractSparsity
@@ -242,6 +277,9 @@ end
 #     ## TO BE ADDED
 # end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function projectors_site_tensor(net::PEPSNetwork{T, S}, vertex::Node) where {T <: Pegasus_nd, S}
     i, j = vertex
     (
@@ -252,12 +290,18 @@ function projectors_site_tensor(net::PEPSNetwork{T, S}, vertex::Node) where {T <
     )
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function Base.size(
     network::PEPSNetwork{Pegasus_nd, T}, node::PEPSNode, ::Val{:pegasus_site}
 ) where T <: AbstractSparsity
     maximum.(projectors_site_tensor(network, Node(node)))
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function Base.size(
     network::PEPSNetwork{Pegasus_nd, T}, node::PEPSNode, ::Val{:sparse_pegasus_site}
 ) where T <: AbstractSparsity

@@ -2,6 +2,9 @@ export SquareStar
 
 struct SquareStar{T <: AbstractTensorsLayout} <: AbstractGeometry end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function SquareStar(m::Int, n::Int)
     lg = Square(m, n)
     for i ∈ 1:m-1, j ∈ 1:n-1
@@ -11,9 +14,19 @@ function SquareStar(m::Int, n::Int)
     lg
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 Virtual(::Type{Dense}) = :virtual
+
+"""
+$(TYPEDSIGNATURES)
+"""
 Virtual(::Type{Sparse}) = :sparse_virtual
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function tensor_map(
     ::Type{SquareStar{T}}, ::Type{S}, nrows::Int, ncols::Int
 ) where {T <: Union{EnergyGauges, GaugesEnergy}, S <: AbstractSparsity}
@@ -34,6 +47,9 @@ function tensor_map(
     map
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function tensor_map(
     ::Type{SquareStar{T}}, ::Type{S}, nrows::Int, ncols::Int
 ) where {T <: EngGaugesEng, S <: AbstractSparsity}
@@ -59,6 +75,9 @@ function tensor_map(
     map
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function gauges_list(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T <: GaugesEnergy
     [
         GaugeInfo(
@@ -71,6 +90,9 @@ function gauges_list(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T <: G
     ]
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function gauges_list(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T <: EnergyGauges
     [
         GaugeInfo(
@@ -83,6 +105,9 @@ function gauges_list(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T <: E
     ]
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function gauges_list(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T <: EngGaugesEng
     [
         GaugeInfo(
@@ -95,7 +120,11 @@ function gauges_list(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T <: E
     ]
 end
 
-"Defines the MPO layers for the SquareStar geometry with the EnergyGauges layout."
+"""
+$(TYPEDSIGNATURES)
+
+Defines the MPO layers for the SquareStar geometry with the EnergyGauges layout.
+"""
 function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EnergyGauges}
     MpoLayers(
         Dict(site(i) => (-1//6, 0, 3//6, 4//6) for i ∈ 1//2:1//2:ncols),
@@ -104,7 +133,11 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EnergyGauges}
     )
 end
 
-"Defines the MPO layers for the SquareStar geometry with the GaugesEnergy layout."
+"""
+$(TYPEDSIGNATURES)
+
+Defines the MPO layers for the SquareStar geometry with the GaugesEnergy layout.
+"""
 function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{GaugesEnergy}
     MpoLayers(
         Dict(site(i) => (-4//6, -1//2, 0, 1//6) for i ∈ 1//2:1//2:ncols),
@@ -113,7 +146,11 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{GaugesEnergy}
     )
 end
 
-"Defines the MPO layers for the SquareStar geometry with the EngGaugesEng layout."
+"""
+$(TYPEDSIGNATURES)
+
+Defines the MPO layers for the SquareStar geometry with the EngGaugesEng layout.
+"""
 function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EngGaugesEng}
     MpoLayers(
         Dict(site(i) => (-2//5, -1//5, 0, 1//5, 2//5) for i ∈ 1//2:1//2:ncols),
@@ -122,6 +159,9 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EngGaugesEng}
     )
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 # TODO: rewrite this using brodcasting if possible
 function conditional_probability(
     ::Type{T}, ctr::MpsContractor{S}, state::Vector{Int},
@@ -170,6 +210,9 @@ function conditional_probability(
     normalize_probability(loc_exp)
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function projectors_site_tensor(network::PEPSNetwork{T, S}, vertex::Node) where {T <: SquareStar, S}
     i, j = vertex
     nbrs = (
@@ -181,10 +224,16 @@ function projectors_site_tensor(network::PEPSNetwork{T, S}, vertex::Node) where 
     projector.(Ref(network), Ref(vertex), nbrs)
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: SquareStar, S}
     ([(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols], (peps.nrows+1, 1))
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: SquareStar, S}
     i, j = node
     vcat(
@@ -203,6 +252,9 @@ function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: Squa
     )
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function update_energy(
     ::Type{T}, ctr::MpsContractor{S}, σ::Vector{Int}) where {T <: SquareStar, S}
     net = ctr.peps
@@ -214,6 +266,9 @@ function update_energy(
     en
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function tensor(
     network::PEPSNetwork{SquareStar{T}, S}, node::PEPSNode, β::Real, ::Val{:central_d}
 ) where {T <: AbstractTensorsLayout, S <: AbstractSparsity}
@@ -224,6 +279,9 @@ function tensor(
     A
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function Base.size(
     network::PEPSNetwork{SquareStar{T}, S}, node::PEPSNode, ::Val{:central_d}
 ) where {T <: AbstractTensorsLayout, S <: AbstractSparsity}
@@ -233,6 +291,9 @@ function Base.size(
     (u * ũ, d * d̃)
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function tensor(
     network::PEPSNetwork{SquareStar{T}, Dense}, node::PEPSNode, β::Real, ::Val{:virtual}
 ) where T <: AbstractTensorsLayout
@@ -261,6 +322,9 @@ function tensor(
     AA
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function tensor(
     net::PEPSNetwork{SquareStar{T}, Sparse}, node::PEPSNode, β::Real, ::Val{:sparse_virtual}
 ) where T <: AbstractTensorsLayout
@@ -280,6 +344,9 @@ function tensor(
     SparseVirtualTensor(h, (vec(p_lb), vec(p_l), vec(p_lt), vec(p_rb), vec(p_r), vec(p_rt)))
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function tensor(
     network::PEPSNetwork{SquareStar{T}, Dense}, node::PEPSNode, ::Val{:virtual}
 ) where T <: AbstractTensorsLayout

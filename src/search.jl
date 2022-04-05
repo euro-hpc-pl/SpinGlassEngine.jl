@@ -8,6 +8,9 @@ export
        exact_marginal_probability,
        exact_conditional_probability
 
+"""
+$(TYPEDSIGNATURES)
+"""
 struct SearchParameters
     max_states::Int
     cut_off_prob::Real
@@ -16,6 +19,10 @@ struct SearchParameters
         new(max_states, cut_off_prob)
     end
 end
+
+"""
+$(TYPEDSIGNATURES)
+"""
 struct Solution
     energies::Vector{<:Real}
     states::Vector{Vector{Int}}
@@ -23,8 +30,15 @@ struct Solution
     degeneracy::Vector{Int}
     largest_discarded_probability::Real
 end
+
+"""
+$(TYPEDSIGNATURES)
+"""
 empty_solution() = Solution([0.0], [Vector{Int}[]], [0.0], [1], -Inf)
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function Solution(
     sol::Solution, idx::Vector{Int}, ldp::Real=sol.largest_discarded_probability
 )
@@ -37,14 +51,23 @@ function Solution(
     )
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function branch_energy(ctr::MpsContractor{T}, eσ::Tuple{<:Real, Vector{Int}}) where {T, S}
     eσ[begin] .+ update_energy(ctr, eσ[end])
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function branch_state(ctr::MpsContractor{T}, σ::Vector{Int}) where {T, S}
     vcat.(Ref(σ), collect(1:cluster_size(ctr.peps, ctr.current_node)))
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T
     # if !( exact_conditional_probability(ctr, pσ[end]) ≈ conditional_probability(ctr, pσ[end]) )
     #     println(pσ[end], exact_conditional_probability(ctr, pσ[end]), conditional_probability(ctr, pσ[end]))
@@ -52,6 +75,9 @@ function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int
     pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 @memoize function spectrum(factor_graph::LabelledGraph{S, T}) where {S, T}
     ver = vertices(factor_graph)
     rank = cluster_size.(Ref(factor_graph), ver)
@@ -59,6 +85,9 @@ end
     energy.(Ref(factor_graph), states), states
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function exact_marginal_probability(
     ctr::MpsContractor{T},
     σ::Vector{Int}
@@ -70,17 +99,26 @@ function exact_marginal_probability(
     sum(prob[findall([all(s[k] == v for (k, v) ∈ target_state) for s ∈ states])])
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function exact_conditional_probability(ctr::MpsContractor{T}, σ::Vector{Int}) where T
     probs = exact_marginal_probability.(Ref(ctr), branch_state(ctr, σ))
     probs ./= sum(probs)
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function discard_probabilities(psol::Solution, cut_off_prob::Real)
     pcut = maximum(psol.probabilities) + log(cut_off_prob)
     sol = Solution(psol.energies, psol.states, psol.probabilities, psol.degeneracy, pcut)
     Solution(sol, findall(p -> p >= pcut, psol.probabilities))
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function branch_solution(psol::Solution, ctr::T, δprob::Real) where T <: AbstractContractor
     num_states = cluster_size(ctr.peps, ctr.current_node)
     discard_probabilities(
@@ -95,6 +133,9 @@ function branch_solution(psol::Solution, ctr::T, δprob::Real) where T <: Abstra
     )
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function merge_branches(ctr::MpsContractor{T}) where {T}
     function _merge(psol::Solution)
         node = get(ctr.nodes_search_order, length(psol.states[1])+1, ctr.node_outside)
@@ -119,7 +160,7 @@ function merge_branches(ctr::MpsContractor{T}) where {T}
                 stop = stop + 1
             end
             best_idx = argmin(@view nsol.energies[start:stop]) + start - 1
-            
+
             #b = -ctr.betas[end] .* nsol.energies[start:stop] .- nsol.probabilities[start:stop] # this should be const
             c = Statistics.median(ctr.betas[end] .* nsol.energies[start:stop] .+ nsol.probabilities[start:stop])
             new_prob = -ctr.betas[end] .* nsol.energies[best_idx] .+ c ## base probs on all states with the same boundary
@@ -128,7 +169,7 @@ function merge_branches(ctr::MpsContractor{T}) where {T}
             push!(energies, nsol.energies[best_idx])
             push!(states, nsol.states[best_idx])
             push!(probs, new_prob)
-            #push!(probs, nsol.probabilities[best_idx]) 
+            #push!(probs, nsol.probabilities[best_idx])
             push!(degeneracy, nsol.degeneracy[best_idx])
             start = stop + 1
         end
@@ -138,6 +179,9 @@ function merge_branches(ctr::MpsContractor{T}) where {T}
 end
 no_merge(partial_sol::Solution) = partial_sol
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function bound_solution(psol::Solution, max_states::Int, merge_strategy=no_merge)
     if length(psol.probabilities) <= max_states
         probs = vcat(psol.probabilities, -Inf)
@@ -152,6 +196,9 @@ function bound_solution(psol::Solution, max_states::Int, merge_strategy=no_merge
 end
 
 #TODO: incorporate "going back" move to improve alghoritm
+"""
+$(TYPEDSIGNATURES)
+"""
 function low_energy_spectrum(
     ctr::T, sparams::SearchParameters, merge_strategy=no_merge
 ) where T <: AbstractContractor

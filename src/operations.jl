@@ -10,6 +10,9 @@ struct LatticeTransformation
     flips_dimensions::Bool
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function Base.:(∘)(op1::LatticeTransformation, op2::LatticeTransformation)
     LatticeTransformation(
         op1.permutation[collect(op2.permutation)],
@@ -17,6 +20,9 @@ function Base.:(∘)(op1::LatticeTransformation, op2::LatticeTransformation)
     )
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function reflection(axis::Symbol)
     if axis == :x
         perm = (4, 3, 2, 1)
@@ -36,6 +42,9 @@ function reflection(axis::Symbol)
     LatticeTransformation(perm, flips)
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function rotation(θ::Int)
     if θ % 90 != 0
         ArgumentError("Only integral multiplicities of 90° can be passed as θ.")
@@ -50,6 +59,9 @@ function rotation(θ::Int)
     end
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function check_bounds(m, n)
     function _check(i, j)
         if i < 1 || i > m || j < 1 || j > n
@@ -59,6 +71,9 @@ function check_bounds(m, n)
     end
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function vertex_map(vert_permutation::NTuple{4, Int}, nrows, ncols)
     if vert_permutation == (1, 2, 3, 4) #
         f = (i, j) -> (i, j)
@@ -84,10 +99,16 @@ function vertex_map(vert_permutation::NTuple{4, Int}, nrows, ncols)
     vmap
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function vertex_map(trans::LatticeTransformation, m::Int, n::Int)
     vertex_map(trans.permutation, m, n)
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 const all_lattice_transformations = (
     rotation.([0, 90, 180, 270])...,
     reflection.([:x, :y, :diag, :antydiag])...

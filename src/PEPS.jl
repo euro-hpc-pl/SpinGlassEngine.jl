@@ -18,6 +18,9 @@ export
 # S: type of the vertex of underlying factor graph
 abstract type AbstractGibbsNetwork{S, T} end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 mutable struct PEPSNetwork{
     T <: AbstractGeometry, S <: AbstractSparsity
 } <: AbstractGibbsNetwork{Node, PEPSNode}
@@ -51,10 +54,24 @@ mutable struct PEPSNetwork{
     end
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 mod_wo_zero(k, m) = k % m == 0 ? m : k % m
+
+"""
+$(TYPEDSIGNATURES)
+"""
 ones_like(x::Number) = one(typeof(x))
+
+"""
+$(TYPEDSIGNATURES)
+"""
 ones_like(x::AbstractArray) = ones(eltype(x), size(x))
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function bond_energy(net::AbstractGibbsNetwork{T, S}, u::Node, v::Node, σ::Int) where {T, S}
     fg_u, fg_v = net.vertex_map(u), net.vertex_map(v)
     if has_edge(net.factor_graph, fg_u, fg_v)
@@ -73,6 +90,9 @@ function bond_energy(net::AbstractGibbsNetwork{T, S}, u::Node, v::Node, σ::Int)
     vec(energies)
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function projector(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
     fg = network.factor_graph
     fg_v, fg_w = network.vertex_map(v), network.vertex_map(w)
@@ -86,30 +106,48 @@ function projector(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
     vec(p)
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function projector(
     network::AbstractGibbsNetwork{S, T}, v::S, vertices::NTuple{N, S}
 ) where {S, T, N}
     first(fuse_projectors(projector.(Ref(network), Ref(v), vertices)))
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function fuse_projectors(projectors::Union{Vector{T}, NTuple{N, T}}) where {N, T}
     fused, transitions_matrix = rank_reveal(hcat(projectors...), :PE)
     transitions = collect(eachcol(transitions_matrix))
     fused, transitions
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function spectrum(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T}
     get_prop(network.factor_graph, network.vertex_map(vertex), :spectrum)
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function local_energy(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T}
     spectrum(network, vertex).energies
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function SpinGlassNetworks.cluster_size(net::AbstractGibbsNetwork{S, T}, v::S) where {S, T}
     length(local_energy(net, v))
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function interaction_energy(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
     fg = network.factor_graph
     fg_v, fg_w = network.vertex_map(v), network.vertex_map(w)
@@ -122,10 +160,16 @@ function interaction_energy(network::AbstractGibbsNetwork{S, T}, v::S, w::S) whe
     end
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function is_compatible(factor_graph::LabelledGraph, network_graph::LabelledGraph)
     all(has_edge(network_graph, src(edge), dst(edge)) for edge ∈ edges(factor_graph))
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function initialize_gauges!(net::AbstractGibbsNetwork{S, T}, type::Symbol=:id) where {S, T}
     @assert type ∈ (:id, :rand)
     for gauge ∈ net.gauges.info
@@ -137,17 +181,26 @@ function initialize_gauges!(net::AbstractGibbsNetwork{S, T}, type::Symbol=:id) w
     end
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 _normalize(probs::Vector{<:Real}) = probs ./ sum(probs)
 function _equalize(probs::Vector{<:Real})
     mp = abs(minimum(probs))
     _normalize(replace(p -> p < mp ? mp : p, probs))
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function normalize_probability(probs::Vector{<:Real})
     if minimum(probs) < 0 return _equalize(probs) end
     _normalize(probs)
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function decode_state(
     peps::AbstractGibbsNetwork{S, T}, σ::Vector{Int}, fg_order::Bool=false
 ) where {S, T}

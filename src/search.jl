@@ -105,7 +105,6 @@ function merge_branches(ctr::MpsContractor{T}) where {T}
         sorting_idx = sortperm(bnd_types)
         sorted_bnd_types = bnd_types[sorting_idx]
         nsol = Solution(psol, Vector{Int}(sorting_idx)) #TODO Vector{Int} should be rm
-        @infiltrate
         energies = typeof(nsol.energies[begin])[]
         states = typeof(nsol.states[begin])[]
         probs = typeof(nsol.probabilities[begin])[]
@@ -139,7 +138,6 @@ function merge_branches(ctr::MpsContractor{T}) where {T}
             push!(degeneracy, new_degeneracy)
             start = stop + 1
         end
-        @infiltrate
         Solution(energies, states, probs, degeneracy, psol.largest_discarded_probability)
     end
     _merge

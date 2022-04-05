@@ -77,22 +77,22 @@ end
 
 function discard_probabilities(psol::Solution, cut_off_prob::Real)
     pcut = maximum(psol.probabilities) + log(cut_off_prob)
-    sol = Solution(psol.energies, psol.states, psol.probabilities, psol.degeneracy, pcut)
-    Solution(sol, findall(p -> p >= pcut, psol.probabilities))
+    if minimum(psol.probabilities) < pcut
+        local_ldp = maximum(psol.probabilities[psol.probabilities .< pcut])
+        ldp = max(local_ldp, psol.largest_discarded_probability)
+        psol = Solution(psol, findall(p -> p >= pcut, psol.probabilities), ldp)
+    end
+    psol
 end
 
-function branch_solution(psol::Solution, ctr::T, δprob::Real) where T <: AbstractContractor
+function branch_solution(psol::Solution, ctr::T) where T <: AbstractContractor
     num_states = cluster_size(ctr.peps, ctr.current_node)
-    discard_probabilities(
-        Solution(
-            vcat(branch_energy.(Ref(ctr), zip(psol.energies, psol.states))...),
-            vcat(branch_state.(Ref(ctr), psol.states)...),
-            vcat(branch_probability.(Ref(ctr), zip(psol.probabilities, psol.states))...),
-            repeat(psol.degeneracy, inner=num_states),
-            psol.largest_discarded_probability
-        ),
-        δprob
-    )
+    Solution(
+        vcat(branch_energy.(Ref(ctr), zip(psol.energies, psol.states))...),
+        vcat(branch_state.(Ref(ctr), psol.states)...),
+        vcat(branch_probability.(Ref(ctr), zip(psol.probabilities, psol.states))...),
+        repeat(psol.degeneracy, inner=num_states),
+        psol.largest_discarded_probability)
 end
 
 function merge_branches(ctr::MpsContractor{T}) where {T}
@@ -100,56 +100,74 @@ function merge_branches(ctr::MpsContractor{T}) where {T}
         node = get(ctr.nodes_search_order, length(psol.states[1])+1, ctr.node_outside)
         # node = ctr.current_node
         boundaries = hcat(boundary_state.(Ref(ctr), psol.states, Ref(node))...)'
-        _, indices = SpinGlassNetworks.unique_dims(boundaries, 1)
+        _, bnd_types = SpinGlassNetworks.unique_dims(boundaries, 1)
 
-        sorting_idx = sortperm(indices)
-        sorted_indices = indices[sorting_idx]
-        nsol = Solution(psol, Vector{Int}(sorted_indices)) #TODO Vector{Int} should be rm
-
+        sorting_idx = sortperm(bnd_types)
+        sorted_bnd_types = bnd_types[sorting_idx]
+        nsol = Solution(psol, Vector{Int}(sorting_idx)) #TODO Vector{Int} should be rm
+        @infiltrate
         energies = typeof(nsol.energies[begin])[]
         states = typeof(nsol.states[begin])[]
         probs = typeof(nsol.probabilities[begin])[]
         degeneracy = typeof(nsol.degeneracy[begin])[]
 
         start = 1
-        while start <= size(boundaries, 1)
+        bsize = size(boundaries, 1)
+        while start <= bsize
             stop = start
-            bsize = size(boundaries, 1)
-            while stop + 1 <= bsize && sorted_indices[start] == sorted_indices[stop+1]
+            while stop + 1 <= bsize && sorted_bnd_types[start] == sorted_bnd_types[stop+1]
                 stop = stop + 1
             end
             best_idx = argmin(@view nsol.energies[start:stop]) + start - 1
             
             #b = -ctr.betas[end] .* nsol.energies[start:stop] .- nsol.probabilities[start:stop] # this should be const
-            c = Statistics.median(ctr.betas[end] .* nsol.energies[start:stop] .+ nsol.probabilities[start:stop])
-            new_prob = -ctr.betas[end] .* nsol.energies[best_idx] .+ c ## base probs on all states with the same boundary
+            #c = Statistics.median(ctr.betas[end] .* nsol.energies[start:stop] .+ nsol.probabilities[start:stop])
+            #new_prob = -ctr.betas[end] .* nsol.energies[best_idx] .+ c ## base probs on all states with the same boundary
             # using fit to log(prob) = - beta * eng + a0
+
+            new_degeneracy = 0
+            for i in start:stop
+                if nsol.energies[i] <= nsol.energies[best_idx] + 1E-12 
+                    new_degeneracy += nsol.degeneracy[i]
+                end
+            end
 
             push!(energies, nsol.energies[best_idx])
             push!(states, nsol.states[best_idx])
-            push!(probs, new_prob)
-            #push!(probs, nsol.probabilities[best_idx]) 
-            push!(degeneracy, nsol.degeneracy[best_idx])
+            #push!(probs, new_prob)
+            push!(probs, nsol.probabilities[best_idx]) 
+            push!(degeneracy, new_degeneracy)
             start = stop + 1
         end
+        @infiltrate
         Solution(energies, states, probs, degeneracy, psol.largest_discarded_probability)
     end
     _merge
 end
 no_merge(partial_sol::Solution) = partial_sol
 
-function bound_solution(psol::Solution, max_states::Int, merge_strategy=no_merge)
-    if length(psol.probabilities) <= max_states
-        probs = vcat(psol.probabilities, -Inf)
-        k = length(probs)
-    else
-        probs = psol.probabilities
-        k = max_states + 1
+function bound_solution(psol::Solution, max_states::Int, δprob::Real, merge_strategy=no_merge)
+    psol = discard_probabilities(merge_strategy(psol), δprob)
+    if length(psol.probabilities) > max_states
+        idx = partialsortperm(psol.probabilities, 1:max_states + 1, rev=true)
+        ldp = max(psol.largest_discarded_probability, psol.probabilities[idx[end]])
+        psol = Solution(psol, idx[1:max_states], ldp)
     end
-    idx = partialsortperm(probs, 1:k, rev=true)
-    ldp = max(psol.largest_discarded_probability, probs[idx[end]])
-    merge_strategy(Solution(psol, idx[1:k-1], ldp))
+    psol
 end
+
+# function bound_solution(psol::Solution, max_states::Int, merge_strategy=no_merge)
+#     if length(psol.probabilities) <= max_states
+#         probs = vcat(psol.probabilities, -Inf)
+#         k = length(probs)
+#     else
+#         probs = psol.probabilities
+#         k = max_states + 1
+#     end
+#     idx = partialsortperm(probs, 1:k, rev=true)
+#     ldp = max(psol.largest_discarded_probability, probs[idx[end]])
+#     merge_strategy(Solution(psol, idx[1:k-1], ldp))
+# end
 
 #TODO: incorporate "going back" move to improve alghoritm
 function low_energy_spectrum(
@@ -162,8 +180,8 @@ function low_energy_spectrum(
     sol = empty_solution()
     @showprogress "Search: " for node ∈ ctr.nodes_search_order
         ctr.current_node = node
-        sol = branch_solution(sol, ctr, sparams.cut_off_prob)
-        sol = bound_solution(sol, sparams.max_states, merge_strategy)
+        sol = branch_solution(sol, ctr)
+        sol = bound_solution(sol, sparams.max_states, sparams.cut_off_prob, merge_strategy)
         # TODO: clear memoize cache
     end
 

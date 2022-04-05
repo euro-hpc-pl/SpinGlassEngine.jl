@@ -55,6 +55,7 @@ push!(my_tests,
         #"gauges2.jl", # OK
         #"gauges3.jl",
         #"search_smallest_cross.jl", # OK
+        #"small_instance.jl"
 )
 
 for my_test in my_tests

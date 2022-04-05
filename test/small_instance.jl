@@ -3,9 +3,9 @@ using SpinGlassTensors
 using SpinGlassEngine
 
 function bench(instance::String)
-    m = 8
-    n = 8
-    t = 8
+    m = 2
+    n = 2
+    t = 1
 
     L = n * m * t
     max_cl_states = 2^(t-0)
@@ -14,11 +14,12 @@ function bench(instance::String)
     #ground_energy = -1881.226667 # for chimera 1152
     #ground_energy = -846.960013 # for chimera 512
 
-    β = 2.0
+    β = 1.0
     bond_dim = 32
     dE = 1
-    δp = 1E-5 * exp(-β * dE)
-    num_states = 1000
+    #δp = 1E-5 * exp(-β * dE)
+    δp = 0.0
+    num_states = 2
 
     @time fg = factor_graph(
         ising_graph(instance),
@@ -54,12 +55,12 @@ function bench(instance::String)
                 =#
 
                 @allocated sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
-                #println("statistics ", maximum(values(ctr.statistics)))
-                println("prob ", sol.probabilities[begin])
+                println("statistics ", maximum(values(ctr.statistics)))
+                println("prob ", sol.probabilities)
                 println("largest discarded prob ", sol.largest_discarded_probability)
-                #println("states ", sol.states)
-                #println("degeneracy ", sol.degeneracy)
-                println("energy ", sol.energies[begin])
+                println("states ", sol.states)
+                println("degeneracy ", sol.degeneracy)
+                println("energy ", sol.energies)
                 #@test sol.energies[begin] ≈ ground_energy
                 push!(energies, sol.energies)
                 #clear_memoize_cache()
@@ -70,4 +71,4 @@ function bench(instance::String)
 end
 
 #bench("$(@__DIR__)/instances/chimera_droplets/2048power/001.txt")
-bench("$(@__DIR__)/instances/chimera_droplets/512power/007.txt")
+bench("$(@__DIR__)/instances/basic/4_001.txt")

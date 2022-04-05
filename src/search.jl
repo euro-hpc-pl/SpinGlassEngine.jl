@@ -115,11 +115,15 @@ function discard_probabilities(psol::Solution, cut_off_prob::Real)
     if minimum(psol.probabilities) < pcut
         local_ldp = maximum(psol.probabilities[psol.probabilities .< pcut])
         ldp = max(local_ldp, psol.largest_discarded_probability)
-        psol = Solution(psol, findall(p -> p >= pcut, psol.probabilities), ldp)
+        prob = findall(p -> p >= pcut, psol.probabilities)
+        psol = Solution(psol, prob, ldp)
     end
     psol
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function branch_solution(psol::Solution, ctr::T) where T <: AbstractContractor
     num_states = cluster_size(ctr.peps, ctr.current_node)
     Solution(
@@ -180,8 +184,15 @@ function merge_branches(ctr::MpsContractor{T}) where {T}
     end
     _merge
 end
+
+"""
+$(TYPEDSIGNATURES)
+"""
 no_merge(partial_sol::Solution) = partial_sol
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function bound_solution(psol::Solution, max_states::Int, δprob::Real, merge_strategy=no_merge)
     psol = discard_probabilities(merge_strategy(psol), δprob)
     if length(psol.probabilities) > max_states

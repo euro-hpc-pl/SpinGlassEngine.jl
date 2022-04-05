@@ -171,15 +171,9 @@ function merge_branches(ctr::MpsContractor{T}) where {T}
 
             push!(energies, nsol.energies[best_idx])
             push!(states, nsol.states[best_idx])
-<<<<<<< HEAD
-            push!(probs, new_prob)
-            #push!(probs, nsol.probabilities[best_idx])
-            push!(degeneracy, nsol.degeneracy[best_idx])
-=======
             #push!(probs, new_prob)
             push!(probs, nsol.probabilities[best_idx])
             push!(degeneracy, new_degeneracy)
->>>>>>> 996f55d5f6e0a4380f071530718ef5ea92a4671b
             start = stop + 1
         end
         Solution(energies, states, probs, degeneracy, psol.largest_discarded_probability)
@@ -188,25 +182,12 @@ function merge_branches(ctr::MpsContractor{T}) where {T}
 end
 no_merge(partial_sol::Solution) = partial_sol
 
-<<<<<<< HEAD
-"""
-$(TYPEDSIGNATURES)
-"""
-function bound_solution(psol::Solution, max_states::Int, merge_strategy=no_merge)
-    if length(psol.probabilities) <= max_states
-        probs = vcat(psol.probabilities, -Inf)
-        k = length(probs)
-    else
-        probs = psol.probabilities
-        k = max_states + 1
-=======
 function bound_solution(psol::Solution, max_states::Int, δprob::Real, merge_strategy=no_merge)
     psol = discard_probabilities(merge_strategy(psol), δprob)
     if length(psol.probabilities) > max_states
         idx = partialsortperm(psol.probabilities, 1:max_states + 1, rev=true)
         ldp = max(psol.largest_discarded_probability, psol.probabilities[idx[end]])
         psol = Solution(psol, idx[1:max_states], ldp)
->>>>>>> 996f55d5f6e0a4380f071530718ef5ea92a4671b
     end
     psol
 end

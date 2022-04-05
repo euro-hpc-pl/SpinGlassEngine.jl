@@ -10,19 +10,38 @@ export
        boundary,
        update_energy
 
-"Defines Square geometry with a given layout."
+"""
+$(TYPEDSIGNATURES)
+
+Defines Square geometry with a given layout.
+"""
 struct Square{T <: AbstractTensorsLayout} <: AbstractGeometry end
 
-"Creates Square geometry as a LabelledGraph."
+"""
+$(TYPEDSIGNATURES)
+
+Creates Square geometry as a LabelledGraph.
+"""
 function Square(m::Int, n::Int)
     labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
     LabelledGraph(labels, grid((m, n)))
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 site(::Type{Dense}) = :site
+
+"""
+$(TYPEDSIGNATURES)
+"""
 site(::Type{Sparse}) = :sparse_site
 
-"Assigns type of tensor to a PEPS node coordinates for a given Layout and Sparsity."
+"""
+$(TYPEDSIGNATURES)
+
+Assigns type of tensor to a PEPS node coordinates for a given Layout and Sparsity.
+"""
 function tensor_map(
     ::Type{Square{T}}, ::Type{S}, nrows::Int, ncols::Int
 ) where {T <: Union{GaugesEnergy, EnergyGauges}, S <: AbstractSparsity}
@@ -36,7 +55,11 @@ function tensor_map(
     map
 end
 
-"Assigns type of tensor to a PEPS node coordinates for a given Layout and Sparsity."
+"""
+$(TYPEDSIGNATURES)
+
+Assigns type of tensor to a PEPS node coordinates for a given Layout and Sparsity.
+"""
 function tensor_map(
     ::Type{Square{T}}, ::Type{S}, nrows::Int, ncols::Int
 ) where {T <: EngGaugesEng, S <: AbstractSparsity}
@@ -56,7 +79,11 @@ function tensor_map(
     map
 end
 
-"Assigns gauges and corresponding information to GaugeInfo structure for a given Layout."
+"""
+$(TYPEDSIGNATURES)
+
+Assigns gauges and corresponding information to GaugeInfo structure for a given Layout.
+"""
 function gauges_list(::Type{Square{T}}, nrows::Int, ncols::Int) where T <: GaugesEnergy
     [
         GaugeInfo(
@@ -69,7 +96,11 @@ function gauges_list(::Type{Square{T}}, nrows::Int, ncols::Int) where T <: Gauge
     ]
 end
 
-"Assigns gauges and corresponding information to GaugeInfo structure for a given Layout."
+"""
+$(TYPEDSIGNATURES)
+
+Assigns gauges and corresponding information to GaugeInfo structure for a given Layout.
+"""
 function gauges_list(::Type{Square{T}}, nrows::Int, ncols::Int) where T <: EnergyGauges
     [
         GaugeInfo(
@@ -82,7 +113,11 @@ function gauges_list(::Type{Square{T}}, nrows::Int, ncols::Int) where T <: Energ
     ]
 end
 
-"Assigns gauges and corresponding information to GaugeInfo structure for a given Layout."
+"""
+$(TYPEDSIGNATURES)
+
+"Assigns gauges and corresponding information to GaugeInfo structure for a given Layout.
+"""
 function gauges_list(::Type{Square{T}}, nrows::Int, ncols::Int) where T <: EngGaugesEng
     [
         GaugeInfo(
@@ -95,7 +130,11 @@ function gauges_list(::Type{Square{T}}, nrows::Int, ncols::Int) where T <: EngGa
     ]
 end
 
-"Defines the MPO layers for the Square geometry with the EnergyGauges layout."
+"""
+$(TYPEDSIGNATURES)
+
+Defines the MPO layers for the Square geometry with the EnergyGauges layout.
+"""
 function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EnergyGauges}
     main = Dict{Site, Sites}(i => (-1//6, 0, 3//6, 4//6) for i ∈ 1:ncols)
     for i ∈ 1:ncols - 1 push!(main, i + 1//2 => (0,)) end
@@ -106,7 +145,11 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EnergyGauges}
     MpoLayers(main, Dict(i => (3//6, 4//6) for i ∈ 1:ncols), right)
 end
 
-"Defines the MPO layers for the Square geometry with the GaugesEnergy layout."
+"""
+$(TYPEDSIGNATURES)
+
+Defines the MPO layers for the Square geometry with the GaugesEnergy layout.
+"""
 function MpoLayers(::Type{T}, ncols::Int) where T <: Square{GaugesEnergy}
     main = Dict{Site, Sites}(i => (-4//6, -1//2, 0, 1//6) for i ∈ 1:ncols)
     for i ∈ 1:ncols - 1 push!(main, i + 1//2 => (0,)) end
@@ -117,7 +160,11 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: Square{GaugesEnergy}
     MpoLayers(main, Dict(i => (1//6,) for i ∈ 1:ncols), right)
 end
 
-"Defines the MPO layers for the Square geometry with the EngGaugesEng layout."
+"""
+$(TYPEDSIGNATURES)
+
+Defines the MPO layers for the Square geometry with the EngGaugesEng layout.
+"""
 function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EngGaugesEng}
     main = Dict{Site, Sites}(i => (-2//5, -1//5, 0, 1//5, 2//5) for i ∈ 1:ncols)
     for i ∈ 1:ncols - 1 push!(main, i + 1//2 => (0,)) end
@@ -128,7 +175,11 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EngGaugesEng}
     MpoLayers(main, Dict(i => (1//5, 2//5) for i ∈ 1:ncols), right)
 end
 
-"Calculates conditional probability for a Square Layout."
+"""
+$(TYPEDSIGNATURES)
+
+Calculates conditional probability for a Square Layout.
+"""
 function conditional_probability(
     ::Type{T}, ctr::MpsContractor{S}, state::Vector{Int},
 ) where {T <: Square, S}
@@ -168,17 +219,27 @@ function conditional_probability(
     normalize_probability(probs)
 end
 
+"""
+$(TYPEDSIGNATURES)
 
+"""
 function projectors_site_tensor(network::PEPSNetwork{T, S}, vertex::Node) where {T <: Square, S}
     i, j = vertex
     projector.(Ref(network), Ref(vertex), ((i, j-1), (i-1, j), (i, j+1), (i+1, j)))
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: Square, S}
     ([(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols], (peps.nrows+1, 1))
 end
 
+"""
+$(TYPEDSIGNATURES)
 
+"""
 function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: Square, S}
     i, j = node
     vcat(
@@ -188,6 +249,10 @@ function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: Squa
     )
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+"""
 function update_energy(
     ::Type{T}, ctr::MpsContractor{S}, σ::Vector{Int},
 ) where {T <: Square, S}

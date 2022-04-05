@@ -24,14 +24,22 @@ struct GaugeStrategyWithBalancing <: AbstractGauge end
 struct GaugeStrategy <: AbstractGauge end
 struct NoUpdate <: AbstractGauge end
 
-"Distinguishes different layers of MPO that are used by the contraction algorithm."
+"""
+$(TYPEDSIGNATURES)
+
+Distinguishes different layers of MPO that are used by the contraction algorithm.
+"""
 struct MpoLayers
     main::Dict{Site, Sites}
     dress::Dict{Site, Sites}
     right::Dict{Site, Sites}
 end
 
-"Encapsulate control parameters for the MPO-MPS scheme used to contract the peps network."
+"""
+$(TYPEDSIGNATURES)
+
+Encapsulate control parameters for the MPO-MPS scheme used to contract the peps network.
+"""
 struct MpsParameters
     bond_dimension::Int
     variational_tol::Real
@@ -40,13 +48,25 @@ struct MpsParameters
     MpsParameters(bd=typemax(Int), ϵ=1E-8, sw=4) = new(bd, ϵ, sw)
 end
 
-"Gives the layout used to construct the peps network."
+"""
+$(TYPEDSIGNATURES)
+
+Gives the layout used to construct the peps network.
+"""
 layout(net::PEPSNetwork{T, S}) where {T, S} = T
 
-"Gives the sparsity used to construct peps network."
+"""
+$(TYPEDSIGNATURES)
+
+Gives the sparsity used to construct peps network.
+"""
 sparsity(net::PEPSNetwork{T, S}) where {T, S} = S
 
-"Tells how to contract the peps network using the MPO-MPS scheme."
+"""
+$(TYPEDSIGNATURES)
+
+Tells how to contract the peps network using the MPO-MPS scheme.
+"""
 mutable struct MpsContractor{T <: AbstractStrategy, R <: AbstractGauge} <: AbstractContractor
     peps::PEPSNetwork{T, S} where {T, S}
     betas::Vector{<:Real}
@@ -68,10 +88,18 @@ mutable struct MpsContractor{T <: AbstractStrategy, R <: AbstractGauge} <: Abstr
     end
 end
 
-"Gives the strategy to be used to contract peps network."
+"""
+$(TYPEDSIGNATURES)
+
+Gives the strategy to be used to contract peps network.
+"""
 strategy(ctr::MpsContractor{T}) where {T} = T
 
-"Construct (and memoize) MPO for a given layers."
+"""
+$(TYPEDSIGNATURES)
+
+Construct (and memoize) MPO for a given layers.
+"""
 @memoize ThreadSafeDict function mpo(
     ctr::MpsContractor{T}, layers::Dict{Site, Sites}, r::Int, indβ::Int
 ) where T <: AbstractStrategy
@@ -87,7 +115,11 @@ strategy(ctr::MpsContractor{T}) where {T} = T
     QMpo(mpo)
 end
 
-"Construct (and memoize) top MPS using SVD for a given row."
+"""
+$(TYPEDSIGNATURES)
+
+Construct (and memoize) top MPS using SVD for a given row.
+"""
 @memoize ThreadSafeDict function mps_top(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
     if i < 1
         W = mpo(ctr, ctr.layers.main, 1, indβ)
@@ -111,7 +143,11 @@ end
     ψ0
 end
 
-"Construct (and memoize) (bottom) MPS using SVD for a given row."
+"""
+$(TYPEDSIGNATURES)
+
+Construct (and memoize) (bottom) MPS using SVD for a given row.
+"""
 @memoize ThreadSafeDict function mps(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
     if i > ctr.peps.nrows
         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
@@ -134,7 +170,11 @@ end
     ψ0
 end
 
-"Construct (and memoize) (bottom) top MPS using Annealing for a given row."
+"""
+$(TYPEDSIGNATURES)
+
+Construct (and memoize) (bottom) top MPS using Annealing for a given row.
+"""
 @memoize ThreadSafeDict function mps_top(ctr::MpsContractor{MPSAnnealing}, i::Int, indβ::Int)
     if i < 1
         W = mpo(ctr, ctr.layers.main, 1, indβ)
@@ -162,7 +202,11 @@ end
     ψ0
 end
 
-"Construct (and memoize) (bottom) MPS using Annealing for a given row."
+"""
+$(TYPEDSIGNATURES)
+
+Construct (and memoize) (bottom) MPS using Annealing for a given row.
+"""
 @memoize ThreadSafeDict function mps(ctr::MpsContractor{MPSAnnealing}, i::Int, indβ::Int)
     if i > ctr.peps.nrows
         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
@@ -190,12 +234,20 @@ end
     ψ0
 end
 
-"Construct dressed MPS for a given row and strategy."
+"""
+$(TYPEDSIGNATURES)
+
+Construct dressed MPS for a given row and strategy.
+"""
 function dressed_mps(ctr::MpsContractor{T}, i::Int) where T <: AbstractStrategy
     dressed_mps(ctr, i, length(ctr.betas))
 end
 
-"Construct (and memoize) dressed MPS for a given row and strategy."
+"""
+$(TYPEDSIGNATURES)
+
+Construct (and memoize) dressed MPS for a given row and strategy.
+"""
 @memoize ThreadSafeDict function dressed_mps(
     ctr::MpsContractor{T}, i::Int, indβ::Int
 ) where T <: AbstractStrategy
@@ -204,7 +256,11 @@ end
     W * ψ
 end
 
-"Construct (and memoize) right environment for a given node."
+"""
+$(TYPEDSIGNATURES)
+
+Construct (and memoize) right environment for a given node.
+"""
 @memoize ThreadSafeDict function right_env(
     ctr::MpsContractor{T}, i::Int, ∂v::Vector{Int}, indβ::Int
 ) where T <: AbstractStrategy
@@ -232,6 +288,9 @@ end
     RR
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function _update_reduced_env_right(
     RE::AbstractArray{Float64, 2}, m::Int, M::Dict, B::AbstractArray{Float64, 3}
 )
@@ -252,6 +311,9 @@ function _update_reduced_env_right(
     _update_reduced_env_right(K, RE, M[0], B)
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function _update_reduced_env_right(
     K::AbstractArray{Float64, 1},
     RE::AbstractArray{Float64, 2},
@@ -262,6 +324,9 @@ function _update_reduced_env_right(
     R
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function _update_reduced_env_right(
     K::AbstractArray{Float64, 1},
     RE::AbstractArray{Float64, 2},
@@ -281,6 +346,9 @@ function _update_reduced_env_right(
     R
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function _update_reduced_env_right(
     K::AbstractArray{Float64, 1},
     RE::AbstractArray{Float64, 2},
@@ -299,6 +367,9 @@ function _update_reduced_env_right(
     R
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 @memoize ThreadSafeDict function left_env(
     ctr::MpsContractor{T}, i::Int, ∂v::Vector{Int}, indβ::Int
 ) where T
@@ -313,17 +384,26 @@ end
     L
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function clear_memoize_cache()
     Memoization.empty_all_caches!()
     #Memoization.empty_cache!.((left_env, right_env, mpo, mps, mps_top, dressed_mps))
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function error_measure(probs)
     if maximum(probs) <= 0 return 2.0 end
     if minimum(probs) < 0 return abs(minimum(probs)) / maximum(abs.(probs)) end
     return 0.0
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function update_gauges!(
     ctr::MpsContractor{T, GaugeStrategy},
     row::Site,
@@ -369,6 +449,9 @@ function update_gauges!(
     overlap
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function update_gauges!(
     ctr::MpsContractor{T, GaugeStrategyWithBalancing},
     row::Site,
@@ -406,24 +489,39 @@ function update_gauges!(
     overlap
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function conditional_probability(ctr::MpsContractor{S}, w::Vector{Int}) where S
     conditional_probability(layout(ctr.peps), ctr, w)
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function update_energy(ctr::MpsContractor{S}, w::Vector{Int}) where S
     update_energy(layout(ctr.peps), ctr, w)
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function boundary_state(
     ctr::MpsContractor{T}, σ::Vector{Int}, node::S
 ) where {T, S}
     boundary_index.(Ref(ctr), boundary(ctr, node), Ref(σ))
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function boundary(ctr::MpsContractor{T}, node::Node) where T
     boundary(layout(ctr.peps), ctr, node)
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function boundary_index(
     ctr::MpsContractor{T},
     nodes::Tuple{S, Union{S, NTuple{N, S}}},
@@ -435,7 +533,11 @@ function boundary_index(
     projector(ctr.peps, v, w)[state]
 end
 
-""" boundary index formed from outer product of two projectors"""
+"""
+$(TYPEDSIGNATURES)
+
+boundary index formed from outer product of two projectors
+"""
 function boundary_index(
     ctr::MpsContractor{T}, nodes::NTuple{4, S}, σ::Vector{Int}
 ) where {S, T}
@@ -446,6 +548,9 @@ function boundary_index(
     (j - 1) * maximum(pv) + i
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function local_state_for_node(
     ctr::MpsContractor{T}, σ::Vector{Int}, w::S
 ) where {T, S}

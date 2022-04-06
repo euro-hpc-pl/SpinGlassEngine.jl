@@ -574,19 +574,14 @@ $(TYPEDSIGNATURES)
 """
 function boundary_indices(
     ctr::MpsContractor{T},
-    boundary_recipe, #::Tuple{S, Union{S, NTuple{N, S}}},
+    boundary_recipe,
     states::Vector{Vector{Int}}
-) where {S, T, N}
+) where T
     res = ones(Int, length(states), length(boundary_recipe))
-
     for (i, node) ∈ enumerate(boundary_recipe)
         v, w = node
         k = get(ctr.node_search_index, v, 0)
-
-        if ctr.peps.vertex_map(v) ∉ vertices(ctr.peps.factor_graph) || k > length(states[1]) || k == 0
-            continue
-        end
-
+        if ctr.eps.vertex_map(v) ∉ vertices(ctr.peps.factor_graph) continue endp
         res[:, i] = projector(ctr.peps, v, w)[[σ[k] for σ ∈ states]]
     end
     res

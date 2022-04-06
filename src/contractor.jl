@@ -504,6 +504,7 @@ function update_energy(ctr::MpsContractor{S}, w::Vector{Int}) where S
     update_energy(layout(ctr.peps), ctr, w)
 end
 
+# TO BE RM
 """
 $(TYPEDSIGNATURES)
 """
@@ -568,10 +569,6 @@ function local_state_for_node(
 end
 
 
-
-
-
-
 """
 $(TYPEDSIGNATURES)
 """
@@ -580,19 +577,19 @@ function boundary_indices(
     boundary_recipe, #::Tuple{S, Union{S, NTuple{N, S}}},
     states::Vector{Vector{Int}}
 ) where {S, T, N}
-    result = ones(Int, size(states,1), length(boundary_recipe))
-    for (i, node) in enumerate(boundary_recipe)
+    res = ones(Int, length(states), length(boundary_recipe))
+
+    for (i, node) ∈ enumerate(boundary_recipe)
         v, w = node
         k = get(ctr.node_search_index, v, 0)
-        #println("k: ", k)
-        if ctr.peps.vertex_map(v) ∉ vertices(ctr.peps.factor_graph) || k > size(states, 2) || k == 0
+
+        if ctr.peps.vertex_map(v) ∉ vertices(ctr.peps.factor_graph) || k > length(states[1]) || k == 0
             continue
         end
-        println("states: ", size(vcat(states[:, k]...)))
-        println("proj: ", size(projector(ctr.peps, v, w)))
-        result[:, i] = projector(ctr.peps, v, w)[vcat(states[:, k]...)]
+
+        res[:, i] = projector(ctr.peps, v, w)[[σ[k] for σ ∈ states]]
     end
-    result
+    res
 end
 
 """

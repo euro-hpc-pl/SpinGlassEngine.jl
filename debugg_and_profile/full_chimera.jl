@@ -7,18 +7,19 @@ using Profile, PProf
 disable_logging(LogLevel(1))
 
 function bench(instance::String)
-    m = 16
-    n = 16
+    m = 8
+    n = 8
     t = 8
 
     L = n * m * t
     max_cl_states = 2^(t-0)
 
-    ground_energy = -3336.773383
+    #ground_energy = -3336.773383
 
-    β = 3.0
+    β = 2
     bond_dim = 32
-    δp = 1E-3
+    DE = 1.0
+    δp = 1E-5 * exp(-β * DE)
     num_states = 1000
 
     fg = factor_graph(
@@ -31,15 +32,17 @@ function bench(instance::String)
     params = MpsParameters(bond_dim, 1E-8, 10)
     search_params = SearchParameters(num_states, δp)
 
-    net = PEPSNetwork{Square{EnergyGauges}, Sparse}(m, n, fg, rotation(0))
-    ctr = MpsContractor{SVDTruncate}(net, [β/8, β/4, β/2, β], params)
+    net = PEPSNetwork{Square{EnergyGauges}, Dense}(m, n, fg, rotation(0))
+    ctr = MpsContractor{SVDTruncate, NoUpdate}(net, [β/8, β/4, β/2, β], params)
     sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 
-    @assert sol.energies[begin] ≈ ground_energy
-    clear_memoize_cache()
+    #@assert sol.energies[begin] ≈ ground_energy
+    #clear_memoize_cache()
 end
 
-instance = "$(@__DIR__)/../test/instances/chimera_droplets/2048power/001.txt"
+#instance = "$(@__DIR__)/../test/instances/chimera_droplets/2048power/001.txt"
+instance = "$(@__DIR__)/../test/instances/chimera_droplets/512power/001.txt"
+
 bench(instance)
 
 @profile bench(instance)

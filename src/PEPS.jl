@@ -6,7 +6,6 @@ export
        interaction_energy,
        connecting_tensor,
        normalize_probability,
-       local_state_for_node,
        fuse_projectors,
        initialize_gauges!,
        decode_state,

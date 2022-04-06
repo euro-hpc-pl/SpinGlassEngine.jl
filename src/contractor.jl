@@ -12,7 +12,8 @@ export
        mps,
        update_gauges!,
        update_gauges_with_balancing!,
-       boundary_state
+       boundary_state,
+       boundary_states
 
 abstract type AbstractContractor end
 abstract type AbstractStrategy end
@@ -512,6 +513,13 @@ function boundary_state(
     boundary_index.(Ref(ctr), boundary(ctr, node), Ref(σ))
 end
 
+function boundary_states(
+    ctr::MpsContractor{T}, states::Vector{Vector{Int}}, node::S
+    ) where {T, S}
+    boundary_recipe = boundary(ctr, node)
+    boundary_indices(ctr, boundary_recipe, states)
+end
+
 """
 $(TYPEDSIGNATURES)
 """
@@ -557,4 +565,47 @@ function local_state_for_node(
     k = get(ctr.node_search_index, w, 0)
     0 < k <= length(σ) ? σ[k] : 1
     # 0 < k ? σ[k] : 1  # likely we shouldnt be asking for node with k > length(σ) -- but this does not work
+end
+
+
+
+
+
+
+"""
+$(TYPEDSIGNATURES)
+"""
+function boundary_indices(
+    ctr::MpsContractor{T},
+    boundary_recipe, #::Tuple{S, Union{S, NTuple{N, S}}},
+    states::Vector{Vector{Int}}
+) where {S, T, N}
+    result = ones(Int, size(states,1), length(boundary_recipe))
+    for (i, node) in enumerate(boundary_recipe)
+        v, w = node
+        k = get(ctr.node_search_index, v, 0)
+        #println("k: ", k)
+        if ctr.peps.vertex_map(v) ∉ vertices(ctr.peps.factor_graph) || k > size(states, 2) || k == 0
+            continue
+        end
+        println("states: ", size(vcat(states[:, k]...)))
+        println("proj: ", size(projector(ctr.peps, v, w)))
+        result[:, i] = projector(ctr.peps, v, w)[vcat(states[:, k]...)]
+    end
+    result
+end
+
+"""
+$(TYPEDSIGNATURES)
+
+boundary index formed from outer product of two projectors
+"""
+function boundary_indices(
+    ctr::MpsContractor{T}, nodes::NTuple{4, S}, states::Vector{Vector{Int}}
+) where {S, T}
+    v, w, k, l = nodes
+    pv = projector(ctr.peps, v, w)
+    i = boundary_index(ctr, (v, w), states)
+    j = boundary_index(ctr, (k, l), states)
+    (j - 1) * maximum(pv) + i
 end

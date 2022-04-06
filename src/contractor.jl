@@ -580,9 +580,10 @@ function boundary_indices(
     res = ones(Int, length(states), length(boundary_recipe))
     for (i, node) ∈ enumerate(boundary_recipe)
         v, w = node
-        k = get(ctr.node_search_index, v, 0)
-        if ctr.eps.vertex_map(v) ∉ vertices(ctr.peps.factor_graph) continue endp
-        res[:, i] = projector(ctr.peps, v, w)[[σ[k] for σ ∈ states]]
+        if ctr.peps.vertex_map(v) ∈ vertices(ctr.peps.factor_graph)
+            k = get(ctr.node_search_index, v, 0)
+            res[:, i] = projector(ctr.peps, v, w)[[σ[k] for σ ∈ states]]
+        end
     end
     res
 end

@@ -1,12 +1,7 @@
 export
-       low_energy_spectrum,
-       branch_state,
-       bound_solution,
-       merge_branches,
-       Solution,
        SearchParameters,
-       exact_marginal_probability,
-       exact_conditional_probability
+       merge_branches,
+       low_energy_spectrum
 
 """
 $(TYPEDSIGNATURES)
@@ -54,16 +49,14 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function branch_energy(ctr::MpsContractor{T}, eσ::Tuple{<:Real, Vector{Int}}) where {T, S}
+function branch_energy(ctr::MpsContractor{T}, eσ::Tuple{<:Real, Vector{Int}}) where T
     eσ[begin] .+ update_energy(ctr, eσ[end])
 end
 
 """
 $(TYPEDSIGNATURES)
 """
-function branch_state(ctr::MpsContractor{T}, σ::Vector{Int}) where {T, S}
-    vcat.(Ref(σ), collect(1:cluster_size(ctr.peps, ctr.current_node)))
-end
+branch_state(local_basis::Vector{Int}, σ::Vector{Int}) = vcat.(Ref(σ), local_basis)
 
 """
 $(TYPEDSIGNATURES)
@@ -75,47 +68,12 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-@memoize function spectrum(factor_graph::LabelledGraph{S, T}) where {S, T}
-    ver = vertices(factor_graph)
-    rank = cluster_size.(Ref(factor_graph), ver)
-    states = [Dict(ver .=> σ) for σ ∈ Iterators.product([1:r for r ∈ rank]...)]
-    energy.(Ref(factor_graph), states), states
-end
-
-"""
-$(TYPEDSIGNATURES)
-"""
-function exact_marginal_probability(
-    ctr::MpsContractor{T},
-    σ::Vector{Int}
-) where T
-    target_state = decode_state(ctr.peps, σ, true)
-    energies, states = spectrum(ctr.peps.factor_graph)
-    prob = exp.(-ctr.betas[end] .* energies)
-    prob ./= sum(prob)
-    sum(prob[findall([all(s[k] == v for (k, v) ∈ target_state) for s ∈ states])])
-end
-
-"""
-$(TYPEDSIGNATURES)
-"""
-function exact_conditional_probability(ctr::MpsContractor{T}, σ::Vector{Int}) where T
-    probs = exact_marginal_probability.(Ref(ctr), branch_state(ctr, σ))
-    probs ./= sum(probs)
-end
-
-"""
-$(TYPEDSIGNATURES)
-"""
-function discard_probabilities(psol::Solution, cut_off_prob::Real)
+function discard_probabilities!(psol::Solution, cut_off_prob::Real)
     pcut = maximum(psol.probabilities) + log(cut_off_prob)
-    if minimum(psol.probabilities) < pcut
-        local_ldp = maximum(psol.probabilities[psol.probabilities .< pcut])
-        ldp = max(local_ldp, psol.largest_discarded_probability)
-        prob = findall(p -> p >= pcut, psol.probabilities)
-        psol = Solution(psol, prob, ldp)
-    end
-    psol
+    if minimum(psol.probabilities) >= pcut return psol end
+    local_ldp = maximum(psol.probabilities[psol.probabilities .< pcut])
+    ldp = max(local_ldp, psol.largest_discarded_probability)
+    Solution(psol, findall(p -> p >= pcut, psol.probabilities), ldp)
 end
 
 """
@@ -124,9 +82,10 @@ $(TYPEDSIGNATURES)
 function branch_solution(psol::Solution, ctr::T) where T <: AbstractContractor
     num_states = cluster_size(ctr.peps, ctr.current_node)
     boundaries = boundary_states(ctr, psol.states, ctr.current_node)
+    local_basis = collect(1:num_states)
     Solution(
         vcat(branch_energy.(Ref(ctr), zip(psol.energies, psol.states))...),
-        vcat(branch_state.(Ref(ctr), psol.states)...),
+        vcat(branch_state.(Ref(local_basis), psol.states)...),
         vcat(branch_probability.(Ref(ctr), zip(psol.probabilities, boundaries))...),
         repeat(psol.degeneracy, inner=num_states),
         psol.largest_discarded_probability
@@ -190,14 +149,14 @@ no_merge(partial_sol::Solution) = partial_sol
 """
 $(TYPEDSIGNATURES)
 """
-function bound_solution(psol::Solution, max_states::Int, δprob::Real, merge_strategy=no_merge)
-    psol = discard_probabilities(merge_strategy(psol), δprob)
-    if length(psol.probabilities) > max_states
-        idx = partialsortperm(psol.probabilities, 1:max_states + 1, rev=true)
-        ldp = max(psol.largest_discarded_probability, psol.probabilities[idx[end]])
-        psol = Solution(psol, idx[1:max_states], ldp)
-    end
-    psol
+function bound_solution(
+    psol::Solution, max_states::Int, δprob::Real, merge_strategy=no_merge
+)
+    psol = discard_probabilities!(merge_strategy(psol), δprob)
+    if length(psol.probabilities) <= max_states return psol end
+    idx = partialsortperm(psol.probabilities, 1:max_states + 1, rev=true)
+    ldp = max(psol.largest_discarded_probability, psol.probabilities[idx[end]])
+    Solution(psol, idx[1:max_states], ldp)
 end
 
 """

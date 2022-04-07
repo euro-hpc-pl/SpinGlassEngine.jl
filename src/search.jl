@@ -129,7 +129,8 @@ function branch_solution(psol::Solution, ctr::T) where T <: AbstractContractor
         vcat(branch_state.(Ref(ctr), psol.states)...),
         vcat(branch_probability.(Ref(ctr), zip(psol.probabilities, boundaries))...),
         repeat(psol.degeneracy, inner=num_states),
-        psol.largest_discarded_probability)
+        psol.largest_discarded_probability
+    )
 end
 
 """
@@ -165,14 +166,13 @@ function merge_branches(ctr::MpsContractor{T}) where {T}
 
             new_degeneracy = 0
             for i in start:stop
-                if nsol.energies[i] <= nsol.energies[best_idx] + 1E-12
+                if nsol.energies[i] <= nsol.energies[best_idx] + 1E-12 # this is hack for now
                     new_degeneracy += nsol.degeneracy[i]
                 end
             end
 
             push!(energies, nsol.energies[best_idx])
             push!(states, nsol.states[best_idx])
-            #push!(probs, new_prob)
             push!(probs, nsol.probabilities[best_idx])
             push!(degeneracy, new_degeneracy)
             start = stop + 1
@@ -200,20 +200,6 @@ function bound_solution(psol::Solution, max_states::Int, δprob::Real, merge_str
     psol
 end
 
-# function bound_solution(psol::Solution, max_states::Int, merge_strategy=no_merge)
-#     if length(psol.probabilities) <= max_states
-#         probs = vcat(psol.probabilities, -Inf)
-#         k = length(probs)
-#     else
-#         probs = psol.probabilities
-#         k = max_states + 1
-#     end
-#     idx = partialsortperm(probs, 1:k, rev=true)
-#     ldp = max(psol.largest_discarded_probability, probs[idx[end]])
-#     merge_strategy(Solution(psol, idx[1:k-1], ldp))
-# end
-
-#TODO: incorporate "going back" move to improve alghoritm
 """
 $(TYPEDSIGNATURES)
 """

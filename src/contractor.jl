@@ -395,6 +395,26 @@ end
 """
 $(TYPEDSIGNATURES)
 """
+function clear_memoize_cache(ctr::MpsContractor{T, S}, row::Site, indβ::Int) where {T, S}
+    for ind ∈ 1:indβ
+        for i ∈ row:ctr.peps.nrows
+            delete!(Memoization.caches[mps_top], ((ctr, i, ind), ()))
+        end
+        for i ∈ 1:row+1
+            delete!(Memoization.caches[mps], ((ctr, i, ind), ()))
+        end
+        for i ∈ row:row+1
+            cmpo = Memoization.caches[mpo]
+            delete!(cmpo, ((ctr, ctr.layers.main, i, ind), ()))
+            delete!(cmpo, ((ctr, ctr.layers.dress, i, ind), ()))
+            delete!(cmpo, ((ctr, ctr.layers.right, i, ind), ()))
+        end
+    end
+end
+
+"""
+$(TYPEDSIGNATURES)
+"""
 function error_measure(probs)
     if maximum(probs) <= 0 return 2.0 end
     if minimum(probs) < 0 return abs(minimum(probs)) / maximum(abs.(probs)) end
@@ -424,29 +444,13 @@ function update_gauges!(
     for i ∈ ψ_top.sites
         g = gauges[i]
         g_inv = 1.0 ./ g
-        # Here we use convention that clm = ctr.layers.main with beginning and ending with matching gauges
         n_bot = PEPSNode(row + 1 + clm[i][begin], i)
         n_top = PEPSNode(row + clm[i][end], i)
         g_top = ctr.peps.gauges.data[n_top] .* g
         g_bot = ctr.peps.gauges.data[n_bot] .* g_inv
         push!(ctr.peps.gauges.data, n_top => g_top, n_bot => g_bot)
     end
-
-    for ind ∈ 1:indβ
-        for i ∈ row:ctr.peps.nrows
-            delete!(Memoization.caches[mps_top], ((ctr, i, ind), ()))
-        end
-        for i ∈ 1:row+1
-            delete!(Memoization.caches[mps], ((ctr, i, ind), ()))
-        end
-        for i ∈ row:row+1
-            cmpo = Memoization.caches[mpo]
-            delete!(cmpo, ((ctr, ctr.layers.main, i, ind), ()))
-            delete!(cmpo, ((ctr, ctr.layers.dress, i, ind), ()))
-            delete!(cmpo, ((ctr, ctr.layers.right, i, ind), ()))
-        end
-    end
-    overlap
+    clear_memoize_cache(ctr, row, indβ)
 end
 
 """
@@ -469,24 +473,8 @@ function update_gauges!(
         _, _, scale = LinearAlgebra.LAPACK.gebal!('S', ρ)
         push!(ctr.peps.gauges.data, n_top => 1 ./ scale, n_bot => scale)
     end
-    overlap = ψ_top * ψ_bot
-
-    # This is repeated, simplification necessary
-    for ind ∈ 1:indβ
-        for i ∈ row:ctr.peps.nrows
-            delete!(Memoization.caches[mps_top], ((ctr, i, ind), ()))
-        end
-        for i ∈ 1:row+1
-            delete!(Memoization.caches[mps], ((ctr, i, ind), ()))
-        end
-        for i ∈ row:row+1
-            cmpo = Memoization.caches[mpo]
-            delete!(cmpo, ((ctr, ctr.layers.main, i, ind), ()))
-            delete!(cmpo, ((ctr, ctr.layers.dress, i, ind), ()))
-            delete!(cmpo, ((ctr, ctr.layers.right, i, ind), ()))
-        end
-    end
-    overlap
+    clear_memoize_cache(ctr, row, indβ)
+    ψ_top * ψ_bot
 end
 
 """

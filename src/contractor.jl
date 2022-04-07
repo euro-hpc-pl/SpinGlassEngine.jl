@@ -518,7 +518,11 @@ function boundary_states(
     ctr::MpsContractor{T}, states::Vector{Vector{Int}}, node::S
     ) where {T, S}
     boundary_recipe = boundary(ctr, node)
-    boundary_indices(ctr, boundary_recipe, states)
+    res = ones(Int, length(states), length(boundary_recipe))
+    for (i, node) ∈ enumerate(boundary_recipe)
+        res[:, i] = boundary_indices(ctr, node, states)
+    end
+    res
 end
 
 """
@@ -574,18 +578,15 @@ $(TYPEDSIGNATURES)
 """
 function boundary_indices(
     ctr::MpsContractor{T},
-    boundary_recipe,
+    nodes::NTuple{2, S},
     states::Vector{Vector{Int}}
-) where T
-    res = ones(Int, length(states), length(boundary_recipe))
-    for (i, node) ∈ enumerate(boundary_recipe)
-        v, w = node
-        if ctr.peps.vertex_map(v) ∈ vertices(ctr.peps.factor_graph)
-            k = get(ctr.node_search_index, v, 0)
-            res[:, i] = projector(ctr.peps, v, w)[[σ[k] for σ ∈ states]]
-        end
+) where {T, S}
+    v, w = nodes
+    if ctr.peps.vertex_map(v) ∈ vertices(ctr.peps.factor_graph)
+        k = ctr.node_search_index[v]
+        return projector(ctr.peps, v, w)[[σ[k] for σ ∈ states]]
     end
-    res
+    return ones(Int, size(states, 1))
 end
 
 """

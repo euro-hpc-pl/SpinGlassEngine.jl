@@ -126,10 +126,12 @@ $(TYPEDSIGNATURES)
 """
 function branch_solution(psol::Solution, ctr::T) where T <: AbstractContractor
     num_states = cluster_size(ctr.peps, ctr.current_node)
+    boundaries = boundary_states(ctr, psol.states, ctr.current_node)
+    println(size(boundaries))
     Solution(
         vcat(branch_energy.(Ref(ctr), zip(psol.energies, psol.states))...),
         vcat(branch_state.(Ref(ctr), psol.states)...),
-        vcat(branch_probability.(Ref(ctr), zip(psol.probabilities, psol.states))...),
+        vcat(branch_probability.(Ref(ctr), zip(psol.probabilities, boundaries))...),
         repeat(psol.degeneracy, inner=num_states),
         psol.largest_discarded_probability)
 end

@@ -181,11 +181,11 @@ $(TYPEDSIGNATURES)
 Calculates conditional probability for a Square Layout.
 """
 function conditional_probability(
-    ::Type{T}, ctr::MpsContractor{S}, state::Vector{Int},
+    ::Type{T}, ctr::MpsContractor{S}, ∂v::Vector{Int},
 ) where {T <: Square, S}
     indβ, β = length(ctr.betas), last(ctr.betas)
     i, j = ctr.current_node
-    ∂v = boundary_state(ctr, state, (i, j))  # this likely should be always called from current_node
+    #∂v = boundary_state(ctr, state, (i, j))  # this likely should be always called from current_node
 
     L = left_env(ctr, i, ∂v[1:j-1], indβ)
     R = right_env(ctr, i, ∂v[(j+2):(ctr.peps.ncols+1)], indβ)
@@ -215,7 +215,7 @@ function conditional_probability(
 
     bnd_exp = dropdims(sum(LM[pd[:], :] .* R[:, pr[:]]', dims=2), dims=2)
     probs = loc_exp .* bnd_exp
-    push!(ctr.statistics, state => error_measure(probs))
+    push!(ctr.statistics, ((i, j), ∂v) => error_measure(probs))
     normalize_probability(probs)
 end
 

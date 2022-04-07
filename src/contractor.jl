@@ -471,7 +471,7 @@ function update_gauges!(
         n_top = PEPSNode(row + clm[i][end], i)
         ρ = overlap_density_matrix(ψ_top, ψ_bot, i)
         _, _, scale = LinearAlgebra.LAPACK.gebal!('S', ρ)
-        push!(ctr.peps.gauges.data, n_top => 1 ./ scale, n_bot => scale)
+        push!(ctr.peps.gauges.data, n_top => 1.0 ./ scale, n_bot => scale)
     end
     clear_memoize_cache(ctr, row, indβ)
     ψ_top * ψ_bot
@@ -518,7 +518,6 @@ function local_state_for_node(
 ) where {T, S}
     k = get(ctr.node_search_index, w, 0)
     0 < k <= length(σ) ? σ[k] : 1
-    # 0 < k ? σ[k] : 1  # likely we shouldnt be asking for node with k > length(σ) -- but this does not work
 end
 
 

@@ -174,7 +174,6 @@ function low_energy_spectrum(
         ctr.current_node = node
         sol = branch_solution(sol, ctr)
         sol = bound_solution(sol, sparams.max_states, sparams.cut_off_prob, merge_strategy)
-
         # TODO: clear memoize cache partially
         if no_cache Memoization.empty_all_caches!() end
     end

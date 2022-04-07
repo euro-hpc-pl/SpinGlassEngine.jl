@@ -215,13 +215,12 @@ function low_energy_spectrum(
         ctr.current_node = node
         sol = branch_solution(sol, ctr)
         sol = bound_solution(sol, sparams.max_states, sparams.cut_off_prob, merge_strategy)
-        # TODO: clear memoize cache
-        #@show @allocated(Memoization.caches)
 
+        # TODO: clear memoize cache partially
         if no_cache Memoization.empty_all_caches!() end
     end
 
-    # Translate variable order (from network to factor graph)
+    # Translate variable order (network --> factor graph)
     inner_perm = sortperm([
         ctr.peps.factor_graph.reverse_label_map[idx]
         for idx ∈ ctr.peps.vertex_map.(ctr.nodes_search_order)

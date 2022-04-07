@@ -7,7 +7,6 @@ using Profile, PProf
 disable_logging(LogLevel(1))
 
 function bench(instance::String)
-
     m = 8
     n = 8
     t = 8
@@ -15,7 +14,7 @@ function bench(instance::String)
     L = n * m * t
     max_cl_states = 2^(t-0)
 
-    #ground_energy = -3336.773383
+    ground_energy = -3336.773383
 
     β = 2
     bond_dim = 32
@@ -38,7 +37,6 @@ function bench(instance::String)
     sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 
     #@assert sol.energies[begin] ≈ ground_energy
-    #clear_memoize_cache()
 end
 
 #instance = "$(@__DIR__)/../test/instances/chimera_droplets/2048power/001.txt"

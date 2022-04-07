@@ -545,7 +545,7 @@ function boundary_indices(
 ) where {S, T}
     v, w, k, l = nodes
     pv = projector(ctr.peps, v, w)
-    i = boundary_index(ctr, (v, w), states)
-    j = boundary_index(ctr, (k, l), states)
-    (j - 1) * maximum(pv) + i
+    i = boundary_indices(ctr, (v, w), states)
+    j = boundary_indices(ctr, (k, l), states)
+    (j .- 1) .* maximum(pv) .+ i
 end

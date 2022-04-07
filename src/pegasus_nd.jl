@@ -81,12 +81,11 @@ end
 $(TYPEDSIGNATURES)
 """
 function conditional_probability(
-    ::Type{T}, ctr::MpsContractor{S}, state::Vector{Int},
+    ::Type{T}, ctr::MpsContractor{S}, ∂v::Vector{Int},
 ) where {T <: Pegasus_nd, S}
     indβ, β = length(ctr.betas), last(ctr.betas)
     i, j, k = ctr.current_node
-    ∂v = boundary_state(ctr, state, ctr.current_node)
-
+    
     L = left_env(ctr, i, ∂v[1:j-1], indβ)
     R = right_env(ctr, i, ∂v[(j+4):end], indβ)
     M = dressed_mps(ctr, i, indβ)[j]
@@ -154,7 +153,7 @@ function conditional_probability(
     end
 
     probs = loc_exp .* bnd_exp
-    push!(ctr.statistics, state => error_measure(probs))
+    push!(ctr.statistics, ((i, j, k), ∂v) => error_measure(probs))
     normalize_probability(probs)
 end
 

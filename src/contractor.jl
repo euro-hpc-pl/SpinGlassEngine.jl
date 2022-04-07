@@ -522,7 +522,7 @@ function boundary_states(
     for (i, node) ∈ enumerate(boundary_recipe)
         res[:, i] = boundary_indices(ctr, node, states)
     end
-    res
+    [res[r, :] for r in 1: size(res,1)]
 end
 
 """

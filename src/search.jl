@@ -127,7 +127,6 @@ $(TYPEDSIGNATURES)
 function branch_solution(psol::Solution, ctr::T) where T <: AbstractContractor
     num_states = cluster_size(ctr.peps, ctr.current_node)
     boundaries = boundary_states(ctr, psol.states, ctr.current_node)
-    println(size(boundaries))
     Solution(
         vcat(branch_energy.(Ref(ctr), zip(psol.energies, psol.states))...),
         vcat(branch_state.(Ref(ctr), psol.states)...),

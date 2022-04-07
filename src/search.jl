@@ -69,9 +69,6 @@ end
 $(TYPEDSIGNATURES)
 """
 function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T
-    # if !( exact_conditional_probability(ctr, pσ[end]) ≈ conditional_probability(ctr, pσ[end]) )
-    #     println(pσ[end], exact_conditional_probability(ctr, pσ[end]), conditional_probability(ctr, pσ[end]))
-    # end
     pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
 end
 
@@ -141,8 +138,6 @@ $(TYPEDSIGNATURES)
 function merge_branches(ctr::MpsContractor{T}) where {T}
     function _merge(psol::Solution)
         node = get(ctr.nodes_search_order, length(psol.states[1])+1, ctr.node_outside)
-        # node = ctr.current_node
-        #boundaries = hcat(boundary_state.(Ref(ctr), psol.states, Ref(node))...)'
         boundaries = boundary_states(ctr, psol.states, node)
         _, bnd_types = SpinGlassNetworks.unique_dims(boundaries, 1)
 

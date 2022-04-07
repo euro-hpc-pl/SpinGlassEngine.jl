@@ -7,6 +7,7 @@ using Profile, PProf
 disable_logging(LogLevel(1))
 
 function bench(instance::String)
+
     m = 8
     n = 8
     t = 8

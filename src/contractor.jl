@@ -12,7 +12,6 @@ export
        mps,
        update_gauges!,
        update_gauges_with_balancing!,
-       boundary_state,
        boundary_states
 
 abstract type AbstractContractor end
@@ -101,7 +100,7 @@ $(TYPEDSIGNATURES)
 
 Construct (and memoize) MPO for a given layers.
 """
-@memoize ThreadSafeDict function mpo(
+@memoize Dict function mpo(
     ctr::MpsContractor{T}, layers::Dict{Site, Sites}, r::Int, indβ::Int
 ) where T <: AbstractStrategy
     mpo = Dict{Site, Dict{Site, Tensor}}()
@@ -121,7 +120,7 @@ $(TYPEDSIGNATURES)
 
 Construct (and memoize) top MPS using SVD for a given row.
 """
-@memoize ThreadSafeDict function mps_top(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
+@memoize Dict function mps_top(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
     if i < 1
         W = mpo(ctr, ctr.layers.main, 1, indβ)
         return IdentityQMps(local_dims(W, :up))
@@ -149,7 +148,7 @@ $(TYPEDSIGNATURES)
 
 Construct (and memoize) (bottom) MPS using SVD for a given row.
 """
-@memoize ThreadSafeDict function mps(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
+@memoize Dict function mps(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
     if i > ctr.peps.nrows
         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
         return IdentityQMps(local_dims(W, :down))
@@ -176,7 +175,7 @@ $(TYPEDSIGNATURES)
 
 Construct (and memoize) (bottom) top MPS using Annealing for a given row.
 """
-@memoize ThreadSafeDict function mps_top(ctr::MpsContractor{MPSAnnealing}, i::Int, indβ::Int)
+@memoize Dict function mps_top(ctr::MpsContractor{MPSAnnealing}, i::Int, indβ::Int)
     if i < 1
         W = mpo(ctr, ctr.layers.main, 1, indβ)
         return IdentityQMps(local_dims(W, :up))
@@ -208,7 +207,7 @@ $(TYPEDSIGNATURES)
 
 Construct (and memoize) (bottom) MPS using Annealing for a given row.
 """
-@memoize ThreadSafeDict function mps(ctr::MpsContractor{MPSAnnealing}, i::Int, indβ::Int)
+@memoize Dict function mps(ctr::MpsContractor{MPSAnnealing}, i::Int, indβ::Int)
     if i > ctr.peps.nrows
         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
         return IdentityQMps(local_dims(W, :down))
@@ -249,7 +248,7 @@ $(TYPEDSIGNATURES)
 
 Construct (and memoize) dressed MPS for a given row and strategy.
 """
-@memoize ThreadSafeDict function dressed_mps(
+@memoize Dict function dressed_mps(
     ctr::MpsContractor{T}, i::Int, indβ::Int
 ) where T <: AbstractStrategy
     ψ = mps(ctr, i+1, indβ)
@@ -262,7 +261,7 @@ $(TYPEDSIGNATURES)
 
 Construct (and memoize) right environment for a given node.
 """
-@memoize ThreadSafeDict function right_env(
+@memoize Dict function right_env(
     ctr::MpsContractor{T}, i::Int, ∂v::Vector{Int}, indβ::Int
 ) where T <: AbstractStrategy
     l = length(∂v)
@@ -371,7 +370,7 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-@memoize ThreadSafeDict function left_env(
+@memoize Dict function left_env(
     ctr::MpsContractor{T}, i::Int, ∂v::Vector{Int}, indβ::Int
 ) where T
     l = length(∂v)
@@ -504,16 +503,6 @@ function update_energy(ctr::MpsContractor{S}, w::Vector{Int}) where S
     update_energy(layout(ctr.peps), ctr, w)
 end
 
-#=
-"""
-$(TYPEDSIGNATURES)
-"""
-function boundary_state(
-    ctr::MpsContractor{T}, σ::Vector{Int}, node::S
-) where {T, S}
-    boundary_index.(Ref(ctr), boundary(ctr, node), Ref(σ))
-end
-=#
 
 function boundary_states(
     ctr::MpsContractor{T}, states::Vector{Vector{Int}}, node::S
@@ -533,40 +522,6 @@ function boundary(ctr::MpsContractor{T}, node::Node) where T
     boundary(layout(ctr.peps), ctr, node)
 end
 
-#=
-"""
-$(TYPEDSIGNATURES)
-"""
-function boundary_index(
-    ctr::MpsContractor{T},
-    nodes::Tuple{S, Union{S, NTuple{N, S}}},
-    σ::Vector{Int}
-) where {S, T, N}
-    v, w = nodes
-    state = local_state_for_node(ctr, σ, v)
-    if ctr.peps.vertex_map(v) ∉ vertices(ctr.peps.factor_graph) return ones_like(state) end
-    projector(ctr.peps, v, w)[state]
-end
-=#
-
-#=
-"""
-$(TYPEDSIGNATURES)
-
-boundary index formed from outer product of two projectors
-"""
-function boundary_index(
-    ctr::MpsContractor{T}, nodes::NTuple{4, S}, σ::Vector{Int}
-) where {S, T}
-    v, w, k, l = nodes
-    pv = projector(ctr.peps, v, w)
-    i = boundary_index(ctr, (v, w), σ)
-    j = boundary_index(ctr, (k, l), σ)
-    (j - 1) * maximum(pv) + i
-end
-=#
-
-
 """
 $(TYPEDSIGNATURES)
 """
@@ -583,9 +538,7 @@ end
 $(TYPEDSIGNATURES)
 """
 function boundary_indices(
-    ctr::MpsContractor{T},
-    nodes::NTuple{2, S},
-    states::Vector{Vector{Int}}
+    ctr::MpsContractor{T}, nodes::NTuple{2, S}, states::Vector{Vector{Int}}
 ) where {T, S}
     v, w = nodes
     if ctr.peps.vertex_map(v) ∈ vertices(ctr.peps.factor_graph)

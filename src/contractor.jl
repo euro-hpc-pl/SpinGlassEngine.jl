@@ -504,7 +504,7 @@ function update_energy(ctr::MpsContractor{S}, w::Vector{Int}) where S
     update_energy(layout(ctr.peps), ctr, w)
 end
 
-# TO BE RM
+#=
 """
 $(TYPEDSIGNATURES)
 """
@@ -513,16 +513,17 @@ function boundary_state(
 ) where {T, S}
     boundary_index.(Ref(ctr), boundary(ctr, node), Ref(σ))
 end
+=#
 
 function boundary_states(
     ctr::MpsContractor{T}, states::Vector{Vector{Int}}, node::S
-    ) where {T, S}
+) where {T, S}
     boundary_recipe = boundary(ctr, node)
     res = ones(Int, length(states), length(boundary_recipe))
     for (i, node) ∈ enumerate(boundary_recipe)
         res[:, i] = boundary_indices(ctr, node, states)
     end
-    [res[r, :] for r in 1: size(res,1)]
+    [res[r, :] for r ∈ 1:size(res, 1)]
 end
 
 """
@@ -532,6 +533,7 @@ function boundary(ctr::MpsContractor{T}, node::Node) where T
     boundary(layout(ctr.peps), ctr, node)
 end
 
+#=
 """
 $(TYPEDSIGNATURES)
 """
@@ -545,7 +547,9 @@ function boundary_index(
     if ctr.peps.vertex_map(v) ∉ vertices(ctr.peps.factor_graph) return ones_like(state) end
     projector(ctr.peps, v, w)[state]
 end
+=#
 
+#=
 """
 $(TYPEDSIGNATURES)
 
@@ -560,6 +564,8 @@ function boundary_index(
     j = boundary_index(ctr, (k, l), σ)
     (j - 1) * maximum(pv) + i
 end
+=#
+
 
 """
 $(TYPEDSIGNATURES)

@@ -45,4 +45,4 @@ instance = "$(@__DIR__)/../test/instances/chimera_droplets/512power/001.txt"
 bench(instance)
 
 @profile bench(instance)
-pprof()
+pprof(FlameGraphs.flamegraph(); webhost = "localhost", webport = 57511)

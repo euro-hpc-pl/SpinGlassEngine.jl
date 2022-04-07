@@ -204,7 +204,7 @@ end
 $(TYPEDSIGNATURES)
 """
 function low_energy_spectrum(
-    ctr::T, sparams::SearchParameters, merge_strategy=no_merge
+    ctr::T, sparams::SearchParameters, merge_strategy=no_merge; no_cache=false
 ) where T <: AbstractContractor
     # Build all boundary mps
     @showprogress "Preprocesing: " for i ∈ ctr.peps.nrows:-1:1 dressed_mps(ctr, i) end
@@ -216,6 +216,9 @@ function low_energy_spectrum(
         sol = branch_solution(sol, ctr)
         sol = bound_solution(sol, sparams.max_states, sparams.cut_off_prob, merge_strategy)
         # TODO: clear memoize cache
+        #@show @allocated(Memoization.caches)
+
+        if no_cache Memoization.empty_all_caches!() end
     end
 
     # Translate variable order (from network to factor graph)
@@ -234,7 +237,7 @@ function low_energy_spectrum(
         sol.largest_discarded_probability
     )
 
-    # Final check if energies and states much each other
+    # Final check if states correspond energies
     @assert sol.energies ≈ energy.(
         Ref(ctr.peps.factor_graph), decode_state.(Ref(ctr.peps), sol.states)
     )

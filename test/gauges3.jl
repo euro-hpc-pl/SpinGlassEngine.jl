@@ -60,8 +60,8 @@ using Memoize
                     #@test overlap1 ≈ overlap_python[i]
                     @test isapprox(overlap1, overlap_python[i], atol=1e-5)
                     println("overlap1 ", overlap1)
-                    println("#(cache mps) = ", length(memoize_cache(mps)))
-                    println("#(cache mps_top) = ", length(memoize_cache(mps_top)))
+                    #println("#(cache mps) = ", length(memoize_cache(mps)))
+                    #println("#(cache mps_top) = ", length(memoize_cache(mps_top)))
 
                     update_gauges!(ctr_d, i, indβ)
 
@@ -70,8 +70,8 @@ using Memoize
                     overlap2 = ψ_top * ψ_bot
                     println(overlap1, ' ', overlap2)
 
-                    println("#(cache mps after) = ", length(memoize_cache(mps)))
-                    println("#(cache mps_top after) = ", length(memoize_cache(mps_top)))
+                    #println("#(cache mps after) = ", length(memoize_cache(mps)))
+                    #println("#(cache mps_top after) = ", length(memoize_cache(mps_top)))
 
                     clear_memoize_cache()
                 end

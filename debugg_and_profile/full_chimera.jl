@@ -3,6 +3,7 @@ using SpinGlassTensors
 using SpinGlassEngine
 using Logging
 using Profile, PProf
+using FlameGraphs
 
 disable_logging(LogLevel(1))
 
@@ -45,4 +46,4 @@ instance = "$(@__DIR__)/../test/instances/chimera_droplets/512power/001.txt"
 bench(instance)
 
 @profile bench(instance)
-pprof(FlameGraphs.flamegraph(); webhost = "localhost", webport = 57511)
+pprof(flamegraph(); webhost = "localhost", webport = 57511)

@@ -164,11 +164,10 @@ $(TYPEDSIGNATURES)
 """
 # TODO: rewrite this using brodcasting if possible
 function conditional_probability(
-    ::Type{T}, ctr::MpsContractor{S}, state::Vector{Int},
+    ::Type{T}, ctr::MpsContractor{S}, ∂v::Vector{Int}
 ) where {T <: SquareStar, S}
     indβ, β = length(ctr.betas), last(ctr.betas)
     i, j = ctr.current_node
-    ∂v = boundary_state(ctr, state, (i, j))
 
     L = left_env(ctr, i, ∂v[1:2*j-2], indβ)
     R = right_env(ctr, i, ∂v[(2*j+3):(2*ctr.peps.ncols+2)], indβ)
@@ -206,7 +205,7 @@ function conditional_probability(
         r = @view R[:, pr[σ]]
         loc_exp[σ] *= (lmx' * m * r)[]
     end
-    push!(ctr.statistics, state => error_measure(loc_exp))
+    push!(ctr.statistics, ((i, j), ∂v) => error_measure(loc_exp))
     normalize_probability(loc_exp)
 end
 

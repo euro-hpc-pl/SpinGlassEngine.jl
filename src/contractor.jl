@@ -335,14 +335,16 @@ function _update_reduced_env_right(
 )
     @tensor REB[x, y, β] := B[x, y, α] * RE[α, β]
 
-    Kloc_exp = M.loc_exp .* K[M.projs[2]]
-    s3 = maximum(M.projs[4])
-    ind43 = M.projs[4] .+ ((M.projs[3] .- 1) .* s3)
+    @inbounds Kloc_exp = M.loc_exp .* K[M.projs[2]]
+    @inbounds s3 = maximum(M.projs[4])
+    @inbounds ind43 = M.projs[4] .+ ((M.projs[3] .- 1) .* s3)
     @cast REB2[x, (y, z)] := REB[x, y, z]
-    Rσ = REB2[:, ind43]
+    @inbounds Rσ = REB2[:, ind43]
 
     R = zeros(size(B, 1), maximum(M.projs[1]))
-    for (σ, kl) ∈ enumerate(Kloc_exp) R[:, M.projs[1][σ]] += kl .* Rσ[:, σ] end
+    for (σ, kl) ∈ enumerate(Kloc_exp)
+        @inbounds R[:, M.projs[1][σ]] += kl .* Rσ[:, σ]
+    end
     R
 end
 
@@ -362,7 +364,8 @@ function _update_reduced_env_right(
     @tensor REB[x, y1, y2, β] := B4[x, y1, y2, α] * RE[α, β]
     R = zeros(size(B, 1), length(p_l))
     for l ∈ 1:length(p_l), r ∈ 1:length(p_r)
-        R[:, l] += (K2[p_rt[r], p_lt[l]] .* h[p_l[l], p_r[r]]) .* REB[:, p_lb[l], p_rb[r], r]
+        @inbounds R[:, l] += (K2[p_rt[r], p_lt[l]] .* h[p_l[l], p_r[r]]) .*
+                              REB[:, p_lb[l], p_rb[r], r]
     end
     R
 end
@@ -444,8 +447,8 @@ function update_gauges!(
     for i ∈ ψ_top.sites
         g = gauges[i]
         g_inv = 1.0 ./ g
-        n_bot = PEPSNode(row + 1 + clm[i][begin], i)
-        n_top = PEPSNode(row + clm[i][end], i)
+        @inbounds n_bot = PEPSNode(row + 1 + clm[i][begin], i)
+        @inbounds n_top = PEPSNode(row + clm[i][end], i)
         g_top = ctr.peps.gauges.data[n_top] .* g
         g_bot = ctr.peps.gauges.data[n_bot] .* g_inv
         push!(ctr.peps.gauges.data, n_top => g_top, n_bot => g_bot)
@@ -467,8 +470,8 @@ function update_gauges!(
     ψ_top = deepcopy(ψ_top)
     ψ_bot = deepcopy(ψ_bot)
     for i ∈ ψ_top.sites
-        n_bot = PEPSNode(row + 1 + clm[i][begin], i)
-        n_top = PEPSNode(row + clm[i][end], i)
+        @inbounds n_bot = PEPSNode(row + 1 + clm[i][begin], i)
+        @inbounds n_top = PEPSNode(row + clm[i][end], i)
         ρ = overlap_density_matrix(ψ_top, ψ_bot, i)
         _, _, scale = LinearAlgebra.LAPACK.gebal!('S', ρ)
         push!(ctr.peps.gauges.data, n_top => 1.0 ./ scale, n_bot => scale)
@@ -491,16 +494,16 @@ function update_energy(ctr::MpsContractor{S}, w::Vector{Int}) where S
     update_energy(layout(ctr.peps), ctr, w)
 end
 
-
 function boundary_states(
     ctr::MpsContractor{T}, states::Vector{Vector{Int}}, node::S
 ) where {T, S}
     boundary_recipe = boundary(ctr, node)
     res = ones(Int, length(states), length(boundary_recipe))
     for (i, node) ∈ enumerate(boundary_recipe)
-        res[:, i] = boundary_indices(ctr, node, states)
+        @inbounds res[:, i] = boundary_indices(ctr, node, states)
     end
-    [res[r, :] for r ∈ 1:size(res, 1)]
+    @inbounds ret = [res[r, :] for r ∈ 1:size(res, 1)]
+    ret
 end
 
 """
@@ -529,10 +532,10 @@ function boundary_indices(
 ) where {T, S}
     v, w = nodes
     if ctr.peps.vertex_map(v) ∈ vertices(ctr.peps.factor_graph)
-        k = ctr.node_search_index[v]
-        return projector(ctr.peps, v, w)[[σ[k] for σ ∈ states]]
+        @inbounds idx = [σ[ctr.node_search_index[v]] for σ ∈ states]
+        return @inbounds projector(ctr.peps, v, w)[idx]
     end
-    return ones(Int, size(states, 1))
+    ones(Int, length(states))
 end
 
 """

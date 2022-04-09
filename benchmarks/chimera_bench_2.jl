@@ -7,6 +7,7 @@ using SpinGlassTensors
 using Logging
 using CSV
 using DataFrames
+using Memoization
 
 MPI.Init()
 size = MPI.Comm_size(MPI.COMM_WORLD)
@@ -39,9 +40,7 @@ disable_logging(LogLevel(1))
 BLAS.set_num_threads(1)
 
 function chimera_sim(inst, trans, β, Layout)
-
     max_cl_states = 2 ^ T
-
     δp = 1E-5 * exp(-β * DE)
 
     fg = factor_graph(
@@ -50,15 +49,16 @@ function chimera_sim(inst, trans, β, Layout)
         spectrum=brute_force,
         cluster_assignment_rule=super_square_lattice((M, N, T))
     )
-
     params = MpsParameters(BOND_DIM, VAR_TOL, MAX_SWEEPS)
     search_params = SearchParameters(MAX_STATES, δp)
 
     net = PEPSNetwork{Square{Layout}, SPARSITY}(M, N, fg, trans)
     ctr = MpsContractor{STRATEGY, GAUGE}(net, [β/6, β/3, β/2, β], params)
     sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+
+    cRAM = round(Base.summarysize(Memoization.caches) * 1E-9; sigdigits=2)
     clear_memoize_cache()
-    sol, ctr
+    sol, ctr, cRAM
 end
 
 function run_bench(inst::String, β::Real, t, l)
@@ -70,7 +70,7 @@ function run_bench(inst::String, β::Real, t, l)
         println("Skipping for $β, $t, $l.")
     else
         data = try
-            tic_toc = @elapsed sol, ctr = chimera_sim(inst, t, β, l)
+            tic_toc = @elapsed sol, ctr, cRAM = chimera_sim(inst, t, β, l)
 
             data = DataFrame(
                 :instance => inst,
@@ -86,7 +86,8 @@ function run_bench(inst::String, β::Real, t, l)
                 :de => DE,
                 :max_sweeps => MAX_SWEEPS,
                 :var_tol => VAR_TOL,
-                :time => tic_toc
+                :time => tic_toc,
+                :cRAM => cRAM
             )
         catch err
             data = DataFrame(

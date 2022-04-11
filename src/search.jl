@@ -95,7 +95,7 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function merge_branches(ctr::MpsContractor{T}) where {T}
+function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit) where {T}
     function _merge(psol::Solution)
         node = get(ctr.nodes_search_order, length(psol.states[1])+1, ctr.node_outside)
         boundaries = boundary_states(ctr, psol.states, node)
@@ -118,11 +118,6 @@ function merge_branches(ctr::MpsContractor{T}) where {T}
             end
             best_idx = argmin(@view nsol.energies[start:stop]) + start - 1
 
-            #b = -ctr.betas[end] .* nsol.energies[start:stop] .- nsol.probabilities[start:stop] # this should be const
-            #c = Statistics.median(ctr.betas[end] .* nsol.energies[start:stop] .+ nsol.probabilities[start:stop])
-            #new_prob = -ctr.betas[end] .* nsol.energies[best_idx] .+ c ## base probs on all states with the same boundary
-            # using fit to log(prob) = - beta * eng + a0
-
             new_degeneracy = 0
             for i in start:stop
                 if nsol.energies[i] <= nsol.energies[best_idx] + 1E-12 # this is hack for now
@@ -130,9 +125,18 @@ function merge_branches(ctr::MpsContractor{T}) where {T}
                 end
             end
 
+            if merge_type == :fit
+                c = Statistics.median(ctr.betas[end] .* nsol.energies[start:stop] .+ nsol.probabilities[start:stop])
+                new_prob = -ctr.betas[end] .* nsol.energies[best_idx] .+ c ## base probs on all states with the same boundary
+                push!(probs, new_prob)
+                # using fit to log(prob) = - beta * eng + a0
+            end
+            if merge_type == :nofit
+                push!(probs, nsol.probabilities[best_idx])
+            end
+
             push!(energies, nsol.energies[best_idx])
             push!(states, nsol.states[best_idx])
-            push!(probs, nsol.probabilities[best_idx])
             push!(degeneracy, new_degeneracy)
             start = stop + 1
         end

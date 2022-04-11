@@ -253,7 +253,13 @@ Construct (and memoize) dressed MPS for a given row and strategy.
 ) where T <: AbstractStrategy
     ψ = mps(ctr, i+1, indβ)
     W = mpo(ctr, ctr.layers.dress, i, indβ)
-    W * ψ
+    ϕ = W * ψ
+
+    for j ∈ ϕ.sites
+        nrm = maximum(abs.(ϕ[j]))
+        if !iszero(nrm) ϕ[j] ./= nrm end
+    end
+    ϕ
 end
 
 """
@@ -285,7 +291,8 @@ Construct (and memoize) right environment for a given node.
         @tensor RR[x, y] := M0[y, z] * RR[x, z]
         ls = _left_nbrs_site(ls, W.sites)
     end
-    RR
+    nmr = maximum(abs.(RR))
+    iszero(nmr) ? RR : RR ./ nmr
 end
 
 """
@@ -383,8 +390,10 @@ $(TYPEDSIGNATURES)
     m = ∂v[l]
     site = ϕ.sites[l]
     M = ϕ[site]
+
     @matmul L[x] := sum(α) L̃[α] * M[α, $m, x]
-    L
+    nmr = maximum(abs.(L))
+    iszero(nmr) ? L : L ./ nmr
 end
 
 """

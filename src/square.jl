@@ -190,9 +190,10 @@ function conditional_probability(
     R = right_env(ctr, i, ∂v[(j+2):(ctr.peps.ncols+1)], indβ)
     M = dressed_mps(ctr, i, indβ)[j]
 
-    L ./= maximum(abs.(L))
-    R ./= maximum(abs.(R))
-    M ./= maximum(abs.(M))
+    # This is potentially dangerous (moved normalization inside functions)
+    #L ./= maximum(abs.(L))
+    #R ./= maximum(abs.(R))
+    #M ./= maximum(abs.(M))
 
     @tensor LM[y, z] := L[x] * M[x, y, z]
     eng_local = local_energy(ctr.peps, (i, j))

@@ -66,6 +66,9 @@ function run_bench(inst::String, β::Real, t, l)
     hash_name = hash(string(inst, β, t, l))
     out_path = string(OUTPUT_DIR, "/", hash_name, ".csv")
 
+    tic_toc = @elapsed sol, ctr, cRAM = chimera_sim(inst, t, β, l)
+
+    #=
     if isfile(out_path)
         println("Skipping for $β, $t, $l.")
     else
@@ -80,7 +83,7 @@ function run_bench(inst::String, β::Real, t, l)
                 :energy => sol.energies[begin],
                 :probabilities => sol.probabilities,
                 :discarded_probability => sol.largest_discarded_probability,
-                #:statistic => minimum(values(ctr.statistics)),
+                :statistic => minimum(values(ctr.statistics)),
                 :max_states => MAX_STATES,
                 :bond_dim => BOND_DIM,
                 :de => DE,
@@ -106,12 +109,16 @@ function run_bench(inst::String, β::Real, t, l)
         println(data)
         CSV.write(out_path, data, delim = ';', append = false)
     end #if
+    =#
 end
 
+#=
 all_params = collect(
     Iterators.product(
         readdir(INSTANCE_DIR, join=false), BETAS, TRANSFORM, LAYOUT)
 )
+=#
+all_params = [["077.txt", 14, LatticeTransformation((1, 2, 3, 4), false), EnergyGauges]]
 
 for i ∈ (1+rank):size:length(all_params)
     run_bench(all_params[i]...)

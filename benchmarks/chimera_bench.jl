@@ -7,6 +7,7 @@ using SpinGlassTensors
 using Logging
 using CSV
 using DataFrames
+using Memoization
 
 MPI.Init()
 size = MPI.Comm_size(MPI.COMM_WORLD)
@@ -20,9 +21,9 @@ M, N, T = 12, 12, 8
 INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/1152power"
 OUTPUT_DIR = "$(@__DIR__)/results/1152power/tmp"
 
-BETAS = collect(2:2:14)[1]
-LAYOUT = (EnergyGauges, )# GaugesEnergy, EngGaugesEng)
-TRANSFORM = (all_lattice_transformations[1], )
+BETAS = collect(2:2:14)
+LAYOUT = (EnergyGauges, GaugesEnergy, EngGaugesEng)
+TRANSFORM = all_lattice_transformations
 
 GAUGE = NoUpdate
 STRATEGY = SVDTruncate
@@ -39,9 +40,7 @@ disable_logging(LogLevel(1))
 BLAS.set_num_threads(1)
 
 function chimera_sim(inst, trans, β, Layout)
-
     max_cl_states = 2 ^ T
-
     δp = 1E-5 * exp(-β * DE)
 
     fg = factor_graph(
@@ -50,72 +49,71 @@ function chimera_sim(inst, trans, β, Layout)
         spectrum=brute_force,
         cluster_assignment_rule=super_square_lattice((M, N, T))
     )
-
     params = MpsParameters(BOND_DIM, VAR_TOL, MAX_SWEEPS)
     search_params = SearchParameters(MAX_STATES, δp)
 
     net = PEPSNetwork{Square{Layout}, SPARSITY}(M, N, fg, trans)
     ctr = MpsContractor{STRATEGY, GAUGE}(net, [β/6, β/3, β/2, β], params)
     sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+
+    cRAM = round(Base.summarysize(Memoization.caches) * 1E-9; sigdigits=2)
     clear_memoize_cache()
-    sol, ctr
+    sol, ctr, cRAM
 end
 
-function run_bench(inst::String)
-    for β ∈ BETAS, t ∈ TRANSFORM, l ∈ LAYOUT
+function run_bench(inst::String, β::Real, t, l)
 
-        hash_name = hash(string(inst, β, t, l))
-        out_path = string(OUTPUT_DIR, "/", hash_name, ".csv")
+    hash_name = hash(string(inst, β, t, l))
+    out_path = string(OUTPUT_DIR, "/", hash_name, ".csv")
 
-        if isfile(out_path)
-            println("Skipping for $β, $t, $l.")
-        else
-            data = try
-                tic_toc = @elapsed sol, ctr = chimera_sim(inst, t, β, l)
+    if isfile(out_path)
+        println("Skipping for $β, $t, $l.")
+    else
+        data = try
+            tic_toc = @elapsed sol, ctr, cRAM = chimera_sim(inst, t, β, l)
 
-                data = DataFrame(
-                    :instance => inst,
-                    :β => β,
-                    :Layout => l,
-                    :transform => t,
-                    :energy => sol.energies[begin],
-                    :probabilities => sol.probabilities,
-                    :discarded_probability => sol.largest_discarded_probability,
-                    :statistic => maximum(values(ctr.statistics)),
-                    :max_states => MAX_STATES,
-                    :bond_dim => BOND_DIM,
-                    :de => DE,
-                    :max_sweeps => MAX_SWEEPS,
-                    :var_tol => VAR_TOL,
-                    :time => tic_toc
-                )
-            catch err
-                data = DataFrame(
-                    :instance => inst,
-                    :β => β,
-                    :Layout => l,
-                    :transform => t,
-                    :error => err
-                )
-            end
-
-            println(data)
-            CSV.write(out_path, data, delim = ';', append = false)
-        end #if
-    end
+            data = DataFrame(
+                :instance => inst,
+                :β => β,
+                :Layout => l,
+                :transform => t,
+                :energy => sol.energies[begin],
+                :probabilities => sol.probabilities,
+                :discarded_probability => sol.largest_discarded_probability,
+                #:statistic => minimum(values(ctr.statistics)),
+                :max_states => MAX_STATES,
+                :bond_dim => BOND_DIM,
+                :de => DE,
+                :max_sweeps => MAX_SWEEPS,
+                :var_tol => VAR_TOL,
+                :time => tic_toc,
+                :cRAM => cRAM
+            )
+        catch err
+            data = DataFrame(
+                :instance => inst,
+                :β => β,
+                :Layout => l,
+                :transform => t,
+                :max_states => MAX_STATES,
+                :bond_dim => BOND_DIM,
+                :de => DE,
+                :max_sweeps => MAX_SWEEPS,
+                :var_tol => VAR_TOL,
+                :error => err
+            )
+        end
+        println(data)
+        CSV.write(out_path, data, delim = ';', append = false)
+    end #if
 end
 
+all_params = collect(
+    Iterators.product(
+        readdir(INSTANCE_DIR, join=false), BETAS, TRANSFORM, LAYOUT)
+)
 
-instances = readdir(INSTANCE_DIR, join=false)
-K = length(instances)
-
-@time begin
-    println("Starting benchmarking on $K instances.")
-
-    for i ∈ (1+rank):size:K
-
-        println("Processing $i by rank $rank ...")
-        run_bench(instances[i])
-        GC.gc()
-    end
+for i ∈ (1+rank):size:length(all_params)
+    run_bench(all_params[i]...)
+    GC.gc()
 end

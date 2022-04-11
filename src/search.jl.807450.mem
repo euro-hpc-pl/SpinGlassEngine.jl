@@ -1,0 +1,204 @@
+        - export
+        -        SearchParameters,
+        -        merge_branches,
+        -        low_energy_spectrum
+        - 
+        - """
+        - $(TYPEDSIGNATURES)
+        - """
+        - struct SearchParameters
+        -     max_states::Int
+        -     cut_off_prob::Real
+        - 
+        -     function SearchParameters(max_states::Int=1, cut_off_prob::Real=0.0)
+        -         new(max_states, cut_off_prob)
+        -     end
+        - end
+        - 
+        - """
+        - $(TYPEDSIGNATURES)
+        - """
+        - struct Solution
+     4944     energies::Vector{<:Real}
+        -     states::Vector{Vector{Int}}
+        -     probabilities::Vector{<:Real}
+        -     degeneracy::Vector{Int}
+        -     largest_discarded_probability::Real
+        - end
+        - 
+        - """
+        - $(TYPEDSIGNATURES)
+        - """
+      304 empty_solution() = Solution([0.0], [Vector{Int}[]], [0.0], [1], -Inf)
+        - 
+        - """
+        - $(TYPEDSIGNATURES)
+        - """
+        - function Solution(
+        -     sol::Solution, idx::Vector{Int}, ldp::Real=sol.largest_discarded_probability
+        - )
+119193872     Solution(
+        -         sol.energies[idx],
+        -         sol.states[idx],
+        -         sol.probabilities[idx],
+        -         sol.degeneracy[idx],
+        -         ldp
+        -     )
+        - end
+        - 
+        - """
+        - $(TYPEDSIGNATURES)
+        - """
+        - function branch_energy(ctr::MpsContractor{T}, eσ::Tuple{<:Real, Vector{Int}}) where T
+   913184     eσ[begin] .+ update_energy(ctr, eσ[end])
+        - end
+        - 
+        - """
+        - $(TYPEDSIGNATURES)
+        - """
+4887943200 branch_state(local_basis::Vector{Int}, σ::Vector{Int}) = vcat.(Ref(σ), local_basis)
+        - 
+        - """
+        - $(TYPEDSIGNATURES)
+        - """
+        - function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T
+   913184     pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
+        - end
+        - 
+        - """
+        - $(TYPEDSIGNATURES)
+        - """
+        - function discard_probabilities!(psol::Solution, cut_off_prob::Real)
+     3072     pcut = maximum(psol.probabilities) + log(cut_off_prob)
+     1024     if minimum(psol.probabilities) >= pcut return psol end
+     1008     local_ldp = maximum(psol.probabilities[psol.probabilities .< pcut])
+     1008     ldp = max(local_ldp, psol.largest_discarded_probability)
+     7056     Solution(psol, findall(p -> p >= pcut, psol.probabilities), ldp)
+        - end
+        - 
+        - """
+        - $(TYPEDSIGNATURES)
+        - """
+        - function branch_solution(psol::Solution, ctr::T) where T <: AbstractContractor
+        0     num_states = cluster_size(ctr.peps, ctr.current_node)
+        0     boundaries = boundary_states(ctr, psol.states, ctr.current_node)
+     2048     local_basis = collect(1:num_states)
+  1363776     Solution(
+        -         vcat(branch_energy.(Ref(ctr), zip(psol.energies, psol.states))...),
+        -         vcat(branch_state.(Ref(local_basis), psol.states)...),
+        -         vcat(branch_probability.(Ref(ctr), zip(psol.probabilities, boundaries))...),
+        -         repeat(psol.degeneracy, inner=num_states),
+        -         psol.largest_discarded_probability
+        -     )
+        - end
+        - 
+        - """
+        - $(TYPEDSIGNATURES)
+        - """
+        - function merge_branches(ctr::MpsContractor{T}) where {T}
+        -     function _merge(psol::Solution)
+        0         node = get(ctr.nodes_search_order, length(psol.states[1])+1, ctr.node_outside)
+        0         boundaries = boundary_states(ctr, psol.states, node)
+        0         _, bnd_types = SpinGlassNetworks.unique_dims(boundaries, 1)
+        - 
+        0         sorting_idx = sortperm(bnd_types)
+        0         sorted_bnd_types = bnd_types[sorting_idx]
+        0         nsol = Solution(psol, Vector{Int}(sorting_idx)) #TODO Vector{Int} should be rm
+     1024         energies = typeof(nsol.energies[begin])[]
+     3072         states = typeof(nsol.states[begin])[]
+     1024         probs = typeof(nsol.probabilities[begin])[]
+     4096         degeneracy = typeof(nsol.degeneracy[begin])[]
+        - 
+        -         start = 1
+     1008         bsize = size(boundaries, 1)
+110485104         while start <= bsize
+        -             stop = start
+1132329328             while stop + 1 <= bsize && sorted_bnd_types[start] == sorted_bnd_types[stop+1]
+        0                 stop = stop + 1
+        -             end
+884187872             best_idx = argmin(@view nsol.energies[start:stop]) + start - 1
+        - 
+        -             #b = -ctr.betas[end] .* nsol.energies[start:stop] .- nsol.probabilities[start:stop] # this should be const
+        -             #c = Statistics.median(ctr.betas[end] .* nsol.energies[start:stop] .+ nsol.probabilities[start:stop])
+        -             #new_prob = -ctr.betas[end] .* nsol.energies[best_idx] .+ c ## base probs on all states with the same boundary
+        -             # using fit to log(prob) = - beta * eng + a0
+        - 
+        -             new_degeneracy = 0
+        0             for i in start:stop
+934581232                 if nsol.energies[i] <= nsol.energies[best_idx] + 1E-12 # this is hack for now
+        0                     new_degeneracy += nsol.degeneracy[i]
+        -                 end
+        -             end
+        - 
+110546960             push!(energies, nsol.energies[best_idx])
+        0             push!(states, nsol.states[best_idx])
+110546960             push!(probs, nsol.probabilities[best_idx])
+128421496             push!(degeneracy, new_degeneracy)
+        0             start = stop + 1
+        -         end
+     3072         Solution(energies, states, probs, degeneracy, psol.largest_discarded_probability)
+        -     end
+        -     _merge
+        - end
+        - 
+        - """
+        - $(TYPEDSIGNATURES)
+        - """
+        - no_merge(partial_sol::Solution) = partial_sol
+        - 
+        - """
+        - $(TYPEDSIGNATURES)
+        - """
+        - function bound_solution(
+        -     psol::Solution, max_states::Int, δprob::Real, merge_strategy=no_merge
+        - )
+        0     psol = discard_probabilities!(merge_strategy(psol), δprob)
+        0     if length(psol.probabilities) <= max_states return psol end
+     4240     idx = partialsortperm(psol.probabilities, 1:max_states + 1, rev=true)
+     2448     ldp = max(psol.largest_discarded_probability, psol.probabilities[idx[end]])
+   435872     Solution(psol, idx[1:max_states], ldp)
+        - end
+        - 
+        - """
+        - $(TYPEDSIGNATURES)
+        - """
+        - function low_energy_spectrum(
+        -     ctr::T, sparams::SearchParameters, merge_strategy=no_merge; no_cache=false
+        - ) where T <: AbstractContractor
+        -     # Build all boundary mps
+      512     @showprogress "Preprocesing: " for i ∈ ctr.peps.nrows:-1:1 dressed_mps(ctr, i) end
+        - 
+        -     # Start branch and bound search
+        0     sol = empty_solution()
+     9120     @showprogress "Search: " for node ∈ ctr.nodes_search_order
+        -         ctr.current_node = node
+        -         sol = branch_solution(sol, ctr)
+        -         sol = bound_solution(sol, sparams.max_states, sparams.cut_off_prob, merge_strategy)
+        -         # TODO: clear memoize cache partially
+        - 
+        -         #println("Cache size in Gb: ", Base.summarysize(Memoization.caches) * 1E-9)
+        -         if no_cache Memoization.empty_all_caches!() end
+        -     end
+        - 
+        -     # Translate variable order (network --> factor graph)
+       96     inner_perm = sortperm([
+        -         ctr.peps.factor_graph.reverse_label_map[idx]
+        -         for idx ∈ ctr.peps.vertex_map.(ctr.nodes_search_order)
+        -     ])
+        - 
+        -     # Sort using energies as keys
+        0     outer_perm = sortperm(sol.energies)
+      160     sol = Solution(
+        -         sol.energies[outer_perm],
+        -         [σ[inner_perm] for σ ∈ sol.states[outer_perm]],
+        -         sol.probabilities[outer_perm],
+        -         sol.degeneracy[outer_perm],
+        -         sol.largest_discarded_probability
+        -     )
+        - 
+        -     # Final check if states correspond energies
+      128     @assert sol.energies ≈ energy.(
+        -         Ref(ctr.peps.factor_graph), decode_state.(Ref(ctr.peps), sol.states)
+        -     )
+        0     sol
+        - end

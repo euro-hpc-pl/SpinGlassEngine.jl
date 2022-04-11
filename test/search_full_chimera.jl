@@ -53,7 +53,7 @@ function bench(instance::String)
                 end
                 =#
 
-                @allocated sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+                @allocated sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit))
                 #println("statistics ", maximum(values(ctr.statistics)))
                 println("prob ", sol.probabilities[begin])
                 println("largest discarded prob ", sol.largest_discarded_probability)

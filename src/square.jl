@@ -207,6 +207,7 @@ function conditional_probability(
 
     en = eng_local .+ eng_left .+ eng_up
     en_min = minimum(en)
+
     loc_exp = exp.(-β .* (en .- en_min))
 
     pr = projector(ctr.peps, (i, j), (i, j+1))

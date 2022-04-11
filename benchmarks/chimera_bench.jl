@@ -62,7 +62,6 @@ function chimera_sim(inst, trans, β, Layout)
 end
 
 function run_bench(inst::String, β::Real, t, l)
-
     hash_name = hash(string(inst, β, t, l))
     out_path = string(OUTPUT_DIR, "/", hash_name, ".csv")
 

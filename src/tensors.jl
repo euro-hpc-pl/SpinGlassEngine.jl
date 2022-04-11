@@ -26,7 +26,8 @@ function tensor(
     network::PEPSNetwork{T, Dense}, v::PEPSNode, β::Real, ::Val{:site}
 ) where T <: AbstractGeometry
     en = local_energy(network, Node(v))
-    loc_exp = exp.(-β .* (en .- minimum(en)))
+    en_min = minimum(en)
+    loc_exp = exp.(-β .* (en .- en_min))
     projs = projectors_site_tensor(network, Node(v))
     A = zeros(maximum.(projs))
     for (σ, lexp) ∈ enumerate(loc_exp)
@@ -43,7 +44,10 @@ function tensor(
     network::PEPSNetwork{T, Sparse}, v::PEPSNode, β::Real, ::Val{:sparse_site}
 ) where T <: AbstractGeometry
     en = local_energy(network, Node(v))
-    SparseSiteTensor(exp.(-β .* (en .- minimum(en))), projectors_site_tensor(network, Node(v)))
+    en_min = minimum(en)
+    SparseSiteTensor(
+        exp.(-β .* (en .- en_min)), projectors_site_tensor(network, Node(v))
+    )
 end
 
 """
@@ -129,7 +133,8 @@ function connecting_tensor(
     network::AbstractGibbsNetwork{Node, PEPSNode}, v::Node, w::Node, β::Real
 )
     en = interaction_energy(network, v, w)
-    exp.(-β .* (en .- minimum(en)))
+    en_min = minimum(en)
+    exp.(-β .* (en .- en_min))
 end
 
 """

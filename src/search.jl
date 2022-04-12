@@ -126,12 +126,12 @@ function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit) where 
             end
 
             if merge_type == :fit
-                c = Statistics.median(ctr.betas[end] .* nsol.energies[start:stop] .+ nsol.probabilities[start:stop])
-                new_prob = -ctr.betas[end] .* nsol.energies[best_idx] .+ c ## base probs on all states with the same boundary
+                c = Statistics.median(
+                    ctr.betas[end] .* nsol.energies[start:stop] .+ nsol.probabilities[start:stop]
+                )
+                new_prob = -ctr.betas[end] .* nsol.energies[best_idx] .+ c
                 push!(probs, new_prob)
-                # using fit to log(prob) = - beta * eng + a0
-            end
-            if merge_type == :nofit
+            else if merge_type == :nofit
                 push!(probs, nsol.probabilities[best_idx])
             end
 
@@ -178,9 +178,8 @@ function low_energy_spectrum(
         ctr.current_node = node
         sol = branch_solution(sol, ctr)
         sol = bound_solution(sol, sparams.max_states, sparams.cut_off_prob, merge_strategy)
-        # TODO: clear memoize cache partially
 
-        #println("Cache size in Gb: ", Base.summarysize(Memoization.caches) * 1E-9)
+        # TODO: clear memoize cache partially
         if no_cache Memoization.empty_all_caches!() end
     end
 

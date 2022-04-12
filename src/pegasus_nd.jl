@@ -85,17 +85,12 @@ function conditional_probability(
 ) where {T <: Pegasus_nd, S}
     indβ, β = length(ctr.betas), last(ctr.betas)
     i, j, k = ctr.current_node
-    
+
     L = left_env(ctr, i, ∂v[1:j-1], indβ)
     R = right_env(ctr, i, ∂v[(j+4):end], indβ)
     M = dressed_mps(ctr, i, indβ)[j]
 
-    L ./= maximum(abs.(L))
-    R ./= maximum(abs.(R))
-    M ./= maximum(abs.(M))
-
     @tensor LM[y, z] := L[x] * M[x, y, z]
-
 
     if k == 1
         eng_loc = [local_energy(ctr.peps, (i, j, k)) for k ∈ 1:2]

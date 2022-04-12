@@ -77,12 +77,12 @@ function bond_energy(net::AbstractGibbsNetwork{T, S}, u::Node, v::Node, σ::Int)
         pu, en, pv = get_prop.(
                         Ref(net.factor_graph), Ref(fg_u), Ref(fg_v), (:pl, :en, :pr)
                     )
-        energies = en[pu, pv[σ]]
+        @inbounds energies = en[pu, pv[σ]]
     elseif has_edge(net.factor_graph, fg_v, fg_u)
         pv, en, pu = get_prop.(
                         Ref(net.factor_graph), Ref(fg_v), Ref(fg_u), (:pl, :en, :pr)
                     )
-        energies = en[pv[σ], pu]
+        @inbounds energies = en[pv[σ], pu]
     else
         energies = zeros(cluster_size(net, u))
     end

@@ -212,7 +212,9 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function projectors_site_tensor(network::PEPSNetwork{T, S}, vertex::Node) where {T <: SquareStar, S}
+function projectors_site_tensor(
+    network::PEPSNetwork{T, S}, vertex::Node
+) where {T <: SquareStar, S}
     i, j = vertex
     nbrs = (
         ((i+1, j-1), (i, j-1), (i-1, j-1)),
@@ -313,7 +315,6 @@ function tensor(
         length(p_l), maximum(p_rt), maximum(p_lt),
         length(p_r), maximum(p_lb), maximum(p_rb)
     )
-
     for l ∈ 1:length(p_l), r ∈ 1:length(p_r)
         A[l, p_rt[r], p_lt[l], r, p_lb[l], p_rb[r]] = h[p_l[l], p_r[r]]
     end
@@ -349,7 +350,7 @@ $(TYPEDSIGNATURES)
 function tensor(
     network::PEPSNetwork{SquareStar{T}, Dense}, node::PEPSNode, ::Val{:virtual}
 ) where T <: AbstractTensorsLayout
-    i, s = v
+    i, s = node
     j = floor(Int, s)
 
     left_nbrs = ((i+1, j+1), (i, j+1), (i-1, j+1))

@@ -265,12 +265,6 @@ function tensor(
     A ./ maximum(A)
 end
 
-# function tensor(
-#     network::PEPSNetwork{Pegasus_nd, T}, node::PEPSNode, β::Real, ::Val{:sparse_pegasus_site}
-# ) where T <: AbstractSparsity
-#     ## TO BE ADDED
-# end
-
 """
 $(TYPEDSIGNATURES)
 """

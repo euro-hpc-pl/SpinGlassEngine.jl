@@ -126,12 +126,12 @@ function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit) where 
             end
 
             if merge_type == :fit
-                c = Statistics.median(ctr.betas[end] .* nsol.energies[start:stop] .+ nsol.probabilities[start:stop])
-                new_prob = -ctr.betas[end] .* nsol.energies[best_idx] .+ c ## base probs on all states with the same boundary
+                c = Statistics.median(
+                    ctr.betas[end] .* nsol.energies[start:stop] .+ nsol.probabilities[start:stop]
+                )
+                new_prob = -ctr.betas[end] .* nsol.energies[best_idx] .+ c
                 push!(probs, new_prob)
-                # using fit to log(prob) = - beta * eng + a0
-            end
-            if merge_type == :nofit
+            else if merge_type == :nofit
                 push!(probs, nsol.probabilities[best_idx])
             end
 

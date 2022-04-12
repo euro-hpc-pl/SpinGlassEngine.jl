@@ -1,4 +1,3 @@
-using MPI
 using LinearAlgebra
 using MKL
 using SpinGlassEngine
@@ -8,10 +7,7 @@ using Logging
 using CSV
 using DataFrames
 using Memoization
-
-MPI.Init()
-size = MPI.Comm_size(MPI.COMM_WORLD)
-rank = MPI.Comm_rank(MPI.COMM_WORLD)
+using Distributed
 
 #M, N, T = 8, 8, 8
 #INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/512power"
@@ -107,12 +103,10 @@ function run_bench(inst::String, β::Real, t, l)
     end #if
 end
 
-all_params = collect(
-    Iterators.product(
-        readdir(INSTANCE_DIR, join=false), BETAS, TRANSFORM, LAYOUT)
-)
+println("Processors $(procs()) available.")
 
-for i ∈ (1+rank):size:length(all_params)
-    run_bench(all_params[i]...)
-    GC.gc()
-end
+Distributed.pmap(
+    p->run_bench(p...),
+    Iterators.product(readdir(INSTANCE_DIR, join=false), BETAS, TRANSFORM, LAYOUT);
+    distributed=true
+)

@@ -31,7 +31,7 @@ function tensor(
     projs = projectors_site_tensor(network, Node(v))
     A = zeros(maximum.(projs))
     for (σ, lexp) ∈ enumerate(loc_exp)
-        A[getindex.(projs, Ref(σ))...] += lexp
+        @inbounds A[getindex.(projs, Ref(σ))...] += lexp
     end
     A
 end

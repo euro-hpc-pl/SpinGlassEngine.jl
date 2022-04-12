@@ -97,6 +97,7 @@ function conditional_probability(
         el = [interaction_energy(ctr.peps, (i, j, k), (i, j-1, 2)) for k ∈ 1:2]
         pl = [projector(ctr.peps, (i, j, k), (i, j-1, 2)) for k ∈ 1:2]
         eng_l = [@view el[k][pl[k][:], ∂v[j-1+k]] for k ∈ 1:2]
+
         eu = [interaction_energy(ctr.peps, (i, j, k), (i-1, j, 1)) for k ∈ 1:2]
         pu = [projector(ctr.peps, (i, j, k), (i-1, j, 1)) for k ∈ 1:2]
         eng_u = [@view eu[k][pu[k][:], ∂v[j+1+k]] for k ∈ 1:2]
@@ -113,10 +114,12 @@ function conditional_probability(
         ten = reshape(en[2], (:, 1)) .+ en21[p21[:], :]
         ten_min = minimum(ten)
         ten2 = exp.(-β .* (ten .- ten_min))
-        ten3 = zeros(maximum(pr), size(ten2, 2))  # maximum(pr), maximum(p12)
+        ten3 = zeros(maximum(pr), size(ten2, 2))
+
         for s2 ∈ 1:length(en[2])
             ten3[pr[s2], :] += ten2[s2, :]
         end
+
         RT = R * ten3
         bnd_exp = dropdims(sum(LM[pd[:], :] .* RT[:, p12[:]]', dims=2), dims=2)
         en_min = minimum(en[1])
@@ -144,7 +147,7 @@ function conditional_probability(
         lmx = @view LM[∂v[j+1], :]
 
         @tensor lmxR[y] := lmx[x] * R[x, y]
-        bnd_exp = lmxR[pr[:]]
+        @inbounds bnd_exp = lmxR[pr[:]]
     end
 
     probs = loc_exp .* bnd_exp
@@ -220,7 +223,7 @@ function tensor(
     p2 = projector(network, (i, j, 2), (i, j, 1))
 
     for s1 ∈ 1:length(en1), s2 ∈ 1:length(en2)
-        eloc[s2, s1] = en1[s1] + en2[s2] + en12[p1[s1], p2[s2]]
+        @inbounds eloc[s2, s1] = en1[s1] + en2[s2] + en12[p1[s1], p2[s2]]
     end
     eloc = eloc .- minimum(eloc)
     loc_exp = exp.(-β .* eloc)
@@ -258,9 +261,9 @@ function tensor(
 
     A = zeros(maximum.((pl, pu, pr, pd)))
     for s1 ∈ 1:length(en1), s2 ∈ 1:length(en2)
-        ll = reshape(le1l[p1l[s1], :], :, 1) .* reshape(le2l[p2l[s2], :], :, 1)
-        lu = reshape(le1u[p1u[s1], :], 1, :) .* reshape(le2u[p2u[s2], :], 1, :)
-        A[:, :, pr[s2], pd[s1]] += loc_exp[s2, s1] .* (ll .* lu)
+        @inbounds ll = reshape(le1l[p1l[s1], :], :, 1) .* reshape(le2l[p2l[s2], :], :, 1)
+        @inbounds lu = reshape(le1u[p1u[s1], :], 1, :) .* reshape(le2u[p2u[s2], :], 1, :)
+        @inbounds A[:, :, pr[s2], pd[s1]] += loc_exp[s2, s1] .* (ll .* lu)
     end
     A ./ maximum(A)
 end

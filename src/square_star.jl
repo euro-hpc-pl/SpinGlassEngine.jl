@@ -203,7 +203,7 @@ function conditional_probability(
         lmx = @view lmx2[∂v[2*j-1], p_rb[σ], :]
         m = @view M[:, pd[σ], :]
         r = @view R[:, pr[σ]]
-        loc_exp[σ] *= (lmx' * m * r)[]
+        @inbounds loc_exp[σ] *= (lmx' * m * r)[]
     end
     push!(ctr.statistics, ((i, j), ∂v) => error_measure(loc_exp))
     normalize_probability(loc_exp)
@@ -316,7 +316,7 @@ function tensor(
         length(p_r), maximum(p_lb), maximum(p_rb)
     )
     for l ∈ 1:length(p_l), r ∈ 1:length(p_r)
-        A[l, p_rt[r], p_lt[l], r, p_lb[l], p_rb[r]] = h[p_l[l], p_r[r]]
+        @inbounds A[l, p_rt[r], p_lt[l], r, p_lb[l], p_rb[r]] = h[p_l[l], p_r[r]]
     end
     @cast AA[l, (ũ, u), r, (d̃, d)] := A[l, ũ, u, r, d̃, d]
     AA

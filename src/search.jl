@@ -131,7 +131,7 @@ function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit) where 
                 )
                 new_prob = -ctr.betas[end] .* nsol.energies[best_idx] .+ c
                 push!(probs, new_prob)
-            else if merge_type == :nofit
+            elseif merge_type == :nofit
                 push!(probs, nsol.probabilities[best_idx])
             end
 

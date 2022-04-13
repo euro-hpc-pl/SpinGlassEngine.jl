@@ -172,21 +172,22 @@ function conditional_probability(
     L = left_env(ctr, i, ∂v[1:2*j-2], indβ)
     R = right_env(ctr, i, ∂v[(2*j+3):(2*ctr.peps.ncols+2)], indβ)
     ψ = dressed_mps(ctr, i, indβ)
+
     MX, M = ψ[j-1//2], ψ[j]
     @tensor LMX[y, z] := L[x] * MX[x, y, z]
 
     eng_local = local_energy(ctr.peps, (i, j))
     pl = projector(ctr.peps, (i, j), (i, j-1))
     eng_pl = interaction_energy(ctr.peps, (i, j), (i, j-1))
-    eng_left = @view eng_pl[pl[:], ∂v[2*j]]
+    eng_left = @inbounds @view eng_pl[pl[:], ∂v[2*j]]
 
     pu = projector(ctr.peps, (i, j), (i-1, j))
     eng_pu = interaction_energy(ctr.peps, (i, j), (i-1, j))
-    eng_up = @view eng_pu[pu[:], ∂v[2*j+2]]
+    eng_up = @inbounds @view eng_pu[pu[:], ∂v[2*j+2]]
 
     pd = projector(ctr.peps, (i, j), (i-1, j-1))
     eng_pd = interaction_energy(ctr.peps, (i, j), (i-1, j-1))
-    eng_diag = @view eng_pd[pd[:], ∂v[2*j+1]]
+    eng_diag = @inbounds @view eng_pd[pd[:], ∂v[2*j+1]]
 
     en = eng_local .+ eng_left .+ eng_diag .+ eng_up
     en_min = minimum(en)
@@ -200,9 +201,9 @@ function conditional_probability(
     @cast lmx2[b, c, d] := LMX[(b, c), d] (b ∈ 1:maximum(p_lb), c ∈ 1:maximum(p_rb))
 
     for σ ∈ 1:length(loc_exp)
-        lmx = @view lmx2[∂v[2*j-1], p_rb[σ], :]
-        m = @view M[:, pd[σ], :]
-        r = @view R[:, pr[σ]]
+        lmx = @inbounds @view lmx2[∂v[2*j-1], p_rb[σ], :]
+        m = @inbounds @view M[:, pd[σ], :]
+        r = @inbounds @view R[:, pr[σ]]
         @inbounds loc_exp[σ] *= (lmx' * m * r)[]
     end
     push!(ctr.statistics, ((i, j), ∂v) => error_measure(loc_exp))
@@ -310,8 +311,7 @@ function tensor(
     h = connecting_tensor(network, floor.(Int, v), ceil.(Int, v), β)
 
     A = zeros(
-        length(p_l), maximum(p_rt), maximum(p_lt),
-        length(p_r), maximum(p_lb), maximum(p_rb)
+        length(p_l), maximum(p_rt), maximum(p_lt), length(p_r), maximum(p_lb), maximum(p_rb)
     )
 
     for l ∈ 1:length(p_l), r ∈ 1:length(p_r)

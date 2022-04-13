@@ -29,7 +29,7 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-empty_solution() = Solution([0.0], [Vector{Int}[]], [0.0], [1], -Inf)
+@inline empty_solution() = Solution([0.0], [Vector{Int}[]], [0.0], [1], -Inf)
 
 """
 $(TYPEDSIGNATURES)

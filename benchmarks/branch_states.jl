@@ -20,6 +20,7 @@ function branch_states_v3(num_states::Int, states::Matrix{Int})
     lstate, nstates = size(states)
     local_basis = collect(1:num_states)
     ns = Array{Int}(undef, lstate+1, num_states, nstates)
+    # Does the broadcasting work?
     ns[1:lstate, :, :] .= reshape(states, lstate, 1, nstates)
     ns[lstate, :, :] .= reshape(local_basis, num_states, 1, 1)
     reshape(ns, lstate+1, nstates * num_states)

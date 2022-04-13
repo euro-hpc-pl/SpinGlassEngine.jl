@@ -1,11 +1,13 @@
 using BenchmarkTools
 
+# This is what we have in search.jl and it is SLOW
 @inline branch_state(local_basis::Vector{Int}, σ::Vector{Int}) = vcat.(Ref(σ), local_basis)
 function branch_states_v1(num_states::Int, states::Vector{Vector{Int}})
     local_basis = collect(1:num_states)
     vcat(branch_state.(Ref(local_basis), states)...)
 end
 
+# This is what we want to have in search.jl but it is also SLOW (python is FAST)
 function branch_states_v2(num_states::Int, states::Matrix{Int})
     lstate, nstates = size(states)
     L = num_states * nstates
@@ -16,6 +18,7 @@ function branch_states_v2(num_states::Int, states::Matrix{Int})
     new_states
 end
 
+# This is the same as in branch_states_v2 but array broadcasting is wrong.
 function branch_states_v3(num_states::Int, states::Matrix{Int})
     lstate, nstates = size(states)
     local_basis = collect(1:num_states)

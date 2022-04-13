@@ -63,7 +63,7 @@ function solve(ψ::AbstractMPS, keep::Int)
             L = left_env[:, j]
             for σ ∈ local_basis(d)
                 m = idx(σ)
-                LL[:, j, m] = L' * M[:, m, :]
+                 LL[:, j, m] = L' * M[:, m, :]
                 pdo[j, m] = dot(LL[:, j, m], LL[:, j, m])
                 config[:, j, m] = vcat(states[:, j]..., σ)
                 LL[:, j, m] = LL[:, j, m] / sqrt(pdo[j, m])

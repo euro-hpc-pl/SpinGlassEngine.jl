@@ -195,11 +195,11 @@ function conditional_probability(
 
     pl = projector(ctr.peps, (i, j), (i, j-1))
     eng_pl = interaction_energy(ctr.peps, (i, j), (i, j-1))
-    eng_left = @view eng_pl[pl[:], ∂v[j]]
+    eng_left = @inbounds @view eng_pl[pl[:], ∂v[j]]
 
     pu = projector(ctr.peps, (i, j), (i-1, j))
     eng_pu = interaction_energy(ctr.peps, (i, j), (i-1, j))
-    eng_up = @view eng_pu[pu[:], ∂v[j+1]]
+    eng_up = @inbounds @view eng_pu[pu[:], ∂v[j+1]]
 
     en = eng_local .+ eng_left .+ eng_up
     en_min = minimum(en)

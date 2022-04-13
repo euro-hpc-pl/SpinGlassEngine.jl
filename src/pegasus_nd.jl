@@ -1,5 +1,8 @@
 export Pegasus_nd
 
+"""
+$(TYPEDSIGNATURES)
+"""
 struct Pegasus_nd <: AbstractGeometry end
 
 """
@@ -117,7 +120,7 @@ function conditional_probability(
         ten3 = zeros(maximum(pr), size(ten2, 2))
 
         for s2 ∈ 1:length(en[2])
-            ten3[pr[s2], :] += ten2[s2, :]
+            @inbounds ten3[pr[s2], :] += ten2[s2, :]
         end
 
         RT = R * ten3
@@ -129,22 +132,22 @@ function conditional_probability(
 
         el = interaction_energy(ctr.peps, (i, j, 2), (i, j-1, 2))
         pl = projector(ctr.peps, (i, j, 2), (i, j-1, 2))
-        eng_l = @view el[pl[:], ∂v[j]]
+        eng_l = @inbounds @view el[pl[:], ∂v[j]]
 
         eu = interaction_energy(ctr.peps, (i, j, 2), (i-1, j, 1))
         pu = projector(ctr.peps, (i, j, 2), (i-1, j, 1))
-        eng_u = @view eu[pu[:], ∂v[j+3]]
+        eng_u = @inbounds @view eu[pu[:], ∂v[j+3]]
 
         e21 = interaction_energy(ctr.peps, (i, j, 2), (i, j, 1))
         p21 = projector(ctr.peps, (i, j, 2), (i, j, 1))
-        eng_21 = @view e21[p21[:], ∂v[j+2]]
+        eng_21 = @inbounds @view e21[p21[:], ∂v[j+2]]
 
         en = eng_loc .+ eng_l .+ eng_u .+ eng_21
         en_min = minimum(en)
         loc_exp = exp.(-β .* (en .- en_min))
 
         pr = projector(ctr.peps, (i, j, 2), ((i, j+1, 1), (i, j+1, 2)))
-        lmx = @view LM[∂v[j+1], :]
+        lmx = @inbounds @view LM[∂v[j+1], :]
 
         @tensor lmxR[y] := lmx[x] * R[x, y]
         @inbounds bnd_exp = lmxR[pr[:]]
@@ -218,6 +221,7 @@ function tensor(
     en1 = local_energy(network, (i, j, 1))
     en2 = local_energy(network, (i, j, 2))
     en12 = interaction_energy(network, (i, j, 1), (i, j, 2))
+
     eloc = zeros(length(en2), length(en1))
     p1 = projector(network, (i, j, 1), (i, j, 2))
     p2 = projector(network, (i, j, 2), (i, j, 1))
@@ -249,10 +253,10 @@ function tensor(
     e1l = interaction_energy(network, (i, j, 1), (i, j-1, 2))
     e2l = interaction_energy(network, (i, j, 2), (i, j-1, 2))
 
-    e1u = @view e1u[:, pu1]
-    e2u = @view e2u[:, pu2]
-    e1l = @view e1l[:, pl1]
-    e2l = @view e2l[:, pl2]
+    e1u = @inbounds @view e1u[:, pu1]
+    e2u = @inbounds @view e2u[:, pu2]
+    e1l = @inbounds @view e1l[:, pl1]
+    e2l = @inbounds @view e2l[:, pl2]
 
     le1u = exp.(-β .* (e1u .- minimum(e1u)))
     le2u = exp.(-β .* (e2u .- minimum(e2u)))

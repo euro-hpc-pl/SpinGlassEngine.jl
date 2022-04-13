@@ -165,7 +165,8 @@ Construct (and memoize) (bottom) MPS using SVD for a given row.
         ψ,
         ctr.params.bond_dimension,
         ctr.params.variational_tol,
-        ctr.params.max_num_sweeps
+        ctr.params.max_num_sweeps,
+        :n
     )
     ψ0
 end

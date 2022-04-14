@@ -1,4 +1,4 @@
-using BenchmarkTools
+
 
 # This is what we have in search.jl and it is SLOW
 @inline branch_state(local_basis::Vector{Int}, σ::Vector{Int}) = vcat.(Ref(σ), local_basis)

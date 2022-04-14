@@ -22,4 +22,4 @@ if __name__ == '__main__':
     tic = timeit.timeit()
     branch_states(st, num_states)
     toc = timeit.timeit()
-    print(tic - toc)
+    print(toc - tic)

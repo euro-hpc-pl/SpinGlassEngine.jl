@@ -31,7 +31,7 @@ function branch_states_v3(num_states::Int, states::Matrix{T}) where T <: Number
     reshape(ns, lstate+1, nstates * num_states)
 end
 
-T = Float64
+T = Int #Float64
 
 nstates = 1000
 lstate = 128

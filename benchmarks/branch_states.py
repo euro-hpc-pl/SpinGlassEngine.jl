@@ -14,7 +14,7 @@ def branch_states(states, num_states):
 if __name__ == '__main__':
 
     nstates = 1000
-    lstate = 128
+    lstate = 256
     num_states = 256
     
     st = np.ones((nstates, lstate), dtype=int)

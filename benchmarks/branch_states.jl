@@ -27,7 +27,7 @@ function branch_states_v3(num_states::Int, states::Matrix{T}) where T <: Number
     ns = Array{T}(undef, lstate+1, num_states, nstates)
     # Does the broadcasting work?
     ns[1:lstate, :, :] .= reshape(states, lstate, 1, nstates)
-    ns[lstate, :, :] .= reshape(local_basis, num_states, 1, 1)
+    ns[lstate+1, :, :] .= reshape(local_basis, num_states, 1, 1)
     reshape(ns, lstate+1, nstates * num_states)
 end
 
@@ -45,4 +45,4 @@ num_states = 256
 @time y = branch_states_v2(num_states, mat_states)
 @time z = branch_states_v3(num_states, mat_states)
 
-@assert x == [y[:, i] for i ∈ 1:size(y, 2)] # == [z[:, i] for i ∈ 1:size(z, 2)]
+@assert x == [y[:, i] for i ∈ 1:size(y, 2)]  == [z[:, i] for i ∈ 1:size(z, 2)]

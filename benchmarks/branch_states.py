@@ -1,4 +1,5 @@
 import numpy as np
+import time
 import timeit
 
 def branch_states(states, num_states):
@@ -7,8 +8,7 @@ def branch_states(states, num_states):
     ns[:, :, :l] = states.reshape(k, 1, l)
     p = np.arange(num_states, dtype=int)
     ns[:, :, l] = p.reshape(1, 1, num_states)
-    ns.reshape(k * num_states, l+1)
-    return ns
+    return ns.reshape(k * num_states, l+1)
 
 
 if __name__ == '__main__':
@@ -19,7 +19,11 @@ if __name__ == '__main__':
     
     st = np.ones((nstates, lstate), dtype=int)
 
-    tic = timeit.timeit()
+    tic = time.time()
     branch_states(st, num_states)
-    toc = timeit.timeit()
+    toc = time.time()
     print(toc - tic)
+
+    loop = 100
+    tt = timeit.timeit("branch_states(st, num_states)", globals=globals(), number=loop)
+    print(tt / loop)

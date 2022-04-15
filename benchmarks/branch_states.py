@@ -13,17 +13,12 @@ def branch_states(states, num_states):
 
 if __name__ == '__main__':
 
-    nstates = 1000
+    nstates = 10000
     lstate = 256
     num_states = 256
     
     st = np.ones((nstates, lstate), dtype=int)
 
-    tic = time.time()
-    branch_states(st, num_states)
-    toc = time.time()
-    print(toc - tic)
-
-    loop = 100
+    loop = 10
     tt = timeit.timeit("branch_states(st, num_states)", globals=globals(), number=loop)
     print(tt / loop)

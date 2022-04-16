@@ -514,6 +514,7 @@ function boundary_states(
     end
     @inbounds ret = [res[r, :] for r ∈ 1:size(res, 1)]
     ret
+    #collect(eachrow(res))
 end
 
 """

@@ -56,7 +56,15 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-branch_state(local_basis::Vector{Int}, σ::Vector{Int}) = vcat.(Ref(σ), local_basis)
+function branch_states(num_states::Int, vec_states::Vector{Vector{Int}})
+    states = reduce(hcat, vec_states)
+    lstate, nstates = size(states)
+    local_basis = collect(1:num_states)
+    ns = Array{Int}(undef, lstate+1, num_states, nstates)
+    ns[1:lstate, :, :] .= reshape(states, lstate, 1, nstates)
+    ns[lstate+1, :, :] .= reshape(local_basis, num_states, 1, 1)
+    collect(eachcol(reshape(ns, lstate+1, nstates * num_states)))
+end
 
 """
 $(TYPEDSIGNATURES)
@@ -85,7 +93,7 @@ function branch_solution(psol::Solution, ctr::T) where T <: AbstractContractor
     local_basis = collect(1:num_states)
     Solution(
         vcat(branch_energy.(Ref(ctr), zip(psol.energies, psol.states))...),
-        vcat(branch_state.(Ref(local_basis), psol.states)...),
+        branch_states(num_states, psol.states),
         vcat(branch_probability.(Ref(ctr), zip(psol.probabilities, boundaries))...),
         repeat(psol.degeneracy, inner=num_states),
         psol.largest_discarded_probability

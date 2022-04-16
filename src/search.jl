@@ -49,8 +49,15 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function  branch_energy(ctr::MpsContractor{T}, eσ::Tuple{<:Real, Vector{Int}}) where T
+@inline function branch_energy(ctr::MpsContractor{T}, eσ::Tuple{<:Real, Vector{Int}}) where T
     eσ[begin] .+ update_energy(ctr, eσ[end])
+end
+
+"""
+$(TYPEDSIGNATURES)
+"""
+@inline function branch_energies(ctr::MpsContractor{T}, psol::Solution) where T
+    reduce(vcat, branch_energy.(Ref(ctr), zip(psol.energies, psol.states)))
 end
 
 """
@@ -69,7 +76,7 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T
+@inline function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T
     pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
 end
 
@@ -91,7 +98,8 @@ function branch_solution(psol::Solution, ctr::T) where T <: AbstractContractor
     num_states = cluster_size(ctr.peps, ctr.current_node)
     boundaries = boundary_states(ctr, psol.states, ctr.current_node)
     Solution(
-        reduce(vcat, branch_energy.(Ref(ctr), zip(psol.energies, psol.states))),
+        #reduce(vcat, branch_energy.(Ref(ctr), zip(psol.energies, psol.states))),
+        branch_energies(ctr, psol),
         branch_states(num_states, psol.states),
         reduce(vcat, branch_probability.(Ref(ctr), zip(psol.probabilities, boundaries))),
         repeat(psol.degeneracy, inner=num_states),

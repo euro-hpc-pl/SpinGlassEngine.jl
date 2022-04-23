@@ -10,6 +10,8 @@ export
        clear_memoize_cache,
        mps_top,
        mps,
+       mps_top_approx,
+       mps_approx,
        update_gauges!,
        update_gauges_with_balancing!,
        boundary_states

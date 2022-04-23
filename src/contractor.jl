@@ -174,6 +174,45 @@ end
 """
 $(TYPEDSIGNATURES)
 
+Construct (and memoize) top MPS using SVD for a given row.
+"""
+@memoize Dict function mps_top_approx(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
+    if i < 1
+        W = mpo(ctr, ctr.layers.main, 1, indβ)
+        return IdentityQMps(local_dims(W, :up))
+    end
+
+    W = mpo(ctr, ctr.layers.main, i, indβ)
+    ψ = IdentityQMps(local_dims(W, :up))
+
+    ψ0 = dot(ψ, W)
+    truncate!(ψ0, :left, ctr.params.bond_dimension)
+    ψ0
+end
+
+"""
+$(TYPEDSIGNATURES)
+
+Construct (and memoize) (bottom) MPS using SVD for a given row.
+"""
+@memoize Dict function mps_approx(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
+    if i > ctr.peps.nrows
+        W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
+        return IdentityQMps(local_dims(W, :down))
+    end
+
+    W = mpo(ctr, ctr.layers.main, i, indβ)
+    ψ = IdentityQMps(local_dims(W, :down))
+
+    ψ0 = dot(W, ψ)
+    truncate!(ψ0, :left, ctr.params.bond_dimension)
+    ψ0
+end
+
+
+"""
+$(TYPEDSIGNATURES)
+
 Construct (and memoize) (bottom) top MPS using Annealing for a given row.
 """
 @memoize Dict function mps_top(ctr::MpsContractor{MPSAnnealing}, i::Int, indβ::Int)
@@ -563,3 +602,5 @@ function boundary_indices(
     j = boundary_indices(ctr, (k, l), states)
     (j .- 1) .* maximum(pv) .+ i
 end
+
+

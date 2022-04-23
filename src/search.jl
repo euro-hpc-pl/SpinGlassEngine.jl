@@ -126,9 +126,11 @@ function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit) where 
             best_idx = argmin(@view nsol.energies[start:stop]) + start - 1
 
             new_degeneracy = 0
+            ind_deg = []
             for i in start:stop
                 if nsol.energies[i] <= nsol.energies[best_idx] + 1E-12 # this is hack for now
                     new_degeneracy += nsol.degeneracy[i]
+                    push!(ind_deg, i)
                 end
             end
 
@@ -140,6 +142,8 @@ function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit) where 
                 push!(probs, new_prob)
             elseif merge_type == :nofit
                 push!(probs, nsol.probabilities[best_idx])
+            elseif merge_type == :python
+                push!(probs, Statistics.mean(nsol.probabilities[ind_deg]))
             end
 
             push!(energies, nsol.energies[best_idx])

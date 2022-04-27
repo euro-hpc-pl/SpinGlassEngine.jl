@@ -26,7 +26,7 @@ function bench(instance::String)
         spectrum=brute_force,
         cluster_assignment_rule=super_square_lattice((m, n, t))
     )
-    params = MpsParameters(bond_dim, 1E-8, 10)
+    params = MpsParameters(bond_dim, 1E-8, 10, 1E-16)
     search_params = SearchParameters(num_states, δp)
 
     energies = Vector{Float64}[]
@@ -53,7 +53,7 @@ function bench(instance::String)
                 end
                 =#
 
-                @allocated sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit))
+                @allocated sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit), true)
                 #println("statistics ", maximum(values(ctr.statistics)))
                 println("prob ", sol.probabilities[begin])
                 println("largest discarded prob ", sol.largest_discarded_probability)

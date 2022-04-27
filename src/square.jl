@@ -181,14 +181,14 @@ $(TYPEDSIGNATURES)
 Calculates conditional probability for a Square Layout.
 """
 function conditional_probability(
-    ::Type{T}, ctr::MpsContractor{S}, ∂v::Vector{Int},
+    ::Type{T}, ctr::MpsContractor{S}, ∂v::Vector{Int}, graduate_truncation::Bool=true
 ) where {T <: Square, S}
     indβ, β = length(ctr.betas), last(ctr.betas)
     i, j = ctr.current_node
 
     L = left_env(ctr, i, ∂v[1:j-1], indβ)
     R = right_env(ctr, i, ∂v[(j+2):(ctr.peps.ncols+1)], indβ)
-    M = dressed_mps(ctr, i, indβ)[j]
+    M = dressed_mps(ctr, i, indβ, graduate_truncation)[j]
 
     @tensor LM[y, z] := L[x] * M[x, y, z]
     eng_local = local_energy(ctr.peps, (i, j))

@@ -178,10 +178,10 @@ end
 $(TYPEDSIGNATURES)
 """
 function low_energy_spectrum(
-    ctr::T, sparams::SearchParameters, merge_strategy=no_merge; no_cache=false
+    ctr::T, sparams::SearchParameters, merge_strategy=no_merge, graduate_truncation::Bool=true; no_cache=false, 
 ) where T <: AbstractContractor
     # Build all boundary mps
-    @showprogress "Preprocesing: " for i ∈ ctr.peps.nrows:-1:1 dressed_mps(ctr, i) end
+    @showprogress "Preprocesing: " for i ∈ ctr.peps.nrows:-1:1 dressed_mps(ctr, i, graduate_truncation) end
 
     # Start branch and bound search
     sol = empty_solution()

@@ -132,7 +132,7 @@ Construct (and memoize) top MPS using SVD for a given row.
     W = mpo(ctr, ctr.layers.main, i, indβ)
 
     ψ0 = dot(ψ, W)
-    #truncate!(ψ0, :left, ctr.params.bond_dimension)
+    truncate!(ψ0, :left, ctr.params.bond_dimension)
     compress!(
         ψ0,
         W,
@@ -160,7 +160,7 @@ Construct (and memoize) (bottom) MPS using SVD for a given row.
     W = mpo(ctr, ctr.layers.main, i, indβ)
 
     ψ0 = dot(W, ψ)
-    #truncate!(ψ0, :left, ctr.params.bond_dimension)
+    truncate!(ψ0, :left, ctr.params.bond_dimension)
     compress!(
         ψ0,
         W,

@@ -195,14 +195,16 @@ Construct (and memoize) top MPS using SVD for a given row.
     W = mpo(ctr, ctr.layers.main, i, indβ)
 
     ψ0 = dot(ψ, W)
-    canonise!(ψ0, :left)
-
+    canonise!(ψ0, :right)
     if graduate_truncation
-        truncate!(ψ0, :left, Dcut * 4, tolS / 10)
+        canonise_truncate!(ψ0, :left, Dcut * 4, tolS / 10)
         compress!(ψ0, W, ψ, Dcut, tolV, 1, trans)
-        truncate!(ψ0, :right, Dcut * 2, tolS / 2)
+        canonise!(ψ0, :right)
+        canonise_truncate!(ψ0, :left, Dcut * 2, tolS / 2)
+        compress!(ψ0, W, ψ, Dcut, tolV, 1, trans)
+        canonise!(ψ0, :right)
     end
-    truncate!(ψ0, :left, Dcut, tolS)
+    canonise_truncate!(ψ0, :left, Dcut, tolS)
     compress!(ψ0, W, ψ, Dcut, tolV, max_sweeps, trans)
     ψ0
 end
@@ -229,14 +231,16 @@ Construct (and memoize) (bottom) MPS using SVD for a given row.
     W = mpo(ctr, ctr.layers.main, i, indβ)
 
     ψ0 = dot(W, ψ)
-    canonise!(ψ0, :left)
-
+    canonise!(ψ0, :right)
     if graduate_truncation
-        truncate!(ψ0, :left, Dcut * 4, tolS / 10)
+        canonise_truncate!(ψ0, :left, Dcut * 4, tolS / 10)
         compress!(ψ0, W, ψ, Dcut, tolV, 1, trans)
-        truncate!(ψ0, :right, Dcut * 2, tolS / 2)
+        canonise!(ψ0, :right)
+        canonise_truncate!(ψ0, :left, Dcut * 2, tolS / 2)
+        compress!(ψ0, W, ψ, Dcut, tolV, 1, trans)
+        canonise!(ψ0, :right)
     end
-    truncate!(ψ0, :left, Dcut, tolS)
+    canonise_truncate!(ψ0, :left, Dcut, tolS)
     compress!(ψ0, W, ψ, Dcut, tolV, max_sweeps, trans)
     ψ0
 end

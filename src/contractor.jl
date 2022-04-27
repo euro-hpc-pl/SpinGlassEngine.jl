@@ -117,12 +117,75 @@ Construct (and memoize) MPO for a given layers.
     QMpo(mpo)
 end
 
+# """
+# $(TYPEDSIGNATURES)
+
+# Construct (and memoize) top MPS using SVD for a given row.
+# """
+# @memoize Dict function mps_top(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
+#     if i < 1
+#         W = mpo(ctr, ctr.layers.main, 1, indβ)
+#         return IdentityQMps(local_dims(W, :up))
+#     end
+
+#     ψ = mps_top(ctr, i-1, indβ)
+#     W = mpo(ctr, ctr.layers.main, i, indβ)
+
+#     ψ0 = dot(ψ, W)
+#     truncate!(ψ0, :left, ctr.params.bond_dimension)
+#     compress!(
+#         ψ0,
+#         W,
+#         ψ,
+#         ctr.params.bond_dimension,
+#         ctr.params.variational_tol,
+#         ctr.params.max_num_sweeps,
+#         :c
+#     )
+#     ψ0
+# end
+
+# """
+# $(TYPEDSIGNATURES)
+
+# Construct (and memoize) (bottom) MPS using SVD for a given row.
+# """
+# @memoize Dict function mps(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
+#     if i > ctr.peps.nrows
+#         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
+#         return IdentityQMps(local_dims(W, :down))
+#     end
+
+#     ψ = mps(ctr, i+1, indβ)
+#     W = mpo(ctr, ctr.layers.main, i, indβ)
+
+#     ψ0 = dot(W, ψ)
+#     truncate!(ψ0, :left, ctr.params.bond_dimension)
+#     compress!(
+#         ψ0,
+#         W,
+#         ψ,
+#         ctr.params.bond_dimension,
+#         ctr.params.variational_tol,
+#         ctr.params.max_num_sweeps,
+#         :n
+#     )
+#     ψ0
+# end
+
 """
 $(TYPEDSIGNATURES)
 
 Construct (and memoize) top MPS using SVD for a given row.
 """
-@memoize Dict function mps_top(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
+@memoize Dict function mps_top(
+    ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int, tolS::Real=1E-16, graduate_truncation::Bool=true
+    )
+    Dcut = ctr.params.bond_dimension
+    tolV = ctr.params.variational_tol
+    max_sweeps = ctr.params.max_num_sweeps
+    trans = :c
+
     if i < 1
         W = mpo(ctr, ctr.layers.main, 1, indβ)
         return IdentityQMps(local_dims(W, :up))
@@ -132,16 +195,15 @@ Construct (and memoize) top MPS using SVD for a given row.
     W = mpo(ctr, ctr.layers.main, i, indβ)
 
     ψ0 = dot(ψ, W)
-    truncate!(ψ0, :left, ctr.params.bond_dimension)
-    compress!(
-        ψ0,
-        W,
-        ψ,
-        ctr.params.bond_dimension,
-        ctr.params.variational_tol,
-        ctr.params.max_num_sweeps,
-        :c
-    )
+    canonise!(ψ0, :left)
+
+    if graduate_truncation
+        truncate!(ψ0, :left, Dcut * 4, tolS / 10)
+        compress!(ψ0, W, ψ, Dcut, tolV, 1, trans)
+        truncate!(ψ0, :right, Dcut * 2, tolS / 2)
+    end
+    truncate!(ψ0, :left, Dcut, tolS)
+    compress!(ψ0, W, ψ, Dcut, tolV, max_sweeps, trans)
     ψ0
 end
 
@@ -150,7 +212,14 @@ $(TYPEDSIGNATURES)
 
 Construct (and memoize) (bottom) MPS using SVD for a given row.
 """
-@memoize Dict function mps(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
+@memoize Dict function mps(
+    ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int, tolS::Real=1E-16, graduate_truncation::Bool=true
+    )
+    Dcut = ctr.params.bond_dimension
+    tolV = ctr.params.variational_tol
+    max_sweeps = ctr.params.max_num_sweeps
+    trans = :n
+
     if i > ctr.peps.nrows
         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
         return IdentityQMps(local_dims(W, :down))
@@ -160,16 +229,15 @@ Construct (and memoize) (bottom) MPS using SVD for a given row.
     W = mpo(ctr, ctr.layers.main, i, indβ)
 
     ψ0 = dot(W, ψ)
-    truncate!(ψ0, :left, ctr.params.bond_dimension)
-    compress!(
-        ψ0,
-        W,
-        ψ,
-        ctr.params.bond_dimension,
-        ctr.params.variational_tol,
-        ctr.params.max_num_sweeps,
-        :n
-    )
+    canonise!(ψ0, :left)
+
+    if graduate_truncation
+        truncate!(ψ0, :left, Dcut * 4, tolS / 10)
+        compress!(ψ0, W, ψ, Dcut, tolV, 1, trans)
+        truncate!(ψ0, :right, Dcut * 2, tolS / 2)
+    end
+    truncate!(ψ0, :left, Dcut, tolS)
+    compress!(ψ0, W, ψ, Dcut, tolV, max_sweeps, trans)
     ψ0
 end
 

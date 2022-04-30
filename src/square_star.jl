@@ -169,8 +169,8 @@ function conditional_probability(
     indβ, β = length(ctr.betas), last(ctr.betas)
     i, j = ctr.current_node
 
-    L = left_env(ctr, i, ∂v[1:2*j-2], indβ)
-    R = right_env(ctr, i, ∂v[(2*j+3):(2*ctr.peps.ncols+2)], indβ)
+    L = left_env(ctr, i, ∂v[1:2*j-2], indβ, graduate_truncation)
+    R = right_env(ctr, i, ∂v[(2*j+3):(2*ctr.peps.ncols+2)], indβ, graduate_truncation)
     ψ = dressed_mps(ctr, i, indβ, graduate_truncation)
 
     MX, M = ψ[j-1//2], ψ[j]

@@ -69,8 +69,8 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T
-    pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
+function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}, graduate_truncation::Bool=true) where T
+    pσ[begin] .+ log.(conditional_probability(ctr, pσ[end], graduate_truncation))
 end
 
 """
@@ -87,13 +87,13 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function branch_solution(psol::Solution, ctr::T) where T <: AbstractContractor
+function branch_solution(psol::Solution, ctr::T, graduate_truncation::Bool=true) where T <: AbstractContractor
     num_states = cluster_size(ctr.peps, ctr.current_node)
     boundaries = boundary_states(ctr, psol.states, ctr.current_node)
     Solution(
         reduce(vcat, branch_energy.(Ref(ctr), zip(psol.energies, psol.states))),
         branch_states(num_states, psol.states),
-        reduce(vcat, branch_probability.(Ref(ctr), zip(psol.probabilities, boundaries))),
+        reduce(vcat, branch_probability.(Ref(ctr), zip(psol.probabilities, boundaries), graduate_truncation)),
         repeat(psol.degeneracy, inner=num_states),
         psol.largest_discarded_probability
     )
@@ -187,7 +187,7 @@ function low_energy_spectrum(
     sol = empty_solution()
     @showprogress "Search: " for node ∈ ctr.nodes_search_order
         ctr.current_node = node
-        sol = branch_solution(sol, ctr)
+        sol = branch_solution(sol, ctr, graduate_truncation)
         sol = bound_solution(sol, sparams.max_states, sparams.cut_off_prob, merge_strategy)
 
         # TODO: clear memoize cache partially

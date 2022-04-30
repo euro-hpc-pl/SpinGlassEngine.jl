@@ -198,7 +198,7 @@ Construct (and memoize) top MPS using SVD for a given row.
 
     ψ0 = dot(ψ, W)
     canonise!(ψ0, :right)
-    if graduate_truncation
+    if graduate_truncation == true
         canonise_truncate!(ψ0, :left, Dcut * 4, tolS / 10)
         compress!(ψ0, W, ψ, Dcut, tolV, 1, trans)
         canonise!(ψ0, :right)
@@ -235,7 +235,7 @@ Construct (and memoize) (bottom) MPS using SVD for a given row.
 
     ψ0 = dot(W, ψ)
     canonise!(ψ0, :right)
-    if graduate_truncation
+    if graduate_truncation == true
         canonise_truncate!(ψ0, :left, Dcut * 4, tolS / 10)
         compress!(ψ0, W, ψ, Dcut, tolV, 1, trans)
         canonise!(ψ0, :right)
@@ -368,6 +368,7 @@ Construct (and memoize) dressed MPS for a given row and strategy.
 @memoize Dict function dressed_mps(
     ctr::MpsContractor{T}, i::Int, indβ::Int, graduate_truncation::Bool=true
 ) where T <: AbstractStrategy
+
     ψ = mps(ctr, i+1, indβ, graduate_truncation)
     W = mpo(ctr, ctr.layers.dress, i, indβ)
     ϕ = W * ψ
@@ -390,7 +391,7 @@ Construct (and memoize) right environment for a given node.
     l = length(∂v)
     if l == 0 return ones(1, 1) end
 
-    R̃ = right_env(ctr, i, ∂v[2:l], indβ)
+    R̃ = right_env(ctr, i, ∂v[2:l], indβ, graduate_truncation)
     ϕ = dressed_mps(ctr, i, indβ, graduate_truncation)
     W = mpo(ctr, ctr.layers.right, i, indβ)
     k = length(ϕ.sites)
@@ -502,7 +503,7 @@ $(TYPEDSIGNATURES)
 ) where T
     l = length(∂v)
     if l == 0 return ones(1) end
-    L̃ = left_env(ctr, i, ∂v[1:l-1], indβ)
+    L̃ = left_env(ctr, i, ∂v[1:l-1], indβ, graduate_truncation)
     ϕ = dressed_mps(ctr, i, indβ, graduate_truncation)
     m = ∂v[l]
     site = ϕ.sites[l]
@@ -609,8 +610,8 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function conditional_probability(ctr::MpsContractor{S}, w::Vector{Int}) where S
-    conditional_probability(layout(ctr.peps), ctr, w)
+function conditional_probability(ctr::MpsContractor{S}, w::Vector{Int}, graduate_truncation::Bool=true) where S
+    conditional_probability(layout(ctr.peps), ctr, w, graduate_truncation)
 end
 
 """

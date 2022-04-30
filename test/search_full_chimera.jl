@@ -14,11 +14,11 @@ function bench(instance::String)
     #ground_energy = -1881.226667 # for chimera 1152
     #ground_energy = -846.960013 # for chimera 512
 
-    β = 2.0
+    β = 8.0
     bond_dim = 32
-    dE = 1
-    δp = 1E-5 * exp(-β * dE)
-    num_states = 1000
+    dE = 3.0
+    δp = exp(-β * dE)
+    num_states = 500
 
     @time fg = factor_graph(
         ising_graph(instance),
@@ -32,7 +32,7 @@ function bench(instance::String)
     energies = Vector{Float64}[]
     for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, )
         for Gauge ∈ (NoUpdate, ) #GaugeStrategy, GaugeStrategyWithBalancing
-            for Layout ∈ (EnergyGauges,), transform ∈ rotation.([0])
+            for Layout ∈ (GaugesEnergy,), transform ∈ all_lattice_transformations #rotation.([0]) 
                 net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
                 ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], params)
                 #ctr = MpsContractor{Strategy}(net, [β/6, β/3, β/2, β], params)
@@ -53,7 +53,7 @@ function bench(instance::String)
                 end
                 =#
 
-                @allocated sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit), true)
+                @allocated sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit), false)
                 #println("statistics ", maximum(values(ctr.statistics)))
                 println("prob ", sol.probabilities[begin])
                 println("largest discarded prob ", sol.largest_discarded_probability)
@@ -70,4 +70,4 @@ function bench(instance::String)
 end
 
 #bench("$(@__DIR__)/instances/chimera_droplets/2048power/001.txt")
-bench("$(@__DIR__)/instances/chimera_droplets/512power/007.txt")
+bench("$(@__DIR__)/instances/chimera_droplets/512power/059.txt")

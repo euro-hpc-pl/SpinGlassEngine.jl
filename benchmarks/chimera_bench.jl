@@ -25,7 +25,7 @@ BETAS = collect(2:2:14)
 LAYOUT = (EnergyGauges, GaugesEnergy, EngGaugesEng)
 TRANSFORM = all_lattice_transformations
 
-GAUGE = NoUpdate
+GAUGE = GaugeStrategy
 STRATEGY = SVDTruncate
 SPARSITY = Dense
 graduate_truncation = true
@@ -56,9 +56,11 @@ function chimera_sim(inst, trans, β, Layout)
 
     net = PEPSNetwork{Square{Layout}, SPARSITY}(M, N, fg, trans)
     ctr = MpsContractor{STRATEGY, GAUGE}(net, [β/6, β/3, β/2, β], params)
-    for j in INDβ
-        for i ∈ 1:M-1
-            update_gauges!(ctr, i, INDβ, graduate_truncation)
+    if GAUGE!= NoUpdate
+        for j in INDβ
+            for i ∈ 1:M-1
+                update_gauges!(ctr, i, INDβ, graduate_truncation)
+            end
         end
     end
     sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr), graduate_truncation)

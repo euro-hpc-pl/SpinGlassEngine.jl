@@ -558,6 +558,7 @@ function update_gauges!(
     ctr::MpsContractor{T, GaugeStrategy},
     row::Site,
     indβ::Int,
+    graduate_truncation::Bool=true,
     tol::Real=1E-4,
     max_sweeps::Int=10
 ) where T
@@ -589,7 +590,8 @@ $(TYPEDSIGNATURES)
 function update_gauges!(
     ctr::MpsContractor{T, GaugeStrategyWithBalancing},
     row::Site,
-    indβ::Int
+    indβ::Int,
+    graduate_truncation::Bool=true
     ) where T
     clm = ctr.layers.main
     ψ_top = mps_top(ctr, row, indβ, graduate_truncation)

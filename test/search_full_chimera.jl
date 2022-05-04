@@ -10,11 +10,12 @@ function bench(instance::String)
     L = n * m * t
     max_cl_states = 2^(t-0)
 
+    graduate_truncation = true
     #ground_energy = -3336.773383 # for chimera 2048
     #ground_energy = -1881.226667 # for chimera 1152
     #ground_energy = -846.960013 # for chimera 512
 
-    β = 8.0
+    β = 2.0
     bond_dim = 32
     dE = 3.0
     δp = exp(-β * dE)
@@ -31,19 +32,19 @@ function bench(instance::String)
 
     energies = Vector{Float64}[]
     for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, )
-        for Gauge ∈ (NoUpdate, ) #GaugeStrategy, GaugeStrategyWithBalancing
+        for Gauge ∈ (NoUpdate, GaugeStrategy, GaugeStrategyWithBalancing)
             for Layout ∈ (GaugesEnergy,), transform ∈ all_lattice_transformations #rotation.([0]) 
                 net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
                 ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], params)
                 #ctr = MpsContractor{Strategy}(net, [β/6, β/3, β/2, β], params)
-                indβ = [1, 2, 3]
+                indβ = [3,]
 
                 #=
                 if Gauge!= NoUpdate
                     for j in indβ
                         for i ∈ 1:m-1
-                            ψ_top = mps_top(ctr, i, j)
-                            ψ_bot = mps(ctr, i+1, j)
+                            ψ_top = mps_top(ctr, i, j, graduate_truncation)
+                            ψ_bot = mps(ctr, i+1, j, graduate_truncation)
                             overlap_old = ψ_top * ψ_bot
                             overlap_new = update_gauges!(ctr, i, j)
                             #println(overlap_old, "  ", overlap_new)
@@ -52,8 +53,13 @@ function bench(instance::String)
                     end
                 end
                 =#
+                if Gauge!= NoUpdate
+                    for i ∈ 1:m-1
+                        update_gauges!(ctr, i, 3, graduate_truncation)
+                    end
+                end
 
-                @allocated sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit), false)
+                @allocated sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit), graduate_truncation)
                 #println("statistics ", maximum(values(ctr.statistics)))
                 println("prob ", sol.probabilities[begin])
                 println("largest discarded prob ", sol.largest_discarded_probability)
@@ -66,8 +72,9 @@ function bench(instance::String)
             end
         end
     end
-    @test all(e -> e ≈ first(energies), energies)
+    #@test all(e -> e ≈ first(energies), energies)
 end
 
 #bench("$(@__DIR__)/instances/chimera_droplets/2048power/001.txt")
-bench("$(@__DIR__)/instances/chimera_droplets/512power/059.txt")
+bench("$(@__DIR__)/instances/chimera_droplets/512power/001.txt")
+#bench("$(@__DIR__)/instances/J124/C=16_J124/002.txt")

@@ -13,35 +13,37 @@ MPI.Init()
 size = MPI.Comm_size(MPI.COMM_WORLD)
 rank = MPI.Comm_rank(MPI.COMM_WORLD)
 
-#M, N, T = 8, 8, 8
-#INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/512power"
-#OUTPUT_DIR = "$(@__DIR__)/results/512power/tmp"
+M, N, T = 8, 8, 8
+INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/512power"
+OUTPUT_DIR = "$(@__DIR__)/results/512power/tmp"
 
-M, N, T = 12, 12, 8
-INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/1152power"
-OUTPUT_DIR = "$(@__DIR__)/results/1152power/tmp"
+#M, N, T = 12, 12, 8
+#INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/1152power"
+#OUTPUT_DIR = "$(@__DIR__)/results/1152power/tmp"
 
 BETAS = collect(2:2:14)
 LAYOUT = (EnergyGauges, GaugesEnergy, EngGaugesEng)
 TRANSFORM = all_lattice_transformations
 
-GAUGE = NoUpdate
+GAUGE = GaugeStrategy
 STRATEGY = SVDTruncate
 SPARSITY = Dense
+graduate_truncation = true
 
-MAX_STATES = 1000
+INDβ = [3,]
+MAX_STATES = 500
 BOND_DIM = 32
-DE = 1.0
+DE = 3.0
 
 MAX_SWEEPS = 10
 VAR_TOL = 1E-8
-
+TOL_SVD = 1E-16
 disable_logging(LogLevel(1))
 BLAS.set_num_threads(1)
 
 function chimera_sim(inst, trans, β, Layout)
     max_cl_states = 2 ^ T
-    δp = 1E-5 * exp(-β * DE)
+    δp = exp(-β * DE)
 
     fg = factor_graph(
         ising_graph(INSTANCE_DIR * "/" * inst),
@@ -49,12 +51,21 @@ function chimera_sim(inst, trans, β, Layout)
         spectrum=brute_force,
         cluster_assignment_rule=super_square_lattice((M, N, T))
     )
-    params = MpsParameters(BOND_DIM, VAR_TOL, MAX_SWEEPS)
+    params = MpsParameters(BOND_DIM, VAR_TOL, MAX_SWEEPS, TOL_SVD)
     search_params = SearchParameters(MAX_STATES, δp)
 
     net = PEPSNetwork{Square{Layout}, SPARSITY}(M, N, fg, trans)
     ctr = MpsContractor{STRATEGY, GAUGE}(net, [β/6, β/3, β/2, β], params)
-    sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+    
+    if GAUGE!= NoUpdate
+        #for j in INDβ
+        for i ∈ 1:M-1
+            update_gauges!(ctr, i, 3, graduate_truncation)
+        end
+        #end
+    end
+    
+    sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr), graduate_truncation)
 
     cRAM = round(Base.summarysize(Memoization.caches) * 1E-9; sigdigits=2)
     clear_memoize_cache()

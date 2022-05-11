@@ -10,6 +10,8 @@ export
        clear_memoize_cache,
        mps_top,
        mps,
+       mps_top_approx,
+       mps_approx,
        update_gauges!,
        update_gauges_with_balancing!,
        boundary_states
@@ -44,8 +46,9 @@ struct MpsParameters
     bond_dimension::Int
     variational_tol::Real
     max_num_sweeps::Int
+    tol_SVD::Real
 
-    MpsParameters(bd=typemax(Int), ϵ=1E-8, sw=4) = new(bd, ϵ, sw)
+    MpsParameters(bd=typemax(Int), ϵ=1E-8, sw=4, ts=1E-16) = new(bd, ϵ, sw, ts)
 end
 
 """
@@ -115,31 +118,96 @@ Construct (and memoize) MPO for a given layers.
     QMpo(mpo)
 end
 
+# """
+# $(TYPEDSIGNATURES)
+
+# Construct (and memoize) top MPS using SVD for a given row.
+# """
+# @memoize Dict function mps_top(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
+#     if i < 1
+#         W = mpo(ctr, ctr.layers.main, 1, indβ)
+#         return IdentityQMps(local_dims(W, :up))
+#     end
+
+#     ψ = mps_top(ctr, i-1, indβ)
+#     W = mpo(ctr, ctr.layers.main, i, indβ)
+
+#     ψ0 = dot(ψ, W)
+#     truncate!(ψ0, :left, ctr.params.bond_dimension)
+#     compress!(
+#         ψ0,
+#         W,
+#         ψ,
+#         ctr.params.bond_dimension,
+#         ctr.params.variational_tol,
+#         ctr.params.max_num_sweeps,
+#         :c
+#     )
+#     ψ0
+# end
+
+# """
+# $(TYPEDSIGNATURES)
+
+# Construct (and memoize) (bottom) MPS using SVD for a given row.
+# """
+# @memoize Dict function mps(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
+#     if i > ctr.peps.nrows
+#         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
+#         return IdentityQMps(local_dims(W, :down))
+#     end
+
+#     ψ = mps(ctr, i+1, indβ)
+#     W = mpo(ctr, ctr.layers.main, i, indβ)
+
+#     ψ0 = dot(W, ψ)
+#     truncate!(ψ0, :left, ctr.params.bond_dimension)
+#     compress!(
+#         ψ0,
+#         W,
+#         ψ,
+#         ctr.params.bond_dimension,
+#         ctr.params.variational_tol,
+#         ctr.params.max_num_sweeps,
+#         :n
+#     )
+#     ψ0
+# end
+
 """
 $(TYPEDSIGNATURES)
 
 Construct (and memoize) top MPS using SVD for a given row.
 """
-@memoize Dict function mps_top(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
+@memoize Dict function mps_top(
+    ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int, graduate_truncation::Bool=true
+    )
+    Dcut = ctr.params.bond_dimension
+    tolV = ctr.params.variational_tol
+    tolS = ctr.params.tol_SVD
+    max_sweeps = ctr.params.max_num_sweeps
+    trans = :c
+
     if i < 1
         W = mpo(ctr, ctr.layers.main, 1, indβ)
         return IdentityQMps(local_dims(W, :up))
     end
 
-    ψ = mps_top(ctr, i-1, indβ)
+    ψ = mps_top(ctr, i-1, indβ, graduate_truncation)
     W = mpo(ctr, ctr.layers.main, i, indβ)
 
     ψ0 = dot(ψ, W)
-    truncate!(ψ0, :left, ctr.params.bond_dimension)
-    compress!(
-        ψ0,
-        W,
-        ψ,
-        ctr.params.bond_dimension,
-        ctr.params.variational_tol,
-        ctr.params.max_num_sweeps,
-        :c
-    )
+    canonise!(ψ0, :right)
+    if graduate_truncation == true
+        canonise_truncate!(ψ0, :left, Dcut * 4, tolS / 10)
+        compress!(ψ0, W, ψ, Dcut, tolV, 1, trans)
+        canonise!(ψ0, :right)
+        canonise_truncate!(ψ0, :left, Dcut * 2, tolS / 2)
+        compress!(ψ0, W, ψ, Dcut, tolV, 1, trans)
+        canonise!(ψ0, :right)
+    end
+    canonise_truncate!(ψ0, :left, Dcut, tolS)
+    compress!(ψ0, W, ψ, Dcut, tolV, max_sweeps, trans)
     ψ0
 end
 
@@ -148,28 +216,76 @@ $(TYPEDSIGNATURES)
 
 Construct (and memoize) (bottom) MPS using SVD for a given row.
 """
-@memoize Dict function mps(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
+@memoize Dict function mps(
+    ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int, graduate_truncation::Bool=true
+    )
+    Dcut = ctr.params.bond_dimension
+    tolV = ctr.params.variational_tol
+    tolS = ctr.params.tol_SVD
+    max_sweeps = ctr.params.max_num_sweeps
+    trans = :n
+
     if i > ctr.peps.nrows
         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
         return IdentityQMps(local_dims(W, :down))
     end
 
-    ψ = mps(ctr, i+1, indβ)
+    ψ = mps(ctr, i+1, indβ, graduate_truncation)
     W = mpo(ctr, ctr.layers.main, i, indβ)
 
     ψ0 = dot(W, ψ)
-    truncate!(ψ0, :left, ctr.params.bond_dimension)
-    compress!(
-        ψ0,
-        W,
-        ψ,
-        ctr.params.bond_dimension,
-        ctr.params.variational_tol,
-        ctr.params.max_num_sweeps,
-        :n
-    )
+    canonise!(ψ0, :right)
+    if graduate_truncation == true
+        canonise_truncate!(ψ0, :left, Dcut * 4, tolS / 10)
+        compress!(ψ0, W, ψ, Dcut, tolV, 1, trans)
+        canonise!(ψ0, :right)
+        canonise_truncate!(ψ0, :left, Dcut * 2, tolS / 2)
+        compress!(ψ0, W, ψ, Dcut, tolV, 1, trans)
+        canonise!(ψ0, :right)
+    end
+    canonise_truncate!(ψ0, :left, Dcut, tolS)
+    compress!(ψ0, W, ψ, Dcut, tolV, max_sweeps, trans)
     ψ0
 end
+
+"""
+$(TYPEDSIGNATURES)
+
+Construct (and memoize) top MPS using SVD for a given row.
+"""
+@memoize Dict function mps_top_approx(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
+    if i < 1
+        W = mpo(ctr, ctr.layers.main, 1, indβ)
+        return IdentityQMps(local_dims(W, :up))
+    end
+
+    W = mpo(ctr, ctr.layers.main, i, indβ)
+    ψ = IdentityQMps(local_dims(W, :up))
+
+    ψ0 = dot(ψ, W)
+    truncate!(ψ0, :left, ctr.params.bond_dimension)
+    ψ0
+end
+
+"""
+$(TYPEDSIGNATURES)
+
+Construct (and memoize) (bottom) MPS using SVD for a given row.
+"""
+@memoize Dict function mps_approx(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
+    if i > ctr.peps.nrows
+        W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
+        return IdentityQMps(local_dims(W, :down))
+    end
+
+    W = mpo(ctr, ctr.layers.main, i, indβ)
+    ψ = IdentityQMps(local_dims(W, :down))
+
+    ψ0 = dot(W, ψ)
+    truncate!(ψ0, :left, ctr.params.bond_dimension)
+    ψ0
+end
+
 
 """
 $(TYPEDSIGNATURES)
@@ -240,8 +356,8 @@ $(TYPEDSIGNATURES)
 
 Construct dressed MPS for a given row and strategy.
 """
-function dressed_mps(ctr::MpsContractor{T}, i::Int) where T <: AbstractStrategy
-    dressed_mps(ctr, i, length(ctr.betas))
+function dressed_mps(ctr::MpsContractor{T}, i::Int, graduate_truncation::Bool=true) where T <: AbstractStrategy
+    dressed_mps(ctr, i, length(ctr.betas), graduate_truncation)
 end
 
 """
@@ -250,9 +366,10 @@ $(TYPEDSIGNATURES)
 Construct (and memoize) dressed MPS for a given row and strategy.
 """
 @memoize Dict function dressed_mps(
-    ctr::MpsContractor{T}, i::Int, indβ::Int
+    ctr::MpsContractor{T}, i::Int, indβ::Int, graduate_truncation::Bool=true
 ) where T <: AbstractStrategy
-    ψ = mps(ctr, i+1, indβ)
+
+    ψ = mps(ctr, i+1, indβ, graduate_truncation)
     W = mpo(ctr, ctr.layers.dress, i, indβ)
     ϕ = W * ψ
 
@@ -269,13 +386,13 @@ $(TYPEDSIGNATURES)
 Construct (and memoize) right environment for a given node.
 """
 @memoize Dict function right_env(
-    ctr::MpsContractor{T}, i::Int, ∂v::Vector{Int}, indβ::Int
+    ctr::MpsContractor{T}, i::Int, ∂v::Vector{Int}, indβ::Int, graduate_truncation::Bool=true
 ) where T <: AbstractStrategy
     l = length(∂v)
     if l == 0 return ones(1, 1) end
 
-    R̃ = right_env(ctr, i, ∂v[2:l], indβ)
-    ϕ = dressed_mps(ctr, i, indβ)
+    R̃ = right_env(ctr, i, ∂v[2:l], indβ, graduate_truncation)
+    ϕ = dressed_mps(ctr, i, indβ, graduate_truncation)
     W = mpo(ctr, ctr.layers.right, i, indβ)
     k = length(ϕ.sites)
     site = ϕ.sites[k-l+1]
@@ -382,12 +499,12 @@ end
 $(TYPEDSIGNATURES)
 """
 @memoize Dict function left_env(
-    ctr::MpsContractor{T}, i::Int, ∂v::Vector{Int}, indβ::Int
+    ctr::MpsContractor{T}, i::Int, ∂v::Vector{Int}, indβ::Int, graduate_truncation::Bool=true
 ) where T
     l = length(∂v)
     if l == 0 return ones(1) end
-    L̃ = left_env(ctr, i, ∂v[1:l-1], indβ)
-    ϕ = dressed_mps(ctr, i, indβ)
+    L̃ = left_env(ctr, i, ∂v[1:l-1], indβ, graduate_truncation)
+    ϕ = dressed_mps(ctr, i, indβ, graduate_truncation)
     m = ∂v[l]
     site = ϕ.sites[l]
     M = ϕ[site]
@@ -441,12 +558,13 @@ function update_gauges!(
     ctr::MpsContractor{T, GaugeStrategy},
     row::Site,
     indβ::Int,
+    graduate_truncation::Bool=true,
     tol::Real=1E-4,
     max_sweeps::Int=10
 ) where T
     clm = ctr.layers.main
-    ψ_top = mps_top(ctr, row, indβ)
-    ψ_bot = mps(ctr, row + 1, indβ)
+    ψ_top = mps_top(ctr, row, indβ, graduate_truncation)
+    ψ_bot = mps(ctr, row + 1, indβ, graduate_truncation)
 
     ψ_top = deepcopy(ψ_top)
     ψ_bot = deepcopy(ψ_bot)
@@ -472,11 +590,12 @@ $(TYPEDSIGNATURES)
 function update_gauges!(
     ctr::MpsContractor{T, GaugeStrategyWithBalancing},
     row::Site,
-    indβ::Int
+    indβ::Int,
+    graduate_truncation::Bool=true
     ) where T
     clm = ctr.layers.main
-    ψ_top = mps_top(ctr, row, indβ)
-    ψ_bot = mps(ctr, row + 1, indβ)
+    ψ_top = mps_top(ctr, row, indβ, graduate_truncation)
+    ψ_bot = mps(ctr, row + 1, indβ, graduate_truncation)
     ψ_top = deepcopy(ψ_top)
     ψ_bot = deepcopy(ψ_bot)
     for i ∈ ψ_top.sites
@@ -493,8 +612,8 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function conditional_probability(ctr::MpsContractor{S}, w::Vector{Int}) where S
-    conditional_probability(layout(ctr.peps), ctr, w)
+function conditional_probability(ctr::MpsContractor{S}, w::Vector{Int}, graduate_truncation::Bool=true) where S
+    conditional_probability(layout(ctr.peps), ctr, w, graduate_truncation)
 end
 
 """
@@ -563,3 +682,5 @@ function boundary_indices(
     j = boundary_indices(ctr, (k, l), states)
     (j .- 1) .* maximum(pv) .+ i
 end
+
+

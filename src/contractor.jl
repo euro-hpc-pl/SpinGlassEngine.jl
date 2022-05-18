@@ -198,16 +198,14 @@ Construct (and memoize) top MPS using SVD for a given row.
 
     ψ0 = dot(ψ, W)
     canonise!(ψ0, :right)
-    if graduate_truncation == true
+    if graduate_truncation
         canonise_truncate!(ψ0, :left, Dcut * 4, tolS / 10)
-        compress!(ψ0, W, ψ, Dcut, tolV, 1, trans)
-        canonise!(ψ0, :right)
+        variational_sweep!(ψ0, W, ψ, :right)
         canonise_truncate!(ψ0, :left, Dcut * 2, tolS / 2)
-        compress!(ψ0, W, ψ, Dcut, tolV, 1, trans)
-        canonise!(ψ0, :right)
+        variational_sweep!(ψ0, W, ψ, :right)
     end
     canonise_truncate!(ψ0, :left, Dcut, tolS)
-    compress!(ψ0, W, ψ, Dcut, tolV, max_sweeps, trans)
+    compress!(ψ0, W, ψ, max_sweeps, trans)
     ψ0
 end
 
@@ -235,16 +233,14 @@ Construct (and memoize) (bottom) MPS using SVD for a given row.
 
     ψ0 = dot(W, ψ)
     canonise!(ψ0, :right)
-    if graduate_truncation == true
+    if graduate_truncation
         canonise_truncate!(ψ0, :left, Dcut * 4, tolS / 10)
-        compress!(ψ0, W, ψ, Dcut, tolV, 1, trans)
-        canonise!(ψ0, :right)
+        variational_sweep!(ψ0, W, ψ, trans, :right)
         canonise_truncate!(ψ0, :left, Dcut * 2, tolS / 2)
-        compress!(ψ0, W, ψ, Dcut, tolV, 1, trans)
-        canonise!(ψ0, :right)
+        variational_sweep!(ψ0, W, ψ, trans, :right)
     end
     canonise_truncate!(ψ0, :left, Dcut, tolS)
-    compress!(ψ0, W, ψ, Dcut, tolV, max_sweeps, trans)
+    compress!(ψ0, W, ψ, max_sweeps, trans)
     ψ0
 end
 
@@ -311,8 +307,6 @@ Construct (and memoize) (bottom) top MPS using Annealing for a given row.
         ψ0,
         W,
         ψ,
-        ctr.params.bond_dimension,
-        ctr.params.variational_tol,
         ctr.params.max_num_sweeps,
         :c
     )
@@ -344,8 +338,6 @@ Construct (and memoize) (bottom) MPS using Annealing for a given row.
         ψ0,
         W,
         ψ,
-        ctr.params.bond_dimension,
-        ctr.params.variational_tol,
         ctr.params.max_num_sweeps
     )
     ψ0

@@ -76,8 +76,8 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}, graduate_truncation::Bool=true) where T
-    pσ[begin] .+ log.(conditional_probability(ctr, pσ[end], graduate_truncation))
+function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T
+    pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
 end
 
 """
@@ -94,14 +94,14 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function branch_solution(psol::Solution, ctr::T, graduate_truncation::Bool=true) where T <: AbstractContractor
+function branch_solution(psol::Solution, ctr::T) where T <: AbstractContractor
     num_states = cluster_size(ctr.peps, ctr.current_node)
     boundaries = boundary_states(ctr, psol.states, ctr.current_node)
     Solution(
         #reduce(vcat, branch_energy.(Ref(ctr), zip(psol.energies, psol.states))),
         branch_energies(ctr, psol),
         branch_states(num_states, psol.states),
-        reduce(vcat, branch_probability.(Ref(ctr), zip(psol.probabilities, boundaries), graduate_truncation)),
+        reduce(vcat, branch_probability.(Ref(ctr), zip(psol.probabilities, boundaries))),
         repeat(psol.degeneracy, inner=num_states),
         psol.largest_discarded_probability
     )
@@ -186,16 +186,16 @@ end
 $(TYPEDSIGNATURES)
 """
 function low_energy_spectrum(
-    ctr::T, sparams::SearchParameters, merge_strategy=no_merge, graduate_truncation::Bool=true; no_cache=false,
+    ctr::T, sparams::SearchParameters, merge_strategy=no_merge; no_cache=false,
 ) where T <: AbstractContractor
     # Build all boundary mps
-    @showprogress "Preprocesing: " for i ∈ ctr.peps.nrows:-1:1 dressed_mps(ctr, i, graduate_truncation) end
+    @showprogress "Preprocesing: " for i ∈ ctr.peps.nrows:-1:1 dressed_mps(ctr, i) end
 
     # Start branch and bound search
     sol = empty_solution()
     @showprogress "Search: " for node ∈ ctr.nodes_search_order
         ctr.current_node = node
-        sol = branch_solution(sol, ctr, graduate_truncation)
+        sol = branch_solution(sol, ctr)
         sol = bound_solution(sol, sparams.max_states, sparams.cut_off_prob, merge_strategy)
 
         # TODO: clear memoize cache partially

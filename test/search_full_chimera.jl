@@ -35,7 +35,7 @@ function bench(instance::String)
         for Gauge ∈ (NoUpdate, GaugeStrategy, GaugeStrategyWithBalancing)
             for Layout ∈ (GaugesEnergy,), transform ∈ all_lattice_transformations #rotation.([0]) 
                 net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
-                ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], params)
+                ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], graduate_truncation, params)
                 #ctr = MpsContractor{Strategy}(net, [β/6, β/3, β/2, β], params)
                 indβ = [3,]
 
@@ -43,8 +43,8 @@ function bench(instance::String)
                 if Gauge!= NoUpdate
                     for j in indβ
                         for i ∈ 1:m-1
-                            ψ_top = mps_top(ctr, i, j, graduate_truncation)
-                            ψ_bot = mps(ctr, i+1, j, graduate_truncation)
+                            ψ_top = mps_top(ctr, i, j)
+                            ψ_bot = mps(ctr, i+1, j)
                             overlap_old = ψ_top * ψ_bot
                             overlap_new = update_gauges!(ctr, i, j)
                             #println(overlap_old, "  ", overlap_new)
@@ -55,11 +55,11 @@ function bench(instance::String)
                 =#
                 if Gauge!= NoUpdate
                     for i ∈ 1:m-1
-                        update_gauges!(ctr, i, 3, graduate_truncation)
+                        update_gauges!(ctr, i, 3)
                     end
                 end
 
-                @allocated sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit), graduate_truncation)
+                @allocated sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit))
                 #println("statistics ", maximum(values(ctr.statistics)))
                 println("prob ", sol.probabilities[begin])
                 println("largest discarded prob ", sol.largest_discarded_probability)

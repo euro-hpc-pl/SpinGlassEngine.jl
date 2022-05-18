@@ -59,17 +59,17 @@ function chimera_sim(inst, trans, β, Layout)
     search_params = SearchParameters(MAX_STATES, δp)
 
     net = PEPSNetwork{Square{Layout}, SPARSITY}(M, N, fg, trans)
-    ctr = MpsContractor{STRATEGY, GAUGE}(net, [β/6, β/3, β/2, β], params)
+    ctr = MpsContractor{STRATEGY, GAUGE}(net, [β/6, β/3, β/2, β], graduate_truncation, params)
     
     if GAUGE!= NoUpdate
         #for j in INDβ
         for i ∈ 1:M-1
-            update_gauges!(ctr, i, INDβ, graduate_truncation)
+            update_gauges!(ctr, i, INDβ)
         end
         #end
     end
     
-    sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr), graduate_truncation)
+    sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 
     cRAM = round(Base.summarysize(Memoization.caches) * 1E-9; sigdigits=2)
     clear_memoize_cache()

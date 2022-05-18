@@ -84,14 +84,14 @@ end
 $(TYPEDSIGNATURES)
 """
 function conditional_probability(
-    ::Type{T}, ctr::MpsContractor{S}, ∂v::Vector{Int}, graduate_truncation::Bool=true
+    ::Type{T}, ctr::MpsContractor{S}, ∂v::Vector{Int}
 ) where {T <: Pegasus_nd, S}
     indβ, β = length(ctr.betas), last(ctr.betas)
     i, j, k = ctr.current_node
     
-    L = left_env(ctr, i, ∂v[1:j-1], indβ, graduate_truncation)
-    R = right_env(ctr, i, ∂v[(j+4):end], indβ, graduate_truncation)
-    M = dressed_mps(ctr, i, indβ, graduate_truncation)[j]
+    L = left_env(ctr, i, ∂v[1:j-1], indβ)
+    R = right_env(ctr, i, ∂v[(j+4):end], indβ)
+    M = dressed_mps(ctr, i, indβ)[j]
 
     @tensor LM[y, z] := L[x] * M[x, y, z]
 

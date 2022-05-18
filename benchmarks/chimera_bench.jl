@@ -59,7 +59,7 @@ function chimera_sim(inst, trans, β, Layout)
     search_params = SearchParameters(MAX_STATES, δp)
 
     net = PEPSNetwork{Square{Layout}, SPARSITY}(M, N, fg, trans)
-    ctr = MpsContractor{STRATEGY, GAUGE}(net, [β/6, β, β/2, β], params)
+    ctr = MpsContractor{STRATEGY, GAUGE}(net, [β/6, β/3, β/2, β], params)
     
     if GAUGE!= NoUpdate
         #for j in INDβ

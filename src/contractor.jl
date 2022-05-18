@@ -179,7 +179,8 @@ $(TYPEDSIGNATURES)
 
 Construct (and memoize) top MPS using SVD for a given row.
 """
-@memoize Dict function mps_top(
+# @memoize Dict 
+function mps_top(
     ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int, graduate_truncation::Bool=true
     )
     Dcut = ctr.params.bond_dimension
@@ -214,7 +215,8 @@ $(TYPEDSIGNATURES)
 
 Construct (and memoize) (bottom) MPS using SVD for a given row.
 """
-@memoize Dict function mps(
+# @memoize Dict 
+function mps(
     ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int, graduate_truncation::Bool=true
     )
     Dcut = ctr.params.bond_dimension

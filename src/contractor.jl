@@ -200,12 +200,12 @@ Construct (and memoize) top MPS using SVD for a given row.
     canonise!(ψ0, :right)
     if graduate_truncation
         canonise_truncate!(ψ0, :left, Dcut * 4, tolS / 10)
-        variational_sweep!(ψ0, W, ψ, :right)
+        variational_sweep!(ψ0, W, ψ, Val(:right), trans)
         canonise_truncate!(ψ0, :left, Dcut * 2, tolS / 2)
-        variational_sweep!(ψ0, W, ψ, :right)
+        variational_sweep!(ψ0, W, ψ, Val(:right), trans)
     end
     canonise_truncate!(ψ0, :left, Dcut, tolS)
-    compress!(ψ0, W, ψ, max_sweeps, trans)
+    variational_compress!(ψ0, W, ψ, tolV, max_sweeps, trans)
     ψ0
 end
 
@@ -235,12 +235,12 @@ Construct (and memoize) (bottom) MPS using SVD for a given row.
     canonise!(ψ0, :right)
     if graduate_truncation
         canonise_truncate!(ψ0, :left, Dcut * 4, tolS / 10)
-        variational_sweep!(ψ0, W, ψ, trans, :right)
+        variational_sweep!(ψ0, W, ψ, Val(:right), trans)
         canonise_truncate!(ψ0, :left, Dcut * 2, tolS / 2)
-        variational_sweep!(ψ0, W, ψ, trans, :right)
+        variational_sweep!(ψ0, W, ψ, Val(:right), trans)
     end
     canonise_truncate!(ψ0, :left, Dcut, tolS)
-    compress!(ψ0, W, ψ, max_sweeps, trans)
+    variational_compress!(ψ0, W, ψ, tolV, max_sweeps, trans)
     ψ0
 end
 
@@ -303,10 +303,11 @@ Construct (and memoize) (bottom) top MPS using Annealing for a given row.
         ψ0 = IdentityQMps(local_dims(W, :down), ctr.params.bond_dimension)
         canonise!(ψ0, :left)
     end
-    compress!(
+    variational_compress!(
         ψ0,
         W,
         ψ,
+        ctr.params.variational_tol, 
         ctr.params.max_num_sweeps,
         :c
     )
@@ -334,10 +335,11 @@ Construct (and memoize) (bottom) MPS using Annealing for a given row.
         canonise!(ψ0, :left)
     end
 
-    compress!(
+    variational_compress!(
         ψ0,
         W,
         ψ,
+        ctr.params.variational_tol,
         ctr.params.max_num_sweeps
     )
     ψ0

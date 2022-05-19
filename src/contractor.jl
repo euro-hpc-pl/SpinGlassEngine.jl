@@ -119,62 +119,6 @@ Construct (and memoize) MPO for a given layers.
     QMpo(mpo)
 end
 
-# """
-# $(TYPEDSIGNATURES)
-
-# Construct (and memoize) top MPS using SVD for a given row.
-# """
-# @memoize Dict function mps_top(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
-#     if i < 1
-#         W = mpo(ctr, ctr.layers.main, 1, indβ)
-#         return IdentityQMps(local_dims(W, :up))
-#     end
-
-#     ψ = mps_top(ctr, i-1, indβ)
-#     W = mpo(ctr, ctr.layers.main, i, indβ)
-
-#     ψ0 = dot(ψ, W)
-#     truncate!(ψ0, :left, ctr.params.bond_dimension)
-#     compress!(
-#         ψ0,
-#         W,
-#         ψ,
-#         ctr.params.bond_dimension,
-#         ctr.params.variational_tol,
-#         ctr.params.max_num_sweeps,
-#         :c
-#     )
-#     ψ0
-# end
-
-# """
-# $(TYPEDSIGNATURES)
-
-# Construct (and memoize) (bottom) MPS using SVD for a given row.
-# """
-# @memoize Dict function mps(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
-#     if i > ctr.peps.nrows
-#         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
-#         return IdentityQMps(local_dims(W, :down))
-#     end
-
-#     ψ = mps(ctr, i+1, indβ)
-#     W = mpo(ctr, ctr.layers.main, i, indβ)
-
-#     ψ0 = dot(W, ψ)
-#     truncate!(ψ0, :left, ctr.params.bond_dimension)
-#     compress!(
-#         ψ0,
-#         W,
-#         ψ,
-#         ctr.params.bond_dimension,
-#         ctr.params.variational_tol,
-#         ctr.params.max_num_sweeps,
-#         :n
-#     )
-#     ψ0
-# end
-
 """
 $(TYPEDSIGNATURES)
 
@@ -215,9 +159,7 @@ $(TYPEDSIGNATURES)
 
 Construct (and memoize) (bottom) MPS using SVD for a given row.
 """
-@memoize Dict function mps(
-    ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int
-    )
+@memoize Dict function mps(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
     Dcut = ctr.params.bond_dimension
     tolV = ctr.params.variational_tol
     tolS = ctr.params.tol_SVD
@@ -308,7 +250,7 @@ Construct (and memoize) (bottom) top MPS using Annealing for a given row.
         ψ0,
         W,
         ψ,
-        ctr.params.variational_tol, 
+        ctr.params.variational_tol,
         ctr.params.max_num_sweeps,
         :c
     )
@@ -527,14 +469,14 @@ function clear_memoize_cache(ctr::MpsContractor{T, S}, row::Site, indβ::Int) wh
         end
         for i ∈ 1:row+1
             delete!(Memoization.caches[mps], ((ctr, i, ind), ()))
-        end 
+        end
         for i ∈ row:row+2
             cmpo = Memoization.caches[mpo]
             delete!(cmpo, ((ctr, ctr.layers.main, i, ind), ()))
             delete!(cmpo, ((ctr, ctr.layers.dress, i, ind), ()))
             delete!(cmpo, ((ctr, ctr.layers.right, i, ind), ()))
         end
-        
+
     end
 end
 
@@ -676,5 +618,3 @@ function boundary_indices(
     j = boundary_indices(ctr, (k, l), states)
     (j .- 1) .* maximum(pv) .+ i
 end
-
-

@@ -180,8 +180,7 @@ $(TYPEDSIGNATURES)
 
 Construct (and memoize) top MPS using SVD for a given row.
 """
-#@memoize Dict 
-function mps_top(
+@memoize Dict function mps_top(
     ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int
     )
     Dcut = ctr.params.bond_dimension
@@ -529,12 +528,13 @@ function clear_memoize_cache(ctr::MpsContractor{T, S}, row::Site, indβ::Int) wh
         for i ∈ 1:row+1
             delete!(Memoization.caches[mps], ((ctr, i, ind), ()))
         end 
-        for i ∈ row:row+1
+        for i ∈ row:row+2
             cmpo = Memoization.caches[mpo]
             delete!(cmpo, ((ctr, ctr.layers.main, i, ind), ()))
             delete!(cmpo, ((ctr, ctr.layers.dress, i, ind), ()))
             delete!(cmpo, ((ctr, ctr.layers.right, i, ind), ()))
         end
+        
     end
 end
 
@@ -576,7 +576,7 @@ function update_gauges!(
         g_bot = ctr.peps.gauges.data[n_bot] .* g_inv
         push!(ctr.peps.gauges.data, n_top => g_top, n_bot => g_bot)
     end
-    Memoization.empty_all_caches!() #clear_memoize_cache(ctr, row, indβ)
+    clear_memoize_cache(ctr, row, indβ)
 end
 
 """

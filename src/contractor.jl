@@ -492,7 +492,7 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function update_gauges!(
+function sweep_gauges!(
     ctr::MpsContractor{T, GaugeStrategy},
     row::Site,
     indβ::Int,
@@ -524,7 +524,7 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function update_gauges!(
+function sweep_gauges!(
     ctr::MpsContractor{T, GaugeStrategyWithBalancing},
     row::Site,
     indβ::Int,
@@ -543,6 +543,59 @@ function update_gauges!(
     end
     clear_memoize_cache(ctr, row, indβ)
     ψ_top * ψ_bot
+end
+
+
+
+"""
+$(TYPEDSIGNATURES)
+"""
+function sweep_gauges!(
+    ctr::MpsContractor{T, NoUpdate},
+    row::Site,
+    indβ::Int,
+    ) where T
+
+    
+end
+
+"""
+$(TYPEDSIGNATURES)
+"""
+function update_gauges!(
+    ctr::MpsContractor{T, S},
+    row::Site,
+    indβ::Vector{Int},
+    ::Val{:left}
+
+) where {T, S} 
+
+    for j in indβ
+        for i ∈ 1:row-1
+            sweep_gauges!(ctr, i, j)
+        end
+    end
+
+end
+
+
+"""
+$(TYPEDSIGNATURES)
+"""
+function update_gauges!(
+    ctr::MpsContractor{T, S},
+    row::Site,
+    indβ::Vector{Int},
+    ::Val{:right}
+
+) where {T, S}
+
+    for j in indβ
+        for i ∈ row-1:-1:1
+            sweep_gauges!(ctr, i, j)
+        end
+    end
+    
 end
 
 """

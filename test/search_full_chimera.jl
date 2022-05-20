@@ -53,12 +53,7 @@ function bench(instance::String)
                     end
                 end
                 =#
-                if Gauge!= NoUpdate
-                    for i ∈ 1:m-1
-                        update_gauges!(ctr, i, 3)
-                    end
-                end
-
+                update_gauges!(ctr, m, indβ, Val(:right))
                 @allocated sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit))
                 #println("statistics ", maximum(values(ctr.statistics)))
                 println("prob ", sol.probabilities[begin])

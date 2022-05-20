@@ -34,7 +34,7 @@ STRATEGY = SVDTruncate
 SPARSITY = Dense
 graduate_truncation = true
 
-INDβ = 4
+INDβ = [4,]
 MAX_STATES = 500
 BOND_DIM = 32
 DE = 16.0
@@ -61,13 +61,9 @@ function chimera_sim(inst, trans, β, Layout)
     net = PEPSNetwork{Square{Layout}, SPARSITY}(M, N, fg, trans)
     ctr = MpsContractor{STRATEGY, GAUGE}(net, [β/6, β/3, β/2, β], graduate_truncation, params)
     
-    if GAUGE!= NoUpdate
-        #for j in INDβ
-        for i ∈ 1:M-1
-            update_gauges!(ctr, i, INDβ)
-        end
-        #end
-    end
+    
+    update_gauges!(ctr, M, INDβ, Val(:right))
+
     
     sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 

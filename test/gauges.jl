@@ -10,8 +10,8 @@ t = 8
 L = n * m * t
 max_cl_states = 2^(t-0)
 
-β = 1
-bond_dim = 16
+β = 2
+bond_dim = 32
 δp = 1E-3
 num_states = 1000
 
@@ -61,16 +61,21 @@ for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, Sparse)
                         overlap_old2 = ψ_bot * ψ_top
 
                         # should be calculated from scratch with updated gauges
-                        ψ_top2 = mps_top(ctr, i, indβ[begin])
-                        ψ_bot2 = mps(ctr, i+1, indβ[begin])
+                        #ψ_top2 = mps_top(ctr, i, indβ[begin])
+                        #ψ_bot2 = mps(ctr, i+1, indβ[begin])
                         
-                        overlap_new = ψ_top2 * ψ_bot2
-                        println(overlap_new, overlap_old)
+                        #overlap_new = ψ_top2 * ψ_bot2
 
                         @test overlap_old ≈ overlap_old2
                         #@test abs((overlap_new - overlap_new2) / overlap_new) < 1e-4
-                        @test overlap_new > overlap_old
+                        #@test overlap_new > overlap_old
                     end
+                    update_gauges!(ctr, m, indβ, Val(:left))
+                    sol_l = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+                    clear_memoize_cache()
+                    update_gauges!(ctr, m, indβ, Val(:right))
+                    sol_r = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+                    @test sol_l.energies[begin] ≈ sol_r.energies[begin]
                 end
                 clear_memoize_cache()
             end

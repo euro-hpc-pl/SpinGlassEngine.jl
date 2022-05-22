@@ -39,23 +39,23 @@ using Test
 my_tests = []
 
 push!(my_tests,
-        "operations.jl",
-        "branch_and_bound.jl",
-        "ising_MPS.jl",
-        "search_MPS.jl",
-        "search_chimera.jl", # OK
-        "search_smallest_chimera.jl", # OK except MPSAnnealing
-        "search_full_chimera.jl", #OK, all heuristics to be checked
-        "search_cross.jl", # OK, all heuristics to be checked
+        #"operations.jl",
+        #"branch_and_bound.jl",
+        #"ising_MPS.jl",
+        #"search_MPS.jl",
+        #"search_chimera.jl", # OK
+        #"search_smallest_chimera.jl", # OK except MPSAnnealing
+        #"search_full_chimera.jl", #OK, all heuristics to be checked
+        #"search_cross.jl", # OK, all heuristics to be checked
         #"search_pegasus.jl", # OK
         #"search_pegasus_nodiag.jl", # OK
         #"search_new_geometry_nodiag.jl", # NO
-        "chimera_overlap.jl", # OK
-        #"gauges.jl", # OK NO
-        "gauges2.jl", # OK
-        "gauges3.jl",
-        "search_smallest_cross.jl", # OK
-        "small_instance.jl"
+        #"chimera_overlap.jl", # OK
+        "gauges.jl", # OK NO
+        #"gauges2.jl", # OK
+        #"gauges3.jl",
+        #"search_smallest_cross.jl", # OK
+        #"small_instance.jl"
 )
 
 for my_test in my_tests

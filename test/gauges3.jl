@@ -35,8 +35,8 @@ using Memoize
 
             network_d = PEPSNetwork{Square{Layout}, Dense}(m, n, fg, transform, :id)
             network_s = PEPSNetwork{Square{Layout}, Sparse}(m, n, fg, transform, :id)
-            ctr_d = MpsContractor{Strategy, Gauge}(network_d, [β/8, β/4, β/2, β], params)
-            ctr_s = MpsContractor{Strategy, Gauge}(network_s, [β/8, β/4, β/2, β], params)
+            ctr_d = MpsContractor{Strategy, Gauge}(network_d, [β/8, β/4, β/2, β], true, params)
+            ctr_s = MpsContractor{Strategy, Gauge}(network_s, [β/8, β/4, β/2, β], true, params)
 
             @testset "Overlaps calculated differently agree" begin
                 indβ = 3
@@ -50,12 +50,12 @@ using Memoize
             end
 
             @testset "Test update_gauges" begin
-                indβ = 4
+                indβ = [4, ]
                 overlap_python = [0.2637787707674837, 0.2501621729619047, 0.2951954406837012]
 
                 for i ∈ vcat(1:m-1)#, m-1:-1:1)
-                    ψ_top = mps_top(ctr_d, i, indβ)
-                    ψ_bot = mps(ctr_d, i+1, indβ)
+                    ψ_top = mps_top(ctr_d, i, indβ[begin])
+                    ψ_bot = mps(ctr_d, i+1, indβ[begin])
                     overlap1 = ψ_top * ψ_bot
                     #@test overlap1 ≈ overlap_python[i]
                     @test isapprox(overlap1, overlap_python[i], atol=1e-5)
@@ -63,10 +63,10 @@ using Memoize
                     #println("#(cache mps) = ", length(memoize_cache(mps)))
                     #println("#(cache mps_top) = ", length(memoize_cache(mps_top)))
 
-                    update_gauges!(ctr_d, i, indβ)
+                    update_gauges!(ctr_d, i, indβ, Val(:left))
 
-                    ψ_top = mps_top(ctr_d, i, indβ)
-                    ψ_bot = mps(ctr_d, i+1, indβ)
+                    ψ_top = mps_top(ctr_d, i, indβ[begin])
+                    ψ_bot = mps(ctr_d, i+1, indβ[begin])
                     overlap2 = ψ_top * ψ_bot
                     println(overlap1, ' ', overlap2)
 

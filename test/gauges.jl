@@ -33,7 +33,7 @@ for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, Sparse)
         for Gauge ∈ (GaugeStrategy, )
             for Lattice ∈ (Square, SquareStar), transform ∈ all_lattice_transformations
                 net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform, :id)
-                ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], params)
+                ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], true, params)
 
                 @testset "Overlaps calculated differently are the same." begin
                     indβ = 3
@@ -47,25 +47,28 @@ for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, Sparse)
                 clear_memoize_cache()
 
                 @testset "Gauges are correctly optimized and updated." begin
-                    indβ = 4
+                    indβ = [3,]
                     for _ in 1:3, i ∈ 1:m-1
-                        ψ_top = mps_top(ctr, i, indβ)
-                        ψ_bot = mps(ctr, i+1, indβ)
+                        ψ_top = mps_top(ctr, i, indβ[begin])
+                        ψ_bot = mps(ctr, i+1, indβ[begin])
 
                         overlap_old = ψ_top * ψ_bot
 
-                        overlap_new = update_gauges!(ctr, i, indβ)
+                        #overlap_new = update_gauges!(ctr, i, indβ, Val(:left))
+                        update_gauges!(ctr, i, indβ, Val(:left))
 
                         # assert that ψ_bot and ψ_top are not updated in place though memoize!
                         overlap_old2 = ψ_bot * ψ_top
 
                         # should be calculated from scratch with updated gauges
-                        ψ_top2 = mps_top(ctr, i, indβ)
-                        ψ_bot2 = mps(ctr, i+1, indβ)
+                        ψ_top2 = mps_top(ctr, i, indβ[begin])
+                        ψ_bot2 = mps(ctr, i+1, indβ[begin])
+                        
+                        overlap_new = ψ_top2 * ψ_bot2
+                        println(overlap_new, overlap_old)
 
-                        overlap_new2 = ψ_top2 * ψ_bot2
                         @test overlap_old ≈ overlap_old2
-                        @test abs((overlap_new - overlap_new2) / overlap_new) < 1e-4
+                        #@test abs((overlap_new - overlap_new2) / overlap_new) < 1e-4
                         @test overlap_new > overlap_old
                     end
                 end

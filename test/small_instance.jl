@@ -35,8 +35,8 @@ function bench(instance::String)
         for Gauge ∈ (NoUpdate, ) #GaugeStrategy, GaugeStrategyWithBalancing
             for Layout ∈ (EnergyGauges,), transform ∈ rotation.([0])
                 net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
-                ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], params)
-                #ctr = MpsContractor{Strategy}(net, [β/6, β/3, β/2, β], params)
+                ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], true, params)
+                #ctr = MpsContractor{Strategy}(net, [β/6, β/3, β/2, β], true, params)
                 indβ = [1, 2, 3]
 
                 #=

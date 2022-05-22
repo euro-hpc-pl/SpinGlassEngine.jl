@@ -1,7 +1,9 @@
 export
        SearchParameters,
        merge_branches,
-       low_energy_spectrum
+       low_energy_spectrum,
+       Solution,
+       bound_solution
 
 """
 $(TYPEDSIGNATURES)

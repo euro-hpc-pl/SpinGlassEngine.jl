@@ -51,9 +51,10 @@ push!(my_tests,
         #"search_pegasus_nodiag.jl", # OK
         #"search_new_geometry_nodiag.jl", # NO
         #"chimera_overlap.jl", # OK
-        "gauges.jl", # OK NO
+        #"gauges.jl", # OK NO
         #"gauges2.jl", # OK
         #"gauges3.jl",
+        "memoization.jl",
         #"search_smallest_cross.jl", # OK
         #"small_instance.jl"
 )

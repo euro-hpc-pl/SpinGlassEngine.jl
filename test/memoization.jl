@@ -73,7 +73,10 @@ using ProgressMeter
                         before_mps = length(Memoization.caches[mps])
                         before_mps_top = length(Memoization.caches[mps_top])
                         before_mpo =  length(Memoization.caches[SpinGlassEngine.mpo])
-                        
+
+                        #weird error
+                        #print(collect(values(Memoization.caches[mps_top]))) 
+
                         println("Before: mps, mps_top, mpo ", before_mps, " ", before_mps_top, " ", before_mpo)
 
                         clear_memoize_cache(ctr, row, indβ)

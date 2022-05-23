@@ -463,8 +463,8 @@ end
 $(TYPEDSIGNATURES)
 """
 function clear_memoize_cache(ctr::MpsContractor{T, S}, row::Site, indβ::Int) where {T, S}
-    for ind ∈ 1:indβ
-        for i ∈ row:ctr.peps.nrows
+    for ind ∈ 1:indβ # indbeta a vector?
+        for i ∈ row:ctr.peps.nrows 
             delete!(Memoization.caches[mps_top], ((ctr, i, ind), ()))
         end
         for i ∈ 1:row+1

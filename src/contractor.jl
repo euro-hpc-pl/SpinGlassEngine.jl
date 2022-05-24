@@ -309,7 +309,7 @@ Construct (and memoize) dressed MPS for a given row and strategy.
     ψ = mps(ctr, i+1, indβ)
     W = mpo(ctr, ctr.layers.dress, i, indβ)
     ϕ = W * ψ
-
+    
     for j ∈ ϕ.sites
         nrm = maximum(abs.(ϕ[j]))
         if !iszero(nrm) ϕ[j] ./= nrm end
@@ -507,7 +507,6 @@ function sweep_gauges!(
     ψ_bot = deepcopy(ψ_bot)
 
     gauges = optimize_gauges_for_overlaps!!(ψ_top, ψ_bot, tol, max_sweeps)
-    overlap = ψ_top * ψ_bot
 
     for i ∈ ψ_top.sites
         g = gauges[i]

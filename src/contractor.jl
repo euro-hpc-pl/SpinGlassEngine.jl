@@ -309,7 +309,7 @@ Construct (and memoize) dressed MPS for a given row and strategy.
     ψ = mps(ctr, i+1, indβ)
     W = mpo(ctr, ctr.layers.dress, i, indβ)
     ϕ = W * ψ
-    
+
     for j ∈ ϕ.sites
         nrm = maximum(abs.(ϕ[j]))
         if !iszero(nrm) ϕ[j] ./= nrm end
@@ -464,7 +464,7 @@ $(TYPEDSIGNATURES)
 """
 function clear_memoize_cache(ctr::MpsContractor{T, S}, row::Site, indβ::Int) where {T, S}
     for ind ∈ 1:indβ # indbeta a vector?
-        for i ∈ row:ctr.peps.nrows 
+        for i ∈ row:ctr.peps.nrows
             delete!(Memoization.caches[mps_top], ((ctr, i, ind), ()))
         end
         for i ∈ 1:row+1
@@ -544,20 +544,6 @@ function sweep_gauges!(
     ψ_top * ψ_bot
 end
 
-
-
-"""
-$(TYPEDSIGNATURES)
-"""
-function sweep_gauges!(
-    ctr::MpsContractor{T, NoUpdate},
-    row::Site,
-    indβ::Int,
-    ) where T
-
-    
-end
-
 """
 $(TYPEDSIGNATURES)
 """
@@ -566,17 +552,11 @@ function update_gauges!(
     row::Site,
     indβ::Vector{Int},
     ::Val{:down}
-
-) where {T, S} 
-
-    for j in indβ
-        for i ∈ 1:row-1
-            sweep_gauges!(ctr, i, j)
-        end
+) where {T, S}
+    for j ∈ indβ, i ∈ 1:row-1
+        sweep_gauges!(ctr, i, j)
     end
-
 end
-
 
 """
 $(TYPEDSIGNATURES)
@@ -586,15 +566,10 @@ function update_gauges!(
     row::Site,
     indβ::Vector{Int},
     ::Val{:up}
-
 ) where {T, S}
-
-    for j in indβ
-        for i ∈ row-1:-1:1
-            sweep_gauges!(ctr, i, j)
-        end
+    for j ∈ indβ, i ∈ row-1:-1:1
+        sweep_gauges!(ctr, i, j)
     end
-    
 end
 
 """
@@ -640,7 +615,6 @@ function local_state_for_node(
     k = get(ctr.node_search_index, w, 0)
     0 < k <= length(σ) ? σ[k] : 1
 end
-
 
 """
 $(TYPEDSIGNATURES)

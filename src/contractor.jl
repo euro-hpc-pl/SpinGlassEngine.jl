@@ -566,7 +566,7 @@ function update_gauges!(
     ctr::MpsContractor{T, S},
     row::Site,
     indβ::Vector{Int},
-    ::Val{:left}
+    ::Val{:down}
 
 ) where {T, S} 
 
@@ -586,7 +586,7 @@ function update_gauges!(
     ctr::MpsContractor{T, S},
     row::Site,
     indβ::Vector{Int},
-    ::Val{:right}
+    ::Val{:up}
 
 ) where {T, S}
 

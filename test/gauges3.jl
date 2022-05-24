@@ -63,7 +63,7 @@ using Memoize
                     #println("#(cache mps) = ", length(memoize_cache(mps)))
                     #println("#(cache mps_top) = ", length(memoize_cache(mps_top)))
 
-                    update_gauges!(ctr_d, i, indβ, Val(:left))
+                    update_gauges!(ctr_d, i, indβ, Val(:down))
 
                     ψ_top = mps_top(ctr_d, i, indβ[begin])
                     ψ_bot = mps(ctr_d, i+1, indβ[begin])

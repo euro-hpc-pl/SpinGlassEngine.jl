@@ -55,7 +55,7 @@ for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, Sparse)
                         overlap_old = ψ_top * ψ_bot
 
                         #overlap_new = update_gauges!(ctr, i, indβ, Val(:left))
-                        update_gauges!(ctr, i, indβ, Val(:left))
+                        update_gauges!(ctr, i, indβ, Val(:down))
 
                         # assert that ψ_bot and ψ_top are not updated in place though memoize!
                         overlap_old2 = ψ_bot * ψ_top
@@ -70,10 +70,10 @@ for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, Sparse)
                         #@test abs((overlap_new - overlap_new2) / overlap_new) < 1e-4
                         #@test overlap_new > overlap_old
                     end
-                    update_gauges!(ctr, m, indβ, Val(:left))
+                    update_gauges!(ctr, m, indβ, Val(:down))
                     sol_l = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
                     clear_memoize_cache()
-                    update_gauges!(ctr, m, indβ, Val(:right))
+                    update_gauges!(ctr, m, indβ, Val(:up))
                     sol_r = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
                     @test sol_l.energies[begin] ≈ sol_r.energies[begin]
                 end

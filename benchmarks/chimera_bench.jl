@@ -13,28 +13,28 @@ MPI.Init()
 size = MPI.Comm_size(MPI.COMM_WORLD)
 rank = MPI.Comm_rank(MPI.COMM_WORLD)
 
-#M, N, T = 8, 8, 8
-#INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/512power"
-#OUTPUT_DIR = "$(@__DIR__)/results/512power/tmp"
-
 M, N, T = 8, 8, 8
-INSTANCE_DIR = "$(@__DIR__)/instances/chimera_J124/C=8_J124/single"
-OUTPUT_DIR = "$(@__DIR__)/results/512J124/tmp"
+INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/512power"
+OUTPUT_DIR = "$(@__DIR__)/results/512power/tmp"
+
+#M, N, T = 8, 8, 8
+#INSTANCE_DIR = "$(@__DIR__)/instances/chimera_J124/C=8_J124/single"
+#OUTPUT_DIR = "$(@__DIR__)/results/512J124/tmp"
 
 #M, N, T = 12, 12, 8
 #INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/1152power"
 #OUTPUT_DIR = "$(@__DIR__)/results/1152power/tmp"
 
-BETAS =  [0.5,] #collect(2:2:14)
-LAYOUT = (GaugesEnergy,)  #(EnergyGauges, GaugesEnergy, EngGaugesEng)
-TRANSFORM = rotation.([0])
+BETAS =  collect(2:2:14)
+LAYOUT = (EnergyGauges, GaugesEnergy, EngGaugesEng)
+TRANSFORM = all_lattice_transformations
 
 GAUGE =  GaugeStrategy
 STRATEGY = SVDTruncate
 SPARSITY = Dense
 graduate_truncation = true
 
-INDβ = [4,]
+INDβ = [1, 2, 3]
 MAX_STATES = 500
 BOND_DIM = 32
 DE = 16.0
@@ -43,7 +43,7 @@ MAX_SWEEPS = 10
 VAR_TOL = 1E-8
 TOL_SVD = 1E-16
 disable_logging(LogLevel(1))
-#BLAS.set_num_threads(1)
+BLAS.set_num_threads(1)
 
 function chimera_sim(inst, trans, β, Layout)
     max_cl_states = 2 ^ T
@@ -62,7 +62,7 @@ function chimera_sim(inst, trans, β, Layout)
     ctr = MpsContractor{STRATEGY, GAUGE}(net, [β/6, β/3, β/2, β], graduate_truncation, params)
     
     
-    update_gauges!(ctr, M, INDβ, Val(:right))
+    update_gauges!(ctr, M, INDβ, Val(:up))
 
     
     sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))

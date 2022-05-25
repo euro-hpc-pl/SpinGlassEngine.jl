@@ -61,15 +61,7 @@ function bench(instance::String)
 
             @test norm_prob ≈ exct_prob
             push!(energies, sol.energies)
-
-            # ψ1 = mps(ctr, 2, 4)
-            # ψ1_top = mps_top(ctr, 1, 4)
-
-            # ψ2 = mps(ctr2, 2, 4)
-            # ψ2_top = mps_top(ctr2, 1, 4)
-            # println("overlap = ", ψ1 * ψ2)
-            # println("overlap = ", ψ1_top * ψ2_top)
-
+            
             clear_memoize_cache()
         end
     end

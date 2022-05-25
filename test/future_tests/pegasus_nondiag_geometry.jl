@@ -17,7 +17,7 @@ bond_dim = 64
 δp = 1e-10
 num_states = 10
 
-ig = ising_graph("$(@__DIR__)/test/instances/pegasus_nondiag/2x2x1.txt")
+ig = ising_graph("$(@__DIR__)/instances/pegasus_nondiag/2x2x1.txt")
 
 fg = factor_graph(
     ig,

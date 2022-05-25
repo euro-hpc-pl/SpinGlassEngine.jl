@@ -39,20 +39,6 @@ function bench(instance::String)
                 #ctr = MpsContractor{Strategy}(net, [β/6, β/3, β/2, β], params)
                 indβ = [3,]
 
-                #=
-                if Gauge!= NoUpdate
-                    for j in indβ
-                        for i ∈ 1:m-1
-                            ψ_top = mps_top(ctr, i, j)
-                            ψ_bot = mps(ctr, i+1, j)
-                            overlap_old = ψ_top * ψ_bot
-                            overlap_new = update_gauges!(ctr, i, j)
-                            #println(overlap_old, "  ", overlap_new)
-                        end
-                        #println("------------------")
-                    end
-                end
-                =#
                 update_gauges!(ctr, m, indβ, Val(:up))
                 @allocated sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit))
                 #println("statistics ", maximum(values(ctr.statistics)))

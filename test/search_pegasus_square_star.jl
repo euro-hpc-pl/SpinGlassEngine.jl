@@ -1,4 +1,4 @@
-using SpinGlassExhaustive
+#using SpinGlassExhaustive
 
 function brute_force_gpu(ig::IsingGraph; num_states::Int)
     brute_force(ig, :GPU, num_states=num_states)
@@ -20,19 +20,20 @@ function bench(instance::String)
     @time fg = factor_graph(
         ig,
         max_cl_states,
-        spectrum=brute_force_gpu,  # rm _gpu to use CPU
+        spectrum = brute_force,  # rm _gpu to use CPU
         cluster_assignment_rule=super_square_lattice((m, n, t))
     )
     params = MpsParameters(bond_dim, 1E-8, 10)
     search_params = SearchParameters(num_states, δp)
     Gauge = NoUpdate
+    graduate_truncation = true
 
     # Solve using PEPS search
     energies = Vector{Float64}[]
     for Strategy ∈ (SVDTruncate, MPSAnnealing), transform ∈ all_lattice_transformations
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng), Sparsity ∈ (Dense, )
             net = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, fg, transform)
-            ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], params)
+            ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], graduate_truncation, params)
             sol_peps = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
             push!(energies, sol_peps.energies)
             clear_memoize_cache()

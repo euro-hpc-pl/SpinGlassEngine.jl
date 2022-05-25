@@ -547,6 +547,19 @@ end
 """
 $(TYPEDSIGNATURES)
 """
+function sweep_gauges!(
+    ctr::MpsContractor{T, NoUpdate},
+    row::Site,
+    indβ::Int,
+    tol::Real=1E-4,
+    max_sweeps::Int=10
+) where T
+
+end
+
+"""
+$(TYPEDSIGNATURES)
+"""
 function update_gauges!(
     ctr::MpsContractor{T, S},
     row::Site,

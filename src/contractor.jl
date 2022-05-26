@@ -124,9 +124,7 @@ $(TYPEDSIGNATURES)
 
 Construct (and memoize) top MPS using SVD for a given row.
 """
-@memoize Dict function mps_top(
-    ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int
-    )
+@memoize Dict function mps_top(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
     Dcut = ctr.params.bond_dimension
     tolV = ctr.params.variational_tol
     tolS = ctr.params.tol_SVD

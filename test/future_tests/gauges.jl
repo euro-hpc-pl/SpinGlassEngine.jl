@@ -10,7 +10,7 @@ t = 8
 L = n * m * t
 max_cl_states = 2^(t-0)
 
-β = 2
+β =0.5
 bond_dim = 32
 δp = 1E-3
 num_states = 1000
@@ -26,6 +26,47 @@ fg = factor_graph(
 
 params = MpsParameters(bond_dim, 1E-8, 10)
 search_params = SearchParameters(num_states, δp)
+
+@testset "Overlaps calculated differently are the same." begin
+for Lattice ∈ (Square, SquareStar) 
+    for Sparsity ∈ (Dense, Sparse), transform ∈ all_lattice_transformations[[1]]
+        for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
+            net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform, :id)
+            ctr_svd = MpsContractor{SVDTruncate, GaugeStrategy}(net, [β/8, β/4, β/2, β], :graduate_truncate, params)
+            ctr_anneal = MpsContractor{MPSAnnealing, GaugeStrategy}(net, [β/8, β/4, β/2, β], :graduate_truncate, params)
+
+            @testset "Overlaps calculated for different Starategies are the same." begin
+                indβ = 3
+                for i ∈ 1:m-1
+                    ψ_top = mps_top(ctr_svd, i, indβ)
+                    ϕ_top = mps_top(ctr_anneal, i, indβ)
+                    @test ψ_top * ψ_top ≈ 1
+                    @test ϕ_top * ϕ_top ≈ 1
+                    @test ψ_top * ϕ_top ≈ 1
+                end
+            end
+        end
+        clear_memoize_cache()
+
+        for Layout ∈ (GaugesEnergy, )
+            net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform, :id)
+            ctr_svd = MpsContractor{SVDTruncate, GaugeStrategy}(net, [β/8, β/4, β/2, β], :graduate_truncate, params)
+            @testset "Overlaps calculated in Python are the same as in Julia." begin
+                indβ = [4, ]
+                overlap_python = [0.2637787707674837, 0.2501621729619047, 0.2951954406837012]
+
+                for i ∈ vcat(1:m-1)#, m-1:-1:1)
+                    ψ_top = mps_top(ctr_svd, i, indβ[begin])
+                    ψ_bot = mps(ctr_svd, i+1, indβ[begin])
+                    overlap1 = ψ_top * ψ_bot
+                    @test isapprox(overlap1, overlap_python[i], atol=1e-5)
+                end
+                clear_memoize_cache()
+            end
+        end
+    end
+end
+end
 
 @testset "Updating gauges works correctly." begin
 for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, Sparse) 
@@ -46,7 +87,7 @@ for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, Sparse)
                 end
                 clear_memoize_cache()
 
-                @testset "Gauges are correctly optimized and updated." begin
+                @testset "ψ_bot and ψ_top are not updated in place though memoize!" begin
                     indβ = [3,]
                     for _ in 1:3, i ∈ 1:m-1
                         ψ_top = mps_top(ctr, i, indβ[begin])
@@ -54,22 +95,19 @@ for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, Sparse)
 
                         overlap_old = ψ_top * ψ_bot
 
-                        #overlap_new = update_gauges!(ctr, i, indβ, Val(:left))
                         update_gauges!(ctr, i, indβ, Val(:down))
 
                         # assert that ψ_bot and ψ_top are not updated in place though memoize!
                         overlap_old2 = ψ_bot * ψ_top
 
-                        # should be calculated from scratch with updated gauges
-                        #ψ_top2 = mps_top(ctr, i, indβ[begin])
-                        #ψ_bot2 = mps(ctr, i+1, indβ[begin])
-                        
-                        #overlap_new = ψ_top2 * ψ_bot2
-
                         @test overlap_old ≈ overlap_old2
-                        #@test abs((overlap_new - overlap_new2) / overlap_new) < 1e-4
-                        #@test overlap_new > overlap_old
+
                     end
+                end
+                clear_memoize_cache()
+
+                @testset "Updating gauges from top and bottom gives the same energy." begin
+                    indβ = [3,]
                     update_gauges!(ctr, m, indβ, Val(:down))
                     sol_l = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
                     clear_memoize_cache()

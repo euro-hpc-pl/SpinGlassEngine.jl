@@ -12,7 +12,7 @@ function bench(instance::String)
     β = 2.0
     bond_dim = 64
     δp = 1E-4
-    num_states = 20
+    num_states = 1000
 
     ig = ising_graph(instance)
     @time fg = factor_graph(
@@ -43,4 +43,4 @@ end
 
 # best ground found: -59.65625
 #bench("$(@__DIR__)/instances/pegasus_droplets/2_2_3_00.txt")
-bench("$(@__DIR__)/instances/pegasus_dwave/P2/002.txt")
+bench("$(@__DIR__)/instances/pegasus_dwave/P2/001.txt")

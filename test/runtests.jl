@@ -34,28 +34,22 @@ function SpinGlassEngine.tensor(ψ::MPS)
     Θ
 end
 
-
 using Test
 my_tests = []
 
-# Basic tests
-#=
-push!(my_tests,
-    "operations.jl",
-    "branch_and_bound.jl",
-    "search_chimera_pathological.jl",
-    "search_chimera_smallest.jl", # problem with MPSAnnealing
-    "search_cross_square_star.jl",  # final test fails
-    "search_smallest_cross_square_star.jl",
-)
-=#
 
 push!(my_tests,
-    "search_chimera_full.jl",   #  ground is incorrect
+    #"operations.jl",
+    #"branch_and_bound.jl",
+    #"search_chimera_pathological.jl",
+    #"search_chimera_smallest.jl", # problem with MPSAnnealing
+    #"search_cross_square_star.jl",  # final test fails
+    #"search_smallest_cross_square_star.jl",
+    #"search_chimera_full.jl",   #  ground is incorrect
     #"search_cross_square_star.jl",  # final test fails
     #"search_smallest_cross_square_star.jl",
     #"search_pegasus_square_star.jl"
-    #"search_pegasus_nodiag_square_star.jl" # this is slow
+    "search_pegasus_nodiag_square_star.jl"
 )
 
 # This is work in progress (may or may not be included in furure versions)

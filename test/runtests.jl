@@ -1,6 +1,7 @@
 using SpinGlassEngine
+using SpinGlassNetworks
+using SpinGlassTensors
 using Logging
-using SpinGlassNetworks, SpinGlassTensors
 using LightGraphs
 using LinearAlgebra
 using TensorCast
@@ -37,36 +38,35 @@ end
 using Test
 my_tests = []
 
-
 push!(my_tests,
 # quick tests:
-    #"operations.jl",
-    #"branch_and_bound.jl",
-    #"search_chimera_pathological.jl",
-    #"search_chimera_smallest.jl", # problem with MPSAnnealing
-    #"search_cross_square_star.jl",
-    #"search_smallest_cross_square_star.jl",
-    #"search_cross_square_star.jl",
-    #"search_smallest_cross_square_star.jl",
-    #"search_pegasus_square_star.jl",
-    #"search_pegasus_nodiag_square_star.jl",
+    "operations.jl",
+    "branch_and_bound.jl",
+    "search_chimera_pathological.jl",
+    "search_chimera_smallest.jl", # problem with MPSAnnealing
+    "search_cross_square_star.jl",
+    "search_smallest_cross_square_star.jl",
+    "search_cross_square_star.jl",
+    "search_smallest_cross_square_star.jl",
+    "search_pegasus_square_star.jl",
+    "search_pegasus_nodiag_square_star.jl",
 
-# demanding tests:
-    "search_chimera_full.jl",
+# time consuming tests:
+    #"search_chimera_full.jl",
 )
 
-# This is work in progress (may or may not be included in furure versions)
+# This is work in progress (may or may not be included in future versions)
 #=
 push!(my_tests,
-    #"future_tests/chimera_overlap_python.jl", # OK
-    #"future_tests/cross_square_star_prob.jl",
-    #"future_tests/search_new_geometry_nodiag.jl", # NO
-    #"future_tests/pegasus_nondiag_geometry.jl", # NO
-    #"future_tests/gauges.jl",
-    #"future_tests/memoization.jl",
+    #"experimental/chimera_overlap_python.jl", # OK
+    #"experimental/cross_square_star_prob.jl",
+    #"experimental/search_new_geometry_nodiag.jl", # NO
+    #"experimental/pegasus_nondiag_geometry.jl", # NO
+    #"experimental/gauges.jl",
+    #"experimental/memoization.jl",
 )
 =#
 
-for my_test in my_tests
+for my_test ∈ my_tests
     include(my_test)
 end

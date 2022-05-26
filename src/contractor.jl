@@ -604,12 +604,10 @@ function boundary_states(
 ) where {T, S}
     boundary_recipe = boundary(ctr, node)
     res = ones(Int, length(states), length(boundary_recipe))
-    for (i, bnd) ∈ enumerate(boundary_recipe)
-        @inbounds res[:, i] = boundary_indices(ctr, bnd, states)
+    for (i, node) ∈ enumerate(boundary_recipe)
+        @inbounds res[:, i] = boundary_indices(ctr, node, states)
     end
-    @inbounds ret = [res[r, :] for r ∈ 1:size(res, 1)]
-    ret
-    #collect(eachrow(res))
+    [res[r, :] for r ∈ 1:size(res, 1)]
 end
 
 """
@@ -633,18 +631,9 @@ end
 $(TYPEDSIGNATURES)
 """
 function boundary_indices(
-    ctr::MpsContractor{T}, nodes::NTuple{2, S}, states::Vector{Vector{Int}}
-) where {T, S}
-    v, w = nodes
-    if ctr.peps.vertex_map(v) ∈ vertices(ctr.peps.factor_graph)
-        @inbounds idx = [σ[ctr.node_search_index[v]] for σ ∈ states]
-        return @inbounds projector(ctr.peps, v, w)[idx]
-    end
-    ones(Int, length(states))
-end
-
-function boundary_indices(
-    ctr::MpsContractor{T}, nodes::Tuple{S, Tuple{S, S}}, states::Vector{Vector{Int}}
+    ctr::MpsContractor{T},
+    nodes::Union{NTuple{2, S}, Tuple{S, NTuple{2, S}}},
+    states::Vector{Vector{Int}}
 ) where {T, S}
     v, w = nodes
     if ctr.peps.vertex_map(v) ∈ vertices(ctr.peps.factor_graph)

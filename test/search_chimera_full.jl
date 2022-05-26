@@ -33,14 +33,14 @@ function bench(instance::String)
                 ctr = MpsContractor{Strategy, Gauge}(net, all_betas, :graduate_truncate, params)
                 sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit))
 
-                @assert sol.energies[begin] ≈ ground_energy
+                @test sol.energies[begin] ≈ ground_energy
 
                 push!(energies, sol.energies)
                 clear_memoize_cache()
             end
         end
     end
-    @assert all(e -> e ≈ first(energies), energies)
+    @test all(e -> e ≈ first(energies), energies)
 end
 
 bench("$(@__DIR__)/instances/chimera_droplets/2048power/001.txt")

@@ -10,7 +10,6 @@
     instance = "$(@__DIR__)/instances/pathological/cross_$(m)_$(n)_mdd.txt"
 
     ig = ising_graph(instance)
-
     fg = factor_graph(
         ig,
         spectrum=full_spectrum,

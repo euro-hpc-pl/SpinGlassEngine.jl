@@ -1,8 +1,6 @@
 
 @testset "Pegasus-like instance has the correct ground state energy" begin
-    m = 2
-    n = 3
-    t = 1
+    m, n, t = 2, 3, 1
     L = n * m * t
 
     β = 1.
@@ -12,7 +10,6 @@
     instance = "$(@__DIR__)/instances/pathological/cross_3_2.txt"
 
     ig = ising_graph(instance)
-
     fg = factor_graph(
         ig,
         spectrum=full_spectrum,

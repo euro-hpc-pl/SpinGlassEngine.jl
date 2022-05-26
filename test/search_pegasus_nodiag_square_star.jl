@@ -1,4 +1,4 @@
-using SpinGlassExhaustive
+#using SpinGlassExhaustive
 
 function brute_force_gpu(ig::IsingGraph; num_states::Int)
     brute_force(ig, :GPU, num_states=num_states)
@@ -18,7 +18,7 @@ function bench(instance::String)
     fg = factor_graph(
         ig,
         max_cl_states,
-        spectrum=brute_force_gpu, # rm _gpu to use CPU
+        spectrum=brute_force, #_gpu, # rm _gpu to use CPU
         cluster_assignment_rule=super_square_lattice((m, n, t))
     )
     params = MpsParameters(bond_dim, 1E-8, 10)

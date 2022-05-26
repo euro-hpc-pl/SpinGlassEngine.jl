@@ -22,7 +22,7 @@
     search_params = SearchParameters(num_states, 0.0)
     Gauge = NoUpdate
 
-    for Strategy ∈ (SVDTruncate,MPSAnnealing), Sparsity ∈ (Dense,Sparse)
+    for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, Sparse)
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
             for transform ∈ all_lattice_transformations
                 net = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, fg, transform)

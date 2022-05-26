@@ -62,7 +62,7 @@ push!(my_tests,
     #"future_tests/gauges.jl", # O
     #"future_tests/memoization.jl",
 )
-=#
+
 
 for my_test in my_tests
     include(my_test)

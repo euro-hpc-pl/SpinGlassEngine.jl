@@ -7,7 +7,6 @@ function bench(instance::String)
 
     max_cl_states = 2^(t-0)
 
-    graduate_truncation = true
     ground_energy = -3336.773383
 
     β = 3.0
@@ -31,22 +30,10 @@ function bench(instance::String)
         for Gauge ∈ (NoUpdate, GaugeStrategy, GaugeStrategyWithBalancing)
             for Layout ∈ (GaugesEnergy,), transform ∈ all_lattice_transformations
                 net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
-                ctr = MpsContractor{Strategy, Gauge}(net, all_betas, :graduate_truncation, params)
+                ctr = MpsContractor{Strategy, Gauge}(net, all_betas, :graduate_truncate, params)
 
                 sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit))
                 #@assert sol.energies[begin] ≈ ground_energy
-                ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncation, params)
-                indβ = [3,]
-
-                update_gauges!(ctr, m, indβ, Val(:up))
-                @allocated sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit))
-                #println("statistics ", maximum(values(ctr.statistics)))
-                println("prob ", sol.probabilities[begin])
-                println("largest discarded prob ", sol.largest_discarded_probability)
-                #println("states ", sol.states)
-                #println("degeneracy ", sol.degeneracy)
-                println("energy ", sol.energies[begin])
-                #@test sol.energies[begin] ≈ ground_energy
                 push!(energies, sol.energies)
                 clear_memoize_cache()
             end

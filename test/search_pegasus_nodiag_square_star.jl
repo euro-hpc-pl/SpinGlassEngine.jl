@@ -5,9 +5,7 @@ function brute_force_gpu(ig::IsingGraph; num_states::Int)
 end
 
 function bench(instance::String)
-    m = 4
-    n = 4
-    t = 24
+    m, n, t = 4, 4, 24
 
     max_cl_states = 2^4
 
@@ -17,7 +15,6 @@ function bench(instance::String)
     num_states = 1000
 
     ig = ising_graph(instance)
-
     fg = factor_graph(
         ig,
         max_cl_states,

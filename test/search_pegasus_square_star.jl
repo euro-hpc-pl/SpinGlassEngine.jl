@@ -5,16 +5,14 @@ function brute_force_gpu(ig::IsingGraph; num_states::Int)
 end
 
 function bench(instance::String)
-    m = 2 #16
-    n = 2 #16
-    t = 24
+    m, n, t = 2, 2, 24
 
     max_cl_states = 2^8
 
     β = 2.0
     bond_dim = 64
     δp = 1E-4
-    num_states = 20
+    num_states = 1000
 
     ig = ising_graph(instance)
     @time fg = factor_graph(
@@ -44,5 +42,5 @@ function bench(instance::String)
 end
 
 # best ground found: -59.65625
-bench("$(@__DIR__)/instances/pegasus_droplets/2_2_3_00.txt")
-#bench("$(@__DIR__)/instances/pegasus_dwave/P16/001.txt")
+#bench("$(@__DIR__)/instances/pegasus_droplets/2_2_3_00.txt")
+bench("$(@__DIR__)/instances/pegasus_dwave/P2/001.txt")

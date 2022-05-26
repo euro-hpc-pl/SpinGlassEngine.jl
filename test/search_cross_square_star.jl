@@ -41,5 +41,5 @@
             end
         end
     end
-    #@test all(e -> e ≈ first(energies), energies)
+    @test all(e -> e ≈ first(energies), energies)
 end

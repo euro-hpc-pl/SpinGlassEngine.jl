@@ -31,12 +31,10 @@ function bench(instance::String)
         for Gauge ∈ (NoUpdate, GaugeStrategy, GaugeStrategyWithBalancing)
             for Layout ∈ (GaugesEnergy,), transform ∈ all_lattice_transformations
                 net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
-<<<<<<< HEAD
                 ctr = MpsContractor{Strategy, Gauge}(net, all_betas, graduate_truncation, params)
 
                 sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit))
                 #@assert sol.energies[begin] ≈ ground_energy
-=======
                 ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], graduate_truncation, params)
                 indβ = [3,]
 
@@ -49,7 +47,6 @@ function bench(instance::String)
                 #println("degeneracy ", sol.degeneracy)
                 println("energy ", sol.energies[begin])
                 #@test sol.energies[begin] ≈ ground_energy
->>>>>>> a3ad1018fcda60f8f35b67073010e9ed005579fc
                 push!(energies, sol.energies)
                 clear_memoize_cache()
             end

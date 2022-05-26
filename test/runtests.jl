@@ -58,10 +58,8 @@ push!(my_tests,
         #"future_tests/chimera_overlap_python.jl", # OK
         #"future_tests/cross_square_star_prob.jl",
         #"future_tests/search_new_geometry_nodiag.jl", # NO
-        #"future_tests/pegasus_nondiag_geometry.jl", # NO Pegasus not defined
-        #"future_tests/gauges.jl", # OK
-        #"future_tests/gauges2.jl", # OK
-        #"future_tests/gauges3.jl",
+        #"future_tests/pegasus_nondiag_geometry.jl", # NO
+        #"future_tests/gauges.jl", # O
         #"future_tests/memoization.jl",
 )
 =#

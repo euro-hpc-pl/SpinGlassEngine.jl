@@ -31,10 +31,10 @@ function bench(instance::String)
             for Layout ∈ (GaugesEnergy,), transform ∈ all_lattice_transformations
                 net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
                 ctr = MpsContractor{Strategy, Gauge}(net, all_betas, :graduate_truncate, params)
-
                 sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit))
-                #@assert sol.energies[begin] ≈ ground_energy
-                println(sol.energies[begin])
+
+                @assert sol.energies[begin] ≈ ground_energy
+
                 push!(energies, sol.energies)
                 clear_memoize_cache()
             end

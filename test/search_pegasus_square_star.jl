@@ -15,7 +15,7 @@ function bench(instance::String)
     num_states = 20
 
     ig = ising_graph(instance)
-    @time fg = factor_graph(
+    fg = factor_graph(
         ig,
         max_cl_states,
         spectrum = brute_force, # rm _gpu to use CPU
@@ -34,7 +34,6 @@ function bench(instance::String)
             ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], graduate_truncation, params)
             sol_peps = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
             push!(energies, sol_peps.energies)
-            println(sol_peps.energies[begin])
             clear_memoize_cache()
         end
     end
@@ -43,4 +42,3 @@ end
 
 # best ground found: -59.65625
 bench("$(@__DIR__)/instances/pegasus_droplets/2_2_3_00.txt")
-#bench("$(@__DIR__)/instances/pegasus_dwave/P16/001.txt")

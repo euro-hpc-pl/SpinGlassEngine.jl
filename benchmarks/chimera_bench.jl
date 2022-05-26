@@ -32,7 +32,7 @@ TRANSFORM = all_lattice_transformations
 GAUGE =  GaugeStrategy
 STRATEGY = SVDTruncate
 SPARSITY = Dense
-graduate_truncation = true
+graduate_truncation = :graduate_truncate
 
 INDβ = [1, 2, 3]
 MAX_STATES = 500

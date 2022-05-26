@@ -5,8 +5,8 @@ function brute_force_gpu(ig::IsingGraph; num_states::Int)
 end
 
 function bench(instance::String)
-    m = 2
-    n = 2
+    m = 2 #16
+    n = 2 #16
     t = 24
 
     max_cl_states = 2^8
@@ -14,7 +14,7 @@ function bench(instance::String)
     β = 2.0
     bond_dim = 64
     δp = 1E-4
-    num_states = 1000
+    num_states = 20
 
     ig = ising_graph(instance)
     @time fg = factor_graph(
@@ -26,7 +26,7 @@ function bench(instance::String)
     params = MpsParameters(bond_dim, 1E-8, 10)
     search_params = SearchParameters(num_states, δp)
     Gauge = NoUpdate
-    graduate_truncation = true
+    graduate_truncation = :graduate_truncate
 
     # Solve using PEPS search
     energies = Vector{Float64}[]
@@ -36,6 +36,7 @@ function bench(instance::String)
             ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], graduate_truncation, params)
             sol_peps = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
             push!(energies, sol_peps.energies)
+            println(sol_peps.energies[begin])
             clear_memoize_cache()
         end
     end
@@ -44,3 +45,4 @@ end
 
 # best ground found: -59.65625
 bench("$(@__DIR__)/instances/pegasus_droplets/2_2_3_00.txt")
+#bench("$(@__DIR__)/instances/pegasus_dwave/P16/001.txt")

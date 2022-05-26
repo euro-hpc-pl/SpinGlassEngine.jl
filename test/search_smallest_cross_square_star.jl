@@ -26,7 +26,7 @@
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
             for transform ∈ all_lattice_transformations
                 net = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, fg, transform)
-                ctr = MpsContractor{Strategy, Gauge}(net, [β/8., β/4., β/2., β], true, params)
+                ctr = MpsContractor{Strategy, Gauge}(net, [β/8., β/4., β/2., β], :graduate_truncate, params)
                 sol = low_energy_spectrum(ctr, search_params)
 
                 ig_states = decode_factor_graph_state.(Ref(fg), sol.states)

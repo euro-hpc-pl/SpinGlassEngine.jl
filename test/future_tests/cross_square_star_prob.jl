@@ -33,7 +33,7 @@ Lattice = SquareStar
 Gauge = NoUpdate
 
 net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform)
-ctr = MpsContractor{Strategy, Gauge}(net, [β/2, β], true, params)
+ctr = MpsContractor{Strategy, Gauge}(net, [β/2, β], :graduate_truncate, params)
 sol = low_energy_spectrum(ctr, search_params)
 
 ig_states = decode_factor_graph_state.(Ref(fg), sol.states)

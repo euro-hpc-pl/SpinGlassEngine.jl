@@ -18,7 +18,7 @@ using ProgressMeter
  num_states = 500
  indβ = 4
 
- graduate_truncation = true
+ graduate_truncation = :graduate_truncate
 
  instance = "$(@__DIR__)/instances/chimera_droplets/128power/001.txt"
 

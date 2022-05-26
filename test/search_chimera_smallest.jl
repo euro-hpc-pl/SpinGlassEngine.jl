@@ -1,4 +1,4 @@
-@testset "Small Chimera instance has the correct spectrum for all transformations" begin
+@testset "Smallest chimera pathological instance has the correct spectrum for all transformations" begin
     exact_energies = [-2.6, -1.1, -0.6, -0.4, -0.4, 1.1, 1.9, 2.1]
 
     m, n, t = 3, 1, 1

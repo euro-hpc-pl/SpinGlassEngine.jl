@@ -1,7 +1,7 @@
 @testset "Small instance has the correct spectrum for all transformations" begin
-    m = 3
-    n = 1
-    t = 1
+    exact_energies = [-2.6, -1.1, -0.6, -0.4, -0.4, 1.1, 1.9, 2.1]
+
+    m, n, t = 3, 1, 1
     L = n * m * t
 
     β = 1.0
@@ -19,8 +19,6 @@
     params = MpsParameters(bond_dim, 1E-8, 4)
     search_params = SearchParameters(num_states, 0.0)
     Gauge = NoUpdate
-
-    exact_energies = [-2.6, -1.1, -0.6, -0.4, -0.4, 1.1, 1.9, 2.1]
 
     energies = Vector{Float64}[]
     for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, Sparse)

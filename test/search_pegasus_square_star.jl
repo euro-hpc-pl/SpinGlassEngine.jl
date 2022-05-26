@@ -42,5 +42,5 @@ function bench(instance::String)
 end
 
 # best ground found: -59.65625
-bench("$(@__DIR__)/instances/pegasus_droplets/2_2_3_00.txt")
-#bench("$(@__DIR__)/instances/pegasus_dwave/P16/001.txt")
+#bench("$(@__DIR__)/instances/pegasus_droplets/2_2_3_00.txt")
+bench("$(@__DIR__)/instances/pegasus_dwave/P2/002.txt")

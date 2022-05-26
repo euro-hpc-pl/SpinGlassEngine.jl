@@ -20,7 +20,7 @@ function bench(instance::String)
     @time fg = factor_graph(
         ig,
         max_cl_states,
-        spectrum = brute_force,  # rm _gpu to use CPU
+        spectrum = brute_force, # rm _gpu to use CPU
         cluster_assignment_rule=super_square_lattice((m, n, t))
     )
     params = MpsParameters(bond_dim, 1E-8, 10)
@@ -39,8 +39,7 @@ function bench(instance::String)
             clear_memoize_cache()
         end
     end
-    #@test all(e -> e ≈ first(energies), energies)
-    println(findall(e -> !(e ≈ first(energies)), energies))
+    @test all(e -> e ≈ first(energies), energies)
 end
 
 # best ground found: -59.65625

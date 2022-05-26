@@ -16,9 +16,9 @@ function bench(instance::String)
     δp = 1E-4
     num_states = 1000
 
-    @time ig = ising_graph(instance)
+    ig = ising_graph(instance)
 
-    @time fg = factor_graph(
+    fg = factor_graph(
         ig,
         max_cl_states,
         spectrum=brute_force,#_gpu, # rm _gpu to use CPU
@@ -39,8 +39,7 @@ function bench(instance::String)
             clear_memoize_cache()
         end
     end
-    #@test all(e -> e ≈ first(energies), energies)
-    println(findall(e -> !(e ≈ first(energies)), energies))
+    @test all(e -> e ≈ first(energies), energies)
 end
 
 bench("$(@__DIR__)/instances/pegasus_nondiag/4x4.txt")

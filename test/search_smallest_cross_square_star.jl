@@ -1,5 +1,5 @@
 
-@testset "Pegasus-like instance has the correct ground state energy" begin
+@testset "Pegasus-like (smallest cross-square-star) instance has the correct solution" begin
     m, n, t = 2, 3, 1
     L = n * m * t
 

@@ -33,7 +33,7 @@ for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, Sparse)
         for Gauge ∈ (GaugeStrategy, )
             for Lattice ∈ (Square, SquareStar), transform ∈ all_lattice_transformations
                 net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform, :id)
-                ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], true, params)
+                ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params)
 
                 @testset "Overlaps calculated differently are the same." begin
                     indβ = 3

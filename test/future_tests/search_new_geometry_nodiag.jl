@@ -1,5 +1,5 @@
 # using SpinGlassExhaustive
-using TensorOperations
+# using TensorOperations
 
 # function brute_force_gpu(ig::IsingGraph; num_states::Int)
 #     brute_force(ig, :GPU, num_states=num_states)
@@ -61,7 +61,7 @@ function bench(instance::String)
 
             @test norm_prob ≈ exct_prob
             push!(energies, sol.energies)
-            
+
             clear_memoize_cache()
         end
     end

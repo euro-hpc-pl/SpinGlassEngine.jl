@@ -1,5 +1,5 @@
 # using SpinGlassExhaustive
-using TensorOperations
+# using TensorOperations
 using SpinGlassEngine
 
 # function brute_force_gpu(ig::IsingGraph; num_states::Int)
@@ -41,12 +41,13 @@ Strategy = SVDTruncate
 Sparsity = Dense
 tran = rotation(180)
 Layout = GaugesEnergy
+Gauge = NoUpdate
 
-net = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, fg, tran)
+net = PEPSNetwork{Pegasus_nd, Sparsity}(m, n, fg, tran)
 net2 = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg2, tran)
 
-ctr = MpsContractor{Strategy}(net, [β/8, β/4, β/2, β], :graduate_truncate, params)
-ctr2 = MpsContractor{Strategy}(net2, [β/8, β/4, β/2, β], :graduate_truncate, params)
+ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params)
+ctr2 = MpsContractor{Strategy, Gauge}(net2, [β/8, β/4, β/2, β], :graduate_truncate, params)
 
 sol = low_energy_spectrum(ctr, search_params)#, merge_branches(ctr))
 sol2 = low_energy_spectrum(ctr2, search_params)#, merge_branches(ctr2))

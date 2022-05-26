@@ -46,10 +46,10 @@ push!(my_tests,
     #"search_cross_square_star.jl",  # final test fails
     #"search_smallest_cross_square_star.jl",
     #"search_chimera_full.jl",   #  ground is incorrect
-    #"search_cross_square_star.jl",  # final test fails
+    "search_cross_square_star.jl",  # final test fails
     #"search_smallest_cross_square_star.jl",
     #"search_pegasus_square_star.jl"
-    "search_pegasus_nodiag_square_star.jl"
+    #"search_pegasus_nodiag_square_star.jl"
 )
 
 # This is work in progress (may or may not be included in furure versions)
@@ -62,7 +62,7 @@ push!(my_tests,
     #"future_tests/gauges.jl", # O
     #"future_tests/memoization.jl",
 )
-
+=#
 
 for my_test in my_tests
     include(my_test)

@@ -43,8 +43,8 @@ function bench(instance::String)
             net = PEPSNetwork{Pegasus_nd, Sparsity}(m, n, fg, tran)
             net2 = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg2, tran)
 
-            ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], true, params)
-            ctr2 = MpsContractor{Strategy, Gauge}(net2, [β/8, β/4, β/2, β], true, params)
+            ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params)
+            ctr2 = MpsContractor{Strategy, Gauge}(net2, [β/8, β/4, β/2, β], :graduate_truncate, params)
 
             sol = low_energy_spectrum(ctr, search_params)#, merge_branches(ctr))
             sol2 = low_energy_spectrum(ctr2, search_params)#, merge_branches(ctr2))

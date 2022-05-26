@@ -10,7 +10,7 @@ function bench(instance::String)
     L = n * m * t
     max_cl_states = 2^(t-0)
 
-    graduate_truncation = true
+    graduate_truncation = :graduate_truncate
     #ground_energy = -3336.773383 # for chimera 2048
     #ground_energy = -1881.226667 # for chimera 1152
     #ground_energy = -846.960013 # for chimera 512
@@ -36,7 +36,6 @@ function bench(instance::String)
             for Layout ∈ (GaugesEnergy,), transform ∈ all_lattice_transformations #rotation.([0]) 
                 net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
                 ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], graduate_truncation, params)
-                #ctr = MpsContractor{Strategy}(net, [β/6, β/3, β/2, β], params)
                 indβ = [3,]
 
                 update_gauges!(ctr, m, indβ, Val(:up))

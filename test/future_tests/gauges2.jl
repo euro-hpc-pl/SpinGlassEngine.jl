@@ -34,8 +34,8 @@ for Sparsity ∈ (Dense,)# Sparse) #MPSAnnealing
     for Layout ∈ (EnergyGauges,)# GaugesEnergy, EngGaugesEng)
         for Lattice ∈ (Square, SquareStar), transform ∈ all_lattice_transformations[[1]]
             net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform, :id)
-            ctr_svd = MpsContractor{SVDTruncate, Gauge}(net, [β/8, β/4, β/2, β], true, params)
-            ctr_anneal = MpsContractor{MPSAnnealing, Gauge}(net, [β/8, β/4, β/2, β], true, params)
+            ctr_svd = MpsContractor{SVDTruncate, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params)
+            ctr_anneal = MpsContractor{MPSAnnealing, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params)
 
             @testset "Overlaps calculated differently are the same." begin
                 indβ = 3

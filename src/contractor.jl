@@ -73,7 +73,7 @@ Tells how to contract the peps network using the MPO-MPS scheme.
 mutable struct MpsContractor{T <: AbstractStrategy, R <: AbstractGauge} <: AbstractContractor
     peps::PEPSNetwork{T, S} where {T, S}
     betas::Vector{<:Real}
-    graduate_truncation::Bool
+    graduate_truncation::Symbol
     params::MpsParameters
     layers::MpoLayers
     statistics#::Dict{Vector{Int}, <:Real}
@@ -82,7 +82,7 @@ mutable struct MpsContractor{T <: AbstractStrategy, R <: AbstractGauge} <: Abstr
     node_search_index::Dict{Node, Int}
     current_node::Node
 
-    function MpsContractor{T, R}(net, βs, graduate_truncation::Bool, params) where {T, R}
+    function MpsContractor{T, R}(net, βs, graduate_truncation::Symbol, params) where {T, R}
         ml = MpoLayers(layout(net), net.ncols)
         stat = Dict()
         ord, node_out = nodes_search_order_Mps(net)
@@ -143,7 +143,7 @@ Construct (and memoize) top MPS using SVD for a given row.
 
     ψ0 = dot(ψ, W)
     canonise!(ψ0, :right)
-    if ctr.graduate_truncation
+    if ctr.graduate_truncation == :graduate_truncate
         canonise_truncate!(ψ0, :left, Dcut * 4, tolS / 10)
         variational_sweep!(ψ0, W, ψ, Val(:right), trans)
         canonise_truncate!(ψ0, :left, Dcut * 2, tolS / 2)
@@ -176,7 +176,7 @@ Construct (and memoize) (bottom) MPS using SVD for a given row.
 
     ψ0 = dot(W, ψ)
     canonise!(ψ0, :right)
-    if ctr.graduate_truncation
+    if ctr.graduate_truncation == :graduate_truncate
         canonise_truncate!(ψ0, :left, Dcut * 4, tolS / 10)
         variational_sweep!(ψ0, W, ψ, Val(:right), trans)
         canonise_truncate!(ψ0, :left, Dcut * 2, tolS / 2)

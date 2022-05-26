@@ -35,8 +35,8 @@ using Memoize
 
             network_d = PEPSNetwork{Square{Layout}, Dense}(m, n, fg, transform, :id)
             network_s = PEPSNetwork{Square{Layout}, Sparse}(m, n, fg, transform, :id)
-            ctr_d = MpsContractor{Strategy, Gauge}(network_d, [β/8, β/4, β/2, β], true, params)
-            ctr_s = MpsContractor{Strategy, Gauge}(network_s, [β/8, β/4, β/2, β], true, params)
+            ctr_d = MpsContractor{Strategy, Gauge}(network_d, [β/8, β/4, β/2, β], :graduate_truncate, params)
+            ctr_s = MpsContractor{Strategy, Gauge}(network_s, [β/8, β/4, β/2, β], :graduate_truncate, params)
 
             @testset "Overlaps calculated differently agree" begin
                 indβ = 3

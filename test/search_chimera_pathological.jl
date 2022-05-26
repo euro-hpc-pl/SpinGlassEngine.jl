@@ -71,7 +71,7 @@
             for Lattice ∈ (Square, SquareStar), transform ∈ all_lattice_transformations
 
                 net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform)
-                ctr = MpsContractor{Strategy, Gauge}(net, [β/8., β/4., β/2., β], true, params)
+                ctr = MpsContractor{Strategy, Gauge}(net, [β/8., β/4., β/2., β], :graduate_truncate, params)
                 sol = low_energy_spectrum(ctr, search_params)
 
                 @test sol.energies ≈ exact_energies

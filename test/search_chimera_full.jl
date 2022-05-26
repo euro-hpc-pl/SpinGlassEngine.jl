@@ -34,6 +34,7 @@ function bench(instance::String)
 
                 sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit))
                 #@assert sol.energies[begin] ≈ ground_energy
+                println(sol.energies[begin])
                 push!(energies, sol.energies)
                 clear_memoize_cache()
             end

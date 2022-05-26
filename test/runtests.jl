@@ -45,8 +45,8 @@ push!(my_tests,
     #"search_chimera_smallest.jl", # problem with MPSAnnealing
     #"search_cross_square_star.jl",  # final test fails
     #"search_smallest_cross_square_star.jl",
-    #"search_chimera_full.jl",   #  ground is incorrect
-    "search_cross_square_star.jl",  # final test fails
+    "search_chimera_full.jl",   #  ground is incorrect
+    #"search_cross_square_star.jl",  # final test fails
     #"search_smallest_cross_square_star.jl",
     #"search_pegasus_square_star.jl"
     #"search_pegasus_nodiag_square_star.jl"

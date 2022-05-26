@@ -7,9 +7,9 @@ end
 function bench(instance::String)
     m, n, t = 4, 4, 24
 
-    max_cl_states = 2^8
+    max_cl_states = 2^4
 
-    β = 2.5
+    β = 1.
     bond_dim = 16
     δp = 1E-4
     num_states = 1000
@@ -29,14 +29,17 @@ function bench(instance::String)
     energies = Vector{Float64}[]
     for Strategy ∈ (SVDTruncate, MPSAnnealing), transform ∈ all_lattice_transformations
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng), Sparsity ∈ (Dense, )
+            println(Strategy,' ', transform, ' ', Layout, ' ', Sparsity)
             net = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, fg, transform)
             ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params)
             sol_peps = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
             push!(energies, sol_peps.energies)
+            println(sol_peps.energies[begin])
             clear_memoize_cache()
         end
     end
     @test all(e -> e ≈ first(energies), energies)
 end
 
+# best ground found for max_cl_states = 2^4: -537.0007291019799
 bench("$(@__DIR__)/instances/pegasus_nondiag/4x4.txt")

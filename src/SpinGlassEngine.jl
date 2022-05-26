@@ -3,6 +3,7 @@ module SpinGlassEngine
 using Base: Tuple
 using SpinGlassTensors
 using SpinGlassNetworks
+using CUDA
 using TensorOperations
 using TensorCast
 using MetaGraphs

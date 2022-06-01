@@ -430,6 +430,21 @@ function _update_reduced_env_right(
     R
 end
 
+
+"""
+$(TYPEDSIGNATURES)
+"""
+function _update_reduced_env_right(
+    K::AbstractArray{Float64, 1},
+    RE::AbstractArray{Float64, 2},
+    M::SparsePegasusSquareTensor,
+    B::AbstractArray{Float64, 3}
+)
+    # TODO
+    _update_reduced_env_right(K, RE, M.M, B)
+end
+
+
 """
 $(TYPEDSIGNATURES)
 """

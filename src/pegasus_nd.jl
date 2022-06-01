@@ -88,7 +88,7 @@ function conditional_probability(
 ) where {T <: PegasusSquare, S}
     indβ, β = length(ctr.betas), last(ctr.betas)
     i, j, k = ctr.current_node
-    
+
     L = left_env(ctr, i, ∂v[1:j-1], indβ)
     R = right_env(ctr, i, ∂v[(j+4):end], indβ)
     M = dressed_mps(ctr, i, indβ)[j]
@@ -213,27 +213,17 @@ $(TYPEDSIGNATURES)
 
 cluster-cluster energies attached from left and top
 """
-
 function tensor(
     network::PEPSNetwork{PegasusSquare, T}, node::PEPSNode, β::Real, ::Val{:sparse_pegasus_square_site}
 ) where T <: AbstractSparsity
-    M = tensor(network, node, β, Val(:pegasus_square_site))
-
     i, j = node.i, node.j
 
     en1 = local_energy(network, (i, j, 1))
     en2 = local_energy(network, (i, j, 2))
     en12 = interaction_energy(network, (i, j, 1), (i, j, 2))
 
-    eloc = zeros(length(en2), length(en1))
     p1 = projector(network, (i, j, 1), (i, j, 2))
     p2 = projector(network, (i, j, 2), (i, j, 1))
-
-    for s1 ∈ 1:length(en1), s2 ∈ 1:length(en2)
-        @inbounds eloc[s2, s1] = en1[s1] + en2[s2] + en12[p1[s1], p2[s2]]
-    end
-    eloc = eloc .- minimum(eloc)
-    loc_exp = exp.(-β .* eloc)
 
     pr = projector(network, (i, j, 2), ((i, j+1, 1), (i, j+1, 2)))
     pd = projector(network, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
@@ -266,18 +256,22 @@ function tensor(
     le1l = exp.(-β .* (e1l .- minimum(e1l)))
     le2l = exp.(-β .* (e2l .- minimum(e2l)))
 
-    projs = [pl, pu, pr, pd]
-    bnd_exp = [le1l, le2l, le1u, le2u]
-    bnd_projs = [p1l, p2l, p1u, p2u]
-    loc_en = [en1, en2]
-    SparsePegasusSquareTensor(M, projs, loc_exp, bnd_exp, bnd_projs, loc_en)
+    eloc = zeros(length(en2), length(en1))
+    for s1 ∈ 1:length(en1), s2 ∈ 1:length(en2)
+        @inbounds eloc[s2, s1] = en1[s1] + en2[s2] + en12[p1[s1], p2[s2]]
+    end
+
+    SparsePegasusSquareTensor(
+        tensor(network, node, β, Val(:pegasus_square_site)),
+        [pl, pu, pr, pd],
+        exp.(-β .* (eloc .- minimum(eloc))),
+        [le1l, le2l, le1u, le2u],
+        [p1l, p2l, p1u, p2u],
+        [en1, en2]
+    )
 end
 
-
-function Base.size(M::SparsePegasusSquareTensor, n::Int)
-    maximum(M.projs[n])
-end
-
+Base.size(M::SparsePegasusSquareTensor, n::Int) = maximum(M.projs[n])
 
 function tensor(
     network::PEPSNetwork{PegasusSquare, T}, node::PEPSNode, β::Real, ::Val{:pegasus_square_site}

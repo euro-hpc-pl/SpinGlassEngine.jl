@@ -1,5 +1,3 @@
-# using SpinGlassExhaustive
-# using TensorOperations
 using SpinGlassEngine
 
 # function brute_force_gpu(ig::IsingGraph; num_states::Int)
@@ -62,9 +60,7 @@ fg_states = decode_state.(Ref(net), sol.states)
 
 norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
 exct_prob = exp.(-β .* (sol.energies .- sol.energies[1]))
-#for (a, b, c, d) in zip(norm_prob, sol.energies, sol.states, exct_prob)
-#    println(a ./ d, " ", b, " ", c)
-#end
+
 @test norm_prob ≈ exct_prob
 push!(energies, sol.energies)
 
@@ -74,8 +70,6 @@ push!(energies, sol.energies)
 ψ2_top = mps_top(ctr2, 1, 4)
 println("overlap = ", ψ1 * ψ2)
 println("overlap = ", ψ1_top * ψ2_top)
-# println(size(ψ1[1]))
 
-println("BYLEM TU")
 
 clear_memoize_cache()

@@ -40,32 +40,31 @@ my_tests = []
 
 push!(my_tests,
 # quick tests:
-    "operations.jl",
-    "branch_and_bound.jl",
-    "search_chimera_pathological.jl",
-    "search_chimera_smallest.jl",
-    "search_cross_square_star.jl",
-    "search_smallest_cross_square_star.jl",
-    "search_cross_square_star.jl",
-    "search_smallest_cross_square_star.jl",
-    "search_pegasus_square_star.jl",
-    "search_pegasus_nodiag_square_star.jl",
+    # "operations.jl",
+    # "branch_and_bound.jl",
+    # "search_chimera_pathological.jl",
+    # "search_chimera_smallest.jl",
+    # "search_cross_square_star.jl",
+    # "search_smallest_cross_square_star.jl",
+    # "search_cross_square_star.jl",
+    # "search_smallest_cross_square_star.jl",
+    # "search_pegasus_square_star.jl",
+    # "search_pegasus_nodiag_square_star.jl",
 
 # time consuming tests:
     #"search_chimera_full.jl",
 )
 
 # This is work in progress (may or may not be included in future versions)
-#=
+
 push!(my_tests,
     #"experimental/chimera_overlap_python.jl", # OK
     #"experimental/cross_square_star_prob.jl",
-    #"experimental/search_new_geometry_nodiag.jl", # NO
-    #"experimental/pegasus_nondiag_geometry.jl", # NO
+    "experimental/pegasus_nondiag_geometry.jl",
     #"experimental/gauges.jl",
     #"experimental/memoization.jl",
 )
-=#
+
 
 for my_test ∈ my_tests
     include(my_test)

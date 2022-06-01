@@ -218,8 +218,59 @@ function tensor(
     network::PEPSNetwork{PegasusSquare, T}, node::PEPSNode, β::Real, ::Val{:sparse_pegasus_square_site}
 ) where T <: AbstractSparsity
     M = tensor(network, node, β, Val(:pegasus_square_site))
-    ss = size(M)
-    SparsePegasusSquareTensor(M, [[ss[1]], [ss[2]], [ss[3]], [ss[4]]])
+
+    i, j = node.i, node.j
+
+    en1 = local_energy(network, (i, j, 1))
+    en2 = local_energy(network, (i, j, 2))
+    en12 = interaction_energy(network, (i, j, 1), (i, j, 2))
+
+    eloc = zeros(length(en2), length(en1))
+    p1 = projector(network, (i, j, 1), (i, j, 2))
+    p2 = projector(network, (i, j, 2), (i, j, 1))
+
+    for s1 ∈ 1:length(en1), s2 ∈ 1:length(en2)
+        @inbounds eloc[s2, s1] = en1[s1] + en2[s2] + en12[p1[s1], p2[s2]]
+    end
+    eloc = eloc .- minimum(eloc)
+    loc_exp = exp.(-β .* eloc)
+
+    pr = projector(network, (i, j, 2), ((i, j+1, 1), (i, j+1, 2)))
+    pd = projector(network, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
+
+    p1l = projector(network, (i, j, 1), (i, j-1 ,2))
+    p2l = projector(network, (i, j, 2), (i, j-1, 2))
+    p1u = projector(network, (i, j, 1), (i-1, j, 1))
+    p2u = projector(network, (i, j, 2), (i-1, j, 1))
+
+    pl1 = projector(network, (i, j-1, 2), (i, j, 1))
+    pl2 = projector(network, (i, j-1, 2), (i, j, 2))
+    pl, (pl1, pl2) = fuse_projectors((pl1, pl2))
+
+    pu1 = projector(network, (i-1, j, 1), (i, j, 1))
+    pu2 = projector(network, (i-1, j, 1), (i, j, 2))
+    pu, (pu1, pu2) = fuse_projectors((pu1, pu2))
+
+    e1u = interaction_energy(network, (i, j, 1), (i-1, j, 1))
+    e2u = interaction_energy(network, (i, j, 2), (i-1, j, 1))
+    e1l = interaction_energy(network, (i, j, 1), (i, j-1, 2))
+    e2l = interaction_energy(network, (i, j, 2), (i, j-1, 2))
+
+    e1u = @inbounds @view e1u[:, pu1]
+    e2u = @inbounds @view e2u[:, pu2]
+    e1l = @inbounds @view e1l[:, pl1]
+    e2l = @inbounds @view e2l[:, pl2]
+
+    le1u = exp.(-β .* (e1u .- minimum(e1u)))
+    le2u = exp.(-β .* (e2u .- minimum(e2u)))
+    le1l = exp.(-β .* (e1l .- minimum(e1l)))
+    le2l = exp.(-β .* (e2l .- minimum(e2l)))
+
+    projs = [pl, pu, pr, pd]
+    bnd_exp = [le1l, le2l, le1u, le2u]
+    bnd_projs = [p1l, p2l, p1u, p2u]
+    loc_en = [en1, en2]
+    SparsePegasusSquareTensor(M, projs, loc_exp, bnd_exp, bnd_projs, loc_en)
 end
 
 

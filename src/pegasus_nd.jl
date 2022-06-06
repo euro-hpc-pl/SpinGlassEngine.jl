@@ -262,7 +262,7 @@ function tensor(
     end
 
     SparsePegasusSquareTensor(
-        tensor(network, node, β, Val(:pegasus_square_site)),
+        # tensor(network, node, β, Val(:pegasus_square_site)),
         [pl, pu, pr, pd],
         exp.(-β .* (eloc .- minimum(eloc))),
         [le1l, le2l, le1u, le2u],

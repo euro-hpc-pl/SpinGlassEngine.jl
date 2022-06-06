@@ -441,7 +441,26 @@ function _update_reduced_env_right(
     B::AbstractArray{Float64, 3}
 )
     # TODO
-    _update_reduced_env_right(K, RE, M.M, B)
+    pl, pu, pr, pd = M.projs
+    le1l, le2l, le1u, le2u = M.bnd_exp
+    p1l, p2l, p1u, p2u = M.bnd_projs
+    en1, en2 = M.loc_en
+    R = zeros(size(B, 1), maximum(pl))
+    for s1 ∈ 1:length(en1), s2 ∈ 1:length(en2)
+        lu = le1u[p1u[s1], :] .* le2u[p2u[s2], :]
+        Kl = K .* lu
+        RR = @view RE[:, pr[s2]]
+        BB = @view B[:, pd[s1], :]
+        ll = reshape(le1l[p1l[s1], :] .* le2l[p2l[s2], :], 1, :)
+        @tensor RB[x] := BB[x, y] * RR[y]
+        sRB = size(RB, 1)
+        sK = size(Kl, 1)
+        RRR = Kl .* RB
+        Rpart = reshape(Kl .* RB, sRB, sK)
+        R[:, :] += M.loc_exp[s2, s1] .* (Rpart .* ll)
+    end
+    R ./ maximum(abs.(R))
+    #_update_reduced_env_right(K, RE, M.M, B)
 end
 
 

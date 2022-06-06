@@ -440,27 +440,24 @@ function _update_reduced_env_right(
     M::SparsePegasusSquareTensor,
     B::AbstractArray{Float64, 3}
 )
-    # TODO
     pl, pu, pr, pd = M.projs
     le1l, le2l, le1u, le2u = M.bnd_exp
     p1l, p2l, p1u, p2u = M.bnd_projs
     en1, en2 = M.loc_en
     R = zeros(size(B, 1), maximum(pl))
+
     for s1 ∈ 1:length(en1), s2 ∈ 1:length(en2)
         lu = le1u[p1u[s1], :] .* le2u[p2u[s2], :]
-        Kl = K .* lu
+        Kl = K' * lu
         RR = @view RE[:, pr[s2]]
         BB = @view B[:, pd[s1], :]
-        ll = reshape(le1l[p1l[s1], :] .* le2l[p2l[s2], :], 1, :)
         @tensor RB[x] := BB[x, y] * RR[y]
-        sRB = size(RB, 1)
-        sK = size(Kl, 1)
-        RRR = Kl .* RB
-        Rpart = reshape(Kl .* RB, sRB, sK)
-        R[:, :] += M.loc_exp[s2, s1] .* (Rpart .* ll)
+        RB = reshape(RB, :, 1)
+        ll = reshape(le1l[p1l[s1], :] .* le2l[p2l[s2], :], 1, :)
+        R[:, :] +=  (M.loc_exp[s2, s1] * Kl) .* (RB .* ll)
     end
     R ./ maximum(abs.(R))
-    #_update_reduced_env_right(K, RE, M.M, B)
+    # _update_reduced_env_right(K, RE, M.M, B)
 end
 
 

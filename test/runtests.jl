@@ -60,7 +60,8 @@ push!(my_tests,
 push!(my_tests,
     #"experimental/chimera_overlap_python.jl", # OK
     #"experimental/cross_square_star_prob.jl",
-    "experimental/pegasus_nondiag_geometry.jl", #project_ket_on_bra
+    #"experimental/pegasus_nondiag_basic.jl",
+     "experimental/pegasus_nondiag_heavy.jl",
     #"experimental/gauges.jl",
     #"experimental/memoization.jl",
 )

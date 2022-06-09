@@ -4,16 +4,17 @@ using SpinGlassEngine
 #     brute_force(ig, :GPU, num_states=num_states)
 # end
 
-m = 2
-n = 2
-t = 3
+m = 4
+n = 4
+t = 1
 
-β = 1
+β = 3
 bond_dim = 64
 δp = 1e-10
 num_states = 10
 
-ig = ising_graph("$(@__DIR__)/instances/pegasus_nondiag/2x2.txt")
+#ig = ising_graph("$(@__DIR__)/instances/pegasus_droplets/4_4_3_00.txt")
+ig = ising_graph("$(@__DIR__)/instances/chimera_droplets/128power/001.txt")
 
 fg = factor_graph(
     ig,
@@ -28,21 +29,23 @@ search_params = SearchParameters(num_states, δp)
 energies = Vector{Float64}[]
 Strategy = MPSAnnealing # SVDTruncate
 Sparsity = Sparse #Dense
-tran =  reflection(:antydiag)  # rotation(180)
+tran =  rotation(0)
 Layout = GaugesEnergy
 Gauge = NoUpdate
 
 net = PEPSNetwork{PegasusSquare, Sparsity}(m, n, fg, tran)
 ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params)
-sol = low_energy_spectrum(ctr, search_params) #, merge_branches(ctr))
+sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 
 ig_states = decode_factor_graph_state.(Ref(fg), sol.states)
 @test sol.energies ≈ energy.(Ref(ig), ig_states)
 fg_states = decode_state.(Ref(net), sol.states)
 @test sol.energies ≈ energy.(Ref(fg), fg_states)
 
-norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
-exct_prob = exp.(-β .* (sol.energies .- sol.energies[1]))
-@test norm_prob ≈ exct_prob
+# norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
+# exct_prob = exp.(-β .* (sol.energies .- sol.energies[1]))
+# @test norm_prob ≈ exct_prob
+
+println(sol.energies)
 
 clear_memoize_cache()

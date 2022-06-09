@@ -15,19 +15,19 @@ function PegasusSquare(m::Int, n::Int)
 
     for i ∈ 1:m-1, j ∈ 1:n
         add_edge!(lg, (i, j, 1), (i+1, j, 1))
-        add_edge!(lg, (i, j, 2), (i+1, j, 1))
+        add_edge!(lg, (i, j, 1), (i+1, j, 2))
     end
 
     for i ∈ 1:m, j ∈ 1:n-1
         add_edge!(lg, (i, j, 2), (i, j+1, 2))
-        add_edge!(lg, (i, j, 1), (i, j+1, 2))
+        add_edge!(lg, (i, j, 2), (i, j+1, 1))
     end
 
     # diagonals
-    for i ∈ 1:m-1, j ∈ 1:n-1
-        add_edge!(lg, (i, j, 2), (i+1, j+1, 1))
-        add_edge!(lg, (i, j, 1), (i+1, j+1, 2))
-    end
+    # for i ∈ 1:m-1, j ∈ 1:n-1
+    #     add_edge!(lg, (i, j, 2), (i+1, j+1, 1))
+    #     add_edge!(lg, (i, j, 1), (i+1, j+1, 2))
+    # end
     lg
 end
 

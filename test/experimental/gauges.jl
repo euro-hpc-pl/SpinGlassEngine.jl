@@ -15,7 +15,7 @@ bond_dim = 32
 δp = 1E-3
 num_states = 1000
 
-instance = "$(@__DIR__)/instances/chimera_droplets/128power/001.txt"
+instance = "$(@__DIR__)/../instances/chimera_droplets/128power/001.txt"
 
 fg = factor_graph(
     ising_graph(instance),

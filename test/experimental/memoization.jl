@@ -20,7 +20,7 @@ using ProgressMeter
 
  graduate_truncation = :graduate_truncate
 
- instance = "$(@__DIR__)/instances/chimera_droplets/128power/001.txt"
+ instance = "$(@__DIR__)/../instances/chimera_droplets/128power/001.txt"
 
  fg = factor_graph(
      ising_graph(instance),

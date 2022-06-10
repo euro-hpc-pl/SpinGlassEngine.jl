@@ -10,7 +10,7 @@ L = n * m * t
 bond_dim = 16
 num_states = 10
 
-instance = "$(@__DIR__)/instances/pathological/cross_$(m)_$(n)_mdd.txt"
+instance = "$(@__DIR__)/../instances/pathological/cross_$(m)_$(n)_mdd.txt"
 
 ig = ising_graph(instance)
 

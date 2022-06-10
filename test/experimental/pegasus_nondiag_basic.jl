@@ -15,7 +15,7 @@ bond_dim = 64
 δp = 1e-10
 num_states = 2048
 
-ig = ising_graph("$(@__DIR__)/instances/pegasus_nondiag/3x2x1.txt")
+ig = ising_graph("$(@__DIR__)/../instances/pegasus_nondiag/3x2x1.txt")
 
 fg = factor_graph(
     ig,
@@ -37,7 +37,7 @@ search_params = SearchParameters(num_states, δp)
 energies = Vector{Float64}[]
 Strategy = MPSAnnealing # SVDTruncate
 Sparsity = Sparse #Dense
-tran = rotation(180)
+tran = rotation(0)
 Layout = GaugesEnergy
 Gauge = NoUpdate
 

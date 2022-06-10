@@ -14,7 +14,7 @@ bond_dim = 64
 num_states = 10
 
 #ig = ising_graph("$(@__DIR__)/instances/pegasus_droplets/4_4_3_00.txt")
-ig = ising_graph("$(@__DIR__)/instances/chimera_droplets/128power/001.txt")
+ig = ising_graph("$(@__DIR__)/../instances/chimera_droplets/128power/001.txt")
 
 fg = factor_graph(
     ig,

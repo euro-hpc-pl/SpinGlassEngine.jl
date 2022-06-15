@@ -40,16 +40,16 @@ my_tests = []
 
 push!(my_tests,
 # quick tests:
-    # "operations.jl",
-    # "branch_and_bound.jl",
-    # "search_chimera_pathological.jl",
-    # "search_chimera_smallest.jl",
-    # "search_cross_square_star.jl",
-    # "search_smallest_cross_square_star.jl",
-    # "search_cross_square_star.jl",
-    # "search_smallest_cross_square_star.jl",
-    # "search_pegasus_square_star.jl",
-    # "search_pegasus_nodiag_square_star.jl",
+     #"operations.jl",
+     #"branch_and_bound.jl",
+     #"search_chimera_pathological.jl",
+     #"search_chimera_smallest.jl",
+     #"search_cross_square_star.jl",
+     #"search_smallest_cross_square_star.jl",
+     #"search_cross_square_star.jl",
+     #"search_smallest_cross_square_star.jl",
+     #"search_pegasus_square_star.jl",
+     #"search_pegasus_nodiag_square_star.jl", # 4x4 instance is missing
 
 # time consuming tests:
     #"search_chimera_full.jl",
@@ -58,12 +58,12 @@ push!(my_tests,
 # This is work in progress (may or may not be included in future versions)
 
 push!(my_tests,
-    #"experimental/chimera_overlap_python.jl", # OK
-    #"experimental/cross_square_star_prob.jl",
+    "experimental/chimera_overlap_python.jl", # OK
+    "experimental/cross_square_star_prob.jl",
     "experimental/pegasus_nondiag_basic.jl",
     "experimental/pegasus_nondiag_heavy.jl",
-    #"experimental/gauges.jl",
-    #"experimental/memoization.jl",
+    "experimental/gauges.jl",
+    "experimental/memoization.jl",
 )
 
 

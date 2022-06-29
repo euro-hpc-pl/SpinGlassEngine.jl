@@ -64,7 +64,8 @@ push!(my_tests,
     #"experimental/pegasus_nondiag_heavy.jl",
     # "experimental/gauges.jl",
     # "experimental/memoization.jl",
-    "experimental/experiments_with_sparse_chimera.jl",
+    # "experimental/experiments_with_sparse_chimera.jl",
+    "experimental/pegasus_masoud.jl"
 )
 
 

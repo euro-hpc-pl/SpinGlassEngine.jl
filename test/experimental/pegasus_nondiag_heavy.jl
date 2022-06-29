@@ -1,8 +1,8 @@
-using SpinGlassEngine
+using SpinGlassExhaustive
 
-# function brute_force_gpu(ig::IsingGraph; num_states::Int)
-#     brute_force(ig, :GPU, num_states=num_states)
-# end
+function brute_force_gpu(ig::IsingGraph; num_states::Int)
+     brute_force(ig, :GPU, num_states=num_states)
+end
 
 m = 4
 n = 4
@@ -18,7 +18,7 @@ ig = ising_graph("$(@__DIR__)/../instances/pegasus_nondiag/pegasus_nd_4x4x3.txt"
 
 fg = factor_graph(
     ig,
-    spectrum=full_spectrum, #_gpu, # rm _gpu to use CPU
+    spectrum=brute_force_gpu, # rm _gpu to use CPU
     cluster_assignment_rule=pegasus_lattice((m, n, t))
 )
 
@@ -36,7 +36,7 @@ Gauge = NoUpdate
 net = PEPSNetwork{PegasusSquare, Sparsity}(m, n, fg, tran)
 ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params)
 
-# sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 
 # ig_states = decode_factor_graph_state.(Ref(fg), sol.states)
 # @test sol.energies ≈ energy.(Ref(ig), ig_states)

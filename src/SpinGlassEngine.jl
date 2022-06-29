@@ -37,6 +37,7 @@ include("contractor.jl")
 include("square.jl")
 include("square_star.jl")
 include("pegasus_nd.jl")
+include("pegasus.jl")
 include("tensors.jl")
 include("search.jl")
 

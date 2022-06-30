@@ -4,18 +4,18 @@ using SpinGlassEngine
 #     brute_force(ig, :GPU, num_states=num_states)
 # end
 
-m = 4
-n = 4
+m = 2
+n = 2
 t = 3
 
 max_cl_states = 2^2
 
-β = 1
-bond_dim = 64
+β = 3
+bond_dim = 8
 δp = 1e-10
-num_states = 2048
+num_states = 10
 
-ig = ising_graph("$(@__DIR__)/../instances/pegasus_droplets/4_4_3_00.txt")
+ig = ising_graph("$(@__DIR__)/../instances/pegasus_droplets/2_2_3_00.txt")
 
 fg = factor_graph(
     ig,

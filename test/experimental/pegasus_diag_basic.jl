@@ -21,11 +21,8 @@ fg = factor_graph(
     ig,
     # max_cl_states,
     spectrum=full_spectrum, #_gpu, # rm _gpu to use CPU
-    cluster_assignment_rule=pegasus_lattice((m, n, t))
+    cluster_assignment_rule=pegasus_lattice_tomek((m, n, t))
 )
-for edge in edges(fg)
-    println(edge)
-end
 
 params = MpsParameters(bond_dim, 1E-8, 10)
 search_params = SearchParameters(num_states, δp)
@@ -38,8 +35,8 @@ tran = rotation(0)
 Layout = GaugesEnergy
 Gauge = NoUpdate
 
-net = PEPSNetwork{PegasusSquare, Sparsity}(m, n, fg, tran)
+net = PEPSNetwork{PegasusSquareDiag, Sparsity}(m, n, fg, tran)
 ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params)
-sol = low_energy_spectrum(ctr, search_params)
+#sol = low_energy_spectrum(ctr, search_params)
 
 clear_memoize_cache()

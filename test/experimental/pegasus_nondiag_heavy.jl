@@ -4,8 +4,8 @@ function brute_force_gpu(ig::IsingGraph; num_states::Int)
      brute_force(ig, :GPU, num_states=num_states)
 end
 
-m = 4
-n = 4
+m = 2
+n = 2
 t = 3
 
 β = 3
@@ -13,7 +13,7 @@ bond_dim = 8
 δp = 1e-10
 num_states = 10
 
-ig = ising_graph("$(@__DIR__)/../instances/pegasus_nondiag/pegasus_nd_4x4x3.txt")
+ig = ising_graph("$(@__DIR__)/../instances/pegasus_nondiag/pegasus_nd_2x2x3.txt")
 #ig = ising_graph("$(@__DIR__)/../instances/chimera_droplets/128power/001.txt")
 
 fg = factor_graph(
@@ -22,7 +22,7 @@ fg = factor_graph(
     cluster_assignment_rule=pegasus_lattice((m, n, t))
 )
 
-params = MpsParameters(bond_dim, 1E-8, 10)
+params = MpsParameters(bond_dim, 1E-8, 1)
 search_params = SearchParameters(num_states, δp)
 
 # Solve using PEPS search

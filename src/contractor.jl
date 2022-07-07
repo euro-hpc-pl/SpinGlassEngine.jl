@@ -436,30 +436,73 @@ $(TYPEDSIGNATURES)
 """
 function _update_reduced_env_right(
     K::AbstractArray{Float64, 1},
-    RE::AbstractArray{Float64, 2},
+    R::AbstractArray{Float64, 2},
     M::SparsePegasusSquareTensor,
     B::AbstractArray{Float64, 3}
 )
     pl, pu, pr, pd = M.projs
-    le1l, le2l, le1u, le2u = M.bnd_exp
     p1l, p2l, p1u, p2u = M.bnd_projs
-    en1, en2 = M.loc_en
-    R = zeros(size(B, 1), maximum(pl))
 
-    for s1 ∈ 1:length(en1), s2 ∈ 1:length(en2)
-        lu = le1u[p1u[s1], :] .* le2u[p2u[s2], :]
-        Kl = K' * lu
-        RR = @view RE[:, pr[s2]]
-        BB = @view B[:, pd[s1], :]
-        @tensor RB[x] := BB[x, y] * RR[y]
-        RB = reshape(RB, :, 1)
-        ll = reshape(le1l[p1l[s1], :] .* le2l[p2l[s2], :], 1, :)
-        R[:, :] +=  (M.loc_exp[s2, s1] * Kl) .* (RB .* ll)
+    lel1, lel2, leu1, leu2 = CUDA.CuArray.(transpose.(M.bnd_exp))
+    loc_exp = CUDA.CuArray(M.loc_exp') # [s1, s2]
+
+    _, en2 = M.loc_en  # to be cleaned, as this is only used for size
+
+    K_d = CUDA.CuArray(K)
+    R_d = CUDA.CuArray(R)
+    B_d = CUDA.CuArray(B)
+
+    ret = CUDA.zeros(Float64, size(B, 1), maximum(pl))
+
+    lel1 = CUDA.CuArray(view(lel1, :, p1l))
+    leu1 = CUDA.CuArray(view(leu1, :, p1u))
+    BB = CUDA.CuArray(view(B_d, :, pd, :))
+
+    for s2 ∈ 1:length(en2)
+        lu = leu1 .* view(leu2, :, p2u[s2])
+        @matmul Klu[s1] := sum(z) K_d[z] * lu[z, s1]
+        le_s1 = view(loc_exp, :, s2) .* Klu
+
+        ll = lel1 .* view(lel2, :, p2l[s2])
+
+        RR = view(R_d, :, pr[s2])
+        @matmul RB[x, s1] := sum(y) BB[x, s1, y] * RR[y]
+        RBle = RB .* reshape(le_s1, 1, :)
+        @matmul RR_s2[x, z] := sum(s1) RBle[x, s1] * ll[z, s1]
+        ret += RR_s2
     end
-    R ./ maximum(abs.(R))
-    # _update_reduced_env_right(K, RE, M.M, B)
+    Array(ret ./ maximum(abs.(ret)))
 end
 
+
+# """
+# $(TYPEDSIGNATURES)
+# """
+# function _update_reduced_env_right(
+#     K::AbstractArray{Float64, 1},
+#     RE::AbstractArray{Float64, 2},
+#     M::SparsePegasusSquareTensor,
+#     B::AbstractArray{Float64, 3}
+# )
+#     pl, pu, pr, pd = M.projs
+#     le1l, le2l, le1u, le2u = M.bnd_exp
+#     p1l, p2l, p1u, p2u = M.bnd_projs
+#     en1, en2 = M.loc_en
+#     R = zeros(size(B, 1), maximum(pl))
+
+#     for s1 ∈ 1:length(en1), s2 ∈ 1:length(en2)
+#         lu = le1u[p1u[s1], :] .* le2u[p2u[s2], :]
+#         Kl = K' * lu
+#         RR = @view RE[:, pr[s2]]
+#         BB = @view B[:, pd[s1], :]
+#         @tensor RB[x] := BB[x, y] * RR[y]
+#         RB = reshape(RB, :, 1)
+#         ll = reshape(le1l[p1l[s1], :] .* le2l[p2l[s2], :], 1, :)
+#         R[:, :] +=  (M.loc_exp[s2, s1] * Kl) .* (RB .* ll)
+#     end
+#     R ./ maximum(abs.(R))
+#     # _update_reduced_env_right(K, RE, M.M, B)
+# end
 
 """
 $(TYPEDSIGNATURES)

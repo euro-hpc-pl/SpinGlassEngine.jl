@@ -18,7 +18,7 @@ fg = factor_graph(
     ig,
     # max_cl_states,
     spectrum=full_spectrum, #_gpu, # rm _gpu to use CPU
-    cluster_assignment_rule=zephyr_lattice((n, m, t))
+    cluster_assignment_rule=zephyr_lattice_z1((n, m, t))
 )
 
 params = MpsParameters(bond_dim, 1E-8, 10)

@@ -38,3 +38,52 @@ function ZephyrSquare(m::Int, n::Int)
      end
     lg
 end
+
+"""
+$(TYPEDSIGNATURES)
+
+Geometry: 2 nodes -> 1 TN site. This will work for Chimera.
+"""
+zephyr_square_site(::Type{Dense}) = :zephyr_square_site
+
+"""
+$(TYPEDSIGNATURES)
+"""
+zephyr_square_site(::Type{Sparse}) = :sparse_zephyr_square_site
+
+"""
+$(TYPEDSIGNATURES)
+"""
+function tensor_map(
+    ::Type{ZephyrSquare}, ::Type{S}, nrows::Int, ncols::Int
+) where S <: AbstractSparsity
+    map = Dict{PEPSNode, Symbol}()
+    for i ∈ 1:nrows, j ∈ 1:ncols push!(map, PEPSNode(i, j) => zephyr_square_site(S)) end
+    map
+end
+
+"""
+$(TYPEDSIGNATURES)
+"""
+function gauges_list(::Type{ZephyrSquare}, nrows::Int, ncols::Int)
+    [
+        GaugeInfo(
+            (PEPSNode(i + 1//3, j), PEPSNode(i + 2//3, j)),
+            PEPSNode(i , j),
+            4,
+            :gauge_h
+        )
+        for i ∈ 1:nrows-1 for j ∈ 1:ncols
+    ]
+end
+
+"""
+$(TYPEDSIGNATURES)
+"""
+function MpoLayers(::Type{T}, ncols::Int) where T <: ZephyrSquare
+    MpoLayers(
+        Dict(i => (-1//3, 0, 1//3) for i ∈ 1:ncols),
+        Dict(i => (1//3,) for i ∈ 1:ncols),
+        Dict(i => (0,) for i ∈ 1:ncols)
+    )
+end

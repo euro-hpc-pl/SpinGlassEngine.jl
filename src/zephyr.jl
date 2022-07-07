@@ -35,17 +35,6 @@ function ZephyrSquare(m::Int, n::Int)
     lg
 end
 
-"""
-$(TYPEDSIGNATURES)
-"""
-function j_function(i::Int, n::Int)
-    if i in collect(1:n)
-        return collect((n + 1 - i):(n + i))
-    else 
-        return collect((i-n):(3*n + 1 - i))
-    end
-end
-
 
 """
 $(TYPEDSIGNATURES)

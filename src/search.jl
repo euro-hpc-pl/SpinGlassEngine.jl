@@ -197,8 +197,13 @@ function low_energy_spectrum(
     sol = empty_solution()
     @showprogress "Search: " for node ∈ ctr.nodes_search_order
         ctr.current_node = node
-        sol = branch_solution(sol, ctr)
-        sol = bound_solution(sol, sparams.max_states, sparams.cut_off_prob, merge_strategy)
+        println("\n node = ",node)
+        @time begin
+            sol = branch_solution(sol, ctr)
+        end
+        @time begin
+            sol = bound_solution(sol, sparams.max_states, sparams.cut_off_prob, merge_strategy)
+        end
 
         # TODO: clear memoize cache partially
         if no_cache Memoization.empty_all_caches!() end

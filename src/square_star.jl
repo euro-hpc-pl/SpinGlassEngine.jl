@@ -1,4 +1,4 @@
-export SquareStar
+export SquareStar, update_reduced_env_right
 
 struct SquareStar{T <: AbstractTensorsLayout} <: AbstractGeometry end
 
@@ -208,6 +208,29 @@ function conditional_probability(
     end
     push!(ctr.statistics, ((i, j), ∂v) => error_measure(loc_exp))
     normalize_probability(loc_exp)
+end
+
+
+"""
+$(TYPEDSIGNATURES)
+"""
+function update_reduced_env_right(
+    K::AbstractArray{Float64, 1},
+    RE::AbstractArray{Float64, 2},
+    M::SparseVirtualTensor,
+    B::AbstractArray{Float64, 3}
+)
+    h = M.con
+    p_lb, p_l, p_lt, p_rb, p_r, p_rt = M.projs
+    @cast B4[x, k, l, y] := B[x, (k, l), y] (k ∈ 1:maximum(p_lb))
+    @cast K2[t1, t2] := K[(t1, t2)] (t1 ∈ 1:maximum(p_rt))
+    @tensor REB[x, y1, y2, β] := B4[x, y1, y2, α] * RE[α, β]
+    R = zeros(size(B, 1), length(p_l))
+    for l ∈ 1:length(p_l), r ∈ 1:length(p_r)
+        @inbounds R[:, l] += (K2[p_rt[r], p_lt[l]] .* h[p_l[l], p_r[r]]) .*
+                              REB[:, p_lb[l], p_rb[r], r]
+    end
+    R
 end
 
 """

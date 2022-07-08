@@ -8,7 +8,8 @@ export
        projectors_site_tensor,
        nodes_search_order_Mps,
        boundary,
-       update_energy
+       update_energy,
+       update_reduced_env_right
 
 """
 $(TYPEDSIGNATURES)
@@ -214,6 +215,44 @@ function conditional_probability(
 
     push!(ctr.statistics, ((i, j), ∂v) => error_measure(probs))
     normalize_probability(probs)
+end
+
+
+"""
+$(TYPEDSIGNATURES)
+"""
+function update_reduced_env_right(
+    K::AbstractArray{Float64, 1},
+    RE::AbstractArray{Float64, 2},
+    M::AbstractArray{Float64, 4},
+    B::AbstractArray{Float64, 3}
+)
+    @tensor R[x, y] := K[d] * M[y, d, β, γ] * B[x, γ, α] * RE[α, β] order = (d, β, γ, α)
+    R
+end
+
+"""
+$(TYPEDSIGNATURES)
+"""
+function update_reduced_env_right(
+    K::AbstractArray{Float64, 1},
+    RE::AbstractArray{Float64, 2},
+    M::SparseSiteTensor,
+    B::AbstractArray{Float64, 3}
+)
+    @tensor REB[x, y, β] := B[x, y, α] * RE[α, β]
+
+    @inbounds Kloc_exp = M.loc_exp .* K[M.projs[2]]
+    @inbounds s3 = maximum(M.projs[4])
+    @inbounds ind43 = M.projs[4] .+ ((M.projs[3] .- 1) .* s3)
+    @cast REB2[x, (y, z)] := REB[x, y, z]
+    @inbounds Rσ = REB2[:, ind43]
+
+    R = zeros(size(B, 1), maximum(M.projs[1]))
+    for (σ, kl) ∈ enumerate(Kloc_exp)
+        @inbounds R[:, M.projs[1][σ]] += kl .* Rσ[:, σ]
+    end
+    R
 end
 
 """

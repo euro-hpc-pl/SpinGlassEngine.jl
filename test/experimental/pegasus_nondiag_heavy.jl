@@ -8,10 +8,10 @@ m = 2
 n = 2
 t = 3
 
-β = 3
-bond_dim = 8
+β = 2
+bond_dim = 4
 δp = 1e-10
-num_states = 10
+num_states = 128
 
 ig = ising_graph("$(@__DIR__)/../instances/pegasus_nondiag/pegasus_nd_2x2x3.txt")
 #ig = ising_graph("$(@__DIR__)/../instances/chimera_droplets/128power/001.txt")
@@ -22,7 +22,7 @@ fg = factor_graph(
     cluster_assignment_rule=pegasus_lattice((m, n, t))
 )
 
-params = MpsParameters(bond_dim, 1E-8, 1)
+params = MpsParameters(bond_dim, 1E-8, 2)
 search_params = SearchParameters(num_states, δp)
 
 # Solve using PEPS search
@@ -34,7 +34,7 @@ Layout = GaugesEnergy
 Gauge = NoUpdate
 
 net = PEPSNetwork{PegasusSquare, Sparsity}(m, n, fg, tran)
-ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params)
+ctr = MpsContractor{Strategy, Gauge}(net, [β/4, β/2, β], :graduate_truncate, params)
 
 sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 
@@ -47,6 +47,6 @@ sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 # # exct_prob = exp.(-β .* (sol.energies .- sol.energies[1]))
 # # @test norm_prob ≈ exct_prob
 
-# println(sol.energies)
+ println(sol.energies)
 
 clear_memoize_cache()

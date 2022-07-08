@@ -94,9 +94,7 @@ function conditional_probability(
     M = dressed_mps(ctr, i, indβ)[j]
 
     @tensor LM[y, z] := L[x] * M[x, y, z]
-    @time begin
     if k == 1  # here has to avarage over s2
-        println(" k = 1 ")
         eng_loc = [local_energy(ctr.peps, (i, j, k)) for k ∈ 1:2]
         el = [interaction_energy(ctr.peps, (i, j, k), (i, j-1, 2)) for k ∈ 1:2]
         pl = [projector(ctr.peps, (i, j, k), (i, j-1, 2)) for k ∈ 1:2]
@@ -124,12 +122,11 @@ function conditional_probability(
         #     @inbounds ten3[pr[s2], :] += ten2[s2, :]
         # end
 
-        RT = R[:, pr] * ten2
+        RT = R[:, pr] * ten2 # R * ten3
         bnd_exp = dropdims(sum(LM[pd[:], :] .* RT[:, p12[:]]', dims=2), dims=2)
         en_min = minimum(en[1])
         loc_exp = exp.(-β .* (en[1] .- en_min))
     else  # k == 2 ; here s1 is fixed
-        println(" k = 2 ")
         eng_loc = local_energy(ctr.peps, (i, j, 2))
 
         el = interaction_energy(ctr.peps, (i, j, 2), (i, j-1, 2))
@@ -154,91 +151,12 @@ function conditional_probability(
         @tensor lmxR[y] := lmx[x] * R[x, y]
         @inbounds bnd_exp = lmxR[pr[:]]
     end
-    end
 
     probs = loc_exp .* bnd_exp
     push!(ctr.statistics, ((i, j, k), ∂v) => error_measure(probs))
     normalize_probability(probs)
 end
 
-
-# """
-# $(TYPEDSIGNATURES)
-# """
-# function conditional_probability(
-#     ::Type{T}, ctr::MpsContractor{S}, ∂v::Vector{Int}
-# ) where {T <: PegasusSquare, S}
-#     indβ, β = length(ctr.betas), last(ctr.betas)
-#     i, j, k = ctr.current_node
-
-#     L = left_env(ctr, i, ∂v[1:j-1], indβ)
-#     R = right_env(ctr, i, ∂v[(j+4):end], indβ)
-#     M = dressed_mps(ctr, i, indβ)[j]
-
-#     @tensor LM[y, z] := L[x] * M[x, y, z]
-
-#     if k == 1
-#         eng_loc = [local_energy(ctr.peps, (i, j, k)) for k ∈ 1:2]
-#         el = [interaction_energy(ctr.peps, (i, j, k), (i, j-1, 2)) for k ∈ 1:2]
-#         pl = [projector(ctr.peps, (i, j, k), (i, j-1, 2)) for k ∈ 1:2]
-#         eng_l = [@view el[k][pl[k][:], ∂v[j-1+k]] for k ∈ 1:2]
-
-#         eu = [interaction_energy(ctr.peps, (i, j, k), (i-1, j, 1)) for k ∈ 1:2]
-#         pu = [projector(ctr.peps, (i, j, k), (i-1, j, 1)) for k ∈ 1:2]
-#         eng_u = [@view eu[k][pu[k][:], ∂v[j+1+k]] for k ∈ 1:2]
-
-#         en = [eng_loc[k] .+ eng_l[k] .+ eng_u[k] for k ∈ 1:2]
-
-#         en21 = interaction_energy(ctr.peps, (i, j, 2), (i, j, 1))
-#         p21 = projector(ctr.peps, (i, j, 2), (i, j, 1))
-#         p12 = projector(ctr.peps, (i, j, 1), (i, j, 2))
-
-#         pr = projector(ctr.peps, (i, j, 2), ((i, j+1, 1), (i, j+1, 2)))
-#         pd = projector(ctr.peps, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
-
-#         ten = reshape(en[2], (:, 1)) .+ en21[p21[:], :]
-#         ten_min = minimum(ten)
-#         ten2 = exp.(-β .* (ten .- ten_min))
-#         ten3 = zeros(maximum(pr), size(ten2, 2))
-
-#         for s2 ∈ 1:length(en[2])
-#             @inbounds ten3[pr[s2], :] += ten2[s2, :]
-#         end
-
-#         RT = R * ten3
-#         bnd_exp = dropdims(sum(LM[pd[:], :] .* RT[:, p12[:]]', dims=2), dims=2)
-#         en_min = minimum(en[1])
-#         loc_exp = exp.(-β .* (en[1] .- en_min))
-#     else  # k == 2
-#         eng_loc = local_energy(ctr.peps, (i, j, 2))
-
-#         el = interaction_energy(ctr.peps, (i, j, 2), (i, j-1, 2))
-#         pl = projector(ctr.peps, (i, j, 2), (i, j-1, 2))
-#         eng_l = @inbounds @view el[pl[:], ∂v[j]]
-
-#         eu = interaction_energy(ctr.peps, (i, j, 2), (i-1, j, 1))
-#         pu = projector(ctr.peps, (i, j, 2), (i-1, j, 1))
-#         eng_u = @inbounds @view eu[pu[:], ∂v[j+3]]
-
-#         e21 = interaction_energy(ctr.peps, (i, j, 2), (i, j, 1))
-#         p21 = projector(ctr.peps, (i, j, 2), (i, j, 1))
-#         eng_21 = @inbounds @view e21[p21[:], ∂v[j+2]]
-
-#         en = eng_loc .+ eng_l .+ eng_u .+ eng_21
-#         en_min = minimum(en)
-#         loc_exp = exp.(-β .* (en .- en_min))
-
-#         pr = projector(ctr.peps, (i, j, 2), ((i, j+1, 1), (i, j+1, 2)))
-#         lmx = @inbounds @view LM[∂v[j+1], :]
-
-#         @tensor lmxR[y] := lmx[x] * R[x, y]
-#         @inbounds bnd_exp = lmxR[pr[:]]
-#     end
-
-#     probs = loc_exp .* bnd_exp
-#     push!(ctr.statistics, ((i, j, k), ∂v) => error_measure(probs))
-#     normalize_probability(probs)
-# end
 
 """
 $(TYPEDSIGNATURES)

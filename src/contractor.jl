@@ -334,7 +334,7 @@ Construct (and memoize) right environment for a given node.
     M = W[site]
     B = ϕ[site]
 
-    RR = _update_reduced_env_right(R̃, ∂v[1], M, B)
+    RR = update_reduced_env_right(R̃, ∂v[1], M, B)
 
     ls_mps = _left_nbrs_site(site, ϕ.sites)
     ls = _left_nbrs_site(site, W.sites)
@@ -351,7 +351,7 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function _update_reduced_env_right(
+function update_reduced_env_right(
     RE::AbstractArray{Float64, 2}, m::Int, M::Dict, B::AbstractArray{Float64, 3}
 )
     kk = sort(collect(keys(M)))
@@ -368,141 +368,9 @@ function _update_reduced_env_right(
         K = zeros(size(M[0], 2))
         K[m] = 1.
     end
-    _update_reduced_env_right(K, RE, M[0], B)
+    update_reduced_env_right(K, RE, M[0], B)
 end
 
-"""
-$(TYPEDSIGNATURES)
-"""
-function _update_reduced_env_right(
-    K::AbstractArray{Float64, 1},
-    RE::AbstractArray{Float64, 2},
-    M::AbstractArray{Float64, 4},
-    B::AbstractArray{Float64, 3}
-)
-    @tensor R[x, y] := K[d] * M[y, d, β, γ] * B[x, γ, α] * RE[α, β] order = (d, β, γ, α)
-    R
-end
-
-"""
-$(TYPEDSIGNATURES)
-"""
-function _update_reduced_env_right(
-    K::AbstractArray{Float64, 1},
-    RE::AbstractArray{Float64, 2},
-    M::SparseSiteTensor,
-    B::AbstractArray{Float64, 3}
-)
-    @tensor REB[x, y, β] := B[x, y, α] * RE[α, β]
-
-    @inbounds Kloc_exp = M.loc_exp .* K[M.projs[2]]
-    @inbounds s3 = maximum(M.projs[4])
-    @inbounds ind43 = M.projs[4] .+ ((M.projs[3] .- 1) .* s3)
-    @cast REB2[x, (y, z)] := REB[x, y, z]
-    @inbounds Rσ = REB2[:, ind43]
-
-    R = zeros(size(B, 1), maximum(M.projs[1]))
-    for (σ, kl) ∈ enumerate(Kloc_exp)
-        @inbounds R[:, M.projs[1][σ]] += kl .* Rσ[:, σ]
-    end
-    R
-end
-
-"""
-$(TYPEDSIGNATURES)
-"""
-function _update_reduced_env_right(
-    K::AbstractArray{Float64, 1},
-    RE::AbstractArray{Float64, 2},
-    M::SparseVirtualTensor,
-    B::AbstractArray{Float64, 3}
-)
-    h = M.con
-    p_lb, p_l, p_lt, p_rb, p_r, p_rt = M.projs
-    @cast B4[x, k, l, y] := B[x, (k, l), y] (k ∈ 1:maximum(p_lb))
-    @cast K2[t1, t2] := K[(t1, t2)] (t1 ∈ 1:maximum(p_rt))
-    @tensor REB[x, y1, y2, β] := B4[x, y1, y2, α] * RE[α, β]
-    R = zeros(size(B, 1), length(p_l))
-    for l ∈ 1:length(p_l), r ∈ 1:length(p_r)
-        @inbounds R[:, l] += (K2[p_rt[r], p_lt[l]] .* h[p_l[l], p_r[r]]) .*
-                              REB[:, p_lb[l], p_rb[r], r]
-    end
-    R
-end
-
-
-"""
-$(TYPEDSIGNATURES)
-"""
-function _update_reduced_env_right(
-    K::AbstractArray{Float64, 1},
-    R::AbstractArray{Float64, 2},
-    M::SparsePegasusSquareTensor,
-    B::AbstractArray{Float64, 3}
-)
-    pl, pu, pr, pd = M.projs
-    p1l, p2l, p1u, p2u = M.bnd_projs
-
-    lel1, lel2, leu1, leu2 = CUDA.CuArray.(transpose.(M.bnd_exp))
-    loc_exp = CUDA.CuArray(M.loc_exp') # [s1, s2]
-
-    _, en2 = M.loc_en  # to be cleaned, as this is only used for size
-
-    K_d = CUDA.CuArray(K)
-    R_d = CUDA.CuArray(R)
-    B_d = CUDA.CuArray(B)
-
-    ret = CUDA.zeros(Float64, size(B, 1), maximum(pl))
-
-    lel1 = CUDA.CuArray(view(lel1, :, p1l))
-    leu1 = CUDA.CuArray(view(leu1, :, p1u))
-    BB = CUDA.CuArray(view(B_d, :, pd, :))
-
-    for s2 ∈ 1:length(en2)
-        lu = leu1 .* view(leu2, :, p2u[s2])
-        @matmul Klu[s1] := sum(z) K_d[z] * lu[z, s1]
-        le_s1 = view(loc_exp, :, s2) .* Klu
-
-        ll = lel1 .* view(lel2, :, p2l[s2])
-
-        RR = view(R_d, :, pr[s2])
-        @matmul RB[x, s1] := sum(y) BB[x, s1, y] * RR[y]
-        RBle = RB .* reshape(le_s1, 1, :)
-        @matmul RR_s2[x, z] := sum(s1) RBle[x, s1] * ll[z, s1]
-        ret += RR_s2
-    end
-    Array(ret ./ maximum(abs.(ret)))
-end
-
-
-# """
-# $(TYPEDSIGNATURES)
-# """
-# function _update_reduced_env_right(
-#     K::AbstractArray{Float64, 1},
-#     RE::AbstractArray{Float64, 2},
-#     M::SparsePegasusSquareTensor,
-#     B::AbstractArray{Float64, 3}
-# )
-#     pl, pu, pr, pd = M.projs
-#     le1l, le2l, le1u, le2u = M.bnd_exp
-#     p1l, p2l, p1u, p2u = M.bnd_projs
-#     en1, en2 = M.loc_en
-#     R = zeros(size(B, 1), maximum(pl))
-
-#     for s1 ∈ 1:length(en1), s2 ∈ 1:length(en2)
-#         lu = le1u[p1u[s1], :] .* le2u[p2u[s2], :]
-#         Kl = K' * lu
-#         RR = @view RE[:, pr[s2]]
-#         BB = @view B[:, pd[s1], :]
-#         @tensor RB[x] := BB[x, y] * RR[y]
-#         RB = reshape(RB, :, 1)
-#         ll = reshape(le1l[p1l[s1], :] .* le2l[p2l[s2], :], 1, :)
-#         R[:, :] +=  (M.loc_exp[s2, s1] * Kl) .* (RB .* ll)
-#     end
-#     R ./ maximum(abs.(R))
-#     # _update_reduced_env_right(K, RE, M.M, B)
-# end
 
 """
 $(TYPEDSIGNATURES)

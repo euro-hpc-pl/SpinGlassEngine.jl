@@ -1,4 +1,4 @@
-export PegasusSquare
+export PegasusSquare, update_reduced_env_right
 
 """
 $(TYPEDSIGNATURES)
@@ -161,6 +161,50 @@ end
 """
 $(TYPEDSIGNATURES)
 """
+function update_reduced_env_right(
+    K::AbstractArray{Float64, 1},
+    R::AbstractArray{Float64, 2},
+    M::SparsePegasusSquareTensor,
+    B::AbstractArray{Float64, 3}
+)
+    pl, pu, pr, pd = M.projs
+    p1l, p2l, p1u, p2u = M.bnd_projs
+
+    lel1, lel2, leu1, leu2 = CUDA.CuArray.(M.bnd_exp)
+    loc_exp12 = CUDA.CuArray(M.loc_exp) # [s1, s2]
+
+    _, en2 = M.loc_en  # to be cleaned, as this is only used for size
+
+    K_d = CUDA.CuArray(K)
+    R_d = CUDA.CuArray(R)
+    B_d = CUDA.CuArray(B)
+
+    ret = CUDA.zeros(Float64, size(B, 1), maximum(pl))
+
+    lel1 = CUDA.CuArray(view(lel1, :, p1l))
+    leu1 = CUDA.CuArray(view(leu1, :, p1u))
+    BB = CUDA.CuArray(view(B_d, :, pd, :))
+
+    for s2 ∈ 1:length(en2)
+        lu = leu1 .* view(leu2, :, p2u[s2])
+        @matmul Klu[s1] := sum(z) K_d[z] * lu[z, s1]
+        le_s1 = view(loc_exp12, :, s2) .* Klu
+
+        ll = lel1 .* view(lel2, :, p2l[s2])
+
+        RR = view(R_d, :, pr[s2])
+        @matmul RB[x, s1] := sum(y) BB[x, s1, y] * RR[y]
+        RBle = RB .* reshape(le_s1, 1, :)
+        @matmul RR_s2[x, z] := sum(s1) RBle[x, s1] * ll[z, s1]
+        ret += RR_s2
+    end
+    Array(ret ./ maximum(abs.(ret)))
+end
+
+
+"""
+$(TYPEDSIGNATURES)
+"""
 function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: PegasusSquare, S}
     ([(i, j, k) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols for k ∈ 1:2], (peps.nrows+1, 1, 1))
 end
@@ -241,29 +285,28 @@ function tensor(
     pu2 = projector(network, (i-1, j, 1), (i, j, 2))
     pu, (pu1, pu2) = fuse_projectors((pu1, pu2))
 
-    e1u = interaction_energy(network, (i, j, 1), (i-1, j, 1))
-    e2u = interaction_energy(network, (i, j, 2), (i-1, j, 1))
-    e1l = interaction_energy(network, (i, j, 1), (i, j-1, 2))
-    e2l = interaction_energy(network, (i, j, 2), (i, j-1, 2))
+    eu1 = interaction_energy(network, (i-1, j, 1), (i, j, 1))
+    eu2 = interaction_energy(network, (i-1, j, 1), (i, j, 2))
+    el1 = interaction_energy(network, (i, j-1, 2), (i, j, 1))
+    el2 = interaction_energy(network, (i, j-1, 2), (i, j, 2))
 
-    e1u = @inbounds @view e1u[:, pu1]
-    e2u = @inbounds @view e2u[:, pu2]
-    e1l = @inbounds @view e1l[:, pl1]
-    e2l = @inbounds @view e2l[:, pl2]
+    eu1 = @inbounds @view eu1[pu1, :]
+    eu2 = @inbounds @view eu2[pu2, :]
+    el1 = @inbounds @view el1[pl1, :]
+    el2 = @inbounds @view el2[pl2, :]
 
-    le1u = exp.(-β .* (e1u .- minimum(e1u)))
-    le2u = exp.(-β .* (e2u .- minimum(e2u)))
-    le1l = exp.(-β .* (e1l .- minimum(e1l)))
-    le2l = exp.(-β .* (e2l .- minimum(e2l)))
+    leu1 = exp.(-β .* (eu1 .- minimum(eu1)))
+    leu2 = exp.(-β .* (eu2 .- minimum(eu2)))
+    lel1 = exp.(-β .* (el1 .- minimum(el1)))
+    lel2 = exp.(-β .* (el2 .- minimum(el2)))
 
-    eloc = en12[p1, p2] .+ reshape(en1, :, 1) .+ reshape(en2, 1, :)
-    eloc = eloc'
+    eloc12 = en12[p1, p2] .+ reshape(en1, :, 1) .+ reshape(en2, 1, :)
 
     SparsePegasusSquareTensor(
         # tensor(network, node, β, Val(:pegasus_square_site)),
         [pl, pu, pr, pd],
-        exp.(-β .* (eloc .- minimum(eloc))),
-        [le1l, le2l, le1u, le2u],
+        exp.(-β .* (eloc12 .- minimum(eloc12))),
+        [lel1, lel2, leu1, leu2],
         [p1l, p2l, p1u, p2u],
         [en1, en2]
     )

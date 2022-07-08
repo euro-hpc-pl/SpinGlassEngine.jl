@@ -263,15 +263,15 @@ function tensor(
 
     SparsePegasusSquareTensor(
         # tensor(network, node, β, Val(:pegasus_square_site)),
-        [pl, pu, pr, pd],
+        [pr, pd],
         exp.(-β .* (eloc .- minimum(eloc))),
         [le1l, le2l, le1u, le2u],
         [p1l, p2l, p1u, p2u],
-        [en1, en2]
+        maximum.((pl, pu, pr, pd))
     )
 end
 
-Base.size(M::SparsePegasusSquareTensor, n::Int) = maximum(M.projs[n])
+#Base.size(M::SparsePegasusSquareTensor, n::Int) = maximum(M.projs[n])
 
 function tensor(
     network::PEPSNetwork{PegasusSquareDiag, T}, node::PEPSNode, β::Real, ::Val{:pegasus_square_site}

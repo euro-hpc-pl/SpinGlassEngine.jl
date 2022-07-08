@@ -167,25 +167,22 @@ function update_reduced_env_right(
     M::SparsePegasusSquareTensor,
     B::AbstractArray{Float64, 3}
 )
-    pl, pu, pr, pd = M.projs
+    pr, pd = M.projs
     p1l, p2l, p1u, p2u = M.bnd_projs
-
     lel1, lel2, leu1, leu2 = CUDA.CuArray.(M.bnd_exp)
-    loc_exp12 = CUDA.CuArray(M.loc_exp) # [s1, s2]
-
-    _, en2 = M.loc_en  # to be cleaned, as this is only used for size
+    loc_exp12 = CUDA.CuArray(M.loc_exp)  # [s1, s2]
 
     K_d = CUDA.CuArray(K)
     R_d = CUDA.CuArray(R)
     B_d = CUDA.CuArray(B)
 
-    ret = CUDA.zeros(Float64, size(B, 1), maximum(pl))
-
     lel1 = CUDA.CuArray(view(lel1, :, p1l))
     leu1 = CUDA.CuArray(view(leu1, :, p1u))
     BB = CUDA.CuArray(view(B_d, :, pd, :))
 
-    for s2 ∈ 1:length(en2)
+    ret = CUDA.zeros(Float64, size(B, 1), size(lel1, 1))
+
+    for s2 ∈ 1:length(pr)
         lu = leu1 .* view(leu2, :, p2u[s2])
         @matmul Klu[s1] := sum(z) K_d[z] * lu[z, s1]
         le_s1 = view(loc_exp12, :, s2) .* Klu
@@ -303,16 +300,17 @@ function tensor(
     eloc12 = en12[p1, p2] .+ reshape(en1, :, 1) .+ reshape(en2, 1, :)
 
     SparsePegasusSquareTensor(
-        # tensor(network, node, β, Val(:pegasus_square_site)),
-        [pl, pu, pr, pd],
+        [pr, pd],
         exp.(-β .* (eloc12 .- minimum(eloc12))),
         [lel1, lel2, leu1, leu2],
         [p1l, p2l, p1u, p2u],
-        [en1, en2]
+        maximum.((pl, pu, pr, pd))
     )
 end
 
-Base.size(M::SparsePegasusSquareTensor, n::Int) = maximum(M.projs[n])
+Base.size(M::SparsePegasusSquareTensor, n::Int) = M.sizes[n]
+Base.size(M::SparsePegasusSquareTensor) = M.sizes
+
 
 function tensor(
     network::PEPSNetwork{PegasusSquare, T}, node::PEPSNode, β::Real, ::Val{:pegasus_square_site}

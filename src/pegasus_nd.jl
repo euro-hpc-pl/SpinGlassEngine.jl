@@ -158,6 +158,47 @@ function conditional_probability(
 end
 
 
+# """
+# $(TYPEDSIGNATURES)
+# """
+# function update_reduced_env_right(
+#     K::AbstractArray{Float64, 1},
+#     R::AbstractArray{Float64, 2},
+#     M::SparsePegasusSquareTensor,
+#     B::AbstractArray{Float64, 3}
+# )
+#     pr, pd = M.projs
+#     p1l, p2l, p1u, p2u = M.bnd_projs
+#     lel1, lel2, leu1, leu2 = CUDA.CuArray.(M.bnd_exp)
+#     loc_exp12 = CUDA.CuArray(M.loc_exp)  # [s1, s2]
+
+#     K_d = CUDA.CuArray(K)
+#     R_d = CUDA.CuArray(R)
+#     B_d = CUDA.CuArray(B)
+
+#     lel1 = CUDA.CuArray(view(lel1, :, p1l))
+#     leu1 = CUDA.CuArray(view(leu1, :, p1u))
+#     BB = CUDA.CuArray(view(B_d, :, pd, :))
+
+#     ret = CUDA.zeros(Float64, size(B, 1), size(lel1, 1))
+
+#     for s2 ∈ 1:length(pr)
+#         lu = leu1 .* view(leu2, :, p2u[s2])
+#         @matmul Klu[s1] := sum(z) K_d[z] * lu[z, s1]
+#         le_s1 = view(loc_exp12, :, s2) .* Klu
+
+#         ll = lel1 .* view(lel2, :, p2l[s2])
+
+#         RR = view(R_d, :, pr[s2])
+#         @matmul RB[x, s1] := sum(y) BB[x, s1, y] * RR[y]
+#         RBle = RB .* reshape(le_s1, 1, :)
+#         @matmul RR_s2[x, z] := sum(s1) RBle[x, s1] * ll[z, s1]
+#         ret += RR_s2
+#     end
+#     Array(ret ./ maximum(abs.(ret)))
+# end
+
+
 """
 $(TYPEDSIGNATURES)
 """
@@ -176,28 +217,22 @@ function update_reduced_env_right(
     R_d = CUDA.CuArray(R)
     B_d = CUDA.CuArray(B)
 
-    lel1 = CUDA.CuArray(view(lel1, :, p1l))
-    leu1 = CUDA.CuArray(view(leu1, :, p1u))
-    BB = CUDA.CuArray(view(B_d, :, pd, :))
+    @tensor REBu[x, y, β] := B_d[x, y, α] * R_d[α, β]
+    REBs = REBu[:, pd, pr]
+    Kleu1 = K_d .* leu1
+    @tensor Ku[u1, u2] := Kleu1[z, u1] * leu2[z, u2]
+    Ks = Ku[p1u, p2u]  # s1 s2
+    RRs = REBs .* reshape(Ks .* loc_exp12, 1, size(pd, 1), size(pr, 1))
 
-    ret = CUDA.zeros(Float64, size(B, 1), size(lel1, 1))
+    ip1l = CUDA.CuArray(diagm(ones(Float64, maximum(p1l))))[p1l, :]  # s1 l1
+    ip2l = CUDA.CuArray(diagm(ones(Float64, maximum(p2l))))[p2l, :]  # s2 l2
+    ll = reshape(lel1, size(lel1, 1), size(lel1, 2), 1) .* reshape(lel2, size(lel2, 1), 1, size(lel2, 2)) # pl l1 l2 # 2.** 12x12x6
+    @tensor ret[x, l] := RRs[x, s1, s2] * ip1l[s1, l1] * ip2l[s2, l2] *  ll[l, l1, l2]  order=(s2, s1, l1, l2)
 
-    for s2 ∈ 1:length(pr)
-        lu = leu1 .* view(leu2, :, p2u[s2])
-        @matmul Klu[s1] := sum(z) K_d[z] * lu[z, s1]
-        le_s1 = view(loc_exp12, :, s2) .* Klu
-
-        ll = lel1 .* view(lel2, :, p2l[s2])
-
-        RR = view(R_d, :, pr[s2])
-        @matmul RB[x, s1] := sum(y) BB[x, s1, y] * RR[y]
-        RBle = RB .* reshape(le_s1, 1, :)
-        @matmul RR_s2[x, z] := sum(s1) RBle[x, s1] * ll[z, s1]
-        ret += RR_s2
-    end
-    Array(ret ./ maximum(abs.(ret)))
+    out = Array(ret ./ maximum(abs.(ret)))
+    CUDA.unsafe_free!.((lel1, lel2, leu1, leu2, loc_exp12, K_d, R_d, B_d, REBu, REBs, Kleu1, Ku, RRs, ip1l, ip2l, ll, ret))
+    out
 end
-
 
 """
 $(TYPEDSIGNATURES)

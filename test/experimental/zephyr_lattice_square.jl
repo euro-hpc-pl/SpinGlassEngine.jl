@@ -1,8 +1,8 @@
 using SpinGlassEngine
 using SpinGlassNetworks
 
-m = 2
-n = 2
+m = 3
+n = 3
 t = 4
 
 max_cl_states = 2^2
@@ -12,7 +12,7 @@ bond_dim = 8
 δp = 1e-10
 num_states = 10
 
-ig = ising_graph("$(@__DIR__)/../instances/zephyr/z2.txt")
+ig = ising_graph("$(@__DIR__)/../instances/zephyr/z3.txt")
 
 fg = factor_graph(
     ig,

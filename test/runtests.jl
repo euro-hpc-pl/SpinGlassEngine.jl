@@ -66,8 +66,9 @@ push!(my_tests,
     # "experimental/gauges.jl",
     # "experimental/memoization.jl",
     # "experimental/experiments_with_sparse_chimera.jl",
-     "experimental/zephyr_lattice.jl",
-     "experimental/zephyr_lattice_z1.jl"
+    # "experimental/zephyr_lattice.jl",
+    # "experimental/zephyr_lattice_z1.jl",
+    "experimental/zephyr_lattice_square.jl"
 )
 
 

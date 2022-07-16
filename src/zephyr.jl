@@ -32,16 +32,20 @@ function ZephyrSquare(m::Int, n::Int)
         add_edge!(lg, (i+1, j, 1), (i, j+1, 1))
     end
 
-    for i ∈ 1:n-1, j ∈ j_function(i, n)[begin:m-1]
-        add_edge!(lg, (i+1, j-1, 1), (i, j, 1))
+    for i ∈ 1:n-1, j ∈ j_function(i, n)[begin]
+        add_edge!(lg, (i, j, 1), (i+1, j-1, 1))
     end
 
-    for i ∈ 1:n-1, j ∈ j_function(i, n)[m:end]
+    for i ∈ 1:n-1, j ∈ j_function(i, n)[end]
         add_edge!(lg, (i, j, 2), (i+1, j+1, 2))
     end
 
-    for i ∈ n+1:2*n-1, j ∈ j_function(i, n)[m+2:end]
-       add_edge!(lg, (i+1, j-1, 1), (i, j, 1))
+    for i ∈ n+1:2*n-1, j ∈ j_function(i, n)[begin]
+       add_edge!(lg, (i, j, 2), (i+1, j+1, 2))
+    end
+
+    for i ∈ n+1:2*n-1, j ∈ j_function(i, n)[end]
+        add_edge!(lg, (i, j, 1), (i+1, j-1, 1))
     end
 
     lg

@@ -36,7 +36,11 @@ Gauge = NoUpdate
 net = PEPSNetwork{PegasusSquare, Sparsity}(m, n, fg, tran)
 ctr = MpsContractor{Strategy, Gauge}(net, [β/4, β/2, β], :graduate_truncate, params)
 
-sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+for i ∈ ctr.peps.nrows:-1:1
+    SpinGlassEngine.dressed_mps(ctr, i)
+end
+
+#sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 
 # ig_states = decode_factor_graph_state.(Ref(fg), sol.states)
 # @test sol.energies ≈ energy.(Ref(ig), ig_states)
@@ -47,6 +51,6 @@ sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 # # exct_prob = exp.(-β .* (sol.energies .- sol.energies[1]))
 # # @test norm_prob ≈ exct_prob
 
- println(sol.energies)
+ #println(sol.energies)
 
 clear_memoize_cache()

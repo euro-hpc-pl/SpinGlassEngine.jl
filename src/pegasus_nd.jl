@@ -157,48 +157,6 @@ function conditional_probability(
     normalize_probability(probs)
 end
 
-
-# """
-# $(TYPEDSIGNATURES)
-# """
-# function update_reduced_env_right(
-#     K::AbstractArray{Float64, 1},
-#     R::AbstractArray{Float64, 2},
-#     M::SparsePegasusSquareTensor,
-#     B::AbstractArray{Float64, 3}
-# )
-#     pr, pd = M.projs
-#     p1l, p2l, p1u, p2u = M.bnd_projs
-#     lel1, lel2, leu1, leu2 = CUDA.CuArray.(M.bnd_exp)
-#     loc_exp12 = CUDA.CuArray(M.loc_exp)  # [s1, s2]
-
-#     K_d = CUDA.CuArray(K)
-#     R_d = CUDA.CuArray(R)
-#     B_d = CUDA.CuArray(B)
-
-#     lel1 = CUDA.CuArray(view(lel1, :, p1l))
-#     leu1 = CUDA.CuArray(view(leu1, :, p1u))
-#     BB = CUDA.CuArray(view(B_d, :, pd, :))
-
-#     ret = CUDA.zeros(Float64, size(B, 1), size(lel1, 1))
-
-#     for s2 ∈ 1:length(pr)
-#         lu = leu1 .* view(leu2, :, p2u[s2])
-#         @matmul Klu[s1] := sum(z) K_d[z] * lu[z, s1]
-#         le_s1 = view(loc_exp12, :, s2) .* Klu
-
-#         ll = lel1 .* view(lel2, :, p2l[s2])
-
-#         RR = view(R_d, :, pr[s2])
-#         @matmul RB[x, s1] := sum(y) BB[x, s1, y] * RR[y]
-#         RBle = RB .* reshape(le_s1, 1, :)
-#         @matmul RR_s2[x, z] := sum(s1) RBle[x, s1] * ll[z, s1]
-#         ret += RR_s2
-#     end
-#     Array(ret ./ maximum(abs.(ret)))
-# end
-
-
 """
 $(TYPEDSIGNATURES)
 """
@@ -211,27 +169,20 @@ function update_reduced_env_right(
     pr, pd = M.projs
     p1l, p2l, p1u, p2u = M.bnd_projs
 
-    #ip1l  = cuIdentity(eltype(K), maximum(p1l))[p1l, :]
-    #ip2l  = cuIdentity(eltype(K), maximum(p1l))[p1l, :]
+    ip1l = cuIdentity(eltype(K), maximum(p1l))[p1l, :]
+    ip2l = cuIdentity(eltype(K), maximum(p2l))[p2l, :]
 
     lel1, lel2, leu1, leu2 = CUDA.CuArray.(M.bnd_exp)
-    loc_exp12 = CUDA.CuArray(M.loc_exp)  # [s1, s2]
-
-    K_d, R_d, B_d = CUDA.CuArray.(K, R, B)
+    K_d, R_d, B_d = CUDA.CuArray.((K, R, B))
 
     @tensor REBu[x, y, β] := B_d[x, y, α] * R_d[α, β]
+    @tensor Ku[u1, u2] := (K_d .* leu1)[z, u1] * leu2[z, u2]
+
     REBs = REBu[:, pd, pr]
+    Kexp = Ku[p1u, p2u] .* CUDA.CuArray(M.loc_exp)
 
-    Kleu1 = K_d .* leu1
-    @tensor Ku[u1, u2] := Kleu1[z, u1] * leu2[z, u2]
-    Ks = Ku[p1u, p2u]  # s1 s2
-    RRs = REBs .* reshape(Ks .* loc_exp12, 1, size(pd, 1), size(pr, 1))
-
-    ip1l = CUDA.CuArray(diagm(ones(Float64, maximum(p1l))))[p1l, :]  # s1 l1
-    ip2l = CUDA.CuArray(diagm(ones(Float64, maximum(p2l))))[p2l, :]  # s2 l2
-
-    ll = reshape(lel1, size(lel1, 1), size(lel1, 2), 1) .* reshape(lel2, size(lel2, 1), 1, size(lel2, 2)) # pl l1 l2 # 2.** 12x12x6
-
+    @cast RRs[x, y, z] := REBs[x, y, z] * Kexp[y, z]
+    @cast ll[x, y, z] := lel1[x, y] * lel2[x, z]
     @tensor ret[x, l] := RRs[x, s1, s2] * ip1l[s1, l1] * ip2l[s2, l2] * ll[l, l1, l2] order=(s2, s1, l1, l2)
 
     Array(ret ./ maximum(abs.(ret)))
@@ -325,10 +276,10 @@ function tensor(
     el1 = interaction_energy(network, (i, j-1, 2), (i, j, 1))
     el2 = interaction_energy(network, (i, j-1, 2), (i, j, 2))
 
-    eu1 = @inbounds @view eu1[pu1, :]
-    eu2 = @inbounds @view eu2[pu2, :]
-    el1 = @inbounds @view el1[pl1, :]
-    el2 = @inbounds @view el2[pl2, :]
+    eu1 = @inbounds eu1[pu1, :]
+    eu2 = @inbounds eu2[pu2, :]
+    el1 = @inbounds el1[pl1, :]
+    el2 = @inbounds el2[pl2, :]
 
     leu1 = exp.(-β .* (eu1 .- minimum(eu1)))
     leu2 = exp.(-β .* (eu2 .- minimum(eu2)))
@@ -349,54 +300,56 @@ end
 Base.size(M::SparsePegasusSquareTensor, n::Int) = M.sizes[n]
 Base.size(M::SparsePegasusSquareTensor) = M.sizes
 
-
+"""
+$(TYPEDSIGNATURES)
+"""
 function tensor(
-    network::PEPSNetwork{PegasusSquare, T}, node::PEPSNode, β::Real, ::Val{:pegasus_square_site}
+    net::PEPSNetwork{PegasusSquare, T}, node::PEPSNode, β::Real, ::Val{:pegasus_square_site}
 ) where T <: AbstractSparsity
     i, j = node.i, node.j
 
-    en1 = local_energy(network, (i, j, 1))
-    en2 = local_energy(network, (i, j, 2))
-    en12 = interaction_energy(network, (i, j, 1), (i, j, 2))
+    en12 = interaction_energy(net, (i, j, 1), (i, j, 2))
 
-    p1 = projector(network, (i, j, 1), (i, j, 2))
-    p2 = projector(network, (i, j, 2), (i, j, 1))
+    p1 = projector(net, (i, j, 1), (i, j, 2))
+    p2 = projector(net, (i, j, 2), (i, j, 1))
 
-    eloc = en12[p1, p2] .+ reshape(en1, :, 1) .+ reshape(en2, 1, :)
-    eloc = eloc'
-    eloc = eloc .- minimum(eloc)
-    loc_exp = exp.(-β .* eloc)
+    pr = projector(net, (i, j, 2), ((i, j+1, 1), (i, j+1, 2)))
+    pd = projector(net, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
 
-    pr = projector(network, (i, j, 2), ((i, j+1, 1), (i, j+1, 2)))
-    pd = projector(network, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
+    for α ∈ 1:2
+        @eval begin
+            "en$α" = local_energy(net, (i, j, α))
+            "p$(α)l" = projector(net, (i, j, α), (i, j-1 ,2))
+            "p$(α)u" = projector(net, (i, j, α), (i-1, j, 1))
+            "pl$α" = projector(net, (i, j-1, 2), (i, j, α))
+            "pu$α" = projector(net, (i-1, j, 1), (i, j, α))
+        end
+    end
 
-    p1l = projector(network, (i, j, 1), (i, j-1 ,2))
-    p2l = projector(network, (i, j, 2), (i, j-1, 2))
-    p1u = projector(network, (i, j, 1), (i-1, j, 1))
-    p2u = projector(network, (i, j, 2), (i-1, j, 1))
+    for x ∈ (:u, :l)
+        t = ("p$(x)1", "p$(x)2")
+        @eval "p$x", t = fuse_projectors(t)
+    end
 
-    pl1 = projector(network, (i, j-1, 2), (i, j, 1))
-    pl2 = projector(network, (i, j-1, 2), (i, j, 2))
-    pl, (pl1, pl2) = fuse_projectors((pl1, pl2))
+    eloc = en12[p1, p2]
+    for α ∈ 1:2
+        @eval begin
+            eloc .+= reshape("en$α", :, 1)
 
-    pu1 = projector(network, (i-1, j, 1), (i, j, 1))
-    pu2 = projector(network, (i-1, j, 1), (i, j, 2))
-    pu, (pu1, pu2) = fuse_projectors((pu1, pu2))
+            "e$(α)u" = interaction_energy(net, (i, j, α), (i-1, j, 1))
+            "e$(α)l" = interaction_energy(net, (i, j, α), (i, j-1, 2))
 
-    e1u = interaction_energy(network, (i, j, 1), (i-1, j, 1))
-    e2u = interaction_energy(network, (i, j, 2), (i-1, j, 1))
-    e1l = interaction_energy(network, (i, j, 1), (i, j-1, 2))
-    e2l = interaction_energy(network, (i, j, 2), (i, j-1, 2))
+            for x ∈ (:u, :l)
+                e, p = "e$(α)$(x)", "p$(x)$(α)"
+                e = @inbounds e[:, p]
+                emin = minimum(e)
+                "le$(α)$(x)" = exp.(-β .* (e .- emin))
+            end
+        end
+    end
 
-    e1u = @inbounds @view e1u[:, pu1]
-    e2u = @inbounds @view e2u[:, pu2]
-    e1l = @inbounds @view e1l[:, pl1]
-    e2l = @inbounds @view e2l[:, pl2]
-
-    le1u = exp.(-β .* (e1u .- minimum(e1u)))
-    le2u = exp.(-β .* (e2u .- minimum(e2u)))
-    le1l = exp.(-β .* (e1l .- minimum(e1l)))
-    le2l = exp.(-β .* (e2l .- minimum(e2l)))
+    emin = minimum(eloc)
+    loc_exp = exp.(-β .* (eloc' .- emin))
 
     A = zeros(maximum.((pl, pu, pr, pd)))
     for s1 ∈ 1:length(en1), s2 ∈ 1:length(en2)
@@ -424,16 +377,16 @@ end
 $(TYPEDSIGNATURES)
 """
 function Base.size(
-    network::PEPSNetwork{PegasusSquare, T}, node::PEPSNode, ::Val{:pegasus_square_site}
+    net::PEPSNetwork{PegasusSquare, T}, node::PEPSNode, ::Val{:pegasus_square_site}
 ) where T <: AbstractSparsity
-    maximum.(projectors_site_tensor(network, Node(node)))
+    maximum.(projectors_site_tensor(net, Node(node)))
 end
 
 """
 $(TYPEDSIGNATURES)
 """
 function Base.size(
-    network::PEPSNetwork{PegasusSquare, T}, node::PEPSNode, ::Val{:sparse_pegasus_square_site}
+    net::PEPSNetwork{PegasusSquare, T}, node::PEPSNode, ::Val{:sparse_pegasus_square_site}
 ) where T <: AbstractSparsity
-    maximum.(projectors_site_tensor(network, Node(node)))
+    maximum.(projectors_site_tensor(net, Node(node)))
 end

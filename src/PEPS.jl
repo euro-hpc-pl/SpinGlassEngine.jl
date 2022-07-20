@@ -124,14 +124,9 @@ function fuse_projectors(projectors::Union{Vector{T}, NTuple{N, T}}) where {N, T
     fused, transitions
 end
 
-function outer_projector(p1, p2)
-    # projectors::Union{Vector{T}, NTuple{N, T}}) where {N, T}
-    # B = A[p1, p2]
-    # reshape(B, :) ==  reshape(A, :)[op]
+function outer_projector(p1::Array{T, 1}, p2::Array{T, 1}) where T <: Number
     reshape(reshape(p1, :, 1) + maximal(p1) * reshape(p2 .- 1, 1, :), :)
 end
-
-
 
 """
 $(TYPEDSIGNATURES)

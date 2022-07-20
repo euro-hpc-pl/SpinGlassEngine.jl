@@ -11,7 +11,8 @@ export
        decode_state,
        PEPSNetwork,
        mod_wo_zero,
-       bond_energy
+       bond_energy,
+       outer_projector
 
 # T: type of the vertex of network
 # S: type of the vertex of underlying factor graph
@@ -122,6 +123,15 @@ function fuse_projectors(projectors::Union{Vector{T}, NTuple{N, T}}) where {N, T
     transitions = collect(eachcol(transitions_matrix))
     fused, transitions
 end
+
+function outer_projector(p1, p2)
+    # projectors::Union{Vector{T}, NTuple{N, T}}) where {N, T}
+    # B = A[p1, p2]
+    # reshape(B, :) ==  reshape(A, :)[op]
+    reshape(reshape(p1, :, 1) + maximal(p1) * reshape(p2 .- 1, 1, :), :)
+end
+
+
 
 """
 $(TYPEDSIGNATURES)

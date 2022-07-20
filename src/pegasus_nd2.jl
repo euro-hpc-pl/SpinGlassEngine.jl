@@ -193,42 +193,6 @@ function conditional_probability(
     normalize_probability(probs)
 end
 
-
-# """
-# $(TYPEDSIGNATURES)
-# """
-# function update_reduced_env_right(    #function from square might be able to handle this
-#     K::AbstractArray{Float64, 1},
-#     R::AbstractArray{Float64, 2},
-#     M::SparsePegasusSquareTensor,  
-#     B::AbstractArray{Float64, 3}
-# )
-#     pr, pd = M.projs
-#     p1l, p2l, p1u, p2u = M.bnd_projs
-#     lel1, lel2, leu1, leu2 = CUDA.CuArray.(M.bnd_exp)
-#     loc_exp12 = CUDA.CuArray(M.loc_exp)  # [s1, s2]
-
-#     K_d = CUDA.CuArray(K)
-#     R_d = CUDA.CuArray(R)
-#     B_d = CUDA.CuArray(B)
-
-#     @tensor REBu[x, y, β] := B_d[x, y, α] * R_d[α, β]
-#     REBs = REBu[:, pd, pr]
-#     Kleu1 = K_d .* leu1
-#     @tensor Ku[u1, u2] := Kleu1[z, u1] * leu2[z, u2]
-#     Ks = Ku[p1u, p2u]  # s1 s2
-#     RRs = REBs .* reshape(Ks .* loc_exp12, 1, size(pd, 1), size(pr, 1))
-
-#     ip1l = CUDA.CuArray(diagm(ones(Float64, maximum(p1l))))[p1l, :]  # s1 l1
-#     ip2l = CUDA.CuArray(diagm(ones(Float64, maximum(p2l))))[p2l, :]  # s2 l2
-#     ll = reshape(lel1, size(lel1, 1), size(lel1, 2), 1) .* reshape(lel2, size(lel2, 1), 1, size(lel2, 2)) # pl l1 l2 # 2.** 12x12x6
-#     @tensor ret[x, l] := RRs[x, s1, s2] * ip1l[s1, l1] * ip2l[s2, l2] *  ll[l, l1, l2]  order=(s2, s1, l1, l2)
-
-#     out = Array(ret ./ maximum(abs.(ret)))
-#     CUDA.unsafe_free!.((lel1, lel2, leu1, leu2, loc_exp12, K_d, R_d, B_d, REBu, REBs, Kleu1, Ku, RRs, ip1l, ip2l, ll, ret))
-#     out
-# end
-
 """
 $(TYPEDSIGNATURES)
 """
@@ -279,71 +243,80 @@ function update_energy(
     en
 end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 function tensor(
-    network::PEPSNetwork{Square2, T}, node::PEPSNode, β::Real, ::Val{:sparse_site}
+    net::PEPSNetwork{Square2, T}, node::PEPSNode, β::Real, ::Val{:sparse_site}
 ) where T <: AbstractSparsity
     i, j = node.i, node.j
 
-    en1 = local_energy(network, (i, j, 1))
-    en2 = local_energy(network, (i, j, 2))
-    en12 = interaction_energy(network, (i, j, 1), (i, j, 2))
-    p1 = projector(network, (i, j, 1), (i, j, 2))
-    p2 = projector(network, (i, j, 2), (i, j, 1))
-    eloc12 = en12[p1, p2] .+ reshape(en1, :, 1) .+ reshape(en2, 1, :)
-    eloc12 = reshape(eloc12, :)
-    expeloc12 = exp.(-β .* (eloc12 .- minimum(eloc12)))
+    en1 = local_energy(net, (i, j, 1))
+    en2 = local_energy(net, (i, j, 2))
+    en12 = interaction_energy(net, (i, j, 1), (i, j, 2))
+
+    p1 = projector(net, (i, j, 1), (i, j, 2))
+    p2 = projector(net, (i, j, 2), (i, j, 1))
+
+    eloc12 = reshape(en12[p1, p2] .+ reshape(en1, :, 1) .+ reshape(en2, 1, :), :)
+    mloc = minimum(eloc12)
+
     SparseSiteTensor(
-        expeloc12, projectors_site_tensor(network, Node(v))
+        exp.(-β .* (eloc12 .- mloc)),
+        projectors_site_tensor(net, Node(v))
     )
 end
 
-
+"""
+$(TYPEDSIGNATURES)
+"""
 function tensor(
-    network::PEPSNetwork{Square2, T}, node::PEPSNode, β::Real, ::Val{:central_h}
+    net::PEPSNetwork{Square2, T}, node::PEPSNode, β::Real, ::Val{:central_h}
 ) where T <: AbstractSparsity
-
     i, j = node.i, floor(Int, node.j)
 
-    e11 = connecting_tensor(net, (i, j, 1), (i, j+1, 1), β)
-    e12 = connecting_tensor(net, (i, j, 1), (i, j+1, 1), β)
-    e21 = connecting_tensor(net, (i, j, 1), (i, j+1, 1), β)
-    e22 = connecting_tensor(net, (i, j, 1), (i, j+1, 1), β)
-
-    pl11 = projector(network, (i, j, 1), (i, j+1 ,1))
-    pl12 = projector(network, (i, j, 1), (i, j+1 ,2))
-    pl21 = projector(network, (i, j, 2), (i, j+1 ,1))
-    pl22 = projector(network, (i, j, 2), (i, j+1 ,2))
-
-    pr11 = projector(network, (i, j+1, 1), (i, j ,1))
-    pr12 = projector(network, (i, j+1, 1), (i, j ,2))
-    pr21 = projector(network, (i, j+1, 2), (i, j ,1))
-    pr22 = projector(network, (i, j+1, 2), (i, j ,2))
-
-    SparseCentralTensor(e11, e12, e21, e22, [pl11, pl12, pl21, pl22, pr11, pr12, pr21, pr22])
+    SparseCentralTensor(
+        connecting_tensor(net, (i, j, 1), (i, j+1, 1), β),
+        connecting_tensor(net, (i, j, 1), (i, j+1, 1), β),
+        connecting_tensor(net, (i, j, 1), (i, j+1, 1), β),
+        connecting_tensor(net, (i, j, 1), (i, j+1, 1), β),
+        [
+            projector(net, (i, j, 1), (i, j+1 ,1)),
+            projector(net, (i, j, 1), (i, j+1 ,2)),
+            projector(net, (i, j, 2), (i, j+1 ,1)),
+            projector(net, (i, j, 2), (i, j+1 ,2)),
+            projector(net, (i, j+1, 1), (i, j ,1)),
+            projector(net, (i, j+1, 1), (i, j ,2)),
+            projector(net, (i, j+1, 2), (i, j ,1)),
+            projector(net, (i, j+1, 2), (i, j ,2))
+        ]
+    )
 end
 
-
+"""
+$(TYPEDSIGNATURES)
+"""
 function tensor(
-    network::PEPSNetwork{Square2, T}, node::PEPSNode, β::Real, ::Val{:central_v}
+    net::PEPSNetwork{Square2, T}, node::PEPSNode, β::Real, ::Val{:central_v}
 ) where T <: AbstractSparsity
-
     i, j = floor(Int, node.i), node.j
 
-    e11 = connecting_tensor(net, (i, j, 1), (i+1, j, 1), β)
-    e12 = connecting_tensor(net, (i, j, 1), (i+1, j, 2), β)
-    e21 = connecting_tensor(net, (i, j, 2), (i+1, j, 1), β)
-    e22 = connecting_tensor(net, (i, j, 2), (i+1, j, 2), β)
-
-    pd11 = projector(network, (i, j, 1), (i+1, j ,1))
-    pd12 = projector(network, (i, j, 1), (i+1, j ,2))
-    pd21 = projector(network, (i, j, 2), (i+1, j ,1))
-    pd22 = projector(network, (i, j, 2), (i+1, j ,2))
-
-    pu11 = projector(network, (i+1, j, 1), (i, j ,1))
-    pu12 = projector(network, (i+1, j, 1), (i, j ,2))
-    pu21 = projector(network, (i+1, j, 2), (i, j ,1))
-    pu22 = projector(network, (i+1, j, 2), (i, j ,2))
-    SparseCentralTensor(e11, e12, e21, e22, [pd11, pd12, pd21, pd22, pu11, pu12, pu21, pu22])
+    SparseCentralTensor(
+        connecting_tensor(net, (i, j, 1), (i+1, j, 1), β),
+        connecting_tensor(net, (i, j, 1), (i+1, j, 2), β),
+        connecting_tensor(net, (i, j, 2), (i+1, j, 1), β),
+        connecting_tensor(net, (i, j, 2), (i+1, j, 2), β),
+        [
+            projector(net, (i, j, 1), (i+1, j ,1)),
+            projector(net, (i, j, 1), (i+1, j ,2)),
+            projector(net, (i, j, 2), (i+1, j ,1)),
+            projector(net, (i, j, 2), (i+1, j ,2)),
+            projector(net, (i+1, j, 1), (i, j ,1)),
+            projector(net, (i+1, j, 1), (i, j ,2)),
+            projector(net, (i+1, j, 2), (i, j ,1)),
+            projector(net, (i+1, j, 2), (i, j ,2))
+        ]
+    )
 end
 
 """
@@ -352,13 +325,21 @@ $(TYPEDSIGNATURES)
 function projectors_site_tensor(net::PEPSNetwork{T, S}, vertex::Node) where {T <: Square2, S}
     i, j = vertex
     (
-        outer_projector(projector(net, (i, j, 1), ((i, j-1, 1), (i, j-1, 2))),  # l
-                        projector(net, (i, j, 2), ((i, j-1, 1), (i, j-1, 2)))),  # l
-        outer_projector(projector(net, (i, j, 1), ((i-1, j, 1), (i-1, j, 2))),  # t
-                        projector(net, (i, j, 2), ((i-1, j, 1), (i-1, j, 2)))),  # t
-        outer_projector(projector(net, (i, j, 1), ((i, j+1, 1), (i, j+1, 2))),  # r
-                        projector(net, (i, j, 2), ((i, j+1, 1), (i, j+1, 2)))),  # r
-        outer_projector(projector(net, (i, j, 1), ((i+1, j, 1), (i+1, j, 2))),  # b
-                        projector(net, (i, j, 2), ((i+1, j, 1), (i+1, j, 2)))),  # b
+        outer_projector(
+            projector(net, (i, j, 1), ((i, j-1, 1), (i, j-1, 2))),  # l
+            projector(net, (i, j, 2), ((i, j-1, 1), (i, j-1, 2))),  # l
+        ),
+        outer_projector(
+            projector(net, (i, j, 1), ((i-1, j, 1), (i-1, j, 2))),  # t
+            projector(net, (i, j, 2), ((i-1, j, 1), (i-1, j, 2))),  # t
+        ),
+        outer_projector(
+            projector(net, (i, j, 1), ((i, j+1, 1), (i, j+1, 2))),  # r
+            projector(net, (i, j, 2), ((i, j+1, 1), (i, j+1, 2))),  # r
+        ),
+        outer_projector(
+            projector(net, (i, j, 1), ((i+1, j, 1), (i+1, j, 2))),  # b
+            projector(net, (i, j, 2), ((i+1, j, 1), (i+1, j, 2))),  # b
+        ),
     )
 end

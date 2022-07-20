@@ -39,8 +39,8 @@ ctr = MpsContractor{Strategy, Gauge}(net, [β/4, β/2, β], :graduate_truncate, 
 # for i ∈ ctr.peps.nrows:-1:1
 #     SpinGlassEngine.dressed_mps(ctr, i)
 # end
-
-#sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+# println("here")
+# sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 
 # ig_states = decode_factor_graph_state.(Ref(fg), sol.states)
 # @test sol.energies ≈ energy.(Ref(ig), ig_states)

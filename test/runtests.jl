@@ -52,7 +52,7 @@ push!(my_tests,
      #"search_pegasus_nodiag_square_star.jl", # 4x4 instance is missing
 
 # time consuming tests:
-    #"search_chimera_full.jl",
+    "search_chimera_full.jl",
 )
 
 # This is work in progress (may or may not be included in future versions)
@@ -61,11 +61,11 @@ push!(my_tests,
     # "experimental/chimera_overlap_python.jl", # OK
     # "experimental/cross_square_star_prob.jl",
     #"experimental/pegasus_diag_basic.jl",
-    #"experimental/pegasus_nondiag_basic.jl",
-    "experimental/pegasus_nondiag_heavy.jl",
+    "experimental/pegasus_nondiag_basic.jl",
+    #"experimental/pegasus_nondiag_heavy.jl",
     # "experimental/gauges.jl",
     # "experimental/memoization.jl",
-    # "experimental/experiments_with_sparse_chimera.jl",
+    #"experimental/experiments_with_sparse_chimera.jl",
     # "experimental/zephyr_lattice.jl",
     # "experimental/zephyr_lattice_z1.jl",
     #"experimental/zephyr_lattice_square.jl"

@@ -210,15 +210,18 @@ function update_reduced_env_right(
 )
     pr, pd = M.projs
     p1l, p2l, p1u, p2u = M.bnd_projs
+
+    #ip1l  = cuIdentity(eltype(K), maximum(p1l))[p1l, :]
+    #ip2l  = cuIdentity(eltype(K), maximum(p1l))[p1l, :]
+
     lel1, lel2, leu1, leu2 = CUDA.CuArray.(M.bnd_exp)
     loc_exp12 = CUDA.CuArray(M.loc_exp)  # [s1, s2]
 
-    K_d = CUDA.CuArray(K)
-    R_d = CUDA.CuArray(R)
-    B_d = CUDA.CuArray(B)
+    K_d, R_d, B_d = CUDA.CuArray.(K, R, B)
 
     @tensor REBu[x, y, β] := B_d[x, y, α] * R_d[α, β]
     REBs = REBu[:, pd, pr]
+
     Kleu1 = K_d .* leu1
     @tensor Ku[u1, u2] := Kleu1[z, u1] * leu2[z, u2]
     Ks = Ku[p1u, p2u]  # s1 s2
@@ -226,12 +229,12 @@ function update_reduced_env_right(
 
     ip1l = CUDA.CuArray(diagm(ones(Float64, maximum(p1l))))[p1l, :]  # s1 l1
     ip2l = CUDA.CuArray(diagm(ones(Float64, maximum(p2l))))[p2l, :]  # s2 l2
-    ll = reshape(lel1, size(lel1, 1), size(lel1, 2), 1) .* reshape(lel2, size(lel2, 1), 1, size(lel2, 2)) # pl l1 l2 # 2.** 12x12x6
-    @tensor ret[x, l] := RRs[x, s1, s2] * ip1l[s1, l1] * ip2l[s2, l2] *  ll[l, l1, l2]  order=(s2, s1, l1, l2)
 
-    out = Array(ret ./ maximum(abs.(ret)))
-    CUDA.unsafe_free!.((lel1, lel2, leu1, leu2, loc_exp12, K_d, R_d, B_d, REBu, REBs, Kleu1, Ku, RRs, ip1l, ip2l, ll, ret))
-    out
+    ll = reshape(lel1, size(lel1, 1), size(lel1, 2), 1) .* reshape(lel2, size(lel2, 1), 1, size(lel2, 2)) # pl l1 l2 # 2.** 12x12x6
+
+    @tensor ret[x, l] := RRs[x, s1, s2] * ip1l[s1, l1] * ip2l[s2, l2] * ll[l, l1, l2] order=(s2, s1, l1, l2)
+
+    Array(ret ./ maximum(abs.(ret)))
 end
 
 """

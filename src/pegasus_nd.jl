@@ -276,10 +276,10 @@ function tensor(
     el1 = interaction_energy(network, (i, j-1, 2), (i, j, 1))
     el2 = interaction_energy(network, (i, j-1, 2), (i, j, 2))
 
-    eu1 = @inbounds eu1[pu1, :]
-    eu2 = @inbounds eu2[pu2, :]
-    el1 = @inbounds el1[pl1, :]
-    el2 = @inbounds el2[pl2, :]
+    eu1 = @inbounds @view eu1[pu1, :]
+    eu2 = @inbounds @view eu2[pu2, :]
+    el1 = @inbounds @view el1[pl1, :]
+    el2 = @inbounds @view el2[pl2, :]
 
     leu1 = exp.(-β .* (eu1 .- minimum(eu1)))
     leu2 = exp.(-β .* (eu2 .- minimum(eu2)))
@@ -308,44 +308,48 @@ function tensor(
 ) where T <: AbstractSparsity
     i, j = node.i, node.j
 
-    p1 = projector(net, (i, j, 1), (i, j, 2))
-    p2 = projector(net, (i, j, 2), (i, j, 1))
+    en1 = local_energy(network, (i, j, 1))
+    en2 = local_energy(network, (i, j, 2))
+    en12 = interaction_energy(network, (i, j, 1), (i, j, 2))
 
-    pr = projector(net, (i, j, 2), ((i, j+1, 1), (i, j+1, 2)))
-    pd = projector(net, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
+    p1 = projector(network, (i, j, 1), (i, j, 2))
+    p2 = projector(network, (i, j, 2), (i, j, 1))
 
-    for α ∈ 1:2
-        @eval begin
-            "en$α" = local_energy(net, (i, j, α))
-            "p$(α)l" = projector(net, (i, j, α), (i, j-1 ,2))
-            "p$(α)u" = projector(net, (i, j, α), (i-1, j, 1))
-            "pl$α" = projector(net, (i, j-1, 2), (i, j, α))
-            "pu$α" = projector(net, (i-1, j, 1), (i, j, α))
-        end
-    end
+    eloc = en12[p1, p2] .+ reshape(en1, :, 1) .+ reshape(en2, 1, :)
+    eloc = eloc'
+    eloc = eloc .- minimum(eloc)
+    loc_exp = exp.(-β .* eloc)
 
-    for x ∈ (:u, :l)
-        t = ("p$(x)1", "p$(x)2")
-        @eval "p$x", t = fuse_projectors(t)
-    end
+    pr = projector(network, (i, j, 2), ((i, j+1, 1), (i, j+1, 2)))
+    pd = projector(network, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
 
-    eloc = interaction_energy(net, (i, j, 1), (i, j, 2))[p1, p2]
-    for α ∈ 1:2
-        @eval begin
-            eloc .+= reshape("en$α", :, 1)
-            "e$(α)u" = interaction_energy(net, (i, j, α), (i-1, j, 1))
-            "e$(α)l" = interaction_energy(net, (i, j, α), (i, j-1, 2))
-            for x ∈ (:u, :l)
-                e = "e$(α)$(x)"
-                e = @inbounds e[:, "p$(x)$(α)"]
-                emin = minimum(e)
-                "le$(α)$(x)" = exp.(-β .* (e .- emin))
-            end
-        end
-    end
+    p1l = projector(network, (i, j, 1), (i, j-1 ,2))
+    p2l = projector(network, (i, j, 2), (i, j-1, 2))
+    p1u = projector(network, (i, j, 1), (i-1, j, 1))
+    p2u = projector(network, (i, j, 2), (i-1, j, 1))
 
-    emin = minimum(eloc)
-    loc_exp = exp.(-β .* (eloc' .- emin))
+    pl1 = projector(network, (i, j-1, 2), (i, j, 1))
+    pl2 = projector(network, (i, j-1, 2), (i, j, 2))
+    pl, (pl1, pl2) = fuse_projectors((pl1, pl2))
+
+    pu1 = projector(network, (i-1, j, 1), (i, j, 1))
+    pu2 = projector(network, (i-1, j, 1), (i, j, 2))
+    pu, (pu1, pu2) = fuse_projectors((pu1, pu2))
+
+    e1u = interaction_energy(network, (i, j, 1), (i-1, j, 1))
+    e2u = interaction_energy(network, (i, j, 2), (i-1, j, 1))
+    e1l = interaction_energy(network, (i, j, 1), (i, j-1, 2))
+    e2l = interaction_energy(network, (i, j, 2), (i, j-1, 2))
+
+    e1u = @inbounds @view e1u[:, pu1]
+    e2u = @inbounds @view e2u[:, pu2]
+    e1l = @inbounds @view e1l[:, pl1]
+    e2l = @inbounds @view e2l[:, pl2]
+
+    le1u = exp.(-β .* (e1u .- minimum(e1u)))
+    le2u = exp.(-β .* (e2u .- minimum(e2u)))
+    le1l = exp.(-β .* (e1l .- minimum(e1l)))
+    le2l = exp.(-β .* (e2l .- minimum(e2l)))
 
     A = zeros(maximum.((pl, pu, pr, pd)))
     for s1 ∈ 1:length(en1), s2 ∈ 1:length(en2)

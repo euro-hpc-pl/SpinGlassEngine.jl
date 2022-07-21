@@ -1,4 +1,4 @@
-export Square2
+export Square2, tensor
 
 """
 $(TYPEDSIGNATURES)
@@ -250,7 +250,6 @@ function tensor(
     net::PEPSNetwork{Square2, T}, node::PEPSNode, β::Real, ::Val{:sparse_site}
 ) where T <: AbstractSparsity
     i, j = node.i, node.j
-
     en1 = local_energy(net, (i, j, 1))
     en2 = local_energy(net, (i, j, 2))
     en12 = interaction_energy(net, (i, j, 1), (i, j, 2))
@@ -263,9 +262,36 @@ function tensor(
 
     SparseSiteTensor(
         exp.(-β .* (eloc12 .- mloc)),
-        projectors_site_tensor(net, Node(v))
+        projectors_site_tensor(net, Node(node))
     )
 end
+
+"""
+$(TYPEDSIGNATURES)
+"""
+function tensor(
+    net::PEPSNetwork{Square2, T}, node::PEPSNode, β::Real, ::Val{:site}
+) where T <: AbstractSparsity
+    i, j = node.i, node.j
+    en1 = local_energy(net, (i, j, 1))
+    en2 = local_energy(net, (i, j, 2))
+    en12 = interaction_energy(net, (i, j, 1), (i, j, 2))
+
+    p1 = projector(net, (i, j, 1), (i, j, 2))
+    p2 = projector(net, (i, j, 2), (i, j, 1))
+
+    eloc12 = reshape(en12[p1, p2] .+ reshape(en1, :, 1) .+ reshape(en2, 1, :), :)
+    mloc = minimum(eloc12)
+
+    loc_exp = exp.(-β .* (eloc12 .- mloc))
+    projs = projectors_site_tensor(net, Node(node))
+    A = zeros(maximum.(projs))
+    for (σ, lexp) ∈ enumerate(loc_exp)
+        @inbounds A[getindex.(projs, Ref(σ))...] += lexp
+    end
+    A
+end
+
 
 """
 $(TYPEDSIGNATURES)

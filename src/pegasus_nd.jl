@@ -308,8 +308,6 @@ function tensor(
 ) where T <: AbstractSparsity
     i, j = node.i, node.j
 
-    en12 = interaction_energy(net, (i, j, 1), (i, j, 2))
-
     p1 = projector(net, (i, j, 1), (i, j, 2))
     p2 = projector(net, (i, j, 2), (i, j, 1))
 
@@ -331,17 +329,15 @@ function tensor(
         @eval "p$x", t = fuse_projectors(t)
     end
 
-    eloc = en12[p1, p2]
+    eloc = interaction_energy(net, (i, j, 1), (i, j, 2))[p1, p2]
     for α ∈ 1:2
         @eval begin
             eloc .+= reshape("en$α", :, 1)
-
             "e$(α)u" = interaction_energy(net, (i, j, α), (i-1, j, 1))
             "e$(α)l" = interaction_energy(net, (i, j, α), (i, j-1, 2))
-
             for x ∈ (:u, :l)
-                e, p = "e$(α)$(x)", "p$(x)$(α)"
-                e = @inbounds e[:, p]
+                e = "e$(α)$(x)"
+                e = @inbounds e[:, "p$(x)$(α)"]
                 emin = minimum(e)
                 "le$(α)$(x)" = exp.(-β .* (e .- emin))
             end

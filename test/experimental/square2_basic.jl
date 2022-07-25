@@ -32,7 +32,7 @@ function run_test(instance, m, n, t)
     Strategy = MPSAnnealing # SVDTruncate
     Sparsity = Dense
     tran = rotation(0)
-    Layout = GaugesEnergy
+    Layout = EnergyGauges
     Gauge = NoUpdate
 
     net = PEPSNetwork{Square2{Layout}, Sparsity}(m, n, fg, tran)

@@ -6,15 +6,15 @@ end
 
 m = 4
 n = 4
-t = 3
+t = 1
 
 β = 2
 bond_dim = 4
 δp = 1e-10
 num_states = 128
 
-ig = ising_graph("$(@__DIR__)/../instances/pegasus_nondiag/pegasus_nd_4x4x3.txt")
-#ig = ising_graph("$(@__DIR__)/../instances/chimera_droplets/128power/001.txt")
+#ig = ising_graph("$(@__DIR__)/../instances/pegasus_nondiag/pegasus_nd_4x4x3.txt")
+ig = ising_graph("$(@__DIR__)/../instances/chimera_droplets/128power/001.txt")
 
 fg = factor_graph(
     ig,
@@ -28,7 +28,7 @@ search_params = SearchParameters(num_states, δp)
 # Solve using PEPS search
 energies = Vector{Float64}[]
 Strategy = MPSAnnealing # SVDTruncate
-Sparsity = Sparse #Dense
+Sparsity = Dense #Dense
 tran =  rotation(0)
 Layout = GaugesEnergy
 Gauge = NoUpdate
@@ -40,7 +40,7 @@ ctr = MpsContractor{Strategy, Gauge}(net, [β/4, β/2, β], :graduate_truncate, 
 #     SpinGlassEngine.dressed_mps(ctr, i)
 # end
 # println("here")
-# sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 
 # ig_states = decode_factor_graph_state.(Ref(fg), sol.states)
 # @test sol.energies ≈ energy.(Ref(ig), ig_states)

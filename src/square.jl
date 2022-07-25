@@ -31,12 +31,12 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-site(::Type{Dense}) = :site_square2
+site(::Type{Dense}) = :site
 
 """
 $(TYPEDSIGNATURES)
 """
-site(::Type{Sparse}) = :sparse_site_square2
+site(::Type{Sparse}) = :sparse_site
 
 """
 $(TYPEDSIGNATURES)

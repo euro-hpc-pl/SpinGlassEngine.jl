@@ -30,7 +30,7 @@ energies = Vector{Float64}[]
 Strategy = MPSAnnealing # SVDTruncate
 Sparsity = Dense #Dense
 tran =  rotation(0)
-Layout = GaugesEnergy
+Layout = EnergyGauges
 Gauge = NoUpdate
 
 net = PEPSNetwork{Square2{Layout}, Sparsity}(m, n, fg, tran)

@@ -247,8 +247,8 @@ end
 $(TYPEDSIGNATURES)
 """
 function tensor(
-    net::PEPSNetwork{Square2, T}, node::PEPSNode, β::Real, ::Val{:sparse_site}
-) where T <: AbstractSparsity
+    net::PEPSNetwork{Square2{S}, T}, node::PEPSNode, β::Real, ::Val{:sparse_site_square2}
+) where {T <: AbstractSparsity, S <: AbstractTensorsLayout}
     i, j = node.i, node.j
     en1 = local_energy(net, (i, j, 1))
     en2 = local_energy(net, (i, j, 2))
@@ -270,8 +270,8 @@ end
 $(TYPEDSIGNATURES)
 """
 function tensor(
-    net::PEPSNetwork{Square2, T}, node::PEPSNode, β::Real, ::Val{:site}
-) where T <: AbstractSparsity
+    net::PEPSNetwork{Square2{S}, T}, node::PEPSNode, β::Real, ::Val{:site_square2}
+) where {T <: AbstractSparsity, S <: AbstractTensorsLayout}
     i, j = node.i, node.j
     en1 = local_energy(net, (i, j, 1))
     en2 = local_energy(net, (i, j, 2))
@@ -297,16 +297,16 @@ end
 $(TYPEDSIGNATURES)
 """
 function tensor(
-    net::PEPSNetwork{Square2, T}, node::PEPSNode, β::Real, ::Val{:central_h}
-) where T <: AbstractSparsity
+    net::PEPSNetwork{Square2{S}, T}, node::PEPSNode, β::Real, ::Val{:central_h}
+) where {T <: AbstractSparsity, S <: AbstractTensorsLayout}
     i, j = node.i, floor(Int, node.j)
 
     SparseCentralTensor(
         connecting_tensor(net, (i, j, 1), (i, j+1, 1), β),
-        connecting_tensor(net, (i, j, 1), (i, j+1, 1), β),
-        connecting_tensor(net, (i, j, 1), (i, j+1, 1), β),
-        connecting_tensor(net, (i, j, 1), (i, j+1, 1), β),
-        [
+        connecting_tensor(net, (i, j, 1), (i, j+1, 2), β),
+        connecting_tensor(net, (i, j, 2), (i, j+1, 1), β),
+        connecting_tensor(net, (i, j, 2), (i, j+1, 2), β),
+        (
             projector(net, (i, j, 1), (i, j+1 ,1)),
             projector(net, (i, j, 1), (i, j+1 ,2)),
             projector(net, (i, j, 2), (i, j+1 ,1)),
@@ -315,7 +315,7 @@ function tensor(
             projector(net, (i, j+1, 1), (i, j ,2)),
             projector(net, (i, j+1, 2), (i, j ,1)),
             projector(net, (i, j+1, 2), (i, j ,2))
-        ]
+        )
     )
 end
 
@@ -323,16 +323,58 @@ end
 $(TYPEDSIGNATURES)
 """
 function tensor(
-    net::PEPSNetwork{Square2, T}, node::PEPSNode, β::Real, ::Val{:central_v}
-) where T <: AbstractSparsity
-    i, j = floor(Int, node.i), node.j
+    network::PEPSNetwork{Square2{S}, Dense}, node::PEPSNode, β::Real, ::Val{:central_h}
+) where S <: AbstractTensorsLayout
+    i, j = node.i, floor(Int, node.j)
 
+    p11r = projector(network, (i, j, 1), (i, j-1, 1))
+    p21r = projector(network, (i, j, 1), (i, j-1, 2))
+    p12r = projector(network, (i, j, 2), (i, j-1 ,1))
+    p22r = projector(network, (i, j, 2), (i, j-1, 2))
+
+    p1r, (p11r, p21r) = fuse_projectors((p11r, p21r))
+    p2r, (p12r, p22r) = fuse_projectors((p12r, p22r))
+
+    p21l = projector(network, (i, j-1, 2), (i, j, 1))
+    p22l = projector(network, (i, j-1, 2), (i, j, 2))
+    p12l = projector(network, (i, j-1, 1), (i, j, 2))
+    p11l = projector(network, (i, j-1, 1), (i, j, 1))
+
+    p1l, (p11l, p12l) = fuse_projectors((p11l, p12l))
+    p2l, (p21l, p22l) = fuse_projectors((p21l, p22l))
+
+    e11 = interaction_energy(network, (i, j-1, 1), (i, j, 1))
+    e12 = interaction_energy(network, (i, j-1, 1), (i, j, 2))
+    e21 = interaction_energy(network, (i, j-1, 2), (i, j, 1))
+    e22 = interaction_energy(network, (i, j-1, 2), (i, j, 2))
+
+    e11 = e11[p11l, p11r]
+    e21 = e21[p21l, p21r]
+    e12 = e12[p12l, p12r]
+    e22 = e22[p22l, p22r]
+
+    le11 = exp.(-β .* (e11 .- minimum(e11)))
+    le21 = exp.(-β .* (e21 .- minimum(e21)))
+    le12 = exp.(-β .* (e12 .- minimum(e12)))
+    le22 = exp.(-β .* (e22 .- minimum(e22)))
+
+    @cast V[(l1, l2), (r1, r2)] := le11[l1,r1] * le21[l2, r1] * le12[l1, r2] * le22[l2, r2]
+    V ./ maximum(V)
+end
+
+"""
+$(TYPEDSIGNATURES)
+"""
+function tensor(
+    net::PEPSNetwork{Square2{S}, T}, node::PEPSNode, β::Real, ::Val{:central_v}
+) where {T <: AbstractSparsity, S <: AbstractTensorsLayout}
+    i, j = floor(Int, node.i), node.j
     SparseCentralTensor(
         connecting_tensor(net, (i, j, 1), (i+1, j, 1), β),
         connecting_tensor(net, (i, j, 1), (i+1, j, 2), β),
         connecting_tensor(net, (i, j, 2), (i+1, j, 1), β),
         connecting_tensor(net, (i, j, 2), (i+1, j, 2), β),
-        [
+        (
             projector(net, (i, j, 1), (i+1, j ,1)),
             projector(net, (i, j, 1), (i+1, j ,2)),
             projector(net, (i, j, 2), (i+1, j ,1)),
@@ -341,8 +383,52 @@ function tensor(
             projector(net, (i+1, j, 1), (i, j ,2)),
             projector(net, (i+1, j, 2), (i, j ,1)),
             projector(net, (i+1, j, 2), (i, j ,2))
-        ]
+        )
     )
+end
+
+"""
+$(TYPEDSIGNATURES)
+"""
+function tensor(
+    network::PEPSNetwork{Square2{S}, Dense}, node::PEPSNode, β::Real, ::Val{:central_v}
+) where S <: AbstractTensorsLayout
+    i, j = floor(Int, node.i), node.j
+
+    p11u = projector(network, (i, j, 1), (i-1, j, 1))
+    p12u = projector(network, (i, j, 2), (i-1, j, 1))
+    p21u = projector(network, (i, j, 1), (i-1, j, 2))
+    p22u = projector(network, (i, j, 2), (i-1, j, 2))
+
+    p1u, (p11u, p21u) = fuse_projectors((p11u, p21u))
+    p2u, (p12u, p22u) = fuse_projectors((p12u, p22u))
+
+    p11d = projector(network, (i-1, j, 1), (i, j, 1))
+    p12d = projector(network, (i-1, j, 1), (i, j, 2))
+    p21d = projector(network, (i-1, j, 2), (i, j, 1))
+    p22d = projector(network, (i-1, j, 2), (i, j, 2))
+
+    p1d, (p11d, p12d) = fuse_projectors((p11d, p12d))
+    p2d, (p21d, p22d) = fuse_projectors((p21d, p22d))
+
+    e11 = interaction_energy(network, (i-1, j, 1), (i, j, 1))
+    e21 = interaction_energy(network, (i-1, j, 2), (i, j, 1))
+    e12 = interaction_energy(network, (i-1, j, 1), (i, j, 2))
+    e22 = interaction_energy(network, (i-1, j, 2), (i, j, 2))
+
+    e11 = e11[p11d, p11u]
+    e21 = e21[p21d, p21u]
+    e12 = e12[p12d, p12u]
+    e22 = e22[p22d, p22u]
+
+    le11 = exp.(-β .* (e11 .- minimum(e11)))
+    le21 = exp.(-β .* (e21 .- minimum(e21)))
+    le12 = exp.(-β .* (e12 .- minimum(e12)))
+    le22 = exp.(-β .* (e22 .- minimum(e22)))
+
+    @cast V[(u1, u2), (d1, d2)] := le11[u1, d1] * le21[u2, d1] * le12[u1, d2] * le22[u2, d2]
+
+    V ./ maximum(V)
 end
 
 """

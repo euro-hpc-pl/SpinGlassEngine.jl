@@ -28,7 +28,7 @@ search_params = SearchParameters(num_states, δp)
 # Solve using PEPS search
 energies = Vector{Float64}[]
 Strategy = MPSAnnealing # SVDTruncate
-Sparsity = Dense #Dense
+Sparsity = Sparse #Dense
 tran =  rotation(0)
 Layout = EnergyGauges
 Gauge = NoUpdate

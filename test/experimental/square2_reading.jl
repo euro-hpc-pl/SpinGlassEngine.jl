@@ -4,7 +4,7 @@ function brute_force_gpu(ig::IsingGraph; num_states::Int)
      brute_force(ig, :GPU, num_states=num_states)
 end
 
-m = 4
+m = 3 #4
 n = 4
 t = 1
 
@@ -14,13 +14,20 @@ bond_dim = 4
 num_states = 128
 
 #ig = ising_graph("$(@__DIR__)/../instances/pegasus_nondiag/pegasus_nd_4x4x3.txt")
-ig = ising_graph("$(@__DIR__)/../instances/chimera_droplets/128power/001.txt")
+#ig = ising_graph("$(@__DIR__)/../instances/chimera_droplets/128power/001.txt")
+ig = ising_graph("$(@__DIR__)/../instances/pathological/pegasus_nd_3_4_1.txt")
 
 fg = factor_graph(
     ig,
-    spectrum=brute_force_gpu, # rm _gpu to use CPU
+    spectrum=full_spectrum, # brute_force_gpu rm _gpu to use CPU
     cluster_assignment_rule=pegasus_lattice((m, n, t))
 )
+
+fg2 = factor_graph(
+        ig,
+        spectrum=full_spectrum, #_gpu, # rm _gpu to use CPU
+        cluster_assignment_rule=super_square_lattice((m, n, 8))
+    )
 
 params = MpsParameters(bond_dim, 1E-8, 2)
 search_params = SearchParameters(num_states, δp)
@@ -33,8 +40,11 @@ tran =  rotation(0)
 Layout = EnergyGauges
 Gauge = NoUpdate
 
+#net = PEPSNetwork{Square2{Layout}, Sparsity}(m, n, fg, tran)
 net = PEPSNetwork{Square2{Layout}, Sparsity}(m, n, fg, tran)
-ctr = MpsContractor{Strategy, Gauge}(net, [β/4, β/2, β], :graduate_truncate, params)
+net2 = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg2, tran)
+
+ctr = MpsContractor{Strategy, Gauge}(net2, [β/4, β/2, β], :graduate_truncate, params)
 
 # for i ∈ ctr.peps.nrows:-1:1
 #     SpinGlassEngine.dressed_mps(ctr, i)

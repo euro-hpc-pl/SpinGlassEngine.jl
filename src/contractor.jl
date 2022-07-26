@@ -341,11 +341,30 @@ Construct (and memoize) right environment for a given node.
 
     while ls > ls_mps
         M0 = W[ls][0]  # TODO: make this consistent
-        @tensor RR[x, y] := M0[y, z] * RR[x, z]
+        RR = update_reduced_env_right(RR, M0)
         ls = _left_nbrs_site(ls, W.sites)
     end
     nmr = maximum(abs.(RR))
     iszero(nmr) ? RR : RR ./ nmr
+end
+
+function update_reduced_env_right(RR::S, M0::S) where S <: AbstractArray{Float64, 2}
+    @tensor RR[x, y] := M0[y, z] * RR[x, z]
+    RR
+end
+
+function update_reduced_env_right(
+    RR::S, M::T
+    ) where {S <: AbstractArray{Float64, 2}, T <: SparseCentralTensor}
+    M11 = M.e11
+    M12 = M.e12
+    M21 = M.e21
+    M22 = M.e22
+
+    @cast MM[(l1, l2), (r1, r2)] := M11[l1,r1] * M21[l2, r1] * M12[l1, r2] * M22[l2, r2]
+    
+    @tensor RR[x, y] := MM[y, z] * RR[x, z]
+    RR
 end
 
 """
@@ -355,11 +374,12 @@ function update_reduced_env_right(
     RE::AbstractArray{Float64, 2}, m::Int, M::Dict, B::AbstractArray{Float64, 3}
 )
     kk = sort(collect(keys(M)))
-    if kk[1] < 0
-        Mt = M[kk[1]]
-        K = @view Mt[m, :]
 
-        for ii ∈ kk[2:end]
+    if kk[1] < 0
+        K = zeros(size(M[kk[1]], 1))
+        K[m] = 1.
+
+        for ii ∈ kk[1:end]
             if ii == 0 break end
             Mm = M[ii]
             @tensor K[a] := K[b] * Mm[b, a]
@@ -368,6 +388,21 @@ function update_reduced_env_right(
         K = zeros(size(M[0], 2))
         K[m] = 1.
     end
+
+    # if kk[1] < 0
+    #     Mt = M[kk[1]]
+    #     K = @view Mt[m, :]
+
+    #     for ii ∈ kk[2:end]
+    #         if ii == 0 break end
+    #         Mm = M[ii]
+    #         @tensor K[a] := K[b] * Mm[b, a]
+    #     end
+    # else
+    #     K = zeros(size(M[0], 2))
+    #     K[m] = 1.
+    # end
+
     update_reduced_env_right(K, RE, M[0], B)
 end
 

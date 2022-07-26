@@ -382,7 +382,7 @@ function update_reduced_env_right(
         for ii ∈ kk[1:end]
             if ii == 0 break end
             Mm = M[ii]
-            @tensor K[a] := K[b] * Mm[b, a]
+            K = _project_on_border(K, Mm)
         end
     else
         K = zeros(size(M[0], 2))
@@ -406,6 +406,25 @@ function update_reduced_env_right(
     update_reduced_env_right(K, RE, M[0], B)
 end
 
+function _project_on_border(
+    K::S, M::T
+    ) where {S <: AbstractArray{Float64, 1}, T <: AbstractArray{Float64, 2}}
+    @tensor K[a] := K[b] * M[b, a]
+    K
+end
+
+function _project_on_border(
+    K::S, M::T
+    ) where {S <: AbstractArray{Float64, 1}, T <: SparseCentralTensor}
+    M11 = M.e11
+    M12 = M.e12
+    M21 = M.e21
+    M22 = M.e22
+    @cast MM[(l1, l2), (r1, r2)] := M11[l1,r1] * M21[l2, r1] * M12[l1, r2] * M22[l2, r2]
+    
+    @tensor K[a] := K[b] * MM[b, a]
+    K
+end
 
 """
 $(TYPEDSIGNATURES)

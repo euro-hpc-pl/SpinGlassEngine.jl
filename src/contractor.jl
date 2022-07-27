@@ -643,7 +643,7 @@ $(TYPEDSIGNATURES)
 boundary index formed from outer product of two projectors
 """
 function boundary_indices(
-    ctr::MpsContractor{T}, nodes::NTuple{4, S}, states::Vector{Vector{Int}}
+    ctr::MpsContractor{T}, nodes::Union{NTuple{4, S}, Tuple{S, NTuple{2, S}, S, NTuple{2, S}}}, states::Vector{Vector{Int}}
 ) where {S, T}
     v, w, k, l = nodes
     pv = projector(ctr.peps, v, w)

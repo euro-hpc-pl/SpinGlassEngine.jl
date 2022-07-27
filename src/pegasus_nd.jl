@@ -195,31 +195,34 @@ function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: PegasusSqua
     ([(i, j, k) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols for k ∈ 1:2], (peps.nrows+1, 1, 1))
 end
 
+function _boundary(i::T, j::T, ::Val{1}, N::T) where T<:Int
+    vcat(
+        (((i, m, 1), @ntuple 2 k->(i+1, m, k)) for m ∈ 1:j-1)...,
+        (@ntuple 2 k->(i, j+k-2, 3-k)),
+        (@ntuple 2 k->(i, j+k-2, 2)),
+        (@ntuple 2 k->(i+k-2, j, 1)),
+        (@ntuple 2 k->(i+k-2, j, k)),
+        (((i-1, m, 1), @ntuple 2 k->(i, m, k)) for m ∈ j+1:N)...
+    )
+end
+
+function _boundary(i::T, j::T, ::Val{2}, N::T) where T<:Int
+    vcat(
+        (((i, m, 1), @ntuple 2 k->(i+1, m, k)) for m ∈ 1:j-1)...,
+        (@ntuple 2 k->(i, j+k-2, 2)),
+        ((i, j, 1), @ntuple 2 k->(i+1, j, k)),
+        (@ntuple 2 k->(i, j, k)),
+        (@ntuple 2 k->(i+k-2, j, k)),
+        (((i-1, m, 1), @ntuple 2 k->(i, m, k)) for m ∈ j+1:N)...
+    )
+end
+
 """
 $(TYPEDSIGNATURES)
 """
 function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: PegasusSquare, S}
     i, j, k = node
-    if k == 1
-        bnd = vcat(
-            [((i, m, 1), ((i+1, m, 1), (i+1, m, 2))) for m ∈ 1:j-1]...,
-            ((i, j-1, 2), (i, j, 1)),
-            ((i, j-1, 2), (i, j, 2)),
-            ((i-1, j, 1), (i, j, 1)),
-            ((i-1, j, 1), (i, j, 2)),
-            [((i-1, m, 1), ((i, m, 1), (i, m, 2))) for m ∈ j+1:ctr.peps.ncols]...
-        )
-    else  # k == 2
-        bnd = vcat(
-            [((i, m, 1), ((i+1, m, 1), (i+1, m, 2))) for m ∈ 1:j-1]...,
-            ((i, j-1, 2), (i, j, 2)),
-            ((i, j, 1), ((i+1, j, 1), (i+1, j, 2))),
-            ((i, j, 1), (i, j, 2)),
-            ((i-1, j, 1), (i, j, 2)),
-            [((i-1, m, 1), ((i, m, 1), (i, m, 2))) for m ∈ j+1:ctr.peps.ncols]...
-        )
-    end
-    bnd
+    _boundary(i, j, Val(k), ctr.peps.ncols)
 end
 
 """
@@ -247,40 +250,40 @@ function tensor(
     net::PEPSNetwork{PegasusSquare, T}, node::PEPSNode, β::Real, ::Val{:sparse_pegasus_square_site}
 ) where T <: AbstractSparsity
     i, j = node.i, node.j
-    ij1, ij2 = (i, j, 1), (i, j, 2)
+    nbrs = @ntuple 2 k->(i, j, k)
 
-    p1 = projector(net, ij1, ij2)
-    p2 = projector(net, ij2, ij1)
+    pr = projector(net, (i, j, 2), @ntuple 2 k->(i, j+1, k))
+    pd = projector(net, (i, j, 1), @ntuple 2 k->(i+1, j, k))
 
-    pr = projector(net, ij2, ((i, j+1, 1), (i, j+1, 2)))
-    pd = projector(net, ij1, ((i+1, j, 1), (i+1, j, 2)))
-
-    p1l, p2l = projector.(Ref(net), (ij1, ij2), Ref((i, j-1 ,2)))
-    p1u, p2u = projector.(Ref(net), (ij1, ij2), Ref((i-1, j, 1)))
-
-    pl, (pl1, pl2) = fuse_projectors(
-        projector.(Ref(net), Ref((i, j-1, 2)), (ij1, ij2))
+    pl, (pl_1, pl_2) = fuse_projectors(
+        @ntuple 2 k->projector(net, (i, j-1, 2), (i, j, k))
     )
-    pu, (pu1, pu2) = fuse_projectors(
-        projector.(Ref(net), Ref((i-1, j, 1)), (ij1, ij2))
+    pu, (pu_1, pu_2) = fuse_projectors(
+        @ntuple 2 k->projector(net, (i-1, j, 1), (i, j, k))
     )
-    eu1, eu2 = interaction_energy.(Ref(net), Ref((i-1, j, 1)), (ij1, ij2))
-    el1, el2 = interaction_energy.(Ref(net), Ref((i, j-1, 2)), (ij1, ij2))
+    @nexprs 2 k->(
+        eu_k = interaction_energy(net, (i-1, j, 1), (i, j, k))[pu_k, :];
+        el_k = interaction_energy(net, (i, j-1, 2), (i, j, k))[pl_k, :];
 
-    en1, en2 = local_energy.(Ref(net), (ij1, ij2))
-    eloc12 = interaction_energy(net, ij1, ij2)
+        μ_k = minimum(el_k); el_k = exp.(-β .* (el_k .- μ_k));
+        μ_k = minimum(eu_k); eu_k = exp.(-β .* (eu_k .- μ_k));
 
-    eloc12 = eloc12[p1, p2] .+ reshape(en1, :, 1) .+ reshape(en2, 1, :)
+        pl_k = projector(net, (i, j, k), (i, j-1 ,2));
+        pu_k = projector(net, (i, j, k), (i-1, j, 1));
+
+        en_k = local_energy(net, (i, j, k))
+    )
+    p1 = @ncall 2 projector net k->(i, j, k)
+    p2 = @ncall 2 projector net k->(i, j, 3-k)
+    en12 = interaction_energy(net,  nbrs...)[p1, p2]
+    @cast eloc12[x, y] := en12[x, y] + en_1[x] + en_2[y]
 
     μ = minimum(eloc12)
-
-    en = (e[p, :] for (e, p) ∈ zip((el1, el2, eu1, eu2), (pl1, pl2, pu1, pu2)))
-
     SparsePegasusSquareTensor(
         [pr, pd],
         exp.(-β .* (eloc12 .- μ)),
-        [exp.(-β .* (e .- μ)) for (e, μ) ∈ zip(en, minimum.(en))],
-        [p1l, p2l, p1u, p2u],
+        [el_1, el_2, eu_1, eu_2],
+        [pl_1, pl_2, pu_1, pu_2],
         maximum.((pl, pu, pr, pd))
     )
 end
@@ -290,6 +293,7 @@ Base.size(M::SparsePegasusSquareTensor) = M.sizes
 
 """
 $(TYPEDSIGNATURES)
+ This code could be simplified ....
 """
 function tensor(
     network::PEPSNetwork{PegasusSquare, T}, node::PEPSNode, β::Real, ::Val{:pegasus_square_site}
@@ -300,11 +304,13 @@ function tensor(
     en2 = local_energy(network, (i, j, 2))
     en12 = interaction_energy(network, (i, j, 1), (i, j, 2))
 
+    eloc = zeros(length(en2), length(en1))
     p1 = projector(network, (i, j, 1), (i, j, 2))
     p2 = projector(network, (i, j, 2), (i, j, 1))
 
-    eloc = en12[p1, p2] .+ reshape(en1, :, 1) .+ reshape(en2, 1, :)
-    eloc = eloc'
+    for s1 ∈ 1:length(en1), s2 ∈ 1:length(en2)
+        @inbounds eloc[s2, s1] = en1[s1] + en2[s2] + en12[p1[s1], p2[s2]]
+    end
     eloc = eloc .- minimum(eloc)
     loc_exp = exp.(-β .* eloc)
 
@@ -334,7 +340,12 @@ function tensor(
     e1l = @inbounds @view e1l[:, pl1]
     e2l = @inbounds @view e2l[:, pl2]
 
-    A = zeros(maximum.((pl, pu, pr, pd)))
+    le1u = exp.(-β .* (e1u .- minimum(e1u)))
+    le2u = exp.(-β .* (e2u .- minimum(e2u)))
+    le1l = exp.(-β .* (e1l .- minimum(e1l)))
+    le2l = exp.(-β .* (e2l .- minimum(e2l)))
+
+    A = zeros(eltype(β), maximum.((pl, pu, pr, pd)))
     for s1 ∈ 1:length(en1), s2 ∈ 1:length(en2)
         @inbounds ll = reshape(le1l[p1l[s1], :], :, 1) .* reshape(le2l[p2l[s2], :], :, 1)
         @inbounds lu = reshape(le1u[p1u[s1], :], 1, :) .* reshape(le2u[p2u[s2], :], 1, :)
@@ -349,10 +360,10 @@ $(TYPEDSIGNATURES)
 function projectors_site_tensor(net::PEPSNetwork{T, S}, vertex::Node) where {T <: PegasusSquare, S}
     i, j = vertex
     (
-        projector(net, (i, j-1, 2), ((i, j, 1), (i, j, 2))),
-        projector(net, (i-1, j, 1), ((i, j, 1), (i, j, 2))),
-        projector(net, (i, j, 2), ((i, j+1, 1), (i, j+1, 2))),
-        projector(net, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
+        projector(net, (i, j-1, 2), @ntuple 2 k->(i, j, k)),
+        projector(net, (i-1, j, 1), @ntuple 2 k->(i, j, k)),
+        projector(net, (i, j, 2), @ntuple 2 k->(i, j+1, k)),
+        projector(net, (i, j, 1), @ntuple 2 k->(i+1, j, k))
     )
 end
 

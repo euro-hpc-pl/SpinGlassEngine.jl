@@ -1,6 +1,7 @@
 module SpinGlassEngine
 
 using Base: Tuple
+using Base.Cartesian
 using SpinGlassTensors
 using SpinGlassNetworks
 using CUDA

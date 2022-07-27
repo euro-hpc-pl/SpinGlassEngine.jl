@@ -15,10 +15,11 @@ num_states = 128
 
 ig = ising_graph("$(@__DIR__)/../instances/pegasus_nondiag/pegasus_nd_4x4x3.txt")
 #ig = ising_graph("$(@__DIR__)/../instances/chimera_droplets/128power/001.txt")
+#ig = ising_graph("$(@__DIR__)/../instances/pathological/pegasus_nd_3_4_1.txt")
 
 fg = factor_graph(
     ig,
-    spectrum=brute_force_gpu, # rm _gpu to use CPU
+    spectrum= brute_force_gpu, #rm _gpu to use CPU
     cluster_assignment_rule=pegasus_lattice((m, n, t))
 )
 
@@ -30,7 +31,7 @@ energies = Vector{Float64}[]
 Strategy = MPSAnnealing # SVDTruncate
 Sparsity = Sparse #Dense
 tran =  rotation(0)
-Layout = GaugesEnergy
+Layout = EnergyGauges
 Gauge = NoUpdate
 
 net = PEPSNetwork{Square2{Layout}, Sparsity}(m, n, fg, tran)
@@ -40,7 +41,7 @@ ctr = MpsContractor{Strategy, Gauge}(net, [β/4, β/2, β], :graduate_truncate, 
 #     SpinGlassEngine.dressed_mps(ctr, i)
 # end
 # println("here")
-# sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 
 # ig_states = decode_factor_graph_state.(Ref(fg), sol.states)
 # @test sol.energies ≈ energy.(Ref(ig), ig_states)

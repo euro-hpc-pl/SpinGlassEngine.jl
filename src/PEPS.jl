@@ -125,7 +125,7 @@ function fuse_projectors(projectors::Union{Vector{T}, NTuple{N, T}}) where {N, T
 end
 
 function outer_projector(p1::Array{T, 1}, p2::Array{T, 1}) where T <: Number
-    reshape(reshape(p1, :, 1) + maximal(p1) * reshape(p2 .- 1, 1, :), :)
+    reshape(reshape(p1, :, 1) .+ maximum(p1) .* reshape(p2 .- 1, 1, :), :)
 end
 
 """

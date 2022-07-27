@@ -244,54 +244,42 @@ $(TYPEDSIGNATURES)
 cluster-cluster energies attached from left and top
 """
 function tensor(
-    network::PEPSNetwork{PegasusSquare, T}, node::PEPSNode, β::Real, ::Val{:sparse_pegasus_square_site}
+    net::PEPSNetwork{PegasusSquare, T}, node::PEPSNode, β::Real, ::Val{:sparse_pegasus_square_site}
 ) where T <: AbstractSparsity
     i, j = node.i, node.j
+    ij1, ij2 = (i, j, 1), (i, j, 2)
 
-    en1 = local_energy(network, (i, j, 1))
-    en2 = local_energy(network, (i, j, 2))
-    en12 = interaction_energy(network, (i, j, 1), (i, j, 2))
+    p1 = projector(net, ij1, ij2)
+    p2 = projector(net, ij2, ij1)
 
-    p1 = projector(network, (i, j, 1), (i, j, 2))
-    p2 = projector(network, (i, j, 2), (i, j, 1))
+    pr = projector(net, ij2, ((i, j+1, 1), (i, j+1, 2)))
+    pd = projector(net, ij1, ((i+1, j, 1), (i+1, j, 2)))
 
-    pr = projector(network, (i, j, 2), ((i, j+1, 1), (i, j+1, 2)))
-    pd = projector(network, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
+    p1l, p2l = projector.(Ref(net), (ij1, ij2), Ref((i, j-1 ,2)))
+    p1u, p2u = projector.(Ref(net), (ij1, ij2), Ref((i-1, j, 1)))
 
-    p1l = projector(network, (i, j, 1), (i, j-1 ,2))
-    p2l = projector(network, (i, j, 2), (i, j-1, 2))
-    p1u = projector(network, (i, j, 1), (i-1, j, 1))
-    p2u = projector(network, (i, j, 2), (i-1, j, 1))
+    pl, (pl1, pl2) = fuse_projectors(
+        projector.(Ref(net), Ref((i, j-1, 2)), (ij1, ij2))
+    )
+    pu, (pu1, pu2) = fuse_projectors(
+        projector.(Ref(net), Ref((i-1, j, 1)), (ij1, ij2))
+    )
+    eu1, eu2 = interaction_energy.(Ref(net), Ref((i-1, j, 1)), (ij1, ij2))
+    el1, el2 = interaction_energy.(Ref(net), Ref((i, j-1, 2)), (ij1, ij2))
 
-    pl1 = projector(network, (i, j-1, 2), (i, j, 1))
-    pl2 = projector(network, (i, j-1, 2), (i, j, 2))
-    pl, (pl1, pl2) = fuse_projectors((pl1, pl2))
+    en1, en2 = local_energy.(Ref(net), (ij1, ij2))
+    eloc12 = interaction_energy(net, ij1, ij2)
 
-    pu1 = projector(network, (i-1, j, 1), (i, j, 1))
-    pu2 = projector(network, (i-1, j, 1), (i, j, 2))
-    pu, (pu1, pu2) = fuse_projectors((pu1, pu2))
+    eloc12 = eloc12[p1, p2] .+ reshape(en1, :, 1) .+ reshape(en2, 1, :)
 
-    eu1 = interaction_energy(network, (i-1, j, 1), (i, j, 1))
-    eu2 = interaction_energy(network, (i-1, j, 1), (i, j, 2))
-    el1 = interaction_energy(network, (i, j-1, 2), (i, j, 1))
-    el2 = interaction_energy(network, (i, j-1, 2), (i, j, 2))
+    μ = minimum(eloc12)
 
-    eu1 = @inbounds @view eu1[pu1, :]
-    eu2 = @inbounds @view eu2[pu2, :]
-    el1 = @inbounds @view el1[pl1, :]
-    el2 = @inbounds @view el2[pl2, :]
-
-    leu1 = exp.(-β .* (eu1 .- minimum(eu1)))
-    leu2 = exp.(-β .* (eu2 .- minimum(eu2)))
-    lel1 = exp.(-β .* (el1 .- minimum(el1)))
-    lel2 = exp.(-β .* (el2 .- minimum(el2)))
-
-    eloc12 = en12[p1, p2] .+ reshape(en1, :, 1) .+ reshape(en2, 1, :)
+    en = (e[p, :] for (e, p) ∈ zip((el1, el2, eu1, eu2), (pl1, pl2, pu1, pu2)))
 
     SparsePegasusSquareTensor(
         [pr, pd],
-        exp.(-β .* (eloc12 .- minimum(eloc12))),
-        [lel1, lel2, leu1, leu2],
+        exp.(-β .* (eloc12 .- μ)),
+        [exp.(-β .* (e .- μ)) for (e, μ) ∈ zip(en, minimum.(en))],
         [p1l, p2l, p1u, p2u],
         maximum.((pl, pu, pr, pd))
     )
@@ -304,7 +292,7 @@ Base.size(M::SparsePegasusSquareTensor) = M.sizes
 $(TYPEDSIGNATURES)
 """
 function tensor(
-    net::PEPSNetwork{PegasusSquare, T}, node::PEPSNode, β::Real, ::Val{:pegasus_square_site}
+    network::PEPSNetwork{PegasusSquare, T}, node::PEPSNode, β::Real, ::Val{:pegasus_square_site}
 ) where T <: AbstractSparsity
     i, j = node.i, node.j
 
@@ -345,11 +333,6 @@ function tensor(
     e2u = @inbounds @view e2u[:, pu2]
     e1l = @inbounds @view e1l[:, pl1]
     e2l = @inbounds @view e2l[:, pl2]
-
-    le1u = exp.(-β .* (e1u .- minimum(e1u)))
-    le2u = exp.(-β .* (e2u .- minimum(e2u)))
-    le1l = exp.(-β .* (e1l .- minimum(e1l)))
-    le2l = exp.(-β .* (e2l .- minimum(e2l)))
 
     A = zeros(maximum.((pl, pu, pr, pd)))
     for s1 ∈ 1:length(en1), s2 ∈ 1:length(en2)

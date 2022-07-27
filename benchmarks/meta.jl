@@ -1,5 +1,20 @@
-foo(x, y) = x + y
+n = 2
 
-for i ∈ 1:2, j ∈ 1:2
-    Symbol("x$(i)$(j)") = foo($i, $j)
-end
+#function foo(n::Int)
+    β = 1.0
+    b = rand(n)
+    d = rand(n)
+
+    for (x, y) ∈ ((:a, :(b)), (:c, :($d)))
+        eval(quote
+            $x = sin.($y .+ $β)
+        end
+        )
+    end
+    a, c
+#end
+
+#a, c = foo(n)
+
+println(a)
+println(c)

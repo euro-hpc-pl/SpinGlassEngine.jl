@@ -1,5 +1,6 @@
 export
     PegasusSquare,
+    projected_energy,
     update_reduced_env_right
 
 """
@@ -87,6 +88,14 @@ function projected_energy(net::PEPSNetwork, v::T, w::T, k::Int) where T <: NTupl
     @inbounds en[projector(net, v, w), k]
 end
 
+function projected_energy(net::PEPSNetwork, v::T, w::T) where T <: NTuple{3, Int}
+    en = interaction_energy(net, v, w)
+    @inbounds en[
+        projector(net, v, w),
+        projector(net, w, v)
+    ]
+end
+
 """
 $(TYPEDSIGNATURES)
 """
@@ -95,6 +104,7 @@ function conditional_probability(
 ) where {T <: PegasusSquare, S}
     indβ, β = length(ctr.betas), last(ctr.betas)
     i, j, m = ctr.current_node
+    @nexprs 2 m->(v_m = (i, j, m))
 
     L = left_env(ctr, i, ∂v[1:j-1], indβ)
     R = right_env(ctr, i, ∂v[(j+4):end], indβ)
@@ -105,37 +115,35 @@ function conditional_probability(
     if m == 1
         # here one has to avarage over s2
         @nexprs 2 k->(
-            v = (i, j, k);
-            el_k = projected_energy(ctr.peps, v, (i, j-1, 2), ∂v[j-1+k]);
-            eu_k = projected_energy(ctr.peps, v, (i-1, j, 1), ∂v[j+1+k]);
-            en_k = local_energy(ctr.peps, v) .+ el_k .+ eu_k
+            el_k = projected_energy(ctr.peps, v_k, (i, j-1, 2), ∂v[j-1+k]);
+            eu_k = projected_energy(ctr.peps, v_k, (i-1, j, 1), ∂v[j+1+k]);
+            en_k = local_energy(ctr.peps, v_k) .+ el_k .+ eu_k
         )
-        en21 = @ncall 2 interaction_energy ctr.peps k->(i, j, 3-k)
-        p21 = @ncall 2 projector ctr.peps k->(i, j, 3-k)
-        p12 = @ncall 2 projector ctr.peps k->(i, j, k)
+        en21 = interaction_energy(ctr.peps, v_2, v_1)
+        p21 = projector(ctr.peps, v_2, v_1)
+        p12 = projector(ctr.peps, v_1, v_2)
 
         pr = projector(ctr.peps, (i, j, 2), @ntuple 2 k->(i, j+1, k))
         pd = projector(ctr.peps, (i, j, 1), @ntuple 2 k->(i+1, j, k))
 
         ten = reshape(en_2, :, 1) .+ en21[p21, :]
         RT = R[:, pr] * exp.(-β .* (ten .- minimum(ten)))
-        bnd_exp = dropdims(sum(LM[pd, :] .* RT[:, p12]', dims=2), dims=2)
 
+        bnd_exp = dropdims(sum(LM[pd, :] .* RT[:, p12]', dims=2), dims=2)
         loc_exp = exp.(-β .* (en_1 .- minimum(en_1)))
     else
         # m == 2; here s1 is fixed
-        v = (i, j, 2)
-        eng_l = projected_energy(ctr.peps, v, (i, j-1, 2), ∂v[j])
-        eng_u = projected_energy(ctr.peps, v, (i-1, j, 1), ∂v[j+3])
-        eng_21 = projected_energy(ctr.peps, v, (i, j, 1), ∂v[j+2])
+        eng_l = projected_energy(ctr.peps, v_2, (i, j-1, 2), ∂v[j])
+        eng_u = projected_energy(ctr.peps, v_2, (i-1, j, 1), ∂v[j+3])
+        eng_21 = projected_energy(ctr.peps, v_2, (i, j, 1), ∂v[j+2])
 
-        en = local_energy(ctr.peps, v) .+ eng_l .+ eng_u .+ eng_21
+        en = local_energy(ctr.peps, v_2) .+ eng_l .+ eng_u .+ eng_21
         loc_exp = exp.(-β .* (en .- minimum(en)))
 
         lmx = @inbounds LM[∂v[j+1], :]
         @tensor lmxR[y] := lmx[x] * R[x, y]
 
-        pr = projector(ctr.peps, v, @ntuple 2 k->(i, j+1, k))
+        pr = projector(ctr.peps, v_2, @ntuple 2 k->(i, j+1, k))
         bnd_exp = lmxR[pr]
     end
 
@@ -237,33 +245,30 @@ function tensor(
     net::PEPSNetwork{PegasusSquare, T}, node::PEPSNode, β::Real, ::Val{:sparse_pegasus_square_site}
 ) where T <: AbstractSparsity
     i, j = node.i, node.j
-    nbrs = @ntuple 2 k->(i, j, k)
+    @nexprs 2 k->(v_k = (i, j, k))
 
-    pr = projector(net, (i, j, 2), @ntuple 2 k->(i, j+1, k))
-    pd = projector(net, (i, j, 1), @ntuple 2 k->(i+1, j, k))
+    pr = projector(net, v_2, @ntuple 2 k->(i, j+1, k))
+    pd = projector(net, v_1, @ntuple 2 k->(i+1, j, k))
 
     pl, (pl_1, pl_2) = fuse_projectors(
-        @ntuple 2 k->projector(net, (i, j-1, 2), (i, j, k))
+        @ntuple 2 k->projector(net, (i, j-1, 2), v_k)
     )
     pu, (pu_1, pu_2) = fuse_projectors(
-        @ntuple 2 k->projector(net, (i-1, j, 1), (i, j, k))
+        @ntuple 2 k->projector(net, (i-1, j, 1), v_k)
     )
     @nexprs 2 k->(
-        eu_k = interaction_energy(net, (i-1, j, 1), (i, j, k))[pu_k, :];
-        el_k = interaction_energy(net, (i, j-1, 2), (i, j, k))[pl_k, :];
+        eu_k = interaction_energy(net, (i-1, j, 1), v_k)[pu_k, :];
+        el_k = interaction_energy(net, (i, j-1, 2), v_k)[pl_k, :];
 
         el_k = exp.(-β .* (el_k .- minimum(el_k)));
         eu_k = exp.(-β .* (eu_k .- minimum(eu_k)));
 
-        pl_k = projector(net, (i, j, k), (i, j-1 ,2));
-        pu_k = projector(net, (i, j, k), (i-1, j, 1));
+        pl_k = projector(net, v_k, (i, j-1 ,2));
+        pu_k = projector(net, v_k, (i-1, j, 1));
 
-        en_k = local_energy(net, (i, j, k));
+        en_k = local_energy(net, v_k);
     )
-    p1 = @ncall 2 projector net k->(i, j, k)
-    p2 = @ncall 2 projector net k->(i, j, 3-k)
-
-    en12 = interaction_energy(net,  nbrs...)[p1, p2]
+    en12 = projected_energy(net, v_1, v_2)
     @cast eloc[x, y] := en12[x, y] + en_1[x] + en_2[y]
 
     SparsePegasusSquareTensor(
@@ -278,6 +283,7 @@ end
 Base.size(M::SparsePegasusSquareTensor, n::Int) = M.sizes[n]
 Base.size(M::SparsePegasusSquareTensor) = M.sizes
 
+#=
 """
 $(TYPEDSIGNATURES)
  This code could be simplified ....
@@ -340,6 +346,7 @@ function tensor(
     end
     A ./ maximum(A)
 end
+=#
 
 """
 $(TYPEDSIGNATURES)

@@ -64,7 +64,6 @@ end
 
 """
 $(TYPEDSIGNATURES)
-
 Assigns gauges and corresponding information to GaugeInfo structure for a given Layout.
 """
 function gauges_list(::Type{Square2{T}}, nrows::Int, ncols::Int) where T <: GaugesEnergy
@@ -81,7 +80,6 @@ end
 
 """
 $(TYPEDSIGNATURES)
-
 Assigns gauges and corresponding information to GaugeInfo structure for a given Layout.
 """
 function gauges_list(::Type{Square2{T}}, nrows::Int, ncols::Int) where T <: EnergyGauges
@@ -98,7 +96,6 @@ end
 
 """
 $(TYPEDSIGNATURES)
-
 Defines the MPO layers for the Square geometry with the EnergyGauges layout.
 """
 function MpoLayers(::Type{T}, ncols::Int) where T <: Square2{EnergyGauges}
@@ -116,7 +113,6 @@ end
 
 """
 $(TYPEDSIGNATURES)
-
 Defines the MPO layers for the Square geometry with the GaugesEnergy layout.
 """
 function MpoLayers(::Type{T}, ncols::Int) where T <: Square2{GaugesEnergy}
@@ -342,6 +338,7 @@ function update_energy(
     ::Type{T}, ctr::MpsContractor{S}, σ::Vector{Int}) where {T <: Square2, S}
     net = ctr.peps
     i, j, k = ctr.current_node
+
     en = local_energy(net, (i, j, k))
     for v ∈ ((i, j-1, 1), (i, j-1, 2), (i-1, j, 1), (i-1, j, 2))
         en += bond_energy(net, (i, j, k), v, local_state_for_node(ctr, σ, v))
@@ -357,18 +354,14 @@ $(TYPEDSIGNATURES)
 function tensor(
     net::PEPSNetwork{Square2{S}, T}, node::PEPSNode, β::Real, ::Val{:sparse_site_square2}
 ) where {T <: AbstractSparsity, S <: AbstractTensorsLayout}
-    nbrs = collect((node.i, node.j, k) for k ∈ 1:2)
-    en12 = interaction_energy(net, nbrs...)[
-        projector(net, nbrs...),
-        projector(net, reverse(nbrs)...)
-    ]
-    en1, en2 = local_energy.(Ref(net), nbrs)
-    eloc12 = reshape(en12 .+ reshape(en1, :, 1) .+ reshape(en2, 1, :), :)
-    #@cast eloc12[(x, y)] := en12[x, y] + en1[x] + en2[x]
+    @nexprs 2 k->(v_k = (node.i, node.j, k))
+    @nexprs 2 k->(en_k = local_energy(net, v_k))
 
-    mloc = minimum(eloc12)
+    en12 = projected_energy(net, v_1, v_2)
+    @cast eloc12[(x, y)] := en12[x, y] + en_1[x] + en_2[y]
+
     SparseSiteTensor(
-        exp.(-β .* (eloc12 .- mloc)),
+        exp.(-β .* (eloc12 .- minimum(eloc12))),
         projectors_site_tensor(net, Node(node))
     )
 end

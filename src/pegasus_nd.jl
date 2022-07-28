@@ -1,4 +1,6 @@
-export PegasusSquare, update_reduced_env_right
+export
+    PegasusSquare,
+    update_reduced_env_right
 
 """
 $(TYPEDSIGNATURES)
@@ -80,6 +82,11 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: PegasusSquare
     )
 end
 
+function projected_energy(net::PEPSNetwork, v::T, w::T, k::Int) where T <: NTuple{3, Int}
+    en = interaction_energy(net, v, w)
+    @inbounds en[projector(net, v, w), k]
+end
+
 """
 $(TYPEDSIGNATURES)
 """
@@ -87,73 +94,53 @@ function conditional_probability(
     ::Type{T}, ctr::MpsContractor{S}, ∂v::Vector{Int}
 ) where {T <: PegasusSquare, S}
     indβ, β = length(ctr.betas), last(ctr.betas)
-    i, j, k = ctr.current_node
+    i, j, m = ctr.current_node
 
     L = left_env(ctr, i, ∂v[1:j-1], indβ)
     R = right_env(ctr, i, ∂v[(j+4):end], indβ)
     M = dressed_mps(ctr, i, indβ)[j]
 
     @tensor LM[y, z] := L[x] * M[x, y, z]
-    if k == 1  # here has to avarage over s2
-        eng_loc = [local_energy(ctr.peps, (i, j, k)) for k ∈ 1:2]
-        el = [interaction_energy(ctr.peps, (i, j, k), (i, j-1, 2)) for k ∈ 1:2]
-        pl = [projector(ctr.peps, (i, j, k), (i, j-1, 2)) for k ∈ 1:2]
-        eng_l = [@view el[k][pl[k][:], ∂v[j-1+k]] for k ∈ 1:2]
 
-        eu = [interaction_energy(ctr.peps, (i, j, k), (i-1, j, 1)) for k ∈ 1:2]
-        pu = [projector(ctr.peps, (i, j, k), (i-1, j, 1)) for k ∈ 1:2]
-        eng_u = [@view eu[k][pu[k][:], ∂v[j+1+k]] for k ∈ 1:2]
+    if m == 1
+        # here one has to avarage over s2
+        @nexprs 2 k->(
+            v = (i, j, k);
+            el_k = projected_energy(ctr.peps, v, (i, j-1, 2), ∂v[j-1+k]);
+            eu_k = projected_energy(ctr.peps, v, (i-1, j, 1), ∂v[j+1+k]);
+            en_k = local_energy(ctr.peps, v) .+ el_k .+ eu_k
+        )
+        en21 = @ncall 2 interaction_energy ctr.peps k->(i, j, 3-k)
+        p21 = @ncall 2 projector ctr.peps k->(i, j, 3-k)
+        p12 = @ncall 2 projector ctr.peps k->(i, j, k)
 
-        en = [eng_loc[k] .+ eng_l[k] .+ eng_u[k] for k ∈ 1:2]
+        pr = projector(ctr.peps, (i, j, 2), @ntuple 2 k->(i, j+1, k))
+        pd = projector(ctr.peps, (i, j, 1), @ntuple 2 k->(i+1, j, k))
 
-        en21 = interaction_energy(ctr.peps, (i, j, 2), (i, j, 1))
-        p21 = projector(ctr.peps, (i, j, 2), (i, j, 1))
-        p12 = projector(ctr.peps, (i, j, 1), (i, j, 2))
+        ten = reshape(en_2, :, 1) .+ en21[p21, :]
+        RT = R[:, pr] * exp.(-β .* (ten .- minimum(ten)))
+        bnd_exp = dropdims(sum(LM[pd, :] .* RT[:, p12]', dims=2), dims=2)
 
-        pr = projector(ctr.peps, (i, j, 2), ((i, j+1, 1), (i, j+1, 2)))
-        pd = projector(ctr.peps, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
+        loc_exp = exp.(-β .* (en_1 .- minimum(en_1)))
+    else
+        # m == 2; here s1 is fixed
+        v = (i, j, 2)
+        eng_l = projected_energy(ctr.peps, v, (i, j-1, 2), ∂v[j])
+        eng_u = projected_energy(ctr.peps, v, (i-1, j, 1), ∂v[j+3])
+        eng_21 = projected_energy(ctr.peps, v, (i, j, 1), ∂v[j+2])
 
-        ten = reshape(en[2], (:, 1)) .+ en21[p21[:], :]
-        ten_min = minimum(ten)
-        ten2 = exp.(-β .* (ten .- ten_min))
-        ten3 = zeros(maximum(pr), size(ten2, 2))
+        en = local_energy(ctr.peps, v) .+ eng_l .+ eng_u .+ eng_21
+        loc_exp = exp.(-β .* (en .- minimum(en)))
 
-        # for s2 ∈ 1:length(en[2])
-        #     @inbounds ten3[pr[s2], :] += ten2[s2, :]
-        # end
-
-        RT = R[:, pr] * ten2 # R * ten3
-        bnd_exp = dropdims(sum(LM[pd[:], :] .* RT[:, p12[:]]', dims=2), dims=2)
-        en_min = minimum(en[1])
-        loc_exp = exp.(-β .* (en[1] .- en_min))
-    else  # k == 2 ; here s1 is fixed
-        eng_loc = local_energy(ctr.peps, (i, j, 2))
-
-        el = interaction_energy(ctr.peps, (i, j, 2), (i, j-1, 2))
-        pl = projector(ctr.peps, (i, j, 2), (i, j-1, 2))
-        eng_l = @inbounds @view el[pl[:], ∂v[j]]
-
-        eu = interaction_energy(ctr.peps, (i, j, 2), (i-1, j, 1))
-        pu = projector(ctr.peps, (i, j, 2), (i-1, j, 1))
-        eng_u = @inbounds @view eu[pu[:], ∂v[j+3]]
-
-        e21 = interaction_energy(ctr.peps, (i, j, 2), (i, j, 1))
-        p21 = projector(ctr.peps, (i, j, 2), (i, j, 1))
-        eng_21 = @inbounds @view e21[p21[:], ∂v[j+2]]
-
-        en = eng_loc .+ eng_l .+ eng_u .+ eng_21
-        en_min = minimum(en)
-        loc_exp = exp.(-β .* (en .- en_min))
-
-        pr = projector(ctr.peps, (i, j, 2), ((i, j+1, 1), (i, j+1, 2)))
-        lmx = @inbounds @view LM[∂v[j+1], :]
-
+        lmx = @inbounds LM[∂v[j+1], :]
         @tensor lmxR[y] := lmx[x] * R[x, y]
-        @inbounds bnd_exp = lmxR[pr[:]]
+
+        pr = projector(ctr.peps, v, @ntuple 2 k->(i, j+1, k))
+        bnd_exp = lmxR[pr]
     end
 
     probs = loc_exp .* bnd_exp
-    push!(ctr.statistics, ((i, j, k), ∂v) => error_measure(probs))
+    push!(ctr.statistics, ((i, j, m), ∂v) => error_measure(probs))
     normalize_probability(probs)
 end
 
@@ -265,23 +252,23 @@ function tensor(
         eu_k = interaction_energy(net, (i-1, j, 1), (i, j, k))[pu_k, :];
         el_k = interaction_energy(net, (i, j-1, 2), (i, j, k))[pl_k, :];
 
-        μ_k = minimum(el_k); el_k = exp.(-β .* (el_k .- μ_k));
-        μ_k = minimum(eu_k); eu_k = exp.(-β .* (eu_k .- μ_k));
+        el_k = exp.(-β .* (el_k .- minimum(el_k)));
+        eu_k = exp.(-β .* (eu_k .- minimum(eu_k)));
 
         pl_k = projector(net, (i, j, k), (i, j-1 ,2));
         pu_k = projector(net, (i, j, k), (i-1, j, 1));
 
-        en_k = local_energy(net, (i, j, k))
+        en_k = local_energy(net, (i, j, k));
     )
     p1 = @ncall 2 projector net k->(i, j, k)
     p2 = @ncall 2 projector net k->(i, j, 3-k)
-    en12 = interaction_energy(net,  nbrs...)[p1, p2]
-    @cast eloc12[x, y] := en12[x, y] + en_1[x] + en_2[y]
 
-    μ = minimum(eloc12)
+    en12 = interaction_energy(net,  nbrs...)[p1, p2]
+    @cast eloc[x, y] := en12[x, y] + en_1[x] + en_2[y]
+
     SparsePegasusSquareTensor(
         [pr, pd],
-        exp.(-β .* (eloc12 .- μ)),
+        exp.(-β .* (eloc .- minimum(eloc))),
         [el_1, el_2, eu_1, eu_2],
         [pl_1, pl_2, pu_1, pu_2],
         maximum.((pl, pu, pr, pd))

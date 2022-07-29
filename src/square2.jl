@@ -354,9 +354,10 @@ $(TYPEDSIGNATURES)
 function tensor(
     net::PEPSNetwork{Square2{S}, T}, node::PEPSNode, β::Real, ::Val{:sparse_site_square2}
 ) where {T <: AbstractSparsity, S <: AbstractTensorsLayout}
-    @nexprs 2 k->(v_k = (node.i, node.j, k))
-    @nexprs 2 k->(en_k = local_energy(net, v_k))
-
+    @nexprs 2 k->(
+        v_k = (node.i, node.j, k);
+        en_k = local_energy(net, v_k)
+    )
     en12 = projected_energy(net, v_1, v_2)
     @cast eloc12[(x, y)] := en12[x, y] + en_1[x] + en_2[y]
 

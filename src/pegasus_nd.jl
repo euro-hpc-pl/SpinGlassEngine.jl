@@ -1,6 +1,5 @@
 export
     PegasusSquare,
-    projected_energy,
     update_reduced_env_right
 
 """
@@ -81,19 +80,6 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: PegasusSquare
         Dict(i => (1//3,) for i ∈ 1:ncols),
         Dict(i => (0,) for i ∈ 1:ncols)
     )
-end
-
-function projected_energy(net::PEPSNetwork, v::T, w::T, k::Int) where T <: NTuple{3, Int}
-    en = interaction_energy(net, v, w)
-    @inbounds en[projector(net, v, w), k]
-end
-
-function projected_energy(net::PEPSNetwork, v::T, w::T) where T <: NTuple{3, Int}
-    en = interaction_energy(net, v, w)
-    @inbounds en[
-        projector(net, v, w),
-        projector(net, w, v)
-    ]
 end
 
 """

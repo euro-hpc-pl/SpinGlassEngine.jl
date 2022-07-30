@@ -9,7 +9,9 @@ export
        nodes_search_order_Mps,
        boundary,
        update_energy,
-       update_reduced_env_right
+       update_reduced_env_right,
+       projected_energy,
+       probability
 
 """
 $(TYPEDSIGNATURES)
@@ -176,6 +178,25 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EngGaugesEng}
     MpoLayers(main, Dict(i => (1//5, 2//5) for i ∈ 1:ncols), right)
 end
 
+function projected_energy(
+    net::PEPSNetwork, v::T, w::T, k::Int
+) where {T <: NTuple{N, Int} where N}
+    en = interaction_energy(net, v, w)
+    @inbounds en[projector(net, v, w), k]
+end
+
+function projected_energy(
+    net::PEPSNetwork, v::T, w::T
+)  where {T <: NTuple{N, Int} where N}
+    en = interaction_energy(net, v, w)
+    @inbounds en[projector(net, v, w), projector(net, w, v)]
+end
+
+function probability(en::Vector{T}, β::T) where T <: Real
+    en_min = minimum(en)
+    exp.(-β .* (en .- en_min))
+end
+
 """
 $(TYPEDSIGNATURES)
 
@@ -188,30 +209,20 @@ function conditional_probability(
     i, j = ctr.current_node
 
     L = left_env(ctr, i, ∂v[1:j-1], indβ)
-    R = right_env(ctr, i, ∂v[(j+2):(ctr.peps.ncols+1)], indβ)
+    R = right_env(ctr, i, ∂v[(j+2):ctr.peps.ncols+1], indβ)
     M = dressed_mps(ctr, i, indβ)[j]
 
     @tensor LM[y, z] := L[x] * M[x, y, z]
-    eng_local = local_energy(ctr.peps, (i, j))
 
-    pl = projector(ctr.peps, (i, j), (i, j-1))
-    eng_pl = interaction_energy(ctr.peps, (i, j), (i, j-1))
-    eng_left = @inbounds @view eng_pl[pl[:], ∂v[j]]
+    @nexprs 2 k->(
+        en_k = projected_energy(ctr.peps, (i, j), (i+1-k, j-2+k), ∂v[j-1+k]);
+        p_k = projector(ctr.peps, (i, j), (i+2-k, j-1+k));
+    )
+    probs = probability(local_energy(ctr.peps, (i, j)) .+ en_1 .+ en_2, β)
 
-    pu = projector(ctr.peps, (i, j), (i-1, j))
-    eng_pu = interaction_energy(ctr.peps, (i, j), (i-1, j))
-    eng_up = @inbounds @view eng_pu[pu[:], ∂v[j+1]]
-
-    en = eng_local .+ eng_left .+ eng_up
-    en_min = minimum(en)
-
-    loc_exp = exp.(-β .* (en .- en_min))
-
-    pr = projector(ctr.peps, (i, j), (i, j+1))
-    pd = projector(ctr.peps, (i, j), (i+1, j))
-
-    bnd_exp = dropdims(sum(LM[pd[:], :] .* R[:, pr[:]]', dims=2), dims=2)
-    probs = loc_exp .* bnd_exp
+    A = LM[p_1, :] .* R[:, p_2]' #@cast A[x, y] := LM[$p_1, x] .* R[$p_2, y]
+    @reduce bnd_exp[x] := sum(y) A[x, y]
+    probs .*= bnd_exp
 
     push!(ctr.statistics, ((i, j), ∂v) => error_measure(probs))
     normalize_probability(probs)
@@ -287,7 +298,6 @@ end
 
 """
 $(TYPEDSIGNATURES)
-
 
 """
 function update_energy(

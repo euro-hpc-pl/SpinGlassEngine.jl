@@ -1,4 +1,4 @@
-export tensor
+export tensor, probability
 
 """
 $(TYPEDSIGNATURES)
@@ -23,17 +23,12 @@ $(TYPEDSIGNATURES)
 
 """
 function tensor(
-    network::PEPSNetwork{T, Dense}, v::PEPSNode, β::Real, ::Val{:site}
-) where T <: AbstractGeometry
-    en = local_energy(network, Node(v))
-    en_min = minimum(en)
-    loc_exp = exp.(-β .* (en .- en_min))
-    projs = projectors_site_tensor(network, Node(v))
-    A = zeros(maximum.(projs))
-    for (σ, lexp) ∈ enumerate(loc_exp)
-        @inbounds A[getindex.(projs, Ref(σ))...] += lexp
-    end
-    A
+    net::PEPSNetwork{T, S}, v::PEPSNode, β::Real, ::Val{:sparse_site}
+) where {T <: AbstractGeometry, S}
+    SparseSiteTensor(
+        probability(local_energy(net, Node(v)), β),
+        projectors_site_tensor(net, Node(v))
+    )
 end
 
 """
@@ -41,15 +36,15 @@ $(TYPEDSIGNATURES)
 
 """
 function tensor(
-    network::PEPSNetwork{T, Sparse}, v::PEPSNode, β::Real, ::Val{:sparse_site}
+    net::PEPSNetwork{T, Dense}, v::PEPSNode, β::Real, ::Val{:site}
 ) where T <: AbstractGeometry
-    en = local_energy(network, Node(v))
-    en_min = minimum(en)
-    SparseSiteTensor(
-        exp.(-β .* (en .- en_min)), projectors_site_tensor(network, Node(v))
-    )
+    sp = tensor(net, v, β, Val(:sparse_site))
+    A = zeros(maximum.(sp.projs))
+    for (σ, lexp) ∈ enumerate(sp.loc_exp)
+        @inbounds A[getindex.(sp.projs, Ref(σ))...] += lexp
+    end
+    A
 end
-
 
 """
 $(TYPEDSIGNATURES)
@@ -130,10 +125,7 @@ end
 $(TYPEDSIGNATURES)
 
 """
-function connecting_tensor(
-    network::AbstractGibbsNetwork{Node, PEPSNode}, v::Node, w::Node, β::Real
-)
-    en = interaction_energy(network, v, w)
+function probability(en::T, β::Real) where T <: AbstractArray
     en_min = minimum(en)
     exp.(-β .* (en .- en_min))
 end
@@ -142,10 +134,20 @@ end
 $(TYPEDSIGNATURES)
 
 """
-function sqrt_tensor_up(
-    network::AbstractGibbsNetwork{Node, PEPSNode}, v::Node, w::Node, β::Real
+function connecting_tensor(
+    net::AbstractGibbsNetwork{Node, PEPSNode}, v::Node, w::Node, β::Real
 )
-    U, Σ, _ = svd(connecting_tensor(network, v, w, β))
+    probability(interaction_energy(net, v, w), β)
+end
+
+"""
+$(TYPEDSIGNATURES)
+
+"""
+function sqrt_tensor_up(
+    net::AbstractGibbsNetwork{Node, PEPSNode}, v::Node, w::Node, β::Real
+)
+    U, Σ, _ = svd(connecting_tensor(net, v, w, β))
     U * Diagonal(sqrt.(Σ))
 end
 
@@ -154,9 +156,9 @@ $(TYPEDSIGNATURES)
 
 """
 function sqrt_tensor_down(
-    network::AbstractGibbsNetwork{Node, PEPSNode}, v::Node, w::Node, β::Real
+    net::AbstractGibbsNetwork{Node, PEPSNode}, v::Node, w::Node, β::Real
 )
-    _, Σ, V = svd(connecting_tensor(network, v, w, β))
+    _, Σ, V = svd(connecting_tensor(net, v, w, β))
     Diagonal(sqrt.(Σ)) * V'
 end
 
@@ -165,11 +167,11 @@ $(TYPEDSIGNATURES)
 
 """
 function tensor(
-    network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, β::Real, ::Val{:sqrt_up}
+    net::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, β::Real, ::Val{:sqrt_up}
 )
     r, j = Node(v)
     i = floor(Int, r)
-    sqrt_tensor_up(network, (i, j), (i+1, j), β)
+    sqrt_tensor_up(net, (i, j), (i+1, j), β)
 end
 
 """
@@ -177,11 +179,11 @@ $(TYPEDSIGNATURES)
 
 """
 function Base.size(
-    network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, ::Val{:sqrt_up}
+    net::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, ::Val{:sqrt_up}
 )
     r, j = Node(v)
     i = floor(Int, r)
-    u, d = size(interaction_energy(network, (i, j), (i+1, j)))
+    u, d = size(interaction_energy(net, (i, j), (i+1, j)))
     (u, min(d, u))
 end
 
@@ -190,11 +192,11 @@ $(TYPEDSIGNATURES)
 
 """
 function tensor(
-    network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, β::Real, ::Val{:sqrt_down}
+    net::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, β::Real, ::Val{:sqrt_down}
 )
     r, j = Node(v)
     i = floor(Int, r)
-    sqrt_tensor_down(network, (i, j), (i+1, j), β)
+    sqrt_tensor_down(net, (i, j), (i+1, j), β)
 end
 
 """
@@ -202,11 +204,11 @@ $(TYPEDSIGNATURES)
 
 """
 function Base.size(
-    network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, ::Val{:sqrt_down}
+    net::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, ::Val{:sqrt_down}
 )
     r, j = Node(v)
     i = floor(Int, r)
-    u, d = size(interaction_energy(network, (i, j), (i+1, j)))
+    u, d = size(interaction_energy(net, (i, j), (i+1, j)))
     (min(u, d), d)
 end
 

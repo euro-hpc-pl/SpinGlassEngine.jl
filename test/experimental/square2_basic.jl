@@ -5,11 +5,11 @@ using SpinGlassEngine
 # end
 
 
-function run_test(instance, m, n, t)
+function run_test(instance, m, n, t, tran)
     β = 1
     bond_dim = 64
     δp = 1e-10
-    num_states = 2048
+    num_states = 512
 
     ig = ising_graph(instance)
 
@@ -31,7 +31,7 @@ function run_test(instance, m, n, t)
     energies = Vector{Float64}[]
     Strategy = MPSAnnealing # SVDTruncate
     Sparsity = Sparse
-    tran = rotation(0)
+    # tran = rotation(0)
     Layout = EnergyGauges
     Gauge = NoUpdate
 
@@ -50,7 +50,7 @@ function run_test(instance, m, n, t)
     @test sol.energies ≈ energy.(Ref(fg), fg_states)
 
     #@test sol.energies ≈ sol2.energies
-    @test sol.energies[1: div(num_states, 4)] ≈ sol2.energies[1: div(num_states, 4)]
+    @test sol.energies[1: div(num_states, 8)] ≈ sol2.energies[1: div(num_states, 8)]
     #@test sol.states == sol2.states
 
     norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
@@ -72,8 +72,16 @@ end
 
 instance = "$(@__DIR__)/../instances/pegasus_nondiag/3x2x1.txt"
 m, n, t = 3, 2, 1
-run_test(instance, m, n, t)
+for tran ∈ all_lattice_transformations
+    run_test(instance, m, n, t, tran)
+end
 
-instance = "$(@__DIR__)/../instances/chimera_droplets/128power/001.txt"
-m, n, t = 4, 4, 1
-run_test(instance, m, n, t)
+# instance = "$(@__DIR__)/../instances/chimera_droplets/128power/001.txt"
+# m, n, t = 4, 4, 1
+# run_test(instance, m, n, t)
+
+instance = "$(@__DIR__)/../instances/pathological/pegasus_nd_3_4_1.txt"
+m, n, t = 3, 4, 1
+for tran ∈ all_lattice_transformations
+    run_test(instance, m, n, t, tran)
+end

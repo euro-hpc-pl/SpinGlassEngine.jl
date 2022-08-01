@@ -10,8 +10,7 @@ export
        boundary,
        update_energy,
        update_reduced_env_right,
-       projected_energy,
-       probability
+       projected_energy
 
 """
 $(TYPEDSIGNATURES)
@@ -191,11 +190,6 @@ function projected_energy(
     en = interaction_energy(net, v, w)
 
     @inbounds en[projector(net, v, w), projector(net, w, v)]
-end
-
-function probability(en::Vector{T}, β::T) where T <: Real
-    en_min = minimum(en)
-    exp.(-β .* (en .- en_min))
 end
 
 """

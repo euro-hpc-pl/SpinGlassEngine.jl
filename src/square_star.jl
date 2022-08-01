@@ -170,44 +170,33 @@ function conditional_probability(
     i, j = ctr.current_node
 
     L = left_env(ctr, i, ∂v[1:2*j-2], indβ)
-    R = right_env(ctr, i, ∂v[(2*j+3):(2*ctr.peps.ncols+2)], indβ)
+    R = right_env(ctr, i, ∂v[(2*j+3):2*ctr.peps.ncols+2], indβ)
     ψ = dressed_mps(ctr, i, indβ)
 
     MX, M = ψ[j-1//2], ψ[j]
     @tensor LMX[y, z] := L[x] * MX[x, y, z]
 
-    eng_local = local_energy(ctr.peps, (i, j))
-    pl = projector(ctr.peps, (i, j), (i, j-1))
-    eng_pl = interaction_energy(ctr.peps, (i, j), (i, j-1))
-    eng_left = @inbounds @view eng_pl[pl[:], ∂v[2*j]]
+    v = ((i, j-1), (i-1, j-1), (i-1, j))
+    @nexprs 3 k->(
+        en_k = projected_energy(ctr.peps, (i, j), v[k], ∂v[2*j-1+k]);
+    )
+    probs = probability(local_energy(ctr.peps, (i, j)) .+ en_1 .+ en_2 .+ en_3, β)
 
-    pu = projector(ctr.peps, (i, j), (i-1, j))
-    eng_pu = interaction_energy(ctr.peps, (i, j), (i-1, j))
-    eng_up = @inbounds @view eng_pu[pu[:], ∂v[2*j+2]]
-
-    pd = projector(ctr.peps, (i, j), (i-1, j-1))
-    eng_pd = interaction_energy(ctr.peps, (i, j), (i-1, j-1))
-    eng_diag = @inbounds @view eng_pd[pd[:], ∂v[2*j+1]]
-
-    en = eng_local .+ eng_left .+ eng_diag .+ eng_up
-    en_min = minimum(en)
-    loc_exp = exp.(-β .* (en .- en_min))
-
-    p_lb = projector(ctr.peps, (i, j-1), (i+1, j))
     p_rb = projector(ctr.peps, (i, j), (i+1, j-1))
-    pr = projector(ctr.peps, (i, j), ((i+1, j+1), (i, j+1), (i-1, j+1)))
+    pr = projector(ctr.peps, (i, j), @ntuple 3 k->(i+2-k, j+1))
     pd = projector(ctr.peps, (i, j), (i+1, j))
 
-    @cast lmx2[b, c, d] := LMX[(b, c), d] (b ∈ 1:maximum(p_lb), c ∈ 1:maximum(p_rb))
+    @cast lmx2[b, c, d] := LMX[(b, c), d] (c ∈ 1:maximum(p_rb))
 
-    for σ ∈ 1:length(loc_exp)
-        lmx = @inbounds @view lmx2[∂v[2*j-1], p_rb[σ], :]
-        m = @inbounds @view M[:, pd[σ], :]
-        r = @inbounds @view R[:, pr[σ]]
-        @inbounds loc_exp[σ] *= (lmx' * m * r)[]
+    for σ ∈ 1:length(probs)
+        lmx = @inbounds lmx2[∂v[2*j-1], p_rb[σ], :]
+        m = @inbounds M[:, pd[σ], :]
+        r = @inbounds R[:, pr[σ]]
+        @inbounds probs[σ] *= (lmx' * m * r)[]
     end
-    push!(ctr.statistics, ((i, j), ∂v) => error_measure(loc_exp))
-    normalize_probability(loc_exp)
+
+    push!(ctr.statistics, ((i, j), ∂v) => error_measure(probs))
+    normalize_probability(probs)
 end
 
 
@@ -215,11 +204,11 @@ end
 $(TYPEDSIGNATURES)
 """
 function update_reduced_env_right(
-    K::AbstractArray{Float64, 1},
-    RE::AbstractArray{Float64, 2},
+    K::Array{T, 1},
+    RE::Array{T, 2},
     M::SparseVirtualTensor,
-    B::AbstractArray{Float64, 3}
-)
+    B::Array{T, 3}
+) where T <: Real
     h = M.con
     p_lb, p_l, p_lt, p_rb, p_r, p_rt = M.projs
     @cast B4[x, k, l, y] := B[x, (k, l), y] (k ∈ 1:maximum(p_lb))
@@ -241,10 +230,7 @@ function projectors_site_tensor(
 ) where {T <: SquareStar, S}
     i, j = vertex
     nbrs = (
-        ((i+1, j-1), (i, j-1), (i-1, j-1)),
-        (i-1, j),
-        ((i+1, j+1), (i, j+1), (i-1, j+1)),
-        (i+1, j)
+        (@ntuple 3 k -> (i+2-k, j-1)), (i-1, j), (@ntuple 3 k -> (i+2-k, j+1)), (i+1, j)
     )
     projector.(Ref(network), Ref(vertex), nbrs)
 end
@@ -281,7 +267,8 @@ end
 $(TYPEDSIGNATURES)
 """
 function update_energy(
-    ::Type{T}, ctr::MpsContractor{S}, σ::Vector{Int}) where {T <: SquareStar, S}
+    ::Type{T}, ctr::MpsContractor{S}, σ::Vector{Int}
+) where {T <: SquareStar, S}
     net = ctr.peps
     i, j = ctr.current_node
     en = local_energy(net, (i, j))
@@ -295,12 +282,11 @@ end
 $(TYPEDSIGNATURES)
 """
 function tensor(
-    network::PEPSNetwork{SquareStar{T}, S}, node::PEPSNode, β::Real, ::Val{:central_d}
+    net::PEPSNetwork{SquareStar{T}, S}, node::PEPSNode, β::Real, ::Val{:central_d}
 ) where {T <: AbstractTensorsLayout, S <: AbstractSparsity}
     i, j = floor(Int, node.i), floor(Int, node.j)
-    NW = connecting_tensor(network, (i, j), (i + 1, j + 1), β)
-    NE = connecting_tensor(network, (i, j + 1), (i + 1, j), β)
-    @cast A[(u, ũ), (d, d̃)] := NW[u, d] * NE[ũ, d̃]
+    @nexprs 2 k -> T_k = connecting_tensor(net, (i, j-1+k), (i+1, j+2-k), β) # NE, NE
+    @cast A[(u, uu), (d, dd)] := T_1[u, d] * T_2[uu, dd]
     A
 end
 
@@ -311,78 +297,47 @@ function Base.size(
     network::PEPSNetwork{SquareStar{T}, S}, node::PEPSNode, ::Val{:central_d}
 ) where {T <: AbstractTensorsLayout, S <: AbstractSparsity}
     i, j = floor(Int, node.i), floor(Int, node.j)
-    u, d = size(interaction_energy(network, (i, j), (i + 1, j + 1)))
-    ũ, d̃ = size(interaction_energy(network, (i, j + 1), (i + 1, j)))
-    (u * ũ, d * d̃)
+    @nexprs 2 k -> s_k = size(interaction_energy(network, (i, j+k-1), (i + 1, j+2-k)))
+    (s_1[1] * s_2[1], s_1[2] * s_2[2])
 end
 
 """
 $(TYPEDSIGNATURES)
 """
 function tensor(
-    network::PEPSNetwork{SquareStar{T}, Dense}, node::PEPSNode, β::Real, ::Val{:virtual}
-) where T <: AbstractTensorsLayout
+    net::PEPSNetwork{SquareStar{T}, S}, node::PEPSNode, β::Real, ::Val{:sparse_virtual}
+) where {T <: AbstractTensorsLayout, S <: Union{Sparse, Dense}}
+    v = Node(node)
     i, j = node.i, floor(Int, node.j)
 
-    left_nbrs = ((i+1, j+1), (i, j+1), (i-1, j+1))
-    prl = projector.(Ref(network), Ref((i, j)), left_nbrs)
-    p_lb, p_l, p_lt = last(fuse_projectors(prl))
+    pl = last(fuse_projectors(
+        @ntuple 3 k->projector(net, (i, j), (i+2-k, j+1)) # p_lb, p_l, p_lt
+    ))
+    pr = last(fuse_projectors(
+        @ntuple 3 k->projector(net, (i, j+1), (i+2-k, j)) # p_rb, p_r, p_rt
+    ))
+    SparseVirtualTensor(
+       connecting_tensor(net, floor.(Int, v), ceil.(Int, v), β),
+       vec.((pl..., pr...))
+    )
+end
 
-    right_nbrs = ((i+1, j), (i, j), (i-1, j))
-    prr = projector.(Ref(network), Ref((i, j+1)), right_nbrs)
-    p_rb, p_r, p_rt = last(fuse_projectors(prr))
-
-    v = Node(node)
-    h = connecting_tensor(network, floor.(Int, v), ceil.(Int, v), β)
+"""
+$(TYPEDSIGNATURES)
+"""
+function tensor(
+    net::PEPSNetwork{SquareStar{T}, Dense}, node::PEPSNode, β::Real, ::Val{:virtual}
+) where T <: AbstractTensorsLayout
+    sp = tensor(net, node, β, Val(:sparse_virtual))
+    p_lb, p_l, p_lt, p_rb, p_r, p_rt = sp.projs
 
     A = zeros(
-        length(p_l), maximum(p_rt), maximum(p_lt), length(p_r), maximum(p_lb), maximum(p_rb)
+        eltype(sp.con),
+        length(p_l), maximum.((p_rt, p_lt))..., length(p_r), maximum.((p_lb, p_rb))...
     )
     for l ∈ 1:length(p_l), r ∈ 1:length(p_r)
-        @inbounds A[l, p_rt[r], p_lt[l], r, p_lb[l], p_rb[r]] = h[p_l[l], p_r[r]]
+        @inbounds A[l, p_rt[r], p_lt[l], r, p_lb[l], p_rb[r]] = sp.con[p_l[l], p_r[r]]
     end
-    @cast AA[l, (ũ, u), r, (d̃, d)] := A[l, ũ, u, r, d̃, d]
-    AA
-end
-
-"""
-$(TYPEDSIGNATURES)
-"""
-function tensor(
-    net::PEPSNetwork{SquareStar{T}, Sparse}, node::PEPSNode, β::Real, ::Val{:sparse_virtual}
-) where T <: AbstractTensorsLayout
-    i, j = node.i, floor(Int, node.j)
-
-    left_nbrs = ((i+1, j+1), (i, j+1), (i-1, j+1))
-    prl = projector.(Ref(net), Ref((i, j)), left_nbrs)
-    p_lb, p_l, p_lt = last(fuse_projectors(prl))
-
-    right_nbrs = ((i+1, j), (i, j), (i-1, j))
-    prr = projector.(Ref(net), Ref((i, j+1)), right_nbrs)
-    p_rb, p_r, p_rt = last(fuse_projectors(prr))
-
-    v = Node(node)
-    h = connecting_tensor(net, floor.(Int, v), ceil.(Int, v), β)
-
-    SparseVirtualTensor(h, (vec(p_lb), vec(p_l), vec(p_lt), vec(p_rb), vec(p_r), vec(p_rt)))
-end
-
-"""
-$(TYPEDSIGNATURES)
-"""
-function tensor(
-    network::PEPSNetwork{SquareStar{T}, Dense}, node::PEPSNode, ::Val{:virtual}
-) where T <: AbstractTensorsLayout
-    i, s = node
-    j = floor(Int, s)
-
-    left_nbrs = ((i+1, j+1), (i, j+1), (i-1, j+1))
-    prl = projector.(Ref(network), Ref((i, j)), left_nbrs)
-    p_lb, p_l, p_lt = last(fuse_projectors(prl))
-
-    right_nbrs = ((i+1, j), (i, j), (i-1, j))
-    prr = projector.(Ref(network), Ref((i, j+1)), right_nbrs)
-    p_rb, p_r, p_rt = last(fuse_projectors(prr))
-
-    (length(p_l), maximum(p_lt) * maximum(p_rt), length(p_r), maximum(p_rb) * maximum(p_lb))
+    @cast B[l, (uu, u), r, (dd, d)] := A[l, uu, u, r, dd, d]
+    B
 end

@@ -189,6 +189,7 @@ function projected_energy(
     net::PEPSNetwork, v::T, w::T
 )  where {T <: NTuple{N, Int} where N}
     en = interaction_energy(net, v, w)
+
     @inbounds en[projector(net, v, w), projector(net, w, v)]
 end
 
@@ -220,7 +221,7 @@ function conditional_probability(
     )
     probs = probability(local_energy(ctr.peps, (i, j)) .+ en_1 .+ en_2, β)
 
-    A = LM[p_1, :] .* R[:, p_2]' #@cast A[x, y] := LM[$p_1, x] .* R[$p_2, y]
+    A = LM[p_1, :] .* R[:, p_2]'
     @reduce bnd_exp[x] := sum(y) A[x, y]
     probs .*= bnd_exp
 
@@ -228,16 +229,15 @@ function conditional_probability(
     normalize_probability(probs)
 end
 
-
 """
 $(TYPEDSIGNATURES)
 """
 function update_reduced_env_right(
-    K::AbstractArray{Float64, 1},
-    RE::AbstractArray{Float64, 2},
-    M::AbstractArray{Float64, 4},
-    B::AbstractArray{Float64, 3}
-)
+    K::Array{T, 1},
+    RE::Array{T, 2},
+    M::Array{T, 4},
+    B::Array{T, 3}
+) where T <: Real
     @tensor R[x, y] := K[d] * M[y, d, β, γ] * B[x, γ, α] * RE[α, β] order = (d, β, γ, α)
     R
 end
@@ -246,11 +246,11 @@ end
 $(TYPEDSIGNATURES)
 """
 function update_reduced_env_right(
-    K::AbstractArray{Float64, 1},
-    RE::AbstractArray{Float64, 2},
+    K::Array{T, 1},
+    RE::Array{T, 2},
     M::SparseSiteTensor,
-    B::AbstractArray{Float64, 3}
-)
+    B::Array{T, 3}
+) where T <: Real
     @tensor REB[x, y, β] := B[x, y, α] * RE[α, β]
 
     @inbounds Kloc_exp = M.loc_exp .* K[M.projs[2]]

@@ -246,8 +246,8 @@ function tensor(
         eu_k = interaction_energy(net, (i-1, j, 1), v_k)[pu_k, :];
         el_k = interaction_energy(net, (i, j-1, 2), v_k)[pl_k, :];
 
-        el_k = exp.(-β .* (el_k .- minimum(el_k)));
-        eu_k = exp.(-β .* (eu_k .- minimum(eu_k)));
+        el_k = probability(el_k, β);
+        eu_k = probability(eu_k, β);
 
         pl_k = projector(net, v_k, (i, j-1 ,2));
         pu_k = projector(net, v_k, (i-1, j, 1));
@@ -259,7 +259,7 @@ function tensor(
 
     SparsePegasusSquareTensor(
         [pr, pd],
-        exp.(-β .* (eloc .- minimum(eloc))),
+        probability(eloc, β),
         [el_1, el_2, eu_1, eu_2],
         [pl_1, pl_2, pu_1, pu_2],
         maximum.((pl, pu, pr, pd))
@@ -269,14 +269,15 @@ end
 Base.size(M::SparsePegasusSquareTensor, n::Int) = M.sizes[n]
 Base.size(M::SparsePegasusSquareTensor) = M.sizes
 
-#=
+
 """
 $(TYPEDSIGNATURES)
  This code could be simplified ....
 """
 function tensor(
-    network::PEPSNetwork{PegasusSquare, T}, node::PEPSNode, β::Real, ::Val{:pegasus_square_site}
+    network::PEPSNetwork{PegasusSquare, Dense}, node::PEPSNode, β::Real, ::Val{:pegasus_square_site}
 ) where T <: AbstractSparsity
+
     i, j = node.i, node.j
 
     en1 = local_energy(network, (i, j, 1))
@@ -324,15 +325,15 @@ function tensor(
     le1l = exp.(-β .* (e1l .- minimum(e1l)))
     le2l = exp.(-β .* (e2l .- minimum(e2l)))
 
-    A = zeros(eltype(β), maximum.((pl, pu, pr, pd)))
+        A = zeros(eltype(β), maximum.((pl, pu, pr, pd)))
     for s1 ∈ 1:length(en1), s2 ∈ 1:length(en2)
         @inbounds ll = reshape(le1l[p1l[s1], :], :, 1) .* reshape(le2l[p2l[s2], :], :, 1)
         @inbounds lu = reshape(le1u[p1u[s1], :], 1, :) .* reshape(le2u[p2u[s2], :], 1, :)
         @inbounds A[:, :, pr[s2], pd[s1]] += loc_exp[s2, s1] .* (ll .* lu)
     end
-    A ./ maximum(A)
+    A ./ maximum(A)s
 end
-=#
+
 
 """
 $(TYPEDSIGNATURES)

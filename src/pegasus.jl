@@ -261,6 +261,34 @@ function tensor(
         @inbounds eloc[s2, s1] = en1[s1] + en2[s2] + en12[p1[s1], p2[s2]]
     end
 
+    #=
+        i, j = node.i, node.j
+    @nexprs 2 k->(v_k = (i, j, k))
+
+    pr = projector(net, v_2, @ntuple 2 k->(i, j+1, k))
+    pd = projector(net, v_1, @ntuple 2 k->(i+1, j, k))
+
+    pl, (pl_1, pl_2) = fuse_projectors(
+        @ntuple 2 k->projector(net, (i, j-1, 2), v_k)
+    )
+    pu, (pu_1, pu_2) = fuse_projectors(
+        @ntuple 2 k->projector(net, (i-1, j, 1), v_k)
+    )
+    @nexprs 2 k->(
+        eu_k = interaction_energy(net, (i-1, j, 1), v_k)[pu_k, :];
+        el_k = interaction_energy(net, (i, j-1, 2), v_k)[pl_k, :];
+
+        el_k = probability(el_k, β);
+        eu_k = probability(eu_k, β);
+
+        pl_k = projector(net, v_k, (i, j-1 ,2));
+        pu_k = projector(net, v_k, (i-1, j, 1));
+
+        en_k = local_energy(net, v_k);
+
+        p_k = projector(network, (i, j, 1), (i, j, 2))
+    )
+    =#
     SparsePegasusSquareTensor(
         # tensor(network, node, β, Val(:pegasus_square_site)),
         [pr, pd],

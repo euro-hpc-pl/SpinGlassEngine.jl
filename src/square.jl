@@ -254,9 +254,12 @@ function update_reduced_env_right(
     @inbounds Rσ = REB2[:, ind43]
 
     R = zeros(size(B, 1), maximum(M.projs[1]))
-    for (σ, kl) ∈ enumerate(Kloc_exp)
-        @inbounds R[:, M.projs[1][σ]] += kl .* Rσ[:, σ]
+    RR = reshape(Kloc_exp, 1, :) .* Rσ
+
+    for i in 1:maximum(M.projs[1])
+        R[:,i] = sum(RR[:, M.projs[1].==i], dims=2)
     end
+
     R
 end
 

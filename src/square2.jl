@@ -120,10 +120,10 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: Square2{GaugesEnergy}
     MpoLayers(main, Dict(i => (1//6,) for i ∈ 1:ncols), right)
 end
 
-"""   # TODO
+"""
 $(TYPEDSIGNATURES)
 """
-function conditional_probability(   # TODO
+function conditional_probability(
     ::Type{T}, ctr::MpsContractor{S}, ∂v::Vector{Int}
 ) where {T <: Square2, S}
     indβ, β = length(ctr.betas), last(ctr.betas)
@@ -300,50 +300,45 @@ function tensor(
     network::PEPSNetwork{Square2{S}, T}, node::PEPSNode, β::Real, ::Val{:central_h}
 ) where {T <: AbstractSparsity, S <: AbstractTensorsLayout}
     i, j = node.i, floor(Int, node.j)
-    getSparseCentralTensor(network, β, (i, j), (i, j+1))
-    # p11r = projector(network, (i, j+1, 1), (i, j, 1))
-    # p21r = projector(network, (i, j+1, 1), (i, j, 2))
-    # p12r = projector(network, (i, j+1, 2), (i, j ,1))
-    # p22r = projector(network, (i, j+1, 2), (i, j, 2))
-    # p1r, (p11r, p21r) = fuse_projectors((p11r, p21r))
-    # p2r, (p12r, p22r) = fuse_projectors((p12r, p22r))
-    # p21l = projector(network, (i, j, 2), (i, j+1, 1))
-    # p22l = projector(network, (i, j, 2), (i, j+1, 2))
-    # p12l = projector(network, (i, j, 1), (i, j+1, 2))
-    # p11l = projector(network, (i, j, 1), (i, j+1, 1))
-    # p1l, (p11l, p12l) = fuse_projectors((p11l, p12l))
-    # p2l, (p21l, p22l) = fuse_projectors((p21l, p22l))
-    # e11 = interaction_energy(network, (i, j, 1), (i, j+1, 1))
-    # e12 = interaction_energy(network, (i, j, 1), (i, j+1, 2))
-    # e21 = interaction_energy(network, (i, j, 2), (i, j+1, 1))
-    # e22 = interaction_energy(network, (i, j, 2), (i, j+1, 2))
-    # e11 = e11[p11l, p11r]
-    # e21 = e21[p21l, p21r]
-    # e12 = e12[p12l, p12r]
-    # e22 = e22[p22l, p22r]
-    # le11 = exp.(-β .* (e11 .- minimum(e11)))
-    # le21 = exp.(-β .* (e21 .- minimum(e21)))
-    # le12 = exp.(-β .* (e12 .- minimum(e12)))
-    # le22 = exp.(-β .* (e22 .- minimum(e22)))
-    # sl = maximum(outer_projector(
-    #     projector(network, (i, j, 1), ((i, j+1, 1), (i, j+1, 2))),  # r
-    #     projector(network, (i, j, 2), ((i, j+1, 1), (i, j+1, 2))),  # r
-    # ))
-    # sr = maximum(outer_projector(
-    #         projector(network, (i, j+1, 1), ((i, j, 1), (i, j, 2))),  # l
-    #         projector(network, (i, j+1, 2), ((i, j, 1), (i, j, 2))),  # l
-    #     ))
-    # SparseCentralTensor(
-    #     le11,
-    #     le12,
-    #     le21,
-    #     le22,
-    #     (sl, sr)
-    # )
+    SparseCentralTensor(network, β, (i, j), (i, j+1))
+end
+
+"""
+$(TYPEDSIGNATURES)
+"""
+function tensor(
+    network::PEPSNetwork{Square2{S}, Dense}, node::PEPSNode, β::Real, ::Val{:central_h}
+) where S <: AbstractTensorsLayout
+    i, j = node.i, floor(Int, node.j)
+    ten = SparseCentralTensor(network, β, (i, j), (i+1, j))
+    @cast V[(l1, l2), (r1, r2)] := ten.e11[l1,r1] * ten.e21[l2, r1] * ten.e12[l1, r2] * ten.e22[l2, r2]
+    V ./ maximum(V)
+end
+
+"""
+$(TYPEDSIGNATURES)
+"""
+function tensor(
+    network::PEPSNetwork{Square2{S}, T}, node::PEPSNode, β::Real, ::Val{:central_v}
+) where {T <: AbstractSparsity, S <: AbstractTensorsLayout}
+    i, j = floor(Int, node.i), node.j
+    SparseCentralTensor(network, β, (i, j), (i+1, j))
+end
+
+"""
+$(TYPEDSIGNATURES)
+"""
+function tensor(
+    network::PEPSNetwork{Square2{S}, Dense}, node::PEPSNode, β::Real, ::Val{:central_v}
+) where S <: AbstractTensorsLayout
+    i, j = floor(Int, node.i), node.j
+    ten = SparseCentralTensor(network, β, (i, j), (i+1, j))
+    @cast V[(u1, u2), (d1, d2)] := ten.e11[u1, d1] * ten.e21[u2, d1] * ten.e12[u1, d2] * ten.e22[u2, d2]
+    V ./ maximum(V)
 end
 
 
-function getSparseCentralTensor(network::PEPSNetwork{T, S}, β::Real, node1::NTuple{2, Int64}, node2::NTuple{2, Int64}
+function SparseCentralTensor(network::PEPSNetwork{T, S}, β::Real, node1::NTuple{2, Int64}, node2::NTuple{2, Int64}
     ) where {T <: AbstractGeometry, S}
     i1, j1 = node1
     i2, j2 = node2
@@ -379,15 +374,9 @@ function getSparseCentralTensor(network::PEPSNetwork{T, S}, β::Real, node1::NTu
     le12 = exp.(-β .* (e12 .- minimum(e12)))
     le22 = exp.(-β .* (e22 .- minimum(e22)))
 
-    sl = maximum(outer_projector(
-        projector(network, (i1, j1, 1), ((i2, j2, 1), (i2, j2, 2))),  # r
-        projector(network, (i1, j1, 2), ((i2, j2, 1), (i2, j2, 2))),  # r
-    ))
+    sl = maximum(p1l) * maximum(p2l)
+    sr = maximum(p1r) * maximum(p2r)
 
-    sr = maximum(outer_projector(
-            projector(network, (i2, j2, 1), ((i1, j1, 1), (i1, j1, 2))),  # l
-            projector(network, (i2, j2, 2), ((i1, j1, 1), (i1, j1, 2))),  # l
-        ))
     SparseCentralTensor(
         le11,
         le12,
@@ -396,151 +385,6 @@ function getSparseCentralTensor(network::PEPSNetwork{T, S}, β::Real, node1::NTu
         (sl, sr)
     )
 end 
-
-
-"""
-$(TYPEDSIGNATURES)
-"""
-function tensor(
-    network::PEPSNetwork{Square2{S}, Dense}, node::PEPSNode, β::Real, ::Val{:central_h}
-) where S <: AbstractTensorsLayout
-    i, j = node.i, floor(Int, node.j)
-
-    p11r = projector(network, (i, j+1, 1), (i, j, 1))
-    p21r = projector(network, (i, j+1, 1), (i, j, 2))
-    p12r = projector(network, (i, j+1, 2), (i, j ,1))
-    p22r = projector(network, (i, j+1, 2), (i, j, 2))
-
-    p1r, (p11r, p21r) = fuse_projectors((p11r, p21r))
-    p2r, (p12r, p22r) = fuse_projectors((p12r, p22r))
-
-    p21l = projector(network, (i, j, 2), (i, j+1, 1))
-    p22l = projector(network, (i, j, 2), (i, j+1, 2))
-    p12l = projector(network, (i, j, 1), (i, j+1, 2))
-    p11l = projector(network, (i, j, 1), (i, j+1, 1))
-
-    p1l, (p11l, p12l) = fuse_projectors((p11l, p12l))
-    p2l, (p21l, p22l) = fuse_projectors((p21l, p22l))
-
-    e11 = interaction_energy(network, (i, j, 1), (i, j+1, 1))
-    e12 = interaction_energy(network, (i, j, 1), (i, j+1, 2))
-    e21 = interaction_energy(network, (i, j, 2), (i, j+1, 1))
-    e22 = interaction_energy(network, (i, j, 2), (i, j+1, 2))
-
-    e11 = e11[p11l, p11r]
-    e21 = e21[p21l, p21r]
-    e12 = e12[p12l, p12r]
-    e22 = e22[p22l, p22r]
-
-    le11 = exp.(-β .* (e11 .- minimum(e11)))
-    le21 = exp.(-β .* (e21 .- minimum(e21)))
-    le12 = exp.(-β .* (e12 .- minimum(e12)))
-    le22 = exp.(-β .* (e22 .- minimum(e22)))
-
-    @cast V[(l1, l2), (r1, r2)] := le11[l1,r1] * le21[l2, r1] * le12[l1, r2] * le22[l2, r2]
-    V ./ maximum(V)
-end
-
-"""
-$(TYPEDSIGNATURES)
-"""
-function tensor(
-    network::PEPSNetwork{Square2{S}, T}, node::PEPSNode, β::Real, ::Val{:central_v}
-) where {T <: AbstractSparsity, S <: AbstractTensorsLayout}
-    i, j = floor(Int, node.i), node.j
-    getSparseCentralTensor(network, β, (i, j), (i+1, j))
-    # p11u = projector(network, (i+1, j, 1), (i, j, 1))
-    # p12u = projector(network, (i+1, j, 2), (i, j, 1))
-    # p21u = projector(network, (i+1, j, 1), (i, j, 2))
-    # p22u = projector(network, (i+1, j, 2), (i, j, 2))
-
-    # p1u, (p11u, p21u) = fuse_projectors((p11u, p21u))
-    # p2u, (p12u, p22u) = fuse_projectors((p12u, p22u))
-
-    # p11d = projector(network, (i, j, 1), (i+1, j, 1))
-    # p12d = projector(network, (i, j, 1), (i+1, j, 2))
-    # p21d = projector(network, (i, j, 2), (i+1, j, 1))
-    # p22d = projector(network, (i, j, 2), (i+1, j, 2))
-
-    # p1d, (p11d, p12d) = fuse_projectors((p11d, p12d))
-    # p2d, (p21d, p22d) = fuse_projectors((p21d, p22d))
-
-    # e11 = interaction_energy(network, (i, j, 1), (i+1, j, 1))
-    # e21 = interaction_energy(network, (i, j, 2), (i+1, j, 1))
-    # e12 = interaction_energy(network, (i, j, 1), (i+1, j, 2))
-    # e22 = interaction_energy(network, (i, j, 2), (i+1, j, 2))
-
-    # e11 = e11[p11d, p11u]
-    # e21 = e21[p21d, p21u]
-    # e12 = e12[p12d, p12u]
-    # e22 = e22[p22d, p22u]
-
-    # le11 = exp.(-β .* (e11 .- minimum(e11)))
-    # le21 = exp.(-β .* (e21 .- minimum(e21)))
-    # le12 = exp.(-β .* (e12 .- minimum(e12)))
-    # le22 = exp.(-β .* (e22 .- minimum(e22)))
-
-    # su = maximum(outer_projector(
-    #     projector(network, (i, j, 1), ((i+1, j, 1), (i+1, j, 2))),  # b
-    #     projector(network, (i, j, 2), ((i+1, j, 1), (i+1, j, 2))),  # b
-    # ))
-    # sd = maximum(outer_projector(
-    #     projector(network, (i+1, j, 1), ((i, j, 1), (i, j, 2))),  # t
-    #     projector(network, (i+1, j, 2), ((i, j, 1), (i, j, 2))),  # t
-    # ))
-
-    # SparseCentralTensor(
-    #     le11,
-    #     le12,
-    #     le21,
-    #     le22,
-    #     (su, sd)
-    # )
-end
-
-"""
-$(TYPEDSIGNATURES)
-"""
-function tensor(
-    network::PEPSNetwork{Square2{S}, Dense}, node::PEPSNode, β::Real, ::Val{:central_v}
-) where S <: AbstractTensorsLayout
-    i, j = floor(Int, node.i), node.j
-
-    p11u = projector(network, (i+1, j, 1), (i, j, 1))
-    p12u = projector(network, (i+1, j, 2), (i, j, 1))
-    p21u = projector(network, (i+1, j, 1), (i, j, 2))
-    p22u = projector(network, (i+1, j, 2), (i, j, 2))
-
-    p1u, (p11u, p21u) = fuse_projectors((p11u, p21u))
-    p2u, (p12u, p22u) = fuse_projectors((p12u, p22u))
-
-    p11d = projector(network, (i, j, 1), (i+1, j, 1))
-    p12d = projector(network, (i, j, 1), (i+1, j, 2))
-    p21d = projector(network, (i, j, 2), (i+1, j, 1))
-    p22d = projector(network, (i, j, 2), (i+1, j, 2))
-
-    p1d, (p11d, p12d) = fuse_projectors((p11d, p12d))
-    p2d, (p21d, p22d) = fuse_projectors((p21d, p22d))
-
-    e11 = interaction_energy(network, (i, j, 1), (i+1, j, 1))
-    e21 = interaction_energy(network, (i, j, 2), (i+1, j, 1))
-    e12 = interaction_energy(network, (i, j, 1), (i+1, j, 2))
-    e22 = interaction_energy(network, (i, j, 2), (i+1, j, 2))
-
-    e11 = e11[p11d, p11u]
-    e21 = e21[p21d, p21u]
-    e12 = e12[p12d, p12u]
-    e22 = e22[p22d, p22u]
-
-    le11 = exp.(-β .* (e11 .- minimum(e11)))
-    le21 = exp.(-β .* (e21 .- minimum(e21)))
-    le12 = exp.(-β .* (e12 .- minimum(e12)))
-    le22 = exp.(-β .* (e22 .- minimum(e22)))
-
-    @cast V[(u1, u2), (d1, d2)] := le11[u1, d1] * le21[u2, d1] * le12[u1, d2] * le22[u2, d2]
-
-    V ./ maximum(V)
-end
 
 Base.size(M::SparseCentralTensor, n::Int) = M.sizes[n]
 Base.size(M::SparseCentralTensor) = M.sizes

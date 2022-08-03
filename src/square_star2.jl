@@ -43,7 +43,7 @@ function tensor_map(
             map,
             PEPSNode(i, j) => site2(S),
             PEPSNode(i, j - 1//2) => Virtual2(S),
-            PEPSNode(i + 1//2, j) => :central_v
+            PEPSNode(i + 1//2, j) => :central_v2
         )
     end
 
@@ -133,10 +133,8 @@ Defines the MPO layers for the SquareStar2 geometry with the EnergyGauges layout
 """
 function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar2{EnergyGauges}
     MpoLayers(
-        # Dict(site(i) => (-1//6, 0, 3//6, 4//6) for i ∈ 1//2:1//2:ncols),  # for now removes gauges
-        # Dict(site(i) => (3//6, 4//6) for i ∈ 1//2:1//2:ncols),
-        Dict(site(i) => (0, 3//6) for i ∈ 1//2:1//2:ncols),
-        Dict(site(i) => (3//6,) for i ∈ 1//2:1//2:ncols),
+        Dict(site(i) => (-1//6, 0, 3//6, 4//6) for i ∈ 1//2:1//2:ncols),  # for now removes gauges
+        Dict(site(i) => (3//6, 4//6) for i ∈ 1//2:1//2:ncols),
         Dict(site(i) => (-3//6, 0) for i ∈ 1//2:1//2:ncols)
     )
 end
@@ -148,17 +146,14 @@ Defines the MPO layers for the SquareStar2 geometry with the GaugesEnergy layout
 """
 function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar2{GaugesEnergy}
     MpoLayers(
-        # Dict(site(i) => (-4//6, -1//2, 0, 1//6) for i ∈ 1//2:1//2:ncols),
-        # Dict(site(i) => (1//6,) for i ∈ 1//2:1//2:ncols),
-        Dict(site(i) => (-1//2, 0,) for i ∈ 1//2:1//2:ncols),
-        Dict(site(i) => () for i ∈ 1//2:1//2:ncols),
+        Dict(site(i) => (-4//6, -1//2, 0, 1//6) for i ∈ 1//2:1//2:ncols),
+        Dict(site(i) => (1//6,) for i ∈ 1//2:1//2:ncols),
         Dict(site(i) => (-3//6, 0) for i ∈ 1//2:1//2:ncols)
     )
 end
 
-"""
-$(TYPEDSIGNATURES)
-
+# """
+# $(TYPEDSIGNATURES)
 # Defines the MPO layers for the SquareStar2 geometry with the EngGaugesEng layout.
 # """
 # function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar2{EngGaugesEng}
@@ -210,27 +205,27 @@ function conditional_probability(  # TODO
 end
 
 
-"""
-$(TYPEDSIGNATURES)
-"""
-function update_reduced_env_right(  # TODO
-    K::Array{T, 1},
-    RE::Array{T, 2},
-    M::SparseVirtualTensor2,
-    B::Array{T, 3}
-) where T <: Real
-    h = M.con
-    p_lb, p_l, p_lt, p_rb, p_r, p_rt = M.projs
-    @cast B4[x, k, l, y] := B[x, (k, l), y] (k ∈ 1:maximum(p_lb))
-    @cast K2[t1, t2] := K[(t1, t2)] (t1 ∈ 1:maximum(p_rt))
-    @tensor REB[x, y1, y2, β] := B4[x, y1, y2, α] * RE[α, β]
-    R = zeros(size(B, 1), length(p_l))
-    for l ∈ 1:length(p_l), r ∈ 1:length(p_r)
-        @inbounds R[:, l] += (K2[p_rt[r], p_lt[l]] .* h[p_l[l], p_r[r]]) .*
-                              REB[:, p_lb[l], p_rb[r], r]
-    end
-    R
-end
+# """
+# $(TYPEDSIGNATURES)
+# """
+# function update_reduced_env_right(  # TODO
+#     K::Array{T, 1},
+#     RE::Array{T, 2},
+#     M::SparseVirtualTensor,
+#     B::Array{T, 3}
+# ) where T <: Real
+#     h = M.con
+#     p_lb, p_l, p_lt, p_rb, p_r, p_rt = M.projs
+#     @cast B4[x, k, l, y] := B[x, (k, l), y] (k ∈ 1:maximum(p_lb))
+#     @cast K2[t1, t2] := K[(t1, t2)] (t1 ∈ 1:maximum(p_rt))
+#     @tensor REB[x, y1, y2, β] := B4[x, y1, y2, α] * RE[α, β]
+#     R = zeros(size(B, 1), length(p_l))
+#     for l ∈ 1:length(p_l), r ∈ 1:length(p_r)
+#         @inbounds R[:, l] += (K2[p_rt[r], p_lt[l]] .* h[p_l[l], p_r[r]]) .*
+#                               REB[:, p_lb[l], p_rb[r], r]
+#     end
+#     R
+# end
 
 """
 $(TYPEDSIGNATURES)
@@ -281,23 +276,38 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function tensor(  #TODO
-    net::PEPSNetwork{SquareStar2{T}, S}, node::PEPSNode, β::Real, ::Val{:central_d2}
-) where {T <: AbstractTensorsLayout, S <: AbstractSparsity}
+function tensor(
+    net::PEPSNetwork{T, Dense}, node::PEPSNode, β::Real, ::Val{:central_d2}
+) where {T <: AbstractGeometry}
     i, j = floor(Int, node.i), floor(Int, node.j)
-    @nexprs 2 k -> T_k = connecting_tensor(net, (i, j-1+k), (i+1, j+2-k), β) # NE, NE
+    T_1 = dense_central_tensor(SparseCentralTensor(net, β, (i, j), (i+1, j+1)))
+    T_2 = dense_central_tensor(SparseCentralTensor(net, β, (i, j+1), (i+1, j)))
     @cast A[(u, uu), (d, dd)] := T_1[u, d] * T_2[uu, dd]
     A
+end
+
+
+"""
+$(TYPEDSIGNATURES)
+"""
+function tensor(
+    net::PEPSNetwork{T, Sparse}, node::PEPSNode, β::Real, ::Val{:central_d2}
+) where {T <: AbstractGeometry}
+    i, j = floor(Int, node.i), floor(Int, node.j)
+    T_1 = SparseCentralTensor(net, β, (i, j), (i+1, j+1))
+    T_2 = SparseCentralTensor(net, β, (i, j+1), (i+1, j))
+    # ADD new structure to cover this
 end
 
 """
 $(TYPEDSIGNATURES)
 """
-function Base.size(  #TODO
-    network::PEPSNetwork{SquareStar2{T}, S}, node::PEPSNode, ::Val{:central_d2}
+function Base.size(
+    net::PEPSNetwork{SquareStar2{T}, S}, node::PEPSNode, ::Val{:central_d2}
 ) where {T <: AbstractTensorsLayout, S <: AbstractSparsity}
     i, j = floor(Int, node.i), floor(Int, node.j)
-    @nexprs 2 k -> s_k = size(interaction_energy(network, (i, j+k-1), (i + 1, j+2-k)))
+    s_1 =  SparseCentralTensor_size(net, (i, j), (i+1, j+1))
+    s_2 =  SparseCentralTensor_size(net, (i, j+1), (i+1, j))
     (s_1[1] * s_2[1], s_1[2] * s_2[2])
 end
 
@@ -310,33 +320,44 @@ function tensor(  #TODO
     v = Node(node)
     i, j = node.i, floor(Int, node.j)
 
-    pl = last(fuse_projectors(
-        @ntuple 3 k->projector(net, (i, j), (i+2-k, j+1)) # p_lb, p_l, p_lt
-    ))
-    pr = last(fuse_projectors(
-        @ntuple 3 k->projector(net, (i, j+1), (i+2-k, j)) # p_rb, p_r, p_rt
-    ))
-    SparseVirtualTensor2(
-       connecting_tensor(net, floor.(Int, v), ceil.(Int, v), β),
-       vec.((pl..., pr...))
+    p_l = outer_projector(
+        (projector(net, (i, j, k), ((i, j-1, 1), (i, j-1, 2))) for k ∈ 1:2)...)
+    p_r = outer_projector(
+        (projector(net, (i, j, k), ((i, j+1, 1), (i, j+1, 2))) for k ∈ 1:2)...)
+    p_lb = outer_projector(
+        (projector(net, (i, j, k), ((i+1, j-1, 1), (i+1, j-1, 2))) for k ∈ 1:2)...)
+    p_lt = outer_projector(
+        (projector(net, (i, j, k), ((i-1, j-1, 1), (i-1, j-1, 2))) for k ∈ 1:2)...)
+    p_rb = outer_projector(
+        (projector(net, (i, j, k), ((i+1, j+1, 1), (i+1, j+1, 2))) for k ∈ 1:2)...)
+    p_rt = outer_projector(
+        (projector(net, (i, j, k), ((i-1, j+1, 1), (i-1, j+1, 2))) for k ∈ 1:2)...)
+    p_l = last(fuse_projectors((p_lb, p_l, p_lt)))
+    p_r = last(fuse_projectors((p_rb, p_r, p_rt)))
+
+    SparseVirtualTensor(
+       SparseCentralTensor(net, β, floor.(Int, v), ceil.(Int, v)),
+       vec.((p_l..., p_r...))
     )
 end
 
 """
 $(TYPEDSIGNATURES)
 """
-function tensor(  #TODO
-    net::PEPSNetwork{SquareStar2{T}, Dense}, node::PEPSNode, β::Real, ::Val{:virtual2}
-) where T <: AbstractTensorsLayout
+function tensor(
+    net::PEPSNetwork{T, Dense}, node::PEPSNode, β::Real, ::Val{:virtual2}
+) where{T <: AbstractGeometry}
     sp = tensor(net, node, β, Val(:sparse_virtual2))
     p_lb, p_l, p_lt, p_rb, p_r, p_rt = sp.projs
 
+    dense_con = dense_central_tensor(sp.con)
+
     A = zeros(
-        eltype(sp.con),
+        eltype(dense_con),
         length(p_l), maximum.((p_rt, p_lt))..., length(p_r), maximum.((p_lb, p_rb))...
     )
     for l ∈ 1:length(p_l), r ∈ 1:length(p_r)
-        @inbounds A[l, p_rt[r], p_lt[l], r, p_lb[l], p_rb[r]] = sp.con[p_l[l], p_r[r]]
+        @inbounds A[l, p_rt[r], p_lt[l], r, p_lb[l], p_rb[r]] = dense_con[p_l[l], p_r[r]]
     end
     @cast B[l, (uu, u), r, (dd, d)] := A[l, uu, u, r, dd, d]
     B
@@ -348,7 +369,7 @@ end
 $(TYPEDSIGNATURES)
 """
 function projectors_site_tensor(
-    network::PEPSNetwork{T, S}, vertex::Node
+    net::PEPSNetwork{T, S}, vertex::Node
 ) where {T <: SquareStar2, S}
     i, j = vertex
     pl = outer_projector(
@@ -367,7 +388,7 @@ function projectors_site_tensor(
         (projector(net, (i, j, k), ((i+1, j+1, 1), (i+1, j+1, 2))) for k ∈ 1:2)...)
     prt = outer_projector(
         (projector(net, (i, j, k), ((i-1, j+1, 1), (i-1, j+1, 2))) for k ∈ 1:2)...)
-    plf = first(fuse_projectors(plb, pl, plt))
-    prf = first(fuse_projectors(prb, pr, prt))
+    plf = first(fuse_projectors((plb, pl, plt)))
+    prf = first(fuse_projectors((prb, pr, prt)))
     (plf, pt, prf, pb)
 end

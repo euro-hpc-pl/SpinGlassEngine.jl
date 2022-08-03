@@ -30,7 +30,7 @@ function run_test(instance, m, n, t, tran)
     # Solve using PEPS search
     energies = Vector{Float64}[]
     Strategy = MPSAnnealing # SVDTruncate
-    Sparsity = Sparse
+    Sparsity = Dense
     # tran = rotation(0)
     Layout = EnergyGauges
     Gauge = NoUpdate

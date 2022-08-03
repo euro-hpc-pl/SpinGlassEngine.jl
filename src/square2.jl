@@ -50,8 +50,8 @@ function tensor_map(
 
     for i ∈ 1:nrows, j ∈ 1:ncols
         push!(map, PEPSNode(i, j) => site2(S))
-        if j < ncols push!(map, PEPSNode(i, j + 1//2) => :central_h) end
-        if i < nrows push!(map, PEPSNode(i + 1//2, j) => :central_v) end
+        if j < ncols push!(map, PEPSNode(i, j + 1//2) => :central_h2) end
+        if i < nrows push!(map, PEPSNode(i + 1//2, j) => :central_v2) end
     end
     map
 end
@@ -94,15 +94,15 @@ $(TYPEDSIGNATURES)
 Defines the MPO layers for the Square geometry with the EnergyGauges layout.
 """
 function MpoLayers(::Type{T}, ncols::Int) where T <: Square2{EnergyGauges}
-    #main = Dict{Site, Sites}(i => (-1//6, 0, 3//6, 4//6) for i ∈ 1:ncols)
-    main = Dict{Site, Sites}(i => (0, 3//6) for i ∈ 1:ncols)
+    main = Dict{Site, Sites}(i => (-1//6, 0, 3//6, 4//6) for i ∈ 1:ncols)
+    #main = Dict{Site, Sites}(i => (0, 3//6) for i ∈ 1:ncols)
     for i ∈ 1:ncols - 1 push!(main, i + 1//2 => (0,)) end
 
     right = Dict{Site, Sites}(i => (-3//6, 0) for i ∈ 1:ncols)
     for i ∈ 1:ncols - 1 push!(right, i + 1//2 => (0,)) end
 
-    #MpoLayers(main, Dict(i => (3//6, 4//6) for i ∈ 1:ncols), right)  # Check if gauge works?
-    MpoLayers(main, Dict(i => (3//6,) for i ∈ 1:ncols), right)
+    MpoLayers(main, Dict(i => (3//6, 4//6) for i ∈ 1:ncols), right)  # Check if gauge works?
+    #MpoLayers(main, Dict(i => (3//6,) for i ∈ 1:ncols), right)
 
 end
 
@@ -287,6 +287,7 @@ function tensor(
     net::PEPSNetwork{T, S}, node::PEPSNode, β::Real, ::Val{:site_square2}
 ) where {T <: AbstractGeometry, S}
     sp = tensor(net, node, β, Val(:sparse_site_square2))
+    A = zeros(maximum.(sp.projs))
     for (σ, lexp) ∈ enumerate(sp.loc_exp)
         @inbounds A[getindex.(sp.projs, Ref(σ))...] += lexp
     end
@@ -297,8 +298,8 @@ end
 $(TYPEDSIGNATURES)
 """
 function tensor(
-    network::PEPSNetwork{Square2{S}, T}, node::PEPSNode, β::Real, ::Val{:central_h}
-) where {T <: AbstractSparsity, S <: AbstractTensorsLayout}
+    network::PEPSNetwork{T, Sparse}, node::PEPSNode, β::Real, ::Val{:central_h2}
+) where {T <: AbstractGeometry}
     i, j = node.i, floor(Int, node.j)
     SparseCentralTensor(network, β, (i, j), (i, j+1))
 end
@@ -307,20 +308,18 @@ end
 $(TYPEDSIGNATURES)
 """
 function tensor(
-    network::PEPSNetwork{Square2{S}, Dense}, node::PEPSNode, β::Real, ::Val{:central_h}
-) where S <: AbstractTensorsLayout
+    network::PEPSNetwork{T, Dense}, node::PEPSNode, β::Real, ::Val{:central_h2}
+) where {T <: AbstractGeometry}
     i, j = node.i, floor(Int, node.j)
-    ten = SparseCentralTensor(network, β, (i, j), (i+1, j))
-    @cast V[(l1, l2), (r1, r2)] := ten.e11[l1,r1] * ten.e21[l2, r1] * ten.e12[l1, r2] * ten.e22[l2, r2]
-    V ./ maximum(V)
+    dense_central_tensor(SparseCentralTensor(network, β, (i, j), (i, j+1)))
 end
 
 """
 $(TYPEDSIGNATURES)
 """
 function tensor(
-    network::PEPSNetwork{Square2{S}, T}, node::PEPSNode, β::Real, ::Val{:central_v}
-) where {T <: AbstractSparsity, S <: AbstractTensorsLayout}
+    network::PEPSNetwork{T, Sparse}, node::PEPSNode, β::Real, ::Val{:central_v2}
+) where {T <: AbstractGeometry}
     i, j = floor(Int, node.i), node.j
     SparseCentralTensor(network, β, (i, j), (i+1, j))
 end
@@ -329,12 +328,10 @@ end
 $(TYPEDSIGNATURES)
 """
 function tensor(
-    network::PEPSNetwork{Square2{S}, Dense}, node::PEPSNode, β::Real, ::Val{:central_v}
-) where S <: AbstractTensorsLayout
+    network::PEPSNetwork{T, Dense}, node::PEPSNode, β::Real, ::Val{:central_v2}
+) where {T <: AbstractGeometry}
     i, j = floor(Int, node.i), node.j
-    ten = SparseCentralTensor(network, β, (i, j), (i+1, j))
-    @cast V[(u1, u2), (d1, d2)] := ten.e11[u1, d1] * ten.e21[u2, d1] * ten.e12[u1, d2] * ten.e22[u2, d2]
-    V ./ maximum(V)
+    dense_central_tensor(SparseCentralTensor(network, β, (i, j), (i+1, j)))
 end
 
 
@@ -385,6 +382,46 @@ function SparseCentralTensor(network::PEPSNetwork{T, S}, β::Real, node1::NTuple
         (sl, sr)
     )
 end 
+
+function SparseCentralTensor_size(network::PEPSNetwork{T, S}, node1::NTuple{2, Int64}, node2::NTuple{2, Int64}
+    ) where {T <: AbstractGeometry, S}
+    i1, j1 = node1
+    i2, j2 = node2
+
+    p21l = projector(network, (i1, j1, 2), (i2, j2, 1))
+    p22l = projector(network, (i1, j1, 2), (i2, j2, 2))
+    p12l = projector(network, (i1, j1, 1), (i2, j2, 2))
+    p11l = projector(network, (i1, j1, 1), (i2, j2, 1))
+
+    p1l, _ = fuse_projectors((p11l, p12l))
+    p2l, _ = fuse_projectors((p21l, p22l))
+
+    p11r = projector(network, (i2, j2, 1), (i1, j1, 1))
+    p21r = projector(network, (i2, j2, 1), (i1, j1, 2))
+    p12r = projector(network, (i2, j2, 2), (i1, j1 ,1))
+    p22r = projector(network, (i2, j2, 2), (i1, j1, 2))
+
+    p1r, _ = fuse_projectors((p11r, p21r))
+    p2r, _ = fuse_projectors((p12r, p22r))
+
+    sl = maximum(p1l) * maximum(p2l)
+    sr = maximum(p1r) * maximum(p2r)
+    (sl, sr)
+end 
+
+function Base.size(
+    network::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, ::Val{:central_v2}
+)
+    i, j = floor(Int, node.i), node.j
+    SparseCentralTensor_size(network, (i, j), (i+1, j))
+end
+
+function Base.size(
+    network::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, ::Val{:central_h2}
+)
+    i, j = node.i, floor(Int, node.j)
+    SparseCentralTensor_size(network, (i, j), (i, j+1))
+end
 
 Base.size(M::SparseCentralTensor, n::Int) = M.sizes[n]
 Base.size(M::SparseCentralTensor) = M.sizes

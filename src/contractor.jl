@@ -626,9 +626,9 @@ $(TYPEDSIGNATURES)
 """
 function boundary_indices(
     ctr::MpsContractor{T},
-    nodes::Union{NTuple{2, S}, Tuple{S, NTuple{2, S}}},
+    nodes::Union{NTuple{2, S}, Tuple{S, NTuple{N, S}}},
     states::Vector{Vector{Int}}
-) where {T, S}
+) where {T, S, N}
     v, w = nodes
     if ctr.peps.vertex_map(v) ∈ vertices(ctr.peps.factor_graph)
         @inbounds idx = [σ[ctr.node_search_index[v]] for σ ∈ states]
@@ -650,4 +650,17 @@ function boundary_indices(
     i = boundary_indices(ctr, (v, w), states)
     j = boundary_indices(ctr, (k, l), states)
     (j .- 1) .* maximum(pv) .+ i
+end
+
+
+function boundary_indices(
+    ctr::MpsContractor{T}, nodes::Tuple{S, NTuple{2, S}, S, NTuple{2, S}, S, NTuple{2, S}, S, NTuple{2, S}}, states::Vector{Vector{Int}}
+) where {S, T}
+    v1, v2, v3, v4, v5, v6, v7, v8 = nodes
+    pv1 = projector(ctr.peps, v1, v2)
+    pv3 = projector(ctr.peps, v3, v4)
+    mm = maximum(pv1) * maximum(pv3)
+    i = boundary_indices(ctr, (v1, v2, v3, v4), states)
+    j = boundary_indices(ctr, (v5, v6, v7, v8), states)
+    (j .- 1) .* mm .+ i
 end

@@ -255,10 +255,31 @@ function update_reduced_env_right(
 
     R = zeros(size(B, 1), maximum(M.projs[1]))
     RR = reshape(Kloc_exp, 1, :) .* Rσ
-
-    for i in 1:maximum(M.projs[1])
-        R[:,i] = sum(RR[:, M.projs[1].==i], dims=2)
+    
+    println("update_reduced_env_right ")
+    @time begin
+        for i in 1:maximum(M.projs[1])
+            R[:,i] = sum(RR[:, M.projs[1].==i], dims=2)
+        end
     end
+
+    # this is slow
+    # pl = M.projs[1]
+
+    # #println("update_reduced_env_right ")
+    # @time begin
+    #     csrRowPtr = CuArray(collect(1:length(pl) + 1))
+    #     csrColInd = CuArray(pl)
+    #     csrNzVal = CUDA.ones(Float64, length(pl))
+    #     ipu = CUSPARSE.CuSparseMatrixCSC(csrRowPtr, csrColInd, csrNzVal, (maximum(pl), length(pl))) # transposed right here
+
+    #     RR = permutedims(RR, (2, 1))
+    #     y, z = size(RR)
+
+    #     RRR = ipu * RR 
+    # end
+
+    # Array(permutedims(RRR, (2,1)))
 
     R
 end

@@ -255,12 +255,9 @@ function update_reduced_env_right(
 
     R = zeros(size(B, 1), maximum(M.projs[1]))
     RR = reshape(Kloc_exp, 1, :) .* Rσ
-    
-    println("update_reduced_env_right ")
-    @time begin
-        for i in 1:maximum(M.projs[1])
-            R[:,i] = sum(RR[:, M.projs[1].==i], dims=2)
-        end
+
+    for i in 1:maximum(M.projs[1])
+        R[:, i] = sum(RR[:, M.projs[1].==i], dims=2)
     end
 
     # this is slow

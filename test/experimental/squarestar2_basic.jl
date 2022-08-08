@@ -29,7 +29,7 @@ function run_test(instance, m, n, t, tran)
 
     # Solve using PEPS search
     energies = Vector{Float64}[]
-    Strategy = SVDTruncate
+    Strategy = MPSAnnealing #SVDTruncate
     Sparsity = Sparse
     # tran = rotation(0)
     Layout = GaugesEnergy
@@ -41,29 +41,29 @@ function run_test(instance, m, n, t, tran)
     ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params)
     ctr2 = MpsContractor{Strategy, Gauge}(net2, [β/8, β/4, β/2, β], :graduate_truncate, params)
 
-    sol = low_energy_spectrum(ctr, search_params) #, merge_branches(ctr))
-    sol2 = low_energy_spectrum(ctr2, search_params) #, merge_branches(ctr2))
+    # sol = low_energy_spectrum(ctr, search_params) #, merge_branches(ctr))
+    # sol2 = low_energy_spectrum(ctr2, search_params) #, merge_branches(ctr2))
 
-    ig_states = decode_factor_graph_state.(Ref(fg), sol.states)
-    @test sol.energies ≈ energy.(Ref(ig), ig_states)
-    fg_states = decode_state.(Ref(net), sol.states)
-    @test sol.energies ≈ energy.(Ref(fg), fg_states)
+    # ig_states = decode_factor_graph_state.(Ref(fg), sol.states)
+    # @test sol.energies ≈ energy.(Ref(ig), ig_states)
+    # fg_states = decode_state.(Ref(net), sol.states)
+    # @test sol.energies ≈ energy.(Ref(fg), fg_states)
 
-    #@test sol.energies ≈ sol2.energies
-    @test sol.energies[1: div(num_states, 2)] ≈ sol2.energies[1: div(num_states, 2)]
-    #@test sol.states == sol2.states
+    # #@test sol.energies ≈ sol2.energies
+    # @test sol.energies[1: div(num_states, 2)] ≈ sol2.energies[1: div(num_states, 2)]
+    # #@test sol.states == sol2.states
 
-    norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
-    exct_prob = exp.(-β .* (sol.energies .- sol.energies[1]))
-    @test norm_prob ≈ exct_prob
+    # norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
+    # exct_prob = exp.(-β .* (sol.energies .- sol.energies[1]))
+    # @test norm_prob ≈ exct_prob
 
-    # push!(energies, sol.energies)
+    # # push!(energies, sol.energies)
 
-    norm_prob = exp.(sol2.probabilities .- sol2.probabilities[1])
-    exct_prob = exp.(-β .* (sol2.energies .- sol2.energies[1]))
-    @test norm_prob ≈ exct_prob
+    # norm_prob = exp.(sol2.probabilities .- sol2.probabilities[1])
+    # exct_prob = exp.(-β .* (sol2.energies .- sol2.energies[1]))
+    # @test norm_prob ≈ exct_prob
 
-    println("Eng = ", sol.energies[1])
+    # println("Eng = ", sol.energies[1])
 
     for ii in 1 : m
         ψ1 = mps(ctr, ii + 1, 4)

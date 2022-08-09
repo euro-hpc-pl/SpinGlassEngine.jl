@@ -319,9 +319,9 @@ function tensor(
     net::PEPSNetwork{T, Sparse}, node::PEPSNode, β::Real, ::Val{:central_d2}
 ) where {T <: AbstractGeometry}
     i, j = floor(Int, node.i), floor(Int, node.j)
-    T_1 = SparseCentralTensor(net, β, (i, j), (i+1, j+1))
-    T_2 = SparseCentralTensor(net, β, (i, j+1), (i+1, j))
-    # ADD new structure to cover this
+    T_1 = dense_central_tensor(SparseCentralTensor(net, β, (i, j), (i+1, j+1)))
+    T_2 = dense_central_tensor(SparseCentralTensor(net, β, (i, j+1), (i+1, j)))
+    SparseDiagonalTensor(T_1, T_2, (size(T_1, 1) * size(T_2, 1), size(T_1, 2) * size(T_2, 2)))
 end
 
 """
@@ -407,4 +407,37 @@ function projectors_site_tensor(
     prf = outer_projector((projector(net, (i, j, k), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2))) for k ∈ 1:2)...)
     pb = outer_projector((projector(net, (i, j, k), ((i+1, j, 1), (i+1, j, 2))) for k ∈ 1:2)...)
     (plf, pt, prf, pb)
+end
+
+
+
+function Base.size(
+    net::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, ::Union{Val{:virtual2}, Val{:sparse_virtual2}}
+)
+    v = Node(node)
+    i, j = node.i, floor(Int, node.j)
+
+    p_lb = [projector(net, (i, j, k), ((i+1, j+1, 1), (i+1, j+1, 2))) for k ∈ 1:2]
+    p_l = [projector(net, (i, j, k), ((i, j+1, 1), (i, j+1, 2))) for k ∈ 1:2]
+    p_lt = [projector(net, (i, j, k), ((i-1, j+1, 1), (i-1, j+1, 2))) for k ∈ 1:2]
+
+    p_rb = [projector(net, (i, j+1, k), ((i+1, j, 1), (i+1, j, 2))) for k ∈ 1:2]
+    p_r = [projector(net, (i, j+1, k), ((i, j, 1), (i, j, 2))) for k ∈ 1:2]
+    p_rt = [projector(net, (i, j+1, k), ((i-1, j, 1), (i-1, j, 2))) for k ∈ 1:2]
+
+    p_lb[1], p_l[1], p_lt[1] = last(fuse_projectors((p_lb[1], p_l[1], p_lt[1])))
+    p_lb[2], p_l[2], p_lt[2] = last(fuse_projectors((p_lb[2], p_l[2], p_lt[2])))
+
+    p_rb[1], p_r[1], p_rt[1] = last(fuse_projectors((p_rb[1], p_r[1], p_rt[1])))
+    p_rb[2], p_r[2], p_rt[2] = last(fuse_projectors((p_rb[2], p_r[2], p_rt[2])))
+
+    p_lb = outer_projector(p_lb[1], p_lb[2])
+    p_l = outer_projector(p_l[1], p_l[2])
+    p_lt = outer_projector(p_lt[1], p_lt[2])
+
+    p_rb = outer_projector(p_rb[1], p_rb[2])
+    p_r = outer_projector(p_r[1], p_r[2])
+    p_rt = outer_projector(p_rt[1], p_rt[2])
+
+    (size(p_l, 1), maximum(p_lt) * maximum(p_rt), size(p_r, 1), maximum(p_lb) * maximum(p_rb))
 end

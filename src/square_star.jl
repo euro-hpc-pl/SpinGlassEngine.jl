@@ -210,6 +210,9 @@ function update_reduced_env_right(
     B::Array{T, 3}
 ) where T <: Real
     h = M.con
+    if typeof(h) == SparseCentralTensor
+        h = dense_central_tensor(h)
+    end
     p_lb, p_l, p_lt, p_rb, p_r, p_rt = M.projs
     @cast B4[x, k, l, y] := B[x, (k, l), y] (k ∈ 1:maximum(p_lb))
     @cast K2[t1, t2] := K[(t1, t2)] (t1 ∈ 1:maximum(p_rt))
@@ -341,3 +344,5 @@ function tensor(
     @cast B[l, (uu, u), r, (dd, d)] := A[l, uu, u, r, dd, d]
     B
 end
+
+

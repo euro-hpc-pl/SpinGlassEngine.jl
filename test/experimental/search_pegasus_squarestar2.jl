@@ -40,7 +40,7 @@
     energies = Vector{Float64}[]
     Gauge = NoUpdate
 
-    for Strategy ∈ (MPSAnnealing, ), Sparsity ∈ (Dense, Sparse) #SVDTruncate
+    for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, ) #SVDTruncate
         for Layout ∈ (EnergyGauges, GaugesEnergy)
             for tran ∈ all_lattice_transformations
 

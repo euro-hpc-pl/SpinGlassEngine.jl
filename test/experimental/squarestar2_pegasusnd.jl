@@ -4,23 +4,21 @@ function brute_force_gpu(ig::IsingGraph; num_states::Int)
      brute_force(ig, :GPU, num_states=num_states)
 end
 
-m = 6
-n = 6
-t = 4
+m = 4
+n = 4
+t = 3
 
 β = 2
 bond_dim = 4
 δp = 1e-10
 num_states = 128
 
-ig = ising_graph("$(@__DIR__)/../instances/zephyr/z3.txt")
+ig = ising_graph("$(@__DIR__)/../instances/pegasus_nondiag/pegasus_nd_4x4x3.txt")
 
 fg = factor_graph(
     ig,
-    # max_cl_states,
-    spectrum=full_spectrum, #_gpu, # rm _gpu to use CPU
-    cluster_assignment_rule=zephyr_lattice_5tuple_rotated(m+1,n+1,zephyr_lattice_5tuple((Int(m/2),Int(n/2),t)))
-
+    spectrum= brute_force_gpu, #rm _gpu to use CPU
+    cluster_assignment_rule=pegasus_lattice((m, n, t))
 )
 
 params = MpsParameters(bond_dim, 1E-8, 2)

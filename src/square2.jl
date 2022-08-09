@@ -419,8 +419,6 @@ function Base.size(
     SparseCentralTensor_size(network, (i, j), (i, j+1))
 end
 
-Base.size(M::SparseCentralTensor, n::Int) = M.sizes[n]
-Base.size(M::SparseCentralTensor) = M.sizes
 
 """
 $(TYPEDSIGNATURES)

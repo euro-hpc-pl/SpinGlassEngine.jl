@@ -431,8 +431,8 @@ function _project_on_border(
     K::S, M::T
     ) where {S <: AbstractArray{Float64, 1}, T <: SparseDiagonalTensor}
     @cast K[a, b] := K[(a, b)] (a ∈ 1:size(M.e1, 1))
-    @tensor K[x, y] := K[a, b] * M.e1[a, x] * M.e2[b, y]
-    @cast K[(x, y)] := K[x, y]
+    @tensor K[y, x] := K[a, b] * M.e1[a, x] * M.e2[b, y]
+    @cast K[(y, x)] := K[y, x]
     K
 end
 

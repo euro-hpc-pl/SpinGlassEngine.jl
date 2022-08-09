@@ -305,9 +305,11 @@ function tensor(
     net::PEPSNetwork{T, Dense}, node::PEPSNode, β::Real, ::Val{:central_d2}
 ) where {T <: AbstractGeometry}
     i, j = floor(Int, node.i), floor(Int, node.j)
-    T_1 = dense_central_tensor(SparseCentralTensor(net, β, (i, j), (i+1, j+1)))
-    T_2 = dense_central_tensor(SparseCentralTensor(net, β, (i, j+1), (i+1, j)))
-    @cast A[(u, uu), (d, dd)] := T_1[u, d] * T_2[uu, dd]
+    T_NW_SE = dense_central_tensor(SparseCentralTensor(net, β, (i, j), (i+1, j+1)))
+    T_NE_SW = dense_central_tensor(SparseCentralTensor(net, β, (i, j+1), (i+1, j)))
+    #@cast A[(u, uu), (d, dd)] := T_1[u, d] * T_2[uu, dd]
+    @cast A[(u, uu), (dd, d)] := T_NW_SE[u, d] * T_NE_SW[uu, dd] 
+
     A
 end
 
@@ -385,13 +387,23 @@ function tensor(
 
     A = zeros(
         eltype(dense_con),
-        length(p_l), maximum.((p_rt, p_lt))..., length(p_r), maximum.((p_lb, p_rb))...
+        length(p_l), maximum.((p_lt, p_rt))..., length(p_r), maximum.((p_lb, p_rb))...
     )
     for l ∈ 1:length(p_l), r ∈ 1:length(p_r)
-         A[l, p_rt[r], p_lt[l], r, p_lb[l], p_rb[r]] = dense_con[p_l[l], p_r[r]]
+         A[l, p_lt[l], p_rt[r], r, p_lb[l], p_rb[r]] = dense_con[p_l[l], p_r[r]]
     end
     @cast B[l, (uu, u), r, (dd, d)] := A[l, uu, u, r, dd, d]
     B
+
+    # A = zeros(
+    #     eltype(dense_con),
+    #     length(p_l), maximum.((p_rt, p_lt))..., length(p_r), maximum.((p_lb, p_rb))...
+    # )
+    # for l ∈ 1:length(p_l), r ∈ 1:length(p_r)
+    #      A[l, p_rt[r], p_lt[l], r, p_lb[l], p_rb[r]] = dense_con[p_l[l], p_r[r]]
+    # end
+    # @cast B[l, (uu, u), r, (dd, d)] := A[l, uu, u, r, dd, d]
+    # B
 end
 
 

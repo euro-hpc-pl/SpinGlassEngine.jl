@@ -213,13 +213,22 @@ function update_reduced_env_right(
     if typeof(h) == SparseCentralTensor
         h = dense_central_tensor(h)
     end
+    # p_lb, p_l, p_lt, p_rb, p_r, p_rt = M.projs
+    # @cast B4[x, k, l, y] := B[x, (k, l), y] (k ∈ 1:maximum(p_lb))
+    # @cast K2[t1, t2] := K[(t1, t2)] (t1 ∈ 1:maximum(p_rt))
+    # @tensor REB[x, y1, y2, β] := B4[x, y1, y2, α] * RE[α, β]
+    # R = zeros(size(B, 1), length(p_l))
+    # for l ∈ 1:length(p_l), r ∈ 1:length(p_r)
+    #     @inbounds R[:, l] += (K2[p_rt[r], p_lt[l]] .* h[p_l[l], p_r[r]]) .*
+    #                           REB[:, p_lb[l], p_rb[r], r]
+    # end
     p_lb, p_l, p_lt, p_rb, p_r, p_rt = M.projs
     @cast B4[x, k, l, y] := B[x, (k, l), y] (k ∈ 1:maximum(p_lb))
-    @cast K2[t1, t2] := K[(t1, t2)] (t1 ∈ 1:maximum(p_rt))
+    @cast K2[t1, t2] := K[(t1, t2)] (t1 ∈ 1:maximum(p_lt))
     @tensor REB[x, y1, y2, β] := B4[x, y1, y2, α] * RE[α, β]
     R = zeros(size(B, 1), length(p_l))
     for l ∈ 1:length(p_l), r ∈ 1:length(p_r)
-        @inbounds R[:, l] += (K2[p_rt[r], p_lt[l]] .* h[p_l[l], p_r[r]]) .*
+        @inbounds R[:, l] += (K2[p_lt[l], p_rt[r]] .* h[p_l[l], p_r[r]]) .*
                               REB[:, p_lb[l], p_rb[r], r]
     end
     R
@@ -288,8 +297,10 @@ function tensor(
     net::PEPSNetwork{SquareStar{T}, S}, node::PEPSNode, β::Real, ::Val{:central_d}
 ) where {T <: AbstractTensorsLayout, S <: AbstractSparsity}
     i, j = floor(Int, node.i), floor(Int, node.j)
-    @nexprs 2 k -> T_k = connecting_tensor(net, (i, j-1+k), (i+1, j+2-k), β) # NE, NE
-    @cast A[(u, uu), (d, dd)] := T_1[u, d] * T_2[uu, dd]
+    T_NW_SE = connecting_tensor(net, (i, j), (i+1, j+1), β)
+    T_NE_SW = connecting_tensor(net, (i, j+1), (i+1, j), β)
+    #@cast A[(u, uu), (d, dd)] := T_NW_SE[u, d] * T_NE_SW[uu, dd] 
+    @cast A[(u, uu), (dd, d)] := T_NW_SE[u, d] * T_NE_SW[uu, dd] 
     A
 end
 
@@ -300,8 +311,9 @@ function Base.size(
     network::PEPSNetwork{SquareStar{T}, S}, node::PEPSNode, ::Val{:central_d}
 ) where {T <: AbstractTensorsLayout, S <: AbstractSparsity}
     i, j = floor(Int, node.i), floor(Int, node.j)
-    @nexprs 2 k -> s_k = size(interaction_energy(network, (i, j+k-1), (i + 1, j+2-k)))
-    (s_1[1] * s_2[1], s_1[2] * s_2[2])
+    s_NW_SE = size(interaction_energy(network, (i, j), (i+1, j+1)))
+    s_NE_SW = size(interaction_energy(network, (i, j+1), (i+1, j)))
+    (s_NW_SE[1] * s_NE_SW[1], s_NW_SE[2] * s_NE_SW[2])
 end
 
 """
@@ -336,13 +348,23 @@ function tensor(
 
     A = zeros(
         eltype(sp.con),
-        length(p_l), maximum.((p_rt, p_lt))..., length(p_r), maximum.((p_lb, p_rb))...
+        length(p_l), maximum.((p_lt, p_rt))..., length(p_r), maximum.((p_lb, p_rb))...
     )
     for l ∈ 1:length(p_l), r ∈ 1:length(p_r)
-        @inbounds A[l, p_rt[r], p_lt[l], r, p_lb[l], p_rb[r]] = sp.con[p_l[l], p_r[r]]
+        @inbounds A[l, p_lt[l], p_rt[r], r, p_lb[l], p_rb[r]] = sp.con[p_l[l], p_r[r]]
     end
     @cast B[l, (uu, u), r, (dd, d)] := A[l, uu, u, r, dd, d]
     B
+
+    # A = zeros(
+    #     eltype(sp.con),
+    #     length(p_l), maximum.((p_rt, p_lt))..., length(p_r), maximum.((p_lb, p_rb))...
+    # )
+    # for l ∈ 1:length(p_l), r ∈ 1:length(p_r)
+    #     @inbounds A[l, p_rt[r], p_lt[l], r, p_lb[l], p_rb[r]] = sp.con[p_l[l], p_r[r]]
+    # end
+    # @cast B[l, (uu, u), r, (dd, d)] := A[l, uu, u, r, dd, d]
+    # B
 end
 
 

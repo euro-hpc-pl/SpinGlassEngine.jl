@@ -43,7 +43,7 @@ for i in 1//2 : 1//2 : m
     end
 end
 
-sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+#sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 
 
 clear_memoize_cache()

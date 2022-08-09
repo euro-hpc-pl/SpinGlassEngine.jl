@@ -66,10 +66,11 @@ push!(my_tests,
     #"experimental/square2_heavy.jl",
     #"experimental/square2_basic.jl",
     #"experimental/squarestar2_basic.jl",
-    "experimental/squarestar2_pegasus.jl",
+    #"experimental/squarestar2_pegasus.jl",
+    #"experimental/squarestar2_pegasusnd.jl",
     #"experimental/squarestar2_zephyr.jl",
-    #"experimental/search_pegasus_square2.jl"
-    #"experimental/search_pegasus_squarestar2.jl"
+    #"experimental/search_pegasus_square2.jl",
+    "experimental/search_pegasus_squarestar2.jl",
 
     # "experimental/gauges.jl",
     # "experimental/memoization.jl",

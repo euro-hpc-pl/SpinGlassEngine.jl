@@ -40,7 +40,7 @@
     energies = Vector{Float64}[]
     Gauge = NoUpdate
 
-    for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, ) #SVDTruncate
+    for Strategy ∈ (MPSAnnealing,), Sparsity ∈ (Sparse,) #Dense, ) #SVDTruncate
         for Layout ∈ (EnergyGauges, GaugesEnergy)
             for tran ∈ all_lattice_transformations
 
@@ -63,11 +63,15 @@
 
                 norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
                 exct_prob = exp.(-β .* (sol.energies .- sol.energies[1]))
-
                 @test norm_prob ≈ exct_prob
                 push!(energies, sol.energies)
 
-                for ii in 1 : m
+                norm_prob2 = exp.(sol2.probabilities .- sol2.probabilities[1])
+                exct_prob2 = exp.(-β .* (sol2.energies .- sol2.energies[1]))
+                @test norm_prob2 ≈ exct_prob2
+
+
+                for ii ∈ 0 : m
                     ψ1 = mps(ctr, ii + 1, 4)
                     ψ1_top = mps_top(ctr, ii, 4)
                     ψ2 = mps(ctr2, ii + 1, 4)
@@ -76,7 +80,7 @@
                     o_top = ψ1_top * ψ2_top / sqrt((ψ1_top * ψ1_top) * (ψ2_top * ψ2_top))
                     @test o ≈ 1.
                     @test o_top ≈ 1.
-                end        
+                end
 
                 clear_memoize_cache()
             end

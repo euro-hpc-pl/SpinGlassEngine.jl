@@ -308,7 +308,7 @@ function tensor(
     T_NW_SE = dense_central_tensor(SparseCentralTensor(net, β, (i, j), (i+1, j+1)))
     T_NE_SW = dense_central_tensor(SparseCentralTensor(net, β, (i, j+1), (i+1, j)))
     #@cast A[(u, uu), (d, dd)] := T_1[u, d] * T_2[uu, dd]
-    @cast A[(u, uu), (dd, d)] := T_NW_SE[u, d] * T_NE_SW[uu, dd] 
+    @cast A[(u, uu), (dd, d)] := T_NW_SE[u, d] * T_NE_SW[uu, dd]
 
     A
 end
@@ -321,9 +321,9 @@ function tensor(
     net::PEPSNetwork{T, Sparse}, node::PEPSNode, β::Real, ::Val{:central_d2}
 ) where {T <: AbstractGeometry}
     i, j = floor(Int, node.i), floor(Int, node.j)
-    T_1 = dense_central_tensor(SparseCentralTensor(net, β, (i, j), (i+1, j+1)))
-    T_2 = dense_central_tensor(SparseCentralTensor(net, β, (i, j+1), (i+1, j)))
-    SparseDiagonalTensor(T_1, T_2, (size(T_1, 1) * size(T_2, 1), size(T_1, 2) * size(T_2, 2)))
+    T_NW_SE = dense_central_tensor(SparseCentralTensor(net, β, (i, j), (i+1, j+1)))
+    T_NE_SW = dense_central_tensor(SparseCentralTensor(net, β, (i, j+1), (i+1, j)))
+    SparseDiagonalTensor(T_NW_SE, T_NE_SW, (size(T_NW_SE, 1) * size(T_NE_SW, 1), size(T_NW_SE, 2) * size(T_NE_SW, 2)))
 end
 
 """

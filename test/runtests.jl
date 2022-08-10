@@ -69,13 +69,12 @@ push!(my_tests,
     #"experimental/squarestar2_pegasus.jl",
     #"experimental/squarestar2_pegasusnd.jl",
     #"experimental/squarestar2_zephyr.jl",
-    "experimental/search_pegasus_square2.jl",
-    #"experimental/search_pegasus_squarestar2.jl",
+    #"experimental/search_pegasus_square2.jl",
+    "experimental/search_pegasus_squarestar2.jl",
 
     # "experimental/gauges.jl",
     # "experimental/memoization.jl",
-    # "experimental/experiments_with_sparse_chimera.jl",
-    # "experimental/zephyr_lattice.jl"
+    # "experimental/experiments_with_sparse_chimera.jl"
 )
 
 

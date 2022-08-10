@@ -267,24 +267,21 @@ function update_reduced_env_right(
     # this is slow
     pl = M.projs[1]
 
-    println("update_reduced_env_right ")
-    @time begin
 
-        #for i in 1:maximum(M.projs[1])
-        #    R[:,i] = sum(RR[:, M.projs[1].==i], dims=2)
-        #end
+    #for i in 1:maximum(M.projs[1])
+    #    R[:,i] = sum(RR[:, M.projs[1].==i], dims=2)
+    #end
 
-        #csrRowPtr = CuArray(collect(1:length(pl) + 1))
-        #csrColInd = CuArray(pl)
-        #csrNzVal = CUDA.ones(Float64, length(pl))
-        #ipu = CUSPARSE.CuSparseMatrixCSC(csrRowPtr, csrColInd, csrNzVal, (maximum(pl), length(pl))) # transposed right here
-        csrRowPtr = collect(1:length(pl))
-        csrNzVal = ones(length(pl))
-        ipu = sparse(csrRowPtr, pl, csrNzVal, length(pl), maximum(pl))
-        #RR = permutedims(RR, (2, 1))
-        #y, z = size(RR)
-        RRR = RR * ipu 
-    end
+    #csrRowPtr = CuArray(collect(1:length(pl) + 1))
+    #csrColInd = CuArray(pl)
+    #csrNzVal = CUDA.ones(Float64, length(pl))
+    #ipu = CUSPARSE.CuSparseMatrixCSC(csrRowPtr, csrColInd, csrNzVal, (maximum(pl), length(pl))) # transposed right here
+    csrRowPtr = collect(1:length(pl))
+    csrNzVal = ones(length(pl))
+    ipu = sparse(csrRowPtr, pl, csrNzVal, length(pl), maximum(pl))
+    #RR = permutedims(RR, (2, 1))
+    #y, z = size(RR)
+    RRR = RR * ipu 
 
     #RRRR = Array(permutedims(RRR, (2,1)))
     #@assert isequal(R, RRR)

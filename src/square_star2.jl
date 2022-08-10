@@ -92,7 +92,7 @@ Defines the MPO layers for the SquareStar2 geometry with the EnergyGauges layout
 """
 function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar2{EnergyGauges}
     MpoLayers(
-        Dict(site(i) => (-1//6, 0, 3//6, 4//6) for i ∈ 1//2:1//2:ncols),  # for now removes gauges
+        Dict(site(i) => (-1//6, 0, 3//6, 4//6) for i ∈ 1//2:1//2:ncols),
         Dict(site(i) => (3//6, 4//6) for i ∈ 1//2:1//2:ncols),
         Dict(site(i) => (-3//6, 0) for i ∈ 1//2:1//2:ncols)
     )

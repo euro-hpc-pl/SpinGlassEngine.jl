@@ -40,8 +40,8 @@
     energies = Vector{Float64}[]
     Gauge = NoUpdate
 
-    for Strategy ∈ (MPSAnnealing,), Sparsity ∈ (Sparse,) #Dense, ) #SVDTruncate
-        for Layout ∈ (EnergyGauges, GaugesEnergy)
+    for Strategy ∈ (MPSAnnealing,), Sparsity ∈ (Dense, Sparse) #Dense SVDTruncate
+        for Layout ∈ (EnergyGauges, GaugesEnergy) #GaugesEnergy EnergyGauges
             for tran ∈ all_lattice_transformations
 
                 net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, tran)

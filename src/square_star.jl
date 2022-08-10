@@ -299,7 +299,6 @@ function tensor(
     i, j = floor(Int, node.i), floor(Int, node.j)
     T_NW_SE = connecting_tensor(net, (i, j), (i+1, j+1), β)
     T_NE_SW = connecting_tensor(net, (i, j+1), (i+1, j), β)
-    #@cast A[(u, uu), (d, dd)] := T_NW_SE[u, d] * T_NE_SW[uu, dd] 
     @cast A[(u, uu), (dd, d)] := T_NW_SE[u, d] * T_NE_SW[uu, dd] 
     A
 end

@@ -7,6 +7,7 @@ using Profile, PProf
 using FlameGraphs
 
 disable_logging(LogLevel(1))
+Profile.init(n = 10^8, delay = 0.01)
 
 function brute_force_gpu(ig::IsingGraph; num_states::Int)
     brute_force(ig, :GPU, num_states=num_states)
@@ -42,14 +43,15 @@ function bench(instance::String)
     Layout = GaugesEnergy
     Gauge = NoUpdate
 
-    net = PEPSNetwork{PegasusSquare, Sparsity}(m, n, fg, tran)
+    net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, tran)
     ctr = MpsContractor{Strategy, Gauge}(net, [β], :graduate_truncate, params)
 
-    sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+    @time sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 end
 
-instance = "$(@__DIR__)/../test/instances/pegasus_nondiag/pegasus_nd_4x4x3.txt"
+instance = "$(@__DIR__)/../test/instances/pegasus_droplets/4_4_3_00.txt"
 
 bench(instance)
 @profile bench(instance)
+
 pprof(flamegraph(); webhost = "localhost", webport = 57328)

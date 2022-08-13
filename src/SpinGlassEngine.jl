@@ -37,10 +37,8 @@ include("PEPS.jl")
 include("contractor.jl")
 include("square.jl")
 include("square_star.jl")
-include("pegasus_nd.jl")
 include("square2.jl")
 include("square_star2.jl")
-#include("pegasus.jl") # <-- conflicts with pegasus_nd
 include("tensors.jl")
 include("search.jl")
 

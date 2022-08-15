@@ -211,27 +211,54 @@ function update_reduced_env_right(
 ) where T <: Real
     h = M.con
     if typeof(h) == SparseCentralTensor
-        h = dense_central_tensor(h)
+        h = cuda_dense_central_tensor(h)
+    else
+        h = CUDA.CuArray(h)
     end
+
+    p_lb, p_l, p_lt, p_rb, p_r, p_rt = M.projs
+
+    total_size = length(p_r)
+    R = CUDA.zeros(eltype(RE), size(B, 1), length(p_l))
+
+    @cast K2[t1, t2] := K[(t1, t2)] (t1 ∈ 1:maximum(p_lt))
+    @cast B4[x, k, l, y] := B[x, (k, l), y] (k ∈ 1:maximum(p_lb))
+
+    max_memory = 2^30  # this is memory peak of 8GB; should be adjusted automatically
+    batch_size = max_memory / (size(B, 1) * size(B, 3) + 2)
+    batch_size = batch_size / length(p_l)
+    batch_size = min(2^Int(floor(log2(batch_size))), total_size)
+    println("update_reduced_env_right VirtualTensor log2(batch_size)  / log2(total_size)= ", log2(batch_size), " / ", log2(total_size))
+
+    from = 1
+    while from <= total_size
+        to = min(total_size, from + batch_size - 1)
+
+        K2_d = CUDA.CuArray(K2[p_lt, p_rt[from:to]])
+        B4_d = CUDA.CuArray(B4[:, p_lb, p_rb[from:to], :])
+        RE_d = CUDA.CuArray(RE[:, from:to])
+        h_d = CUDA.CuArray(h[p_l, p_r[from:to]])
+
+        @cast REB[x, s1, s2, y] := B4_d[x, s1, s2, y] * h_d[s1, s2] * K2_d[s1, s2] * RE_d[y, s2]
+        R .+= dropdims(sum(REB, dims=(3, 4)), dims=(3, 4))
+        from = to + 1
+    end
+    Array(R)
+
+    # h = M.con
+    # if typeof(h) == SparseCentralTensor
+    #     h = dense_central_tensor(h)
+    # end
     # p_lb, p_l, p_lt, p_rb, p_r, p_rt = M.projs
     # @cast B4[x, k, l, y] := B[x, (k, l), y] (k ∈ 1:maximum(p_lb))
-    # @cast K2[t1, t2] := K[(t1, t2)] (t1 ∈ 1:maximum(p_rt))
+    # @cast K2[t1, t2] := K[(t1, t2)] (t1 ∈ 1:maximum(p_lt))
     # @tensor REB[x, y1, y2, β] := B4[x, y1, y2, α] * RE[α, β]
     # R = zeros(size(B, 1), length(p_l))
     # for l ∈ 1:length(p_l), r ∈ 1:length(p_r)
-    #     @inbounds R[:, l] += (K2[p_rt[r], p_lt[l]] .* h[p_l[l], p_r[r]]) .*
+    #     @inbounds R[:, l] += (K2[p_lt[l], p_rt[r]] .* h[p_l[l], p_r[r]]) .*
     #                           REB[:, p_lb[l], p_rb[r], r]
     # end
-    p_lb, p_l, p_lt, p_rb, p_r, p_rt = M.projs
-    @cast B4[x, k, l, y] := B[x, (k, l), y] (k ∈ 1:maximum(p_lb))
-    @cast K2[t1, t2] := K[(t1, t2)] (t1 ∈ 1:maximum(p_lt))
-    @tensor REB[x, y1, y2, β] := B4[x, y1, y2, α] * RE[α, β]
-    R = zeros(size(B, 1), length(p_l))
-    for l ∈ 1:length(p_l), r ∈ 1:length(p_r)
-        @inbounds R[:, l] += (K2[p_lt[l], p_rt[r]] .* h[p_l[l], p_r[r]]) .*
-                              REB[:, p_lb[l], p_rb[r], r]
-    end
-    R
+    # R
 end
 
 """

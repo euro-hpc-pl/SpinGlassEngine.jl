@@ -35,13 +35,14 @@ Gauge = NoUpdate
 net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, tran)
 ctr = MpsContractor{Strategy, Gauge}(net, [β/4, β/2, β], :graduate_truncate, params)
 
-for i in 1//2 : 1//2 : m
-    for j in 1 : 1//2 : n
-        println("Size", (i,j)," = ", log2.(size(net, PEPSNode(i, j))))
-    end
-end
+# for i in 1//2 : 1//2 : m
+#     for j in 1 : 1//2 : n
+#         println("Size", (i,j)," = ", log2.(size(net, PEPSNode(i, j))))
+#     end
+# end
 
-#sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 
+println(sol.energies)
 
 clear_memoize_cache()

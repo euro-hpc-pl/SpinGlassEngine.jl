@@ -247,46 +247,29 @@ function update_reduced_env_right(
     M::SparseSiteTensor,
     B::Array{T, 3}
 ) where T <: Real
+
+    B = CUDA.CuArray(B)
+    RE = CUDA.CuArray(RE)
     @tensor REB[x, y, β] := B[x, y, α] * RE[α, β]
 
-    @inbounds Kloc_exp = M.loc_exp .* K[M.projs[2]]
-    @inbounds s3 = maximum(M.projs[4])
-    @inbounds ind43 = M.projs[4] .+ ((M.projs[3] .- 1) .* s3)
+    loc_exp = CUDA.CuArray(M.loc_exp)
+    K = CUDA.CuArray(K[M.projs[2]])
+    Kloc_exp = loc_exp .* K
+
+    ind43 = M.projs[4] .+ ((M.projs[3] .- 1) .* maximum(M.projs[4]))
     @cast REB2[x, (y, z)] := REB[x, y, z]
     @inbounds Rσ = REB2[:, ind43]
+    Rσ = CUDA.CuArray(Rσ)
 
-    R = zeros(size(B, 1), maximum(M.projs[1]))
     RR = reshape(Kloc_exp, 1, :) .* Rσ
 
-    #for i in 1:maximum(M.projs[1])
-    #    R[:,i] = sum(RR[:, M.projs[1].==i], dims=2)
-    #end
-
-
-
-    # this is slow
     pl = M.projs[1]
-
-
-    #for i in 1:maximum(M.projs[1])
-    #    R[:,i] = sum(RR[:, M.projs[1].==i], dims=2)
-    #end
-
-    #csrRowPtr = CuArray(collect(1:length(pl) + 1))
-    #csrColInd = CuArray(pl)
-    #csrNzVal = CUDA.ones(Float64, length(pl))
-    #ipu = CUSPARSE.CuSparseMatrixCSC(csrRowPtr, csrColInd, csrNzVal, (maximum(pl), length(pl))) # transposed right here
-    csrRowPtr = collect(1:length(pl))
-    csrNzVal = ones(length(pl))
-    ipu = sparse(csrRowPtr, pl, csrNzVal, length(pl), maximum(pl))
-    #RR = permutedims(RR, (2, 1))
-    #y, z = size(RR)
-    RRR = RR * ipu 
-
-    #RRRR = Array(permutedims(RRR, (2,1)))
-    #@assert isequal(R, RRR)
-    #R
-    RRR
+    csrRowPtr = CuArray(collect(1:length(pl) + 1))
+    csrColInd = CuArray(pl)
+    csrNzVal = CUDA.ones(Float64, length(pl))
+    ipl = CUSPARSE.CuSparseMatrixCSC(csrRowPtr, csrColInd, csrNzVal, (maximum(pl), length(pl))) # transposed right here
+    RRR = ipl * RR'
+    Array(RRR')
 end
 
 """

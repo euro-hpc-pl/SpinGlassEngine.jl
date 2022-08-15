@@ -356,15 +356,10 @@ end
 function update_reduced_env_right(
     RR::S, M::T
     ) where {S <: AbstractArray{Float64, 2}, T <: SparseCentralTensor}
-    M11 = M.e11
-    M12 = M.e12
-    M21 = M.e21
-    M22 = M.e22
-
-    @cast MM[(l1, l2), (r1, r2)] := M11[l1,r1] * M21[l2, r1] * M12[l1, r2] * M22[l2, r2]
-    
+    MM = cuda_dense_central_tensor(M)
+    RR = CUDA.CuArray(RR)
     @tensor RR[x, y] := MM[y, z] * RR[x, z]
-    RR
+    Array(RR)
 end
 
 """
@@ -389,20 +384,6 @@ function update_reduced_env_right(
         K[m] = 1.
     end
 
-    # if kk[1] < 0
-    #     Mt = M[kk[1]]
-    #     K = @view Mt[m, :]
-
-    #     for ii ∈ kk[2:end]
-    #         if ii == 0 break end
-    #         Mm = M[ii]
-    #         @tensor K[a] := K[b] * Mm[b, a]
-    #     end
-    # else
-    #     K = zeros(size(M[0], 2))
-    #     K[m] = 1.
-    # end
-
     update_reduced_env_right(K, RE, M[0], B)
 end
 
@@ -416,14 +397,10 @@ end
 function _project_on_border(
     K::S, M::T
     ) where {S <: AbstractArray{Float64, 1}, T <: SparseCentralTensor}
-    M11 = M.e11
-    M12 = M.e12
-    M21 = M.e21
-    M22 = M.e22
-    @cast MM[(l1, l2), (r1, r2)] := M11[l1,r1] * M21[l2, r1] * M12[l1, r2] * M22[l2, r2]
-    
+    MM = cuda_dense_central_tensor(M)
+    K = CUDA.CuArray(K)
     @tensor K[a] := K[b] * MM[b, a]
-    K
+    Array(K)
 end
 
 

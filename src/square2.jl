@@ -1,4 +1,4 @@
-export Square2, tensor, site2, update_reduced_env_right
+export Square2, tensor, site2
 
 """
 $(TYPEDSIGNATURES)

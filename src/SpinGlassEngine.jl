@@ -41,5 +41,6 @@ include("square2.jl")
 include("square_star2.jl")
 include("tensors.jl")
 include("search.jl")
+include("pegasus_nd.jl")
 
 end # module

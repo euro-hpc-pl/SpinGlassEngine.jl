@@ -60,10 +60,10 @@ push!(my_tests,
 push!(my_tests,
     # "experimental/chimera_overlap_python.jl", # OK
     # "experimental/cross_square_star_prob.jl",
-    #"experimental/square2_heavy.jl",
-    # "experimental/square2_basic.jl",
+    "experimental/square2_heavy.jl",
+    #"experimental/square2_basic.jl",
     #"experimental/squarestar2_basic.jl",
-    "experimental/squarestar2_pegasus.jl",
+    #
     # "experimental/squarestar2_pegasusnd.jl",
     # "experimental/squarestar2_zephyr.jl",
     # "experimental/search_pegasus_square2.jl",

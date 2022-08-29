@@ -1,4 +1,4 @@
-using SparseArrays
+
 export
        site,
        Square,
@@ -13,7 +13,7 @@ export
        update_reduced_env_right,
        projected_energy
 
-       
+
 """
 $(TYPEDSIGNATURES)
 

@@ -1,0 +1,10 @@
+/home/tsmierzchalski/.julia/dev/SpinGlassEngine/test/experimental/../instances/pegasus_nondiag/P4/r_001_nd_original_4.txt  -564.1864121275371
+/home/tsmierzchalski/.julia/dev/SpinGlassEngine/test/experimental/../instances/pegasus_nondiag/P4/r_002_nd_original_4.txt  -529.1846671297747
+/home/tsmierzchalski/.julia/dev/SpinGlassEngine/test/experimental/../instances/pegasus_nondiag/P4/r_003_nd_original_4.txt  -545.6583058588443
+/home/tsmierzchalski/.julia/dev/SpinGlassEngine/test/experimental/../instances/pegasus_nondiag/P4/r_004_nd_original_4.txt  -525.9062131864426
+/home/tsmierzchalski/.julia/dev/SpinGlassEngine/test/experimental/../instances/pegasus_nondiag/P4/r_005_nd_original_4.txt  -541.5264299477327
+/home/tsmierzchalski/.julia/dev/SpinGlassEngine/test/experimental/../instances/pegasus_nondiag/P4/r_006_nd_original_4.txt  -541.6029448612107
+/home/tsmierzchalski/.julia/dev/SpinGlassEngine/test/experimental/../instances/pegasus_nondiag/P4/r_007_nd_original_4.txt  -521.5540056225399
+/home/tsmierzchalski/.julia/dev/SpinGlassEngine/test/experimental/../instances/pegasus_nondiag/P4/r_008_nd_original_4.txt  -537.1570223679129
+/home/tsmierzchalski/.julia/dev/SpinGlassEngine/test/experimental/../instances/pegasus_nondiag/P4/r_009_nd_original_4.txt  -534.4266776379387
+/home/tsmierzchalski/.julia/dev/SpinGlassEngine/test/experimental/../instances/pegasus_nondiag/P4/r_010_nd_original_4.txt  -539.9203380017633

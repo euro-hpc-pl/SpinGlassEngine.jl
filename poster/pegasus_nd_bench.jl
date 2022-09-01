@@ -15,12 +15,12 @@ function brute_force_gpu(ig::IsingGraph; num_states::Int)
 end
 
 
-function bench(instance::String)
-    m = 7
-    n = 7
+function bench(instance::String, beta::Float64)
+    m = 3
+    n = 3
     t = 3
 
-    β = 3
+    β = beta
     bond_dim = 4
     δp = 1e-10
     num_states = 128
@@ -50,15 +50,24 @@ function bench(instance::String)
 
     @time sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
     energy = sol.energies[begin]
-    open("/home/tsmierzchalski/.julia/dev/SpinGlassEngine/test/instances/pegasus_nondiag/results/P8.txt","a") do io
-        println(io,instance, "  ", energy)
+    open("$(@__DIR__)/results/P4_single.txt","a") do io
+        println(io, "beta ", β)
+        println(io, instance, "  ", energy)
      end
     
 end
 
 instance_dir =  "$(@__DIR__)/instances/P4"
 
+#=
 for instance in readdir(instance_dir, join=true)
-    bench(instance)
+    bench(instance, beta)
 end
+=#
 
+betas = collect(1:0.5:5)
+instance = "$(@__DIR__)/instances/P4/r_007_nd.txt" #this one was worst
+
+for beta ∈ betas
+    bench(instance, beta)
+end

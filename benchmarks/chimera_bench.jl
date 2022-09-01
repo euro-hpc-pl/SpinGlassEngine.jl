@@ -13,20 +13,20 @@ MPI.Init()
 size = MPI.Comm_size(MPI.COMM_WORLD)
 rank = MPI.Comm_rank(MPI.COMM_WORLD)
 
+#M, N, T = 8, 8, 8
+#INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/512power"
+#OUTPUT_DIR = "$(@__DIR__)/results/512power/tmp"
+
 M, N, T = 8, 8, 8
-INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/512power"
-OUTPUT_DIR = "$(@__DIR__)/results/512power/tmp"
+INSTANCE_DIR = "$(@__DIR__)/instances/chimera_J124/C=8_J124/single"
+OUTPUT_DIR = "$(@__DIR__)/results/512J124/tmp_ege_512"
 
 #M, N, T = 8, 8, 8
-#INSTANCE_DIR = "$(@__DIR__)/instances/chimera_J124/C=8_J124/single"
-#OUTPUT_DIR = "$(@__DIR__)/results/512J124/tmp"
+#INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/512power/small"
+#OUTPUT_DIR = "$(@__DIR__)/results/512power/tmp"
 
-#M, N, T = 12, 12, 8
-#INSTANCE_DIR = "$(@__DIR__)/instances/chimera_droplets/1152power"
-#OUTPUT_DIR = "$(@__DIR__)/results/1152power/tmp"
-
-BETAS =  collect(2:2:14)
-LAYOUT = (EnergyGauges, GaugesEnergy, EngGaugesEng)
+BETAS =  collect(0.5:0.25:3)
+LAYOUT = (EngGaugesEng,)
 TRANSFORM = all_lattice_transformations
 
 GAUGE =  GaugeStrategy
@@ -34,7 +34,7 @@ STRATEGY = SVDTruncate
 SPARSITY = Dense
 graduate_truncation = :graduate_truncate
 
-INDβ = [1, 2, 3]
+INDβ = [3,] #[1, 2, 3]
 MAX_STATES = 500
 BOND_DIM = 32
 DE = 16.0
@@ -47,7 +47,7 @@ BLAS.set_num_threads(1)
 
 function chimera_sim(inst, trans, β, Layout)
     max_cl_states = 2 ^ T
-    δp = exp(-β * DE)
+    δp = 1E-5*exp(-β * DE)
 
     fg = factor_graph(
         ising_graph(INSTANCE_DIR * "/" * inst),

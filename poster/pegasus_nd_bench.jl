@@ -16,8 +16,8 @@ end
 
 
 function bench(instance::String, beta::Float64)
-    m = 3
-    n = 3
+    m = 7
+    n = 7
     t = 3
 
     β = beta
@@ -50,24 +50,25 @@ function bench(instance::String, beta::Float64)
 
     @time sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
     energy = sol.energies[begin]
-    open("$(@__DIR__)/results/P4_single.txt","a") do io
+    open("$(@__DIR__)/results_dwave/P4_b1.txt","a") do io
         println(io, "beta ", β)
         println(io, instance, "  ", energy)
      end
     
 end
 
-instance_dir =  "$(@__DIR__)/instances/P4"
+instance_dir = "$(@__DIR__)/instances/P4"
+for instance in readdir(instance_dir, join=true)
+        bench(instance, 1.0)
+end
+
+#bench("$(@__DIR__)/instances/P8/r_001_nd.txt", 2.0)
+
 
 #=
-for instance in readdir(instance_dir, join=true)
-    bench(instance, beta)
-end
-=#
-
-betas = collect(1:0.5:5)
 instance = "$(@__DIR__)/instances/P4/r_007_nd.txt" #this one was worst
 
 for beta ∈ betas
     bench(instance, beta)
 end
+=#

@@ -50,16 +50,16 @@ function bench(instance::String, beta::Float64)
 
     @time sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
     energy = sol.energies[begin]
-    open("$(@__DIR__)/results_dwave/P4_b1.txt","a") do io
+    open("$(@__DIR__)/results_dwave/P8_2_b1.txt","a") do io
         println(io, "beta ", β)
         println(io, instance, "  ", energy)
      end
     
 end
 
-instance_dir = "$(@__DIR__)/instances/P4"
+instance_dir = "$(@__DIR__)/instances/P8_2"
 for instance in readdir(instance_dir, join=true)
-        bench(instance, 1.0)
+        bench(instance, 0.5)
 end
 
 #bench("$(@__DIR__)/instances/P8/r_001_nd.txt", 2.0)

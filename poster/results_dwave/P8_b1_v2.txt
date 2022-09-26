@@ -1,0 +1,6 @@
+beta 0.75
+/home/tsmierzchalski/.julia/dev/SpinGlassEngine/poster/instances/P8/r_003_nd.txt  -2989.404359087821
+beta 0.75
+/home/tsmierzchalski/.julia/dev/SpinGlassEngine/poster/instances/P8/r_008_nd.txt  -2963.701249719553
+beta 0.75
+/home/tsmierzchalski/.julia/dev/SpinGlassEngine/poster/instances/P8/r_010_nd.txt  -2910.070262499341

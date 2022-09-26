@@ -1,0 +1,2 @@
+beta 1.0
+/home/tsmierzchalski/.julia/dev/SpinGlassEngine/poster/instances/P8/r_001_nd.txt  -2954.6486789162113

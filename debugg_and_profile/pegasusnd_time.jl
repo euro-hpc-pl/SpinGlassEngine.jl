@@ -15,14 +15,14 @@ end
 
 
 function bench(instance::String)
-    m = 2
-    n = 2
+    m = 3
+    n = 3
     t = 3
 
     β = 3
     bond_dim = 4
     δp = 1e-10
-    num_states = 10
+    num_states = 128
     println("creating factor graph" )
     @time begin
     ig = ising_graph(instance)
@@ -52,7 +52,7 @@ function bench(instance::String)
     @time sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 end
 
-instance = "$(@__DIR__)/../test/instances/pegasus_nondiag/pegasus_nd_2x2x3.txt"
+instance = "$(@__DIR__)/../test/instances/pegasus_nondiag/test/003.txt"
 
 bench(instance)
 @profile bench(instance)

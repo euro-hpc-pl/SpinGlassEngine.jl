@@ -13,8 +13,8 @@ Profile.init(n = 10^10, delay = 0.0001)
 
 function bench(instance::String)
 
-    m = 2
-    n = 2
+    m = 4
+    n = 4
     t = 3
 
     β = 3
@@ -63,7 +63,7 @@ exct_prob = exp.(-β .* (sol.energies .- sol.energies[1]))
 @test norm_prob ≈ exct_prob
 
 =#
-instance = "$(@__DIR__)/../instances/pegasus_nondiag/pegasus_nd_2x2x3.txt"
+instance = "$(@__DIR__)/../instances/pegasus_nondiag/pegasus_nd_4x4x3.txt"
 
 sol = bench(instance)
 println(sol.energies)

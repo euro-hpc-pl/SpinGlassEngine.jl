@@ -228,7 +228,7 @@ function update_reduced_env_right(
     batch_size = max_memory / (size(B, 1) * size(B, 3) + 2)
     batch_size = batch_size / length(p_l)
     batch_size = min(2^Int(floor(log2(batch_size))), total_size)
-    println("update_reduced_env_right VirtualTensor log2(batch_size)  / log2(total_size)= ", log2(batch_size), " / ", log2(total_size))
+    #println("update_reduced_env_right VirtualTensor log2(batch_size)  / log2(total_size)= ", log2(batch_size), " / ", log2(total_size))
 
     from = 1
     while from <= total_size

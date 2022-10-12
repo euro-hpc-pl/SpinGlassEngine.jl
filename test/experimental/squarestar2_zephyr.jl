@@ -18,8 +18,8 @@ ig = ising_graph("$(@__DIR__)/../instances/zephyr/z2.txt")
 fg = factor_graph(
     ig,
     # max_cl_states,
-    spectrum=full_spectrum, #_gpu, # rm _gpu to use CPU
-    cluster_assignment_rule=zephyr_lattice_5tuple_rotated(m+1,n+1,zephyr_lattice_5tuple((Int(m/2),Int(n/2),t)))
+    spectrum = full_spectrum,  #brute_force_gpu, # rm _gpu to use CPU
+    cluster_assignment_rule = zephyr_lattice_5tuple_rotated(m+1,n+1,zephyr_lattice_5tuple((Int(m/2),Int(n/2),t)))
 
 )
 

@@ -9,7 +9,7 @@ n = 4
 t = 3
 
 β = 2
-bond_dim = 4
+bond_dim = 2
 δp = 1e-10
 num_states = 128
 

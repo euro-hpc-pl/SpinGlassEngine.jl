@@ -218,48 +218,25 @@ function update_reduced_env_right(
 
     p_lb, p_l, p_lt, p_rb, p_r, p_rt = M.projs
 
-    total_size = length(p_r)
-    R = CUDA.zeros(eltype(RE), size(B, 1), length(p_l))
-
     @cast K2[t1, t2] := K[(t1, t2)] (t1 ∈ 1:maximum(p_lt))
     @cast B4[x, k, l, y] := B[x, (k, l), y] (k ∈ 1:maximum(p_lb))
+    K2 = CUDA.CuArray(K2)
+    B4 = CUDA.CuArray(B4)
 
-    max_memory = 2^30  # this is memory peak of 8GB; should be adjusted automatically
-    batch_size = max_memory / (size(B, 1) * size(B, 3) + 2)
-    batch_size = batch_size / length(p_l)
-    batch_size = min(2^Int(floor(log2(batch_size))), total_size)
-    #println("update_reduced_env_right VirtualTensor log2(batch_size)  / log2(total_size)= ", log2(batch_size), " / ", log2(total_size))
+    prs = projectors_to_cusparse(p_rb, p_r, p_rt)
+    RE = permutedims(CUDA.CuArray(RE), (2, 1))
+    R4 = prs * RE
+    @cast R4[rb, r, rt, b] := R4[(rb, r, rt), b] (rb ∈ 1:maximum(p_rb), r ∈ 1:maximum(p_r))
 
-    from = 1
-    while from <= total_size
-        to = min(total_size, from + batch_size - 1)
+    @tensor R4new[lb, l, lt, nb] := R4[rb, r, rt, b] * K2[lt, rt] * B4[nb, lb, rb, b] * h[l, r]
 
-        K2_d = CUDA.CuArray(K2[p_lt, p_rt[from:to]])
-        B4_d = CUDA.CuArray(B4[:, p_lb, p_rb[from:to], :])
-        RE_d = CUDA.CuArray(RE[:, from:to])
-        h_d = CUDA.CuArray(h[p_l, p_r[from:to]])
+    @cast R4new[(nrb, nr, nrt), nb] := R4new[nrb, nr, nrt, nb]
+    pls = projectors_to_cusparse_transposed(p_lb, p_l, p_lt)
+    Rnew = permutedims(pls * R4new, (2, 1))
 
-        @cast REB[x, s1, s2, y] := B4_d[x, s1, s2, y] * h_d[s1, s2] * K2_d[s1, s2] * RE_d[y, s2]
-        R .+= dropdims(sum(REB, dims=(3, 4)), dims=(3, 4))
-        from = to + 1
-    end
-    Array(R)
-
-    # h = M.con
-    # if typeof(h) == SparseCentralTensor
-    #     h = dense_central_tensor(h)
-    # end
-    # p_lb, p_l, p_lt, p_rb, p_r, p_rt = M.projs
-    # @cast B4[x, k, l, y] := B[x, (k, l), y] (k ∈ 1:maximum(p_lb))
-    # @cast K2[t1, t2] := K[(t1, t2)] (t1 ∈ 1:maximum(p_lt))
-    # @tensor REB[x, y1, y2, β] := B4[x, y1, y2, α] * RE[α, β]
-    # R = zeros(size(B, 1), length(p_l))
-    # for l ∈ 1:length(p_l), r ∈ 1:length(p_r)
-    #     @inbounds R[:, l] += (K2[p_lt[l], p_rt[r]] .* h[p_l[l], p_r[r]]) .*
-    #                           REB[:, p_lb[l], p_rb[r], r]
-    # end
-    # R
+    Array(Rnew)
 end
+
 
 """
 $(TYPEDSIGNATURES)

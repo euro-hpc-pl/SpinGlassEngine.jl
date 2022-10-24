@@ -1,0 +1,48 @@
+10
+===================================
+BenchmarkTools.TrialEstimate: 
+  time:             9.588 μs
+  gctime:           0.000 ns (0.00%)
+  memory:           9.94 KiB
+  allocs:           41
+
+------------------
+BenchmarkTools.TrialEstimate: 
+  time:             9.624 μs
+  gctime:           0.000 ns (0.00%)
+  memory:           9.94 KiB
+  allocs:           41
+
+------------------
+100
+===================================
+BenchmarkTools.TrialEstimate: 
+  time:             1.613 ms
+  gctime:           0.000 ns (0.00%)
+  memory:           7.63 MiB
+  allocs:           43
+
+------------------
+BenchmarkTools.TrialEstimate: 
+  time:             1.620 ms
+  gctime:           0.000 ns (0.00%)
+  memory:           7.63 MiB
+  allocs:           43
+
+------------------
+1000
+===================================
+BenchmarkTools.TrialEstimate: 
+  time:             3.362 s
+  gctime:           122.407 ms (3.64%)
+  memory:           7.45 GiB
+  allocs:           43
+
+------------------
+BenchmarkTools.TrialEstimate: 
+  time:             3.376 s
+  gctime:           122.767 ms (3.64%)
+  memory:           7.45 GiB
+  allocs:           43
+
+------------------

@@ -5,8 +5,8 @@ using CUDA
 STDOUT = Base.stdout
 
 function slice_gpu(M::AbstractArray{Float64, 3}, proj::AbstractArray{Int64,1}, len::Int64)
-    B = CUDA.CuArray(M[:, proj[1 : len], :])
-    B = permutedims(B, (1, 3, 2))
+    B = permutedims(M[:, proj[1 : len], :], (1, 3, 2))
+    B = CUDA.CuArray(B)
     B
 end
 
@@ -21,12 +21,20 @@ for rg ∈ [5, 50, 500]
 
     t1 = @benchmark permutedims(CUDA.CuArray($A[:, $r_proj[1 : $len_proj], :]), (1, 3, 2))
 
+    println("mean")
+    show(STDOUT,MIME"text/plain"(),mean(t1))
+    println("\n")
+    println("median")
     show(STDOUT,MIME"text/plain"(),median(t1))
     println("\n")
     println("------------------")
 
     t2 = @benchmark slice_gpu($B, $r_proj, $len_proj)
 
+    println("mean")
+    show(STDOUT,MIME"text/plain"(),mean(t2))
+    println("\n")
+    println("median")
     show(STDOUT,MIME"text/plain"(),median(t2))
     println("\n")
     println("------------------")

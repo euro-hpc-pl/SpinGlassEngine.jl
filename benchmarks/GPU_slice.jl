@@ -21,6 +21,9 @@ for rg ∈ [5, 50, 500]
 
     t1 = @benchmark permutedims(CUDA.CuArray($A[:, $r_proj[1 : $len_proj], :]), (1, 3, 2))
 
+    println(".................................")
+    println("CUDA -> permute dims:")
+    println(".................................")
     println("mean")
     show(STDOUT,MIME"text/plain"(),mean(t1))
     println("\n")
@@ -31,6 +34,9 @@ for rg ∈ [5, 50, 500]
 
     t2 = @benchmark slice_gpu($B, $r_proj, $len_proj)
 
+    println(".................................")
+    println("permute dims -> CUDA:")
+    println(".................................")
     println("mean")
     show(STDOUT,MIME"text/plain"(),mean(t2))
     println("\n")

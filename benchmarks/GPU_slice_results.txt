@@ -1,5 +1,8 @@
 10
 ===================================
+.................................
+CUDA -> permute dims:
+.................................
 mean
 BenchmarkTools.TrialEstimate: 
   time:             12.469 μs
@@ -15,6 +18,9 @@ BenchmarkTools.TrialEstimate:
   allocs:           41
 
 ------------------
+.................................
+permute dims -> CUDA:
+.................................
 mean
 BenchmarkTools.TrialEstimate: 
   time:             7.671 μs
@@ -32,6 +38,9 @@ BenchmarkTools.TrialEstimate:
 ------------------
 100
 ===================================
+.................................
+CUDA -> permute dims:
+.................................
 mean
 BenchmarkTools.TrialEstimate: 
   time:             2.051 ms
@@ -47,6 +56,9 @@ BenchmarkTools.TrialEstimate:
   allocs:           43
 
 ------------------
+.................................
+permute dims -> CUDA:
+.................................
 mean
 BenchmarkTools.TrialEstimate: 
   time:             3.827 ms
@@ -64,6 +76,9 @@ BenchmarkTools.TrialEstimate:
 ------------------
 1000
 ===================================
+.................................
+CUDA -> permute dims:
+.................................
 mean
 BenchmarkTools.TrialEstimate: 
   time:             3.335 s
@@ -79,6 +94,9 @@ BenchmarkTools.TrialEstimate:
   allocs:           43
 
 ------------------
+.................................
+permute dims -> CUDA:
+.................................
 mean
 BenchmarkTools.TrialEstimate: 
   time:             5.821 s

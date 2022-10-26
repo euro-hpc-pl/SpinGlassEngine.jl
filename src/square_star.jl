@@ -223,7 +223,7 @@ function update_reduced_env_right(
     K2 = CUDA.CuArray(K2)
     B4 = CUDA.CuArray(B4)
 
-    prs = projectors_to_cusparse(p_rb, p_r, p_rt)
+    prs = projectors_to_sparse(p_rb, p_r, p_rt, Val(:cs))
     RE = permutedims(CUDA.CuArray(RE), (2, 1))
     R4 = prs * RE
     @cast R4[rb, r, rt, b] := R4[(rb, r, rt), b] (rb ∈ 1:maximum(p_rb), r ∈ 1:maximum(p_r))
@@ -231,7 +231,7 @@ function update_reduced_env_right(
     @tensor R4new[lb, l, lt, nb] := R4[rb, r, rt, b] * K2[lt, rt] * B4[nb, lb, rb, b] * h[l, r]
 
     @cast R4new[(nrb, nr, nrt), nb] := R4new[nrb, nr, nrt, nb]
-    pls = projectors_to_cusparse_transposed(p_lb, p_l, p_lt)
+    pls = projectors_to_sparse_transposed(p_lb, p_l, p_lt)
     Rnew = permutedims(pls * R4new, (2, 1))
 
     Array(Rnew)

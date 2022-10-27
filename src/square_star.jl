@@ -216,22 +216,25 @@ function update_reduced_env_right(
         h = CUDA.CuArray(h)
     end
 
+    K = CUDA.CuArray(K)
+    B = CUDA.CuArray(B)
+    RE = CUDA.CuArray(RE)
+    tRE = typeof(RE)
+
     p_lb, p_l, p_lt, p_rb, p_r, p_rt = M.projs
 
     @cast K2[t1, t2] := K[(t1, t2)] (t1 ∈ 1:maximum(p_lt))
     @cast B4[x, k, l, y] := B[x, (k, l), y] (k ∈ 1:maximum(p_lb))
-    K2 = CUDA.CuArray(K2)
-    B4 = CUDA.CuArray(B4)
-
-    prs = projectors_to_sparse(p_rb, p_r, p_rt, Val(:cs))
-    RE = permutedims(CUDA.CuArray(RE), (2, 1))
+    
+    prs = projectors_to_sparse(p_rb, p_r, p_rt, tRE)
+    RE = permutedims(RE, (2, 1))
     R4 = prs * RE
     @cast R4[rb, r, rt, b] := R4[(rb, r, rt), b] (rb ∈ 1:maximum(p_rb), r ∈ 1:maximum(p_r))
 
     @tensor R4new[lb, l, lt, nb] := R4[rb, r, rt, b] * K2[lt, rt] * B4[nb, lb, rb, b] * h[l, r]
 
     @cast R4new[(nrb, nr, nrt), nb] := R4new[nrb, nr, nrt, nb]
-    pls = projectors_to_sparse_transposed(p_lb, p_l, p_lt)
+    pls = projectors_to_sparse_transposed(p_lb, p_l, p_lt, tRE)
     Rnew = permutedims(pls * R4new, (2, 1))
 
     Array(Rnew)

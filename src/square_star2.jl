@@ -195,12 +195,12 @@ function conditional_probability(  # TODO
         prf2 = projector(ctr.peps, (i, j, 2), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2)))
         pd2 = projector(ctr.peps, (i, j, 2), ((i+1, j, 1), (i+1, j, 2)))
 
-        @cast LMX5[x, y, v, p1, p2] := LMX[(v, p1, p2), (x, y)]  (p1 ∈ 1:maximum(plb1), p2 ∈ 1:maximum(plb2), y ∈ 1:1)
-        LMX3 =  @view LMX5[:, :, ∂v[2 * j - 1], ∂v[2 * j + 7], :]
-        @cast M4[x, y, p1, p2] := M[x, (p1, p2), y] (p2 ∈ 1:maximum(pd2))
-        M2 =  @view M4[:, :, ∂v[2 * j + 8], :]
-        @cast R4[x, y, p1, p2] := R[(x, y), (p1, p2)] (p2 ∈ 1:maximum(prf2), x ∈ 1:1)
-        R2 =  @view R4[:, :, ∂v[2 * j + 9], :]
+        @cast LMX5[x, y, v, p1, p2] := LMX[(v, p1, p2), (x, y)]  (p1 ∈ 1:maximum(plb1), p2 ∈ 1:maximum(plb2), y ∈ 1:1)  # problem: cast z permute jaka kolejnosc
+        LMX3 =  @view LMX5[:, :, ∂v[2 * j - 1], ∂v[2 * j + 7], :]   # view problem czy nie problem -- gdzie wrzucic "v" "p1"
+        @cast M4[x, y, p1, p2] := M[x, (p1, p2), y] (p2 ∈ 1:maximum(pd2))  # problem: cast z permute; jaka kolejnosc?
+        M2 =  @view M4[:, :, ∂v[2 * j + 8], :]   # view problem czy nie problem -- gdzie wrzucic "v" "p1"
+        @cast R4[x, y, p1, p2] := R[(x, y), (p1, p2)] (p2 ∈ 1:maximum(prf2), x ∈ 1:1)  # czy potrzebny permute (patrz nastepna linijka)
+        R2 =  @view R4[:, :, ∂v[2 * j + 9], :]   # view problem czy nie problem -- gdzie wrzucic "v" "p1"
 
         probs = ele .* dropdims(sum(LMX3[:, :, plb2[:]] .* M2[:, :, pd2[:]] .* R2[:, :, prf2[:]], dims=(1, 2)), dims=(1, 2))
     end

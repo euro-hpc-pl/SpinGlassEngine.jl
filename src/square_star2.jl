@@ -122,15 +122,13 @@ function conditional_probability(  # TODO
     i, j, k = ctr.current_node
 
     L = left_env(ctr, i, ∂v[1:2*j-2], indβ)
-    #L = CUDA.CuArray(L)
+    L = CUDA.CuArray(L)
     ψ = dressed_mps(ctr, i, indβ)
     MX, M = ψ[j - 1//2], ψ[j]
-    #MX, M = CUDA.CuArray(MX), CUDA.CuArray(M)
+    MX, M = CUDA.CuArray(MX), CUDA.CuArray(M)
     @tensor LMX[y, z] := L[x] * MX[x, y, z]
 
     if k == 1  # here has to avarage over s2
-        L = CUDA.CuArray(L)
-        MX, M = CUDA.CuArray(MX), CUDA.CuArray(M)
 
         R = CUDA.CuArray(right_env(ctr, i, ∂v[(2 * j + 12) : end], indβ))
 
@@ -162,7 +160,8 @@ function conditional_probability(  # TODO
         LMX = permutedims(LMX, (2, 1))
         @cast LMX5[x, y, v, p1, p2] := LMX[(x, y), (v, p1, p2)]  (p1 ∈ 1:maximum(plb1), p2 ∈ 1:maximum(plb2), y ∈ 1:1)
         LMX4 = @view LMX5[:, :, ∂v[2 * j - 1], :, :]
-        MX = permutedims(MX, (1, 3, 2))
+        LMX4 = CUDA.CuArray(LMX4)
+        M = permutedims(M, (1, 3, 2))
         @cast M4[x, y, p1, p2] := M[x, y, (p1, p2)] (p2 ∈ 1:maximum(pd2))
         @cast R4[x, y, p1, p2] := R[(x, y), (p1, p2)] (p2 ∈ 1:maximum(prf2), x ∈ 1:1)
         LR = dropdims(sum(LMX4[:, :, plb1[:], plb2[:]] .* M4[:, :, pd1[:], pd2[:]] .* R4[:, :, prf1[:], prf2[:]], dims=(1, 2)), dims=(1, 2))
@@ -171,11 +170,11 @@ function conditional_probability(  # TODO
         ele = exp.(-β .* (le .- minimum(le)))
 
         probs = dropdims(sum(LR .* ele, dims=2), dims=2)
-        probs = Array(probs)
+
 
     else  # k == 2
-        R = right_env(ctr, i, ∂v[(2 * j + 10) : end], indβ)
-        #R = CUDA.CuArray(right_env(ctr, i, ∂v[(2 * j + 10) : end], indβ))
+        #R = right_env(ctr, i, ∂v[(2 * j + 10) : end], indβ)
+        R = CUDA.CuArray(right_env(ctr, i, ∂v[(2 * j + 10) : end], indβ))
 
         eng_loc = local_energy(ctr.peps, (i, j, 2))
 
@@ -195,7 +194,7 @@ function conditional_probability(  # TODO
         p21 = projector(ctr.peps, (i, j, 2), (i, j, 1))
         eng_12 = @view en12[∂v[2 * j + 6], p21[:]]
 
-        le = eng_loc .+ eng_l[1] .+ eng_l[2] .+ eng_lu[1] .+ eng_lu[2] .+ eng_u[1] .+ eng_u[2] .+ eng_12
+        le = CUDA.CuArray(eng_loc .+ eng_l[1] .+ eng_l[2] .+ eng_lu[1] .+ eng_lu[2] .+ eng_u[1] .+ eng_u[2] .+ eng_12)
         ele = exp.(-β .* (le .- minimum(le)))
 
         plb1 = projector(ctr.peps, (i, j, 1), ((i+1, j-1, 1), (i+1, j-1, 2)))
@@ -203,16 +202,21 @@ function conditional_probability(  # TODO
         prf2 = projector(ctr.peps, (i, j, 2), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2)))
         pd2 = projector(ctr.peps, (i, j, 2), ((i+1, j, 1), (i+1, j, 2)))
 
-        @cast LMX5[x, y, v, p1, p2] := LMX[(v, p1, p2), (x, y)]  (p1 ∈ 1:maximum(plb1), p2 ∈ 1:maximum(plb2), y ∈ 1:1)  # problem: cast z permute jaka kolejnosc
+
+        LMX = permutedims(LMX, (2, 1))
+        @cast LMX5[x, y, v, p1, p2] := LMX[(x, y), (v, p1, p2)]  (p1 ∈ 1:maximum(plb1), p2 ∈ 1:maximum(plb2), y ∈ 1:1)  # problem: cast z permute jaka kolejnosc
         LMX3 =  @view LMX5[:, :, ∂v[2 * j - 1], ∂v[2 * j + 7], :]   # view problem czy nie problem -- gdzie wrzucic "v" "p1"
-        @cast M4[x, y, p1, p2] := M[x, (p1, p2), y] (p2 ∈ 1:maximum(pd2))  # problem: cast z permute; jaka kolejnosc?
+        LMX3 = CUDA.CuArray(LMX3)
+        M = permutedims(M, (1,3,2))
+        @cast M4[x, y, p1, p2] := M[x, y, (p1, p2)] (p2 ∈ 1:maximum(pd2))  # problem: cast z permute; jaka kolejnosc?
         M2 =  @view M4[:, :, ∂v[2 * j + 8], :]   # view problem czy nie problem -- gdzie wrzucic "v" "p1"
+        M2 = CUDA.CuArray(M2)
         @cast R4[x, y, p1, p2] := R[(x, y), (p1, p2)] (p2 ∈ 1:maximum(prf2), x ∈ 1:1)  # czy potrzebny permute (patrz nastepna linijka)
         R2 =  @view R4[:, :, ∂v[2 * j + 9], :]   # view problem czy nie problem -- gdzie wrzucic "v" "p1"
-
+        R2 = CUDA.CuArray(R2)
         probs = ele .* dropdims(sum(LMX3[:, :, plb2[:]] .* M2[:, :, pd2[:]] .* R2[:, :, prf2[:]], dims=(1, 2)), dims=(1, 2))
     end
-    #probs = Array(probs)
+    probs = Array(probs)
     push!(ctr.statistics, ((i, j), ∂v) => error_measure(probs))
     normalize_probability(probs)
 end

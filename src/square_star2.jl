@@ -424,8 +424,8 @@ function tensor(
     net::PEPSNetwork{T, Sparse}, node::PEPSNode, β::Real, ::Val{:central_d2}
 ) where {T <: AbstractGeometry}
     i, j = floor(Int, node.i), floor(Int, node.j)
-    T_NW_SE = dense_central_tensor(SparseCentralTensor(net, β, (i, j), (i+1, j+1)))
-    T_NE_SW = dense_central_tensor(SparseCentralTensor(net, β, (i, j+1), (i+1, j)))
+    T_NW_SE = SparseCentralTensor(net, β, (i, j), (i+1, j+1))
+    T_NE_SW = SparseCentralTensor(net, β, (i, j+1), (i+1, j))
     SparseDiagonalTensor(T_NW_SE, T_NE_SW, (size(T_NW_SE, 1) * size(T_NE_SW, 1), size(T_NW_SE, 2) * size(T_NE_SW, 2)))
 end
 

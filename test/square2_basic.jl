@@ -59,12 +59,16 @@ function run_test(instance, m, n, t, tran)
     @test norm_prob ≈ exct_prob
     push!(energies, sol.energies)
 
-    ψ1 = mps(ctr, 2, 4)
-    ψ1_top = mps_top(ctr, 1, 4)
-    ψ2 = mps(ctr2, 2, 4)
-    ψ2_top = mps_top(ctr2, 1, 4)
-    @test ψ1 * ψ2 ≈ 1.
-    @test ψ1_top * ψ2_top ≈ 1.
+    for ii in 1 : m
+        ψ1 = mps(ctr, ii + 1, 4)
+        ψ1_top = mps_top(ctr, ii, 4)
+        ψ2 = mps(ctr2, ii + 1, 4)
+        ψ2_top = mps_top(ctr2, ii, 4)
+        o = ψ1 * ψ2 / sqrt((ψ1 * ψ1) * (ψ2 * ψ2))
+        o_top = ψ1_top * ψ2_top / sqrt((ψ1_top * ψ1_top) * (ψ2_top * ψ2_top))
+        @test o ≈ 1.
+        @test o_top ≈ 1.
+    end
     clear_memoize_cache()
 end
 

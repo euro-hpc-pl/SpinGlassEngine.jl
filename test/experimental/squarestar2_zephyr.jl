@@ -4,8 +4,8 @@ function brute_force_gpu(ig::IsingGraph; num_states::Int)
      brute_force(ig, :GPU, num_states=num_states)
 end
 
-m = 4 #6 for Z3
-n = 4 #6
+m = 6 # for Z3
+n = 6
 t = 4
 
 β = 2
@@ -13,7 +13,7 @@ bond_dim = 2
 δp = 1e-10
 num_states = 128
 
-ig = ising_graph("$(@__DIR__)/../instances/zephyr/z2.txt")
+ig = ising_graph("$(@__DIR__)/../instances/zephyr/z3.txt")
 
 fg = factor_graph(
     ig,

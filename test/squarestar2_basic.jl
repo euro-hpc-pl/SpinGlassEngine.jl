@@ -66,7 +66,7 @@ function run_test(instance, m, n, t, tran)
 
     println("Eng = ", sol.energies[1])
 
-    for ii in 1 : m
+    for ii in 1 : ctr.peps.nrows
         ψ1 = mps(ctr, ii + 1, 4)
         ψ1_top = mps_top(ctr, ii, 4)
         ψ2 = mps(ctr2, ii + 1, 4)

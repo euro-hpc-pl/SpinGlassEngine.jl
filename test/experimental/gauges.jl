@@ -1,7 +1,6 @@
 using SpinGlassNetworks
 using SpinGlassTensors
 using SpinGlassEngine
-using Memoize
 
 m = 4
 n = 4

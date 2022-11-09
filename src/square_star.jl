@@ -219,14 +219,13 @@ function update_reduced_env_right(
     K = CUDA.CuArray(K)
     B = CUDA.CuArray(B)
     RE = CUDA.CuArray(RE)
-    tRE = typeof(RE)
 
     p_lb, p_l, p_lt, p_rb, p_r, p_rt = M.projs
 
     @cast K2[t1, t2] := K[(t1, t2)] (t1 ∈ 1:maximum(p_lt))
     @cast B4[x, k, l, y] := B[x, (k, l), y] (k ∈ 1:maximum(p_lb))
-    
-    prs = projectors_to_sparse(p_rb, p_r, p_rt, tRE)
+
+    prs = CUSPARSE.CuSparseMatrixCSC(T, p_rb, p_r, p_rt)
     RE = permutedims(RE, (2, 1))
     R4 = prs * RE
     @cast R4[rb, r, rt, b] := R4[(rb, r, rt), b] (rb ∈ 1:maximum(p_rb), r ∈ 1:maximum(p_r))
@@ -234,7 +233,7 @@ function update_reduced_env_right(
     @tensor R4new[lb, l, lt, nb] := R4[rb, r, rt, b] * K2[lt, rt] * B4[nb, lb, rb, b] * h[l, r]
 
     @cast R4new[(nrb, nr, nrt), nb] := R4new[nrb, nr, nrt, nb]
-    pls = projectors_to_sparse_transposed(p_lb, p_l, p_lt, tRE)
+    pls = CUSPARSE.CuSparseMatrixCSR(T, p_lb, p_l, p_lt)
     Rnew = permutedims(pls * R4new, (2, 1))
 
     Array(Rnew)
@@ -306,7 +305,7 @@ function tensor(
     i, j = floor(Int, node.i), floor(Int, node.j)
     T_NW_SE = connecting_tensor(net, (i, j), (i+1, j+1), β)
     T_NE_SW = connecting_tensor(net, (i, j+1), (i+1, j), β)
-    @cast A[(u, uu), (dd, d)] := T_NW_SE[u, d] * T_NE_SW[uu, dd] 
+    @cast A[(u, uu), (dd, d)] := T_NW_SE[u, d] * T_NE_SW[uu, dd]
     A
 end
 
@@ -372,5 +371,3 @@ function tensor(
     # @cast B[l, (uu, u), r, (dd, d)] := A[l, uu, u, r, dd, d]
     # B
 end
-
-

@@ -50,8 +50,8 @@ push!(my_tests,
      "search_pegasus_nodiag_square_star.jl",
      "search_square2_basic.jl",
      "search_squarestar2_basic.jl",
-     "search_chimera_gauge.jl",
-     "search_chimera_pathological_gauge.jl",
+     #"search_chimera_gauge.jl",
+     #"search_chimera_pathological_gauge.jl",
 
 # time consuming tests:
     #"search_chimera_full.jl",

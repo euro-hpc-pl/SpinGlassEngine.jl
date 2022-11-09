@@ -46,14 +46,12 @@ push!(my_tests,
      "search_chimera_smallest.jl",
      "search_cross_square_star.jl",
      "search_smallest_cross_square_star.jl",
-     "search_cross_square_star.jl",
-     "search_smallest_cross_square_star.jl",
      "search_pegasus_square_star.jl",
      "search_pegasus_nodiag_square_star.jl",
-     "square2_basic.jl",
-     "squarestar2_basic.jl",
-    #  "search_chimera_gauge.jl",
-    #  "search_chimera_pathological_gauge.jl",
+     "search_square2_basic.jl",
+     "search_squarestar2_basic.jl",
+     "search_chimera_gauge.jl",
+     "search_chimera_pathological_gauge.jl",
 
 # time consuming tests:
     #"search_chimera_full.jl",
@@ -63,18 +61,9 @@ push!(my_tests,
 
 push!(my_tests,
     #"experimental/chimera_overlap_python.jl", # OK
-    #"experimental/cross_square_star_prob.jl",
-    #"experimental/square2_heavy.jl",
-    # "experimental/squarestar2_heavy.jl",
-    #
+    # "experimental/gauges.jl",
     # "experimental/squarestar2_pegasus.jl",
     # "experimental/squarestar2_zephyr.jl",
-    # "experimental/search_pegasus_square2.jl",
-    # "experimental/search_pegasus_squarestar2.jl",
-
-    # "experimental/gauges.jl",
-    # "experimental/memoization.jl",
-    # "experimental/experiments_with_sparse_chimera.jl"
 )
 
 

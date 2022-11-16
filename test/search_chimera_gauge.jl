@@ -3,7 +3,7 @@
     m, n, t = 8, 8, 8
     L = n * m * t
 
-    β = 1.0
+    β = 2.0
     BOND_DIM = 32
     MAX_STATES = 500
     MAX_SWEEPS = 10
@@ -11,8 +11,8 @@
     TOL_SVD = 1E-16
     DE = 16.0
     δp = 1E-5*exp(-β * DE)
-    instance = "$(@__DIR__)/instances/J124/C=8_J124/001.txt"
-    INDβ = [3,]
+    instance = "$(@__DIR__)/instances/chimera_droplets/512power/001.txt"
+    INDβ = [1, 2, 3,]
     ig = ising_graph(instance)
     fg = factor_graph(
         ig,
@@ -26,8 +26,8 @@
 
     energies = Vector{Float64}[]
     for Strategy ∈ (SVDTruncate,), Sparsity ∈ (Dense,)
-        for Layout ∈ (EngGaugesEng,)
-            for transform ∈ all_lattice_transformations[[1,2,5,6,7]]
+        for Layout ∈ (GaugesEnergy,)
+            for transform ∈ all_lattice_transformations
                 net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
                 ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params)
                 update_gauges!(ctr, m, INDβ, Val(:up))
@@ -40,13 +40,13 @@
                 @test sol.energies ≈ energy.(Ref(fg), fg_states)
 
                 norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
-                @test norm_prob ≈ exp.(-β .* (sol.energies .- sol.energies[1]))
-                #println(norm_prob/exp.(-β .* (sol.energies .- sol.energies[1])))
-
-                push!(energies, sol.energies)
+                # println( maximum(abs.(norm_prob ./ exp.(-β .* (sol.energies .- sol.energies[1]))) .- 1 ))
+                @test norm_prob ≈ exp.(-β .* (sol.energies .- sol.energies[1]))   # test up to 1e-5
+                push!(energies, sol.energies[1 : Int(ceil(MAX_STATES / 4))])
                 clear_memoize_cache()
             end
         end
     end
-    #@test all(e -> e ≈ first(energies), energies)
+    println(energies)
+    @test all(e -> e ≈ first(energies), energies)
 end

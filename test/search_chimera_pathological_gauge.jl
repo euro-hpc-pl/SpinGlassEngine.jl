@@ -4,7 +4,7 @@
     β = 1.0
     bond_dim = 16
     num_states = 22
-    INDβ = [3,]
+    INDβ = [1, 2, 3]
 
     # energies
     exact_energies =
@@ -67,9 +67,9 @@
     Gauge = GaugeStrategy
 
     energies = Vector{Float64}[]
-    for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, )
-        for Layout ∈ (EngGaugesEng,)
-            for Lattice ∈ (Square, ), transform ∈ all_lattice_transformations[[1,2,5,6,7]]
+    for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, Sparse)
+        for Layout ∈ (EngGaugesEng, GaugesEnergy, EnergyGauges)
+            for Lattice ∈ (Square, ), transform ∈ all_lattice_transformations
 
                 net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform)
                 ctr = MpsContractor{Strategy, Gauge}(net, [β/6., β/3., β/2., β], :graduate_truncate, params)

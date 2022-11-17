@@ -31,6 +31,15 @@ function tensor(
     )
 end
 
+# TODO: This is how the engine should work
+#=
+function (peps::PEPSNetwork)(::Type{Tensor{OnSite}}, v::PEPSNode, β::Real)
+    # ...
+end
+
+ten = peps(Tensor{OnSite}, v, β)
+=#
+
 """
 $(TYPEDSIGNATURES)
 

@@ -23,7 +23,6 @@ end
 
 include("network_operations.jl")
 include("network_interface.jl")
-include("MPS_search.jl")
 include("PEPS.jl")
 include("network_tensors.jl")
 include("search.jl")

@@ -9,19 +9,13 @@ export
     dressed_mps,
     mpo, mps
 
-function assign_tensors!(network::PEPSNetwork{false})
+function assign_tensors!(network::PEPSNetwork)
     _types = (:site, :central_h, :central_v, :gauge_h)
     for type ∈ _types
         push!(network.tensor_spiecies, tensor_assignment(network, type)...)
-    end 
+    end
 end
 
-function assign_tensors!(network::PEPSNetwork{true})
-    _types = (:site, :central_h, :central_v, :virtual, :central_d, :gauge_h)
-    for type ∈ _types
-        push!(network.tensor_spiecies, tensor_assignment(network, type)...)
-    end 
-end
 
 tensor_assignment(
     network::AbstractGibbsNetwork{S, T},
@@ -54,34 +48,9 @@ tensor_assignment(
 
 
 tensor_assignment(
-    network::PEPSNetwork{false},
-    ::Val{:gauge_h}
+    network::PEPSNetwork, ::Val{:gauge_h}
 ) = Dict((i + δ, j) => :gauge_h
     for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols, δ ∈ (1//6, 2//6, 4//6, 5//6)
-)
-
-
-tensor_assignment(
-    network::PEPSNetwork{true},
-    ::Val{:gauge_h}
-) = Dict((i + δ, r) => :gauge_h
-    for i ∈ 1:network.nrows-1, r ∈ 1:1//2:network.ncols, δ ∈ (1//6, 2//6, 4//6, 5//6)
-)
-
-
-tensor_assignment(
-    network::PEPSNetwork{true},
-    ::Val{:virtual}
-) = Dict(
-    (i, j + 1//2) => :virtual for i ∈ 1:network.nrows, j ∈ 1:network.ncols-1
-)
-
-
-tensor_assignment(
-    network::PEPSNetwork{true},
-    ::Val{:central_d}
-) = Dict(
-    (i + 1//2, j + 1//2) => :central_d for i ∈ 1:network.nrows-1, j ∈ 1:network.ncols-1
 )
 
 
@@ -275,7 +244,7 @@ end
 
 
 function reduced_site_tensor(
-    network::PEPSNetwork{false}, v::Tuple{Int, Int}, l::Int, u::Int
+    network::PEPSNetwork, v::Tuple{Int, Int}, l::Int, u::Int
 )
     i, j = v
     eng_local = local_energy(network, v)
@@ -297,40 +266,8 @@ function reduced_site_tensor(
 end
 
 
-function reduced_site_tensor(
-    network::PEPSNetwork{true}, v::Tuple{Int, Int}, ld::Int, l::Int, d::Int, u::Int
-)
-    i, j = v
-    eng_local = local_energy(network, v)
-
-    pl = projector(network, v, (i, j-1))
-    eng_pl = interaction_energy(network, v, (i, j-1))
-    @matmul eng_left[x] := sum(y) pl[x, y] * eng_pl[y, $l]
-
-    pd = projector(network, v, (i-1, j-1))
-    eng_pd = interaction_energy(network, v, (i-1, j-1))
-    @matmul eng_diag[x] := sum(y) pd[x, y] * eng_pd[y, $d]
-
-    pu = projector(network, v, (i-1, j))
-    eng_pu = interaction_energy(network, v, (i-1, j))
-    @matmul eng_up[x] := sum(y) pu[x, y] * eng_pu[y, $u]
-
-    en = eng_local .+ eng_left .+ eng_diag .+ eng_up
-    loc_exp = exp.(-network.β .* (en .- minimum(en)))
-
-    p_lb = projector(network, (i, j-1), (i+1, j))
-    p_rb = projector(network, (i, j), (i+1, j-1))
-    pr = projector(network, v, ((i+1, j+1), (i, j+1), (i-1, j+1)))
-    pd = projector(network, v, (i+1, j))
-
-    @cast A[r, d, (k̃, k), σ] := p_rb[σ, k] * p_lb[$ld, k̃] * pr[σ, r] *
-                                pd[σ, d] * loc_exp[σ]
-    A
-end
-
-
 function tensor_size(
-    network::PEPSNetwork{false}, v::Tuple{Int, Int}, ::Val{:reduced}
+    network::PEPSNetwork, v::Tuple{Int, Int}, ::Val{:reduced}
 )
     i, j = v
     pr = projector(network, v, (i, j+1))

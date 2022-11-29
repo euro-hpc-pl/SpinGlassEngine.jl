@@ -142,15 +142,12 @@ Construct (and memoize) top MPS using SVD for a given row.
     ψ0 = dot(ψ, W)
     canonise!(ψ0, :right)
     if ctr.graduate_truncation == :graduate_truncate
-        canonise_truncate!(ψ0, :left, Dcut * 4, tolS / 10)
-        #canonise!(ψ0, :right)
-        variational_sweep!(ψ0, W, ψ, Val(:right), trans)
         canonise_truncate!(ψ0, :left, Dcut * 2, tolS / 2)
-        #canonise!(ψ0, :right)
+        # canonise!(ψ0, :right)
         variational_sweep!(ψ0, W, ψ, Val(:right), trans)
     end
     canonise_truncate!(ψ0, :left, Dcut, tolS)
-    # variational_compress!(ψ0, W, ψ, tolV, max_sweeps, trans)
+    variational_compress!(ψ0, W, ψ, tolV, max_sweeps, trans)
     ψ0
 end
 
@@ -192,19 +189,19 @@ $(TYPEDSIGNATURES)
 
 Construct (and memoize) top MPS using SVD for a given row.
 """
-@memoize Dict function mps_top_approx(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
-    if i < 1
-        W = mpo(ctr, ctr.layers.main, 1, indβ)
-        return IdentityQMps(local_dims(W, :up))
-    end
+# @memoize Dict function mps_top_approx(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
+#     if i < 1
+#         W = mpo(ctr, ctr.layers.main, 1, indβ)
+#         return IdentityQMps(local_dims(W, :up))
+#     end
 
-    W = mpo(ctr, ctr.layers.main, i, indβ)
-    ψ = IdentityQMps(local_dims(W, :up))
+#     W = mpo(ctr, ctr.layers.main, i, indβ)
+#     ψ = IdentityQMps(local_dims(W, :up))
 
-    ψ0 = dot(ψ, W)
-    truncate!(ψ0, :left, ctr.params.bond_dimension)
-    ψ0
-end
+#     ψ0 = dot(ψ, W)
+#     truncate!(ψ0, :left, ctr.params.bond_dimension)
+#     ψ0
+# end
 
 """
 $(TYPEDSIGNATURES)

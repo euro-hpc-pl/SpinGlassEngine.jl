@@ -22,12 +22,12 @@ M, N, T = 3, 3, 3
 INSTANCE_DIR = "$(@__DIR__)/../test/instances/pegasus_random/P4/RAU/SpinGlass"
 OUTPUT_DIR = "$(@__DIR__)/results/pegasus_random/P4/RAU"
 
-BETAS =  collect(0.5:0.5:3)
+BETAS =  [2,] #collect(0.5:0.5:3)
 LAYOUT = (GaugesEnergy,)
 TRANSFORM = all_lattice_transformations
 
 GAUGE =  NoUpdate
-STRATEGY = SVDTruncate
+STRATEGY = MPSAnnealing #SVDTruncate
 SPARSITY = Sparse
 graduate_truncation = :graduate_truncate
 
@@ -56,7 +56,6 @@ function pegasus_sim(inst, trans, β, Layout)
   
     net = PEPSNetwork{SquareStar2{Layout}, SPARSITY}(M, N, fg, trans)
     ctr = MpsContractor{STRATEGY, GAUGE}(net, [β/6, β/3, β/2, β], graduate_truncation, params)
-    
     sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 
     cRAM = round(Base.summarysize(Memoization.caches) * 1E-9; sigdigits=2)
@@ -115,7 +114,8 @@ all_params = collect(
         readdir(INSTANCE_DIR, join=false), BETAS, TRANSFORM, LAYOUT)
 )
 
-for i ∈ (1+rank):size:length(all_params)
-    run_bench(all_params[i]...)
-    GC.gc()
-end
+# for i ∈ (1+rank):size:length(all_params)
+#     run_bench(all_params[i]...)
+#     GC.gc()
+# end
+run_bench(all_params[1]...)

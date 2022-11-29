@@ -40,23 +40,23 @@ my_tests = []
 
 push!(my_tests,
 # quick tests:
-    "operations.jl",
-    "branch_and_bound.jl",
-    "search_chimera_pathological.jl",
-    "search_chimera_smallest.jl",
-    "search_cross_square_star.jl",
-    "search_smallest_cross_square_star.jl",
-    "search_pegasus_square_star.jl",
-    "search_pegasus_nodiag_square_star.jl",
+    # "operations.jl",
+    # "branch_and_bound.jl",
+    # "search_chimera_pathological.jl",
+    # "search_chimera_smallest.jl",
+    # "search_cross_square_star.jl",
+    # "search_smallest_cross_square_star.jl",
+    # "search_pegasus_square_star.jl",
+    # "search_pegasus_nodiag_square_star.jl",
     "search_square2_basic.jl",
-    "search_squarestar2_basic.jl",
-    "search_chimera_pathological_gauge.jl",
-    "chimera_overlap_python.jl",
+    # "search_squarestar2_basic.jl",
+    # "search_chimera_pathological_gauge.jl",
+    # "chimera_overlap_python.jl",
     
 # time consuming tests:
-    "search_chimera_full.jl",
-    "search_chimera_gauge.jl",
-    "gauges.jl"
+    # "search_chimera_full.jl",
+    # "search_chimera_gauge.jl",
+    # "gauges.jl"
 )
 
 # This is work in progress (may or may not be included in future versions)

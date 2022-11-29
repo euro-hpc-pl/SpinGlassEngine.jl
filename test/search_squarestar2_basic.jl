@@ -8,7 +8,7 @@ using Test
 
 function run_test(instance, m, n, t, tran)
     β = 2
-    bond_dim = 64
+    bond_dim = 16
     δp = 1e-10
     num_states = 512
 
@@ -30,17 +30,18 @@ function run_test(instance, m, n, t, tran)
 
     # Solve using PEPS search
     energies = Vector{Float64}[]
-    Strategy = MPSAnnealing #SVDTruncate
+    Strategy =  SVDTruncate # MPSAnnealing #
     Sparsity = Sparse
     # tran = rotation(0)
     Layout = GaugesEnergy
     Gauge = NoUpdate
+    βs = [β/16, β/8, β/4, β/2, β]
 
     net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, tran)
     net2 = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, fg2, tran)
 
-    ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params)
-    ctr2 = MpsContractor{Strategy, Gauge}(net2, [β/8, β/4, β/2, β], :graduate_truncate, params)
+    ctr = MpsContractor{Strategy, Gauge}(net, βs, :graduate_truncate, params)
+    ctr2 = MpsContractor{Strategy, Gauge}(net2, βs, :graduate_truncate, params)
 
     sol = low_energy_spectrum(ctr, search_params) #, merge_branches(ctr))
     sol2 = low_energy_spectrum(ctr2, search_params) #, merge_branches(ctr2))
@@ -66,15 +67,29 @@ function run_test(instance, m, n, t, tran)
 
     println("Eng = ", sol.energies[1])
 
-    for ii in 1 : ctr.peps.nrows
-        ψ1 = mps(ctr, ii + 1, 4)
-        ψ1_top = mps_top(ctr, ii, 4)
-        ψ2 = mps(ctr2, ii + 1, 4)
-        ψ2_top = mps_top(ctr2, ii, 4)
-        o = ψ1 * ψ2 / sqrt((ψ1 * ψ1) * (ψ2 * ψ2))
-        o_top = ψ1_top * ψ2_top / sqrt((ψ1_top * ψ1_top) * (ψ2_top * ψ2_top))
-        @test o ≈ 1.
-        @test o_top ≈ 1.
+    for ii ∈ 1 : ctr.peps.nrows + 1
+        for jj = 1 : length(βs)
+            ψ1 = mps(ctr, ii, jj)
+            ψ2 = mps(ctr2, ii, jj)
+            o = ψ1 * ψ2 / sqrt((ψ1 * ψ1) * (ψ2 * ψ2))
+            println(" mps; tran, i = " , tran,  ii, " jj = ", jj)
+            println(bond_dimensions(ψ1))
+            println(bond_dimensions(ψ2))
+            println(o)
+            @test o ≈ 1.
+        end
+    end
+    for ii ∈ 0 : ctr.peps.nrows
+        for jj = 1 : length(βs)
+            ψ1_top = mps_top(ctr, ii, jj)
+            ψ2_top = mps_top(ctr2, ii, jj)
+            o_top = ψ1_top * ψ2_top / sqrt((ψ1_top * ψ1_top) * (ψ2_top * ψ2_top))
+            println(" mps_top; tran, i = " , tran, " ",  ii, " jj = ", jj)
+            println(bond_dimensions(ψ1_top))
+            println(bond_dimensions(ψ2_top))
+            println(o_top)
+            @test o_top ≈ 1.
+        end
     end
 
     clear_memoize_cache()
@@ -83,6 +98,6 @@ end
 
 instance = "$(@__DIR__)/instances/pathological/pegasus_3_4_1.txt"
 m, n, t = 3, 4, 1
-for tran ∈ all_lattice_transformations
+for tran ∈ all_lattice_transformations[[6]]
     run_test(instance, m, n, t, tran)
 end

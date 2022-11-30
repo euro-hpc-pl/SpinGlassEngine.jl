@@ -6,7 +6,7 @@ Size description:
 P4 - 3x3x3 with 216 spins and 1324 couplings
 P8 - 7x7x3 with 1176 spins and 8107 couplings (1 missing edge compared to "perfect" P8 graph)
 P12 - 11x11x3 with 2900 spins and 20 592 couplings (4 missnig nodes and 60 missing edges compared to "perfect" P12 graph)
-P16 - 11x11x3 with 5 376 spins and 38 615 couplings (24 missnig nodes and 341 missing edges compared to "perfect" P16 graph)
+P16 - 15x15x3 with 5 376 spins and 38 615 couplings (24 missnig nodes and 341 missing edges compared to "perfect" P16 graph)
 ------------------------------------------------------------------------
 Category description:
 (Here category describes how we generated biases and couplings values)

@@ -143,7 +143,6 @@ Construct (and memoize) top MPS using SVD for a given row.
     canonise!(ψ0, :right)
     if ctr.graduate_truncation == :graduate_truncate
         canonise_truncate!(ψ0, :left, Dcut * 2, tolS / 2)
-        # canonise!(ψ0, :right)
         variational_sweep!(ψ0, W, ψ, Val(:right), trans)
     end
     canonise_truncate!(ψ0, :left, Dcut, tolS)
@@ -174,8 +173,6 @@ Construct (and memoize) (bottom) MPS using SVD for a given row.
     ψ0 = dot(W, ψ)
     canonise!(ψ0, :right)
     if ctr.graduate_truncation == :graduate_truncate
-        canonise_truncate!(ψ0, :left, Dcut * 4, tolS / 10)
-        variational_sweep!(ψ0, W, ψ, Val(:right), trans)
         canonise_truncate!(ψ0, :left, Dcut * 2, tolS / 2)
         variational_sweep!(ψ0, W, ψ, Val(:right), trans)
     end

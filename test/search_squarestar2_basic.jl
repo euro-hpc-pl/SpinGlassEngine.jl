@@ -72,7 +72,6 @@ function run_test(instance, m, n, t)
                 for ii ∈ 0 : ctr.peps.nrows, jj ∈ 1 : length(βs)
                     ψ1_top, ψ2_top = mps_top(ctr, ii, jj),  mps_top(ctr2, ii, jj)
                     o_top = ψ1_top * ψ2_top / sqrt((ψ1_top * ψ1_top) * (ψ2_top * ψ2_top))
-                    println(tran, " ", Layout, " ", Strategy, " ", Sparsity, " ", ii, " ", jj, " ", o_top)
                     @test o_top ≈ 1.
                 end
                 clear_memoize_cache()

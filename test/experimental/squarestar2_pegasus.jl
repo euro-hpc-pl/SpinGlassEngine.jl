@@ -4,8 +4,8 @@ function brute_force_gpu(ig::IsingGraph; num_states::Int)
      brute_force(ig, :GPU, num_states=num_states)
 end
 
-m = 4
-n = 4
+m = 3
+n = 3
 t = 3
 
 β = 2
@@ -13,7 +13,8 @@ bond_dim = 3
 δp = 1e-10
 num_states = 128
 
-ig = ising_graph("$(@__DIR__)/../instances/pegasus_droplets/4_4_3_00.txt")
+#ig = ising_graph("$(@__DIR__)/../instances/pegasus_droplets/4_4_3_00.txt")
+ig = ising_graph("$(@__DIR__)/../instances/pegasus_random/P4/RAU/SpinGlass/001_sg.txt")
 
 fg = factor_graph(
     ig,
@@ -28,7 +29,7 @@ search_params = SearchParameters(num_states, δp)
 energies = Vector{Float64}[]
 Strategy = MPSAnnealing # SVDTruncate
 Sparsity = Sparse #Dense
-tran =  rotation(0)
+tran =  LatticeTransformation((3, 4, 1, 2), false)
 Layout = EnergyGauges
 Gauge = NoUpdate
 

@@ -10,6 +10,7 @@ using TensorCast
 using MetaGraphs
 using Memoization
 using LinearAlgebra, MKL
+using NNlib, NNlibCUDA
 using LightGraphs
 using ProgressMeter
 using Statistics

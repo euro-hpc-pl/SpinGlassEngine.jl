@@ -248,29 +248,62 @@ function update_reduced_env_right(
     B::Array{T, 3}
 ) where T <: Real
 
-    B = CUDA.CuArray(B)
-    RE = CUDA.CuArray(RE)
-    @tensor REB[x, y, β] := B[x, y, α] * RE[α, β]
+    B, RE, loc_exp, K = CUDA.CuArray.((B, RE, M.loc_exp, K))
 
-    loc_exp = CUDA.CuArray(M.loc_exp)
-    K = CUDA.CuArray(K[M.projs[2]])
-    Kloc_exp = loc_exp .* K
+    Kloc_exp = loc_exp .* K[M.projs[2]]
 
-    ind43 = M.projs[4] .+ ((M.projs[3] .- 1) .* maximum(M.projs[4]))
-    @cast REB2[x, (y, z)] := REB[x, y, z]
-    @inbounds Rσ = REB2[:, ind43]
-    Rσ = CUDA.CuArray(Rσ)
+    B = permutedims(B, (1, 3, 2))
+    RE = reshape(RE, (size(RE, 1), 1, size(RE, 2)))
 
-    RR = reshape(Kloc_exp, 1, :) .* Rσ
+    Bp = B[:, :, M.projs[4]]
+    REp = RE[:, :, M.projs[3]]
+
+    outp = dropdims(Bp ⊠ REp, dims=2)
+    outp .*= reshape(Kloc_exp, 1, :)
 
     pl = M.projs[1]
     csrRowPtr = CuArray(collect(1:length(pl) + 1))
     csrColInd = CuArray(pl)
     csrNzVal = CUDA.ones(Float64, length(pl))
     ipl = CUSPARSE.CuSparseMatrixCSC(csrRowPtr, csrColInd, csrNzVal, (maximum(pl), length(pl))) # transposed right here
-    RRR = ipl * RR'
+    RRR = ipl * outp'
     Array(RRR')
 end
+
+
+# """
+# $(TYPEDSIGNATURES)
+# """
+# function update_reduced_env_right(
+#     K::Array{T, 1},
+#     RE::Array{T, 2},
+#     M::SparseSiteTensor,
+#     B::Array{T, 3}
+# ) where T <: Real
+
+#     B = CUDA.CuArray(B)
+#     RE = CUDA.CuArray(RE)
+#     @tensor REB[x, y, β] := B[x, y, α] * RE[α, β]
+
+#     loc_exp = CUDA.CuArray(M.loc_exp)
+#     K = CUDA.CuArray(K[M.projs[2]])
+#     Kloc_exp = loc_exp .* K
+
+#     ind43 = M.projs[4] .+ ((M.projs[3] .- 1) .* maximum(M.projs[4]))
+#     @cast REB2[x, (y, z)] := REB[x, y, z]
+#     @inbounds Rσ = REB2[:, ind43]
+#     Rσ = CUDA.CuArray(Rσ)
+
+#     RR = reshape(Kloc_exp, 1, :) .* Rσ
+
+#     pl = M.projs[1]
+#     csrRowPtr = CuArray(collect(1:length(pl) + 1))
+#     csrColInd = CuArray(pl)
+#     csrNzVal = CUDA.ones(Float64, length(pl))
+#     ipl = CUSPARSE.CuSparseMatrixCSC(csrRowPtr, csrColInd, csrNzVal, (maximum(pl), length(pl))) # transposed right here
+#     RRR = ipl * RR'
+#     Array(RRR')
+# end
 
 """
 $(TYPEDSIGNATURES)

@@ -1,4 +1,4 @@
-export SquareStar, update_reduced_env_right
+export SquareStar
 
 struct SquareStar{T <: AbstractTensorsLayout} <: AbstractGeometry end
 
@@ -199,45 +199,6 @@ function conditional_probability(
     normalize_probability(probs)
 end
 
-
-"""
-$(TYPEDSIGNATURES)
-"""
-function update_reduced_env_right(
-    K::Array{T, 1},
-    RE::Array{T, 2},
-    M::SparseVirtualTensor,
-    B::Array{T, 3}
-) where T <: Real
-    h = M.con
-    if typeof(h) == SparseCentralTensor
-        h = cuda_dense_central_tensor(h)
-    else
-        h = CUDA.CuArray(h)
-    end
-
-    K = CUDA.CuArray(K)
-    B = CUDA.CuArray(B)
-    RE = CUDA.CuArray(RE)
-
-    p_lb, p_l, p_lt, p_rb, p_r, p_rt = M.projs
-
-    @cast K2[t1, t2] := K[(t1, t2)] (t1 ∈ 1:maximum(p_lt))
-    @cast B4[x, k, l, y] := B[x, (k, l), y] (k ∈ 1:maximum(p_lb))
-
-    prs = CUSPARSE.CuSparseMatrixCSC(T, p_rb, p_r, p_rt)
-    RE = permutedims(RE, (2, 1))
-    R4 = prs * RE
-    @cast R4[rb, r, rt, b] := R4[(rb, r, rt), b] (rb ∈ 1:maximum(p_rb), r ∈ 1:maximum(p_r))
-
-    @tensor R4new[lb, l, lt, nb] := R4[rb, r, rt, b] * K2[lt, rt] * B4[nb, lb, rb, b] * h[l, r]
-
-    @cast R4new[(nrb, nr, nrt), nb] := R4new[nrb, nr, nrt, nb]
-    pls = CUSPARSE.CuSparseMatrixCSR(T, p_lb, p_l, p_lt)
-    Rnew = permutedims(pls * R4new, (2, 1))
-
-    Array(Rnew)
-end
 
 
 """

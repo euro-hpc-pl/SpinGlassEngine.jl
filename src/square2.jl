@@ -370,7 +370,7 @@ function SparseCentralTensor(network::PEPSNetwork{T, S}, β::Real, node1::NTuple
     sl = maximum(p1l) * maximum(p2l)
     sr = maximum(p1r) * maximum(p2r)
 
-    SparseCentralTensor(
+    SpinGlassTensors.SparseCentralTensor(
         le11,
         le12,
         le21,

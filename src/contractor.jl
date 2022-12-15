@@ -219,6 +219,16 @@ Construct (and memoize) (bottom) MPS using SVD for a given row.
     ψ0
 end
 
+#=
+function (ctr::MpsContractor)(peps::PEPSNetwork, ...., :mps_top)
+
+for ctr ∈ [ctr_1, ctr_2]
+    mpo_1 = ctr_1(peps, ..., :mpo)
+    mpo_2 = ctr_2(peps, ..., :mpo)
+
+    #@nexprs 2 k k -> mpo_k = ctr_k(peps, ..., :mpo)
+end
+=#
 
 """
 $(TYPEDSIGNATURES)

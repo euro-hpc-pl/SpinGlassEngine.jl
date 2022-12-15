@@ -25,7 +25,7 @@ $(TYPEDSIGNATURES)
 function tensor(
     net::PEPSNetwork{T, S}, v::PEPSNode, β::Real, ::Val{:sparse_site}
 ) where {T <: AbstractGeometry, S}
-    SparseSiteTensor(
+    SiteTensor(
         probability(local_energy(net, Node(v)), β),
         projectors_site_tensor(net, Node(v))
     )
@@ -33,11 +33,11 @@ end
 
 # TODO: This is how the engine should work
 #=
-function (peps::PEPSNetwork)(::Type{Tensor{OnSite}}, v::PEPSNode, β::Real)
+function (peps::PEPSNetwork)(::Type{SparseCentralTensor}, v::PEPSNode, β::Real)
     # ...
 end
 
-ten = peps(Tensor{OnSite}, v, β)
+ten = peps(SparseCentralTensor, v, β)
 =#
 
 """

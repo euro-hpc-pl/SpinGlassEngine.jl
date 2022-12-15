@@ -297,7 +297,7 @@ function tensor(
     pr = last(fuse_projectors(
         @ntuple 3 k->projector(net, (i, j+1), (i+2-k, j)) # p_rb, p_r, p_rt
     ))
-    SparseVirtualTensor(
+    VirtualTensor(
        connecting_tensor(net, floor.(Int, v), ceil.(Int, v), β),
        vec.((pl..., pr...))
     )

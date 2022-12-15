@@ -150,7 +150,7 @@ function conditional_probability(
         en12 = interaction_energy(ctr.peps, (i, j, 1), (i, j, 2))
         p12 = projector(ctr.peps, (i, j, 1), (i, j, 2))
         p21 = projector(ctr.peps, (i, j, 2), (i, j, 1))
-        
+
         pr1 = projector(ctr.peps, (i, j, 1), ((i, j+1, 1), (i, j+1, 2)))
         pr2 = projector(ctr.peps, (i, j, 2), ((i, j+1, 1), (i, j+1, 2)))
         pd1 = projector(ctr.peps, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
@@ -270,7 +270,7 @@ function tensor(
     en12 = projected_energy(net, v_1, v_2)
     @cast eloc12[(x, y)] := en12[x, y] + en_1[x] + en_2[y]
 
-    SparseSiteTensor(
+    SiteTensor(
         exp.(-β .* (eloc12 .- minimum(eloc12))),
         projectors_site_tensor(net, Node(node))
     )
@@ -297,7 +297,7 @@ function tensor(
     network::PEPSNetwork{T, Sparse}, node::PEPSNode, β::Real, ::Val{:central_h2}
 ) where {T <: AbstractGeometry}
     i, j = node.i, floor(Int, node.j)
-    SparseCentralTensor(network, β, (i, j), (i, j+1))
+    CentralTensor(network, β, (i, j), (i, j+1))
 end
 
 """
@@ -307,7 +307,7 @@ function tensor(
     network::PEPSNetwork{T, Dense}, node::PEPSNode, β::Real, ::Val{:central_h2}
 ) where {T <: AbstractGeometry}
     i, j = node.i, floor(Int, node.j)
-    dense_central_tensor(SparseCentralTensor(network, β, (i, j), (i, j+1)))
+    dense_central_tensor(CentralTensor(network, β, (i, j), (i, j+1)))
 end
 
 """
@@ -317,7 +317,7 @@ function tensor(
     network::PEPSNetwork{T, Sparse}, node::PEPSNode, β::Real, ::Val{:central_v2}
 ) where {T <: AbstractGeometry}
     i, j = floor(Int, node.i), node.j
-    SparseCentralTensor(network, β, (i, j), (i+1, j))
+    CentralTensor(network, β, (i, j), (i+1, j))
 end
 
 """
@@ -327,11 +327,11 @@ function tensor(
     network::PEPSNetwork{T, Dense}, node::PEPSNode, β::Real, ::Val{:central_v2}
 ) where {T <: AbstractGeometry}
     i, j = floor(Int, node.i), node.j
-    dense_central_tensor(SparseCentralTensor(network, β, (i, j), (i+1, j)))
+    dense_central_tensor(CentralTensor(network, β, (i, j), (i+1, j)))
 end
 
 
-function SparseCentralTensor(network::PEPSNetwork{T, S}, β::Real, node1::NTuple{2, Int64}, node2::NTuple{2, Int64}
+function CentralTensor(network::PEPSNetwork{T, S}, β::Real, node1::NTuple{2, Int64}, node2::NTuple{2, Int64}
     ) where {T <: AbstractGeometry, S}
     i1, j1 = node1
     i2, j2 = node2
@@ -370,16 +370,16 @@ function SparseCentralTensor(network::PEPSNetwork{T, S}, β::Real, node1::NTuple
     sl = maximum(p1l) * maximum(p2l)
     sr = maximum(p1r) * maximum(p2r)
 
-    SpinGlassTensors.SparseCentralTensor(
+    SpinGlassTensors.CentralTensor(
         le11,
         le12,
         le21,
         le22,
         (sl, sr)
     )
-end 
+end
 
-function SparseCentralTensor_size(network::PEPSNetwork{T, S}, node1::NTuple{2, Int64}, node2::NTuple{2, Int64}
+function CentralTensor_size(network::PEPSNetwork{T, S}, node1::NTuple{2, Int64}, node2::NTuple{2, Int64}
     ) where {T <: AbstractGeometry, S}
     i1, j1 = node1
     i2, j2 = node2
@@ -403,20 +403,20 @@ function SparseCentralTensor_size(network::PEPSNetwork{T, S}, node1::NTuple{2, I
     sl = maximum(p1l) * maximum(p2l)
     sr = maximum(p1r) * maximum(p2r)
     (sl, sr)
-end 
+end
 
 function Base.size(
     network::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, ::Val{:central_v2}
 )
     i, j = floor(Int, node.i), node.j
-    SparseCentralTensor_size(network, (i, j), (i+1, j))
+    CentralTensor_size(network, (i, j), (i+1, j))
 end
 
 function Base.size(
     network::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, ::Val{:central_h2}
 )
     i, j = node.i, floor(Int, node.j)
-    SparseCentralTensor_size(network, (i, j), (i, j+1))
+    CentralTensor_size(network, (i, j), (i, j+1))
 end
 
 

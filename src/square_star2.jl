@@ -410,8 +410,8 @@ function tensor(
     net::PEPSNetwork{T, Dense}, node::PEPSNode, β::Real, ::Val{:central_d2}
 ) where {T <: AbstractGeometry}
     i, j = floor(Int, node.i), floor(Int, node.j)
-    T_NW_SE = dense_central_tensor(SparseCentralTensor(net, β, (i, j), (i+1, j+1)))
-    T_NE_SW = dense_central_tensor(SparseCentralTensor(net, β, (i, j+1), (i+1, j)))
+    T_NW_SE = dense_central_tensor(CentralTensor(net, β, (i, j), (i+1, j+1)))
+    T_NE_SW = dense_central_tensor(CentralTensor(net, β, (i, j+1), (i+1, j)))
     @cast A[(u, uu), (dd, d)] := T_NW_SE[u, d] * T_NE_SW[uu, dd]
     A
 end
@@ -424,9 +424,9 @@ function tensor(
     net::PEPSNetwork{T, Sparse}, node::PEPSNode, β::Real, ::Val{:central_d2}
 ) where {T <: AbstractGeometry}
     i, j = floor(Int, node.i), floor(Int, node.j)
-    T_NW_SE = SparseCentralTensor(net, β, (i, j), (i+1, j+1))
-    T_NE_SW = SparseCentralTensor(net, β, (i, j+1), (i+1, j))
-    SparseDiagonalTensor(T_NW_SE, T_NE_SW, (size(T_NW_SE, 1) * size(T_NE_SW, 1), size(T_NW_SE, 2) * size(T_NE_SW, 2)))
+    T_NW_SE = CentralTensor(net, β, (i, j), (i+1, j+1))
+    T_NE_SW = CentralTensor(net, β, (i, j+1), (i+1, j))
+    DiagonalTensor(T_NW_SE, T_NE_SW, (size(T_NW_SE, 1) * size(T_NE_SW, 1), size(T_NW_SE, 2) * size(T_NE_SW, 2)))
 end
 
 """
@@ -436,8 +436,8 @@ function Base.size(
     net::PEPSNetwork{SquareStar2{T}, S}, node::PEPSNode, ::Val{:central_d2}
 ) where {T <: AbstractTensorsLayout, S <: AbstractSparsity}
     i, j = floor(Int, node.i), floor(Int, node.j)
-    s_1 =  SparseCentralTensor_size(net, (i, j), (i+1, j+1))
-    s_2 =  SparseCentralTensor_size(net, (i, j+1), (i+1, j))
+    s_1 =  CentralTensor_size(net, (i, j), (i+1, j+1))
+    s_2 =  CentralTensor_size(net, (i, j+1), (i+1, j))
     (s_1[1] * s_2[1], s_1[2] * s_2[2])
 end
 
@@ -472,8 +472,8 @@ function tensor(  #TODO
     p_r = outer_projector(p_r[1], p_r[2])
     p_rt = outer_projector(p_rt[1], p_rt[2])
 
-    SparseVirtualTensor(
-        SparseCentralTensor(net, β, (i, j), (i, j+1)),
+    VirtualTensor(
+        CentralTensor(net, β, (i, j), (i, j+1)),
         (p_lb, p_l, p_lt, p_rb, p_r, p_rt))
 end
 

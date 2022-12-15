@@ -107,9 +107,9 @@ Construct (and memoize) MPO for a given layers.
 @memoize Dict function mpo(
     ctr::MpsContractor{T}, layers::Dict{Site, Sites}, r::Int, indβ::Int
 ) where T <: AbstractStrategy
-    mpo = Dict{Site, Dict{Site, Tensor}}()
+    mpo = Dict{Site, Dict{Site, Tensor{Float64}}}() # Float64 - for now
     for (site, coordinates) ∈ layers
-        lmpo = Dict{Site, Tensor}()
+        lmpo = Dict{Site, Tensor{Float64}}()  # Float64 - for now
         for dr ∈ coordinates
             ten = tensor(ctr.peps, PEPSNode(r + dr, site), ctr.betas[indβ])
             push!(lmpo, dr => ten)
@@ -342,13 +342,13 @@ Construct (and memoize) right environment for a given node.
 
     RR = update_reduced_env_right(R̃, ∂v[1], M, B)
 
-    ls_mps = _left_nbrs_site(site, ϕ.sites)
-    ls = _left_nbrs_site(site, W.sites)
+    ls_mps = left_nbrs_site(site, ϕ.sites)
+    ls = left_nbrs_site(site, W.sites)
 
     while ls > ls_mps
         M0 = W[ls][0]  # TODO: make this consistent
         RR = update_reduced_env_right(RR, M0)
-        ls = _left_nbrs_site(ls, W.sites)
+        ls = left_nbrs_site(ls, W.sites)
     end
     nmr = maximum(abs.(RR))
     iszero(nmr) ? RR : RR ./ nmr

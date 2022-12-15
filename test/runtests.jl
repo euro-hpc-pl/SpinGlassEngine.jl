@@ -40,8 +40,8 @@ my_tests = []
 
 push!(my_tests,
 # quick tests:
-    "operations.jl",
-    "branch_and_bound.jl",
+    #"operations.jl",
+    #"branch_and_bound.jl",
     "search_chimera_pathological.jl",
     "search_chimera_smallest.jl",
     "search_cross_square_star.jl",
@@ -52,7 +52,7 @@ push!(my_tests,
     "search_squarestar2_basic.jl",
     "search_chimera_pathological_gauge.jl",
     "chimera_overlap_python.jl",
-    
+
 # time consuming tests:
     # "search_chimera_full.jl",
     # "search_chimera_gauge.jl",

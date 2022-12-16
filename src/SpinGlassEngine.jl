@@ -16,6 +16,7 @@ using Statistics
 using DocStringExtensions
 #using Infiltrator
 
+#=
 # to be remove
 function SpinGlassNetworks.local_basis(ψ::AbstractMPS, i::Int)
     SpinGlassNetworks.local_basis(physical_dim(ψ, i))
@@ -30,6 +31,7 @@ function LinearAlgebra.dot(ψ::AbstractMPS, state::Union{Vector, NTuple})
     end
     tr(C)
 end
+=#
 
 include("operations.jl")
 include("geometry.jl")

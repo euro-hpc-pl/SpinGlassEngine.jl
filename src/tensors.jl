@@ -118,7 +118,7 @@ $(TYPEDSIGNATURES)
 function tensor(
     network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, β::Real, ::Val{:gauge_h}
 )
-    Diagonal(network.gauges.data[v])
+    Diagonal(network.gauges.data[v]) |> Array
 end
 
 """

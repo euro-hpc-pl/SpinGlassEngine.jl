@@ -12,6 +12,7 @@ disable_logging(LogLevel(1))
 
 using Test
 
+#=
 function proj(state, dims::Union{Vector, NTuple})
     P = Matrix{Float64}[]
     for (σ, r) ∈ zip(state, dims)
@@ -34,7 +35,7 @@ end
 #     for σ ∈ all_states(dims) Θ[idx.(σ)...] = tensor(ψ, σ) end
 #     Θ
 # end
-
+=#
 using Test
 my_tests = []
 

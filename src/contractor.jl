@@ -129,7 +129,6 @@ Construct (and memoize) top MPS using SVD for a given row.
     tolV = ctr.params.variational_tol
     tolS = ctr.params.tol_SVD
     max_sweeps = ctr.params.max_num_sweeps
-    # trans = :c
 
     if i < 1
         W = mpo(ctr, ctr.layers.main, 1, indβ)
@@ -143,10 +142,10 @@ Construct (and memoize) top MPS using SVD for a given row.
     canonise!(ψ0, :right)
     if ctr.graduate_truncation == :graduate_truncate
         canonise_truncate!(ψ0, :left, Dcut * 2, tolS / 2)
-        variational_sweep!(ψ0, W, ψ, Val(:right)) #, trans)
+        variational_sweep!(ψ0, W, ψ, Val(:right))
     end
     canonise_truncate!(ψ0, :left, Dcut, tolS)
-    variational_compress!(ψ0, W, ψ, tolV, max_sweeps) #, trans)
+    variational_compress!(ψ0, W, ψ, tolV, max_sweeps)
     ψ0
 end
 
@@ -160,7 +159,6 @@ Construct (and memoize) (bottom) MPS using SVD for a given row.
     tolV = ctr.params.variational_tol
     tolS = ctr.params.tol_SVD
     max_sweeps = ctr.params.max_num_sweeps
-    trans = :n
 
     if i > ctr.peps.nrows
         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
@@ -174,10 +172,10 @@ Construct (and memoize) (bottom) MPS using SVD for a given row.
     canonise!(ψ0, :right)
     if ctr.graduate_truncation == :graduate_truncate
         canonise_truncate!(ψ0, :left, Dcut * 2, tolS / 2)
-        variational_sweep!(ψ0, W, ψ, Val(:right), trans)
+        variational_sweep!(ψ0, W, ψ, Val(:right))
     end
     canonise_truncate!(ψ0, :left, Dcut, tolS)
-    variational_compress!(ψ0, W, ψ, tolV, max_sweeps, trans)
+    variational_compress!(ψ0, W, ψ, tolV, max_sweeps)
     ψ0
 end
 
@@ -257,7 +255,6 @@ Construct (and memoize) (bottom) top MPS using Annealing for a given row.
         ψ,
         ctr.params.variational_tol,
         ctr.params.max_num_sweeps,
-        # :c
     )
     ψ0
 end

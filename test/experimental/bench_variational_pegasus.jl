@@ -61,6 +61,8 @@ canonise!(ψ0, :left)
                 ctr.params.variational_tol, ctr.params.max_num_sweeps)
 end
 
-println(env)
+for (key, val) in env.env
+    println(key, " -> ", size(val))
+end
 
 clear_memoize_cache()

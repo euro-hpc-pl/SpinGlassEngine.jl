@@ -367,15 +367,11 @@ function CentralTensor(network::PEPSNetwork{T, S}, β::Real, node1::NTuple{2, In
     le12 = exp.(-β .* (e12 .- minimum(e12)))
     le22 = exp.(-β .* (e22 .- minimum(e22)))
 
-    sl = maximum(p1l) * maximum(p2l)
-    sr = maximum(p1r) * maximum(p2r)
-
     SpinGlassTensors.CentralTensor(
         le11,
         le12,
         le21,
-        le22,
-        (sl, sr)
+        le22
     )
 end
 

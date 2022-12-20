@@ -107,14 +107,14 @@ Construct (and memoize) MPO for a given layers.
 @memoize Dict function mpo(
     ctr::MpsContractor{T}, layers::Dict{Site, Sites}, r::Int, indβ::Int
 ) where T <: AbstractStrategy
-    mpo = Dict{Site, Dict{Site, Tensor{Float64}}}() # Float64 - for now
+    mpo = Dict{Site, MpoTensor{Float64}}() # Float64 - for now
     for (site, coordinates) ∈ layers
         lmpo = Dict{Site, Tensor{Float64}}()  # Float64 - for now
         for dr ∈ coordinates
             ten = tensor(ctr.peps, PEPSNode(r + dr, site), ctr.betas[indβ])
             push!(lmpo, dr => ten)
         end
-        push!(mpo, site => lmpo)
+        push!(mpo, site => MpoTensor(lmpo))
     end
     QMpo(mpo)
 end

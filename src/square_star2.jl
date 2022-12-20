@@ -426,7 +426,7 @@ function tensor(
     i, j = floor(Int, node.i), floor(Int, node.j)
     T_NW_SE = CentralTensor(net, β, (i, j), (i+1, j+1))
     T_NE_SW = CentralTensor(net, β, (i, j+1), (i+1, j))
-    DiagonalTensor(T_NW_SE, T_NE_SW, (size(T_NW_SE, 1) * size(T_NE_SW, 1), size(T_NW_SE, 2) * size(T_NE_SW, 2)))
+    DiagonalTensor(T_NW_SE, T_NE_SW)
 end
 
 """

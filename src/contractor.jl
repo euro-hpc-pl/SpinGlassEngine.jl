@@ -109,7 +109,7 @@ Construct (and memoize) MPO for a given layers.
 ) where T <: AbstractStrategy
     mpo = Dict{Site, MpoTensor{Float64}}() # Float64 - for now
     for (site, coordinates) ∈ layers
-        lmpo = Dict{Site, Union{Tensor{Float64, 2}, Tensor{Float64, 4}}}()  # Float64 - for now
+        lmpo = TensorMap{Float64}()  # Float64 - for now
         for dr ∈ coordinates
             ten = tensor(ctr.peps, PEPSNode(r + dr, site), ctr.betas[indβ])
             push!(lmpo, dr => ten)

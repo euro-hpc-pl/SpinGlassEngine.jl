@@ -299,7 +299,7 @@ function tensor(
     ))
     VirtualTensor(
        connecting_tensor(net, floor.(Int, v), ceil.(Int, v), β),
-       vec.((pl..., pr...))
+       (pl..., pr...)
     )
 end
 

@@ -344,8 +344,7 @@ Construct (and memoize) right environment for a given node.
     ls = left_nbrs_site(site, W.sites)
 
     while ls > ls_mps
-        M0 = W[ls][0]  # TODO: make this consistent
-        RR = update_reduced_env_right(RR, M0)
+        RR = update_reduced_env_right(RR, W[ls].ctr)
         ls = left_nbrs_site(ls, W.sites)
     end
     nmr = maximum(abs.(RR))

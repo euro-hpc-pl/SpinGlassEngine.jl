@@ -120,7 +120,8 @@ $(TYPEDSIGNATURES)
 """
 function fuse_projectors(projectors::Union{Vector{T}, NTuple{N, T}}) where {N, T}
     fused, transitions_matrix = rank_reveal(hcat(projectors...), :PE)
-    transitions = collect(eachcol(transitions_matrix))
+    # transitions = collect(eachcol(transitions_matrix))
+    transitions = Tuple(Array(t) for t ∈ eachcol(transitions_matrix))
     fused, transitions
 end
 

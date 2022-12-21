@@ -310,7 +310,7 @@ Construct (and memoize) dressed MPS for a given row and strategy.
 
     ψ = mps(ctr, i+1, indβ)
     W = mpo(ctr, ctr.layers.dress, i, indβ)
-    ϕ = W * ψ
+    ϕ = dot(W, ψ)
 
     for j ∈ ϕ.sites
         nrm = maximum(abs.(ϕ[j]))

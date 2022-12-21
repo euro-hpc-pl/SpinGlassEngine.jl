@@ -17,8 +17,8 @@ my_tests = []
 
 push!(my_tests,
 # quick tests:
-    # "operations.jl",
-    # "branch_and_bound.jl",
+    "operations.jl",
+    "branch_and_bound.jl",
     "search_chimera_pathological.jl",
     "search_chimera_smallest.jl",
     "search_cross_square_star.jl",

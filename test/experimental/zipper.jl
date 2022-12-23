@@ -59,5 +59,6 @@ println(dot(ψ0, ψ0))
 println(dot(ψ1, ψ1))
 println(dot(ψ0, ψ1) / (norm(ψ0) * norm(ψ1)))
 
-
-
+println(format_bytes(measure_memory(W)))
+println(format_bytes(measure_memory(ψ)))
+println(format_bytes(measure_memory(ψ0)))

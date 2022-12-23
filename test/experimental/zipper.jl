@@ -29,36 +29,46 @@ fg = factor_graph(
 params = MpsParameters(bond_dim, 1E-16, 1)
 
 Strategy = SVDTruncate
-Sparsity = Dense
 tran =  LatticeTransformation((1, 2, 3, 4), false)
 Layout = EnergyGauges
 Gauge = NoUpdate
 
-net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, tran)
+i = div(m, 2)
+indβ = 1
+
+net = PEPSNetwork{Square{Layout}, Sparse}(m, n, fg, tran)
 ctr = MpsContractor{Strategy, Gauge}(net, [β], :graduate_truncate, params)
+Ws = SpinGlassEngine.mpo(ctr, ctr.layers.main, i, indβ)
+
+net = PEPSNetwork{Square{Layout}, Dense}(m, n, fg, tran)
+ctr = MpsContractor{Strategy, Gauge}(net, [β], :graduate_truncate, params)
+Wd = SpinGlassEngine.mpo(ctr, ctr.layers.main, i, indβ)
 
 Dcut = ctr.params.bond_dimension
 tolV = ctr.params.variational_tol
 tolS = ctr.params.tol_SVD
 max_sweeps = ctr.params.max_num_sweeps
 
-i = div(m, 2)
-indβ = 1
-
 println("Dcut = ", Dcut, " tolV = ", tolV, " tolS = ", tolS, " max_sweeps = ", max_sweeps, " i = ", i)
 
-W = SpinGlassEngine.mpo(ctr, ctr.layers.main, i, indβ)
-ψ = IdentityQMps(Float64, local_dims(W, :down), ctr.params.bond_dimension) # F64 for now
+ψ = IdentityQMps(Float64, local_dims(Wd, :down), ctr.params.bond_dimension) # F64 for now
 canonise!(ψ, :left)
 
-ψ0 = dot(W, ψ)
+ψ0 = dot(Wd, ψ)
 @time canonise_truncate!(ψ0, :right, Dcut, tolS)
-@time ψ1 = zipper(W, ψ, Dcut, tolS)
+
+@time ψ1 = zipper(Wd, ψ, Dcut, tolS)
+@time ψ2 = zipper(Ws, ψ, Dcut, tolS)
 
 println(dot(ψ0, ψ0))
 println(dot(ψ1, ψ1))
-println(dot(ψ0, ψ1) / (norm(ψ0) * norm(ψ1)))
+println(dot(ψ2, ψ2))
 
-println(format_bytes(measure_memory(W)))
-println(format_bytes(measure_memory(ψ)))
-println(format_bytes(measure_memory(ψ0)))
+println(dot(ψ0, ψ1) / (norm(ψ0) * norm(ψ1)))
+println(dot(ψ0, ψ2) / (norm(ψ0) * norm(ψ2)))
+println(dot(ψ1, ψ2) / (norm(ψ1) * norm(ψ2)))
+
+println(" Wd -> ", format_bytes(measure_memory(Wd)))
+println(" Ws -> ", format_bytes(measure_memory(Ws)))
+println(" ψ -> ", format_bytes(measure_memory(ψ)))
+println(" ψ0 -> ", format_bytes(measure_memory(ψ0)))

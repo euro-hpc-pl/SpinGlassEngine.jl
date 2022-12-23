@@ -18,7 +18,7 @@ n = 7
 t = 3
 
 β = 1
-bond_dim = 2
+bond_dim = 3
 
 ig = ising_graph("$(@__DIR__)/../instances/pegasus_random/P8/RAU/SpinGlass/001_sg.txt")
 
@@ -50,19 +50,27 @@ indβ = 1
 println("Dcut = ", Dcut, " tolV = ", tolV, " tolS = ", tolS, " max_sweeps = ", max_sweeps, " i = ", i)
 
 W = SpinGlassEngine.mpo(ctr, ctr.layers.main, i, indβ)
-ψ = IdentityQMps(Float64, local_dims(W, :down), ctr.params.bond_dimension) # F64 for now
-canonise!(ψ, :left)
-
-ψ0 = IdentityQMps(Float64, local_dims(W, :up), ctr.params.bond_dimension) # F64 for now
-canonise!(ψ0, :left)
+println("Mpo memory = ", format_bytes(measure_memory(W)))
 
 @time begin
+    println("Rand and canonise ")
+    ψ = rand(QMps{Float64}, local_dims(W, :down), Dcut)
+    canonise!(ψ, :right)
+    canonise!(ψ, :left)
+    println("Mps memory = ", format_bytes(measure_memory(ψ)))
+
+end
+
+ψ0 = rand(QMps{Float64}, local_dims(W, :up), Dcut)
+canonise!(ψ0, :right)
+canonise!(ψ0, :left)
+
+# @time ψ1 = zipper(W, ψ, Dcut, tolS)
+
+@time begin
+    println("Variational compress ")
     overlap, env = variational_compress!(ψ0, W, ψ, 
                 ctr.params.variational_tol, ctr.params.max_num_sweeps)
 end
 
-for (key, val) in env.env
-    println(key, " -> ", size(val))
-end
-
-clear_memoize_cache()
+println("Env memory = ", format_bytes(measure_memory(env)))

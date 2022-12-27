@@ -13,9 +13,9 @@ function brute_force_gpu(ig::IsingGraph; num_states::Int)
      brute_force(ig, :GPU, num_states=num_states)
 end
 
-m = 10
-n = 10
-t = 3
+m = 8
+n = 8
+t = 4
 
 β = 1
 bond_dim = 3

@@ -20,7 +20,7 @@ t = 3
 β = 1
 bond_dim = 3
 
-ig = ising_graph("$(@__DIR__)/../instances/pegasus_random/P8/RAU/SpinGlass/001_sg.txt")
+ig = ising_graph("$(@__DIR__)/../test/instances/pegasus_random/P8/RAU/SpinGlass/001_sg.txt")
 
 fg = factor_graph(
     ig,
@@ -58,14 +58,13 @@ println("Mpo memory = ", format_bytes(measure_memory(W)))
     canonise!(ψ, :right)
     canonise!(ψ, :left)
     println("Mps memory = ", format_bytes(measure_memory(ψ)))
-
 end
 
 ψ0 = rand(QMps{Float64}, local_dims(W, :up), Dcut)
 canonise!(ψ0, :right)
 canonise!(ψ0, :left)
 
-# @time ψ1 = zipper(W, ψ, Dcut, tolS)
+@time ψ1 = zipper(W, ψ, :psvd_sparse, Dcut=Dcut, tol=tolS)
 
 @time begin
     println("Variational compress ")
@@ -73,4 +72,10 @@ canonise!(ψ0, :left)
                 ctr.params.variational_tol, ctr.params.max_num_sweeps)
 end
 
+println("Psi memory = ", format_bytes(measure_memory(ψ0)))
+println("Psi memory = ", format_bytes(measure_memory(ψ1)))
 println("Env memory = ", format_bytes(measure_memory(env)))
+
+println(dot(ψ0, ψ0))
+println(dot(ψ1, ψ1))
+println(dot(ψ0, ψ1))

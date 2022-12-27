@@ -104,7 +104,8 @@ $(TYPEDSIGNATURES)
 
 Construct (and memoize) MPO for a given layers.
 """
-@memoize Dict function mpo(
+#@memoize Dict
+function mpo(
     ctr::MpsContractor{T}, layers::Dict{Site, Sites}, r::Int, indβ::Int
 ) where T <: AbstractStrategy
     mpo = Dict{Site, MpoTensor{Float64}}() # Float64 - for now

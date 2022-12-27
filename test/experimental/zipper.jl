@@ -8,6 +8,7 @@ using LinearAlgebra
 using TensorCast
 using MetaGraphs
 using Statistics
+using LowRankApprox
 
 function brute_force_gpu(ig::IsingGraph; num_states::Int)
      brute_force(ig, :GPU, num_states=num_states)
@@ -63,10 +64,14 @@ canonise!(ψ, :left)
 @time ψ4 = zipper(Ws, ψ, :psvd, Dcut=Dcut, tol=tolS)
 @time ψ5 = zipper(Wd, ψ, :psvd_sparse, Dcut=Dcut, tol=tolS)
 @time ψ6 = zipper(Ws, ψ, :psvd_sparse, Dcut=Dcut, tol=tolS)
+# @time ψ7 = zipper(Wd, ψ, :tsvd, Dcut=Dcut, tol=tolS)
+# @time ψ8 = zipper(Ws, ψ, :tsvd, Dcut=Dcut, tol=tolS)
+# @time ψ9 = zipper(Wd, ψ, :tsvd_sparse, Dcut=Dcut, tol=tolS) #, (maxiter=Dcut+1, tolconv=100, tolreorth=100))
+# @time ψ10 = zipper(Ws, ψ, :tsvd_sparse, Dcut=Dcut, tol=tolS) #, (maxiter=Dcut+1, tolconv=100, tolreorth=100))
 
-println(dot(ψ0, ψ0))
-println(dot(ψ1, ψ1))
-println(dot(ψ2, ψ2))
+# println(dot(ψ0, ψ0))
+# println(dot(ψ1, ψ1))
+# println(dot(ψ2, ψ2))
 
 println(dot(ψ0, ψ1) / (norm(ψ0) * norm(ψ1)))
 println(dot(ψ0, ψ2) / (norm(ψ0) * norm(ψ2)))
@@ -75,6 +80,10 @@ println(dot(ψ1, ψ3) / (norm(ψ1) * norm(ψ3)))
 println(dot(ψ1, ψ4) / (norm(ψ1) * norm(ψ4)))
 println(dot(ψ1, ψ5) / (norm(ψ1) * norm(ψ5)))
 println(dot(ψ1, ψ6) / (norm(ψ1) * norm(ψ6)))
+# println(dot(ψ1, ψ7) / (norm(ψ1) * norm(ψ7)))
+# println(dot(ψ1, ψ8) / (norm(ψ1) * norm(ψ8)))
+# println(dot(ψ1, ψ9) / (norm(ψ1) * norm(ψ9)))
+# println(dot(ψ1, ψ10) / (norm(ψ1) * norm(ψ10)))
 
 
 println(" Wd -> ", format_bytes(measure_memory(Wd)))

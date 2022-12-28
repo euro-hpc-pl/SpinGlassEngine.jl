@@ -60,11 +60,11 @@ function bench()
     canonise!(ψ0, :left)
 
     println("var")
-    overlap, env = variational_compress!(ψ0, W, ψ, 
+    overlap, env = variational_compress!(ψ0, W, ψ,
                 ctr.params.variational_tol, ctr.params.max_num_sweeps)
 
     println("zipper")
-    ψ1 = zipper(W, ψ, :psvd_sparse, Dcut=Dcut, tol=tolS)
+    ψ1 = zipper(W, ψ, method=:psvd_sparse, Dcut=Dcut, tol=tolS)
 end
 
 # println("pre-sweep")

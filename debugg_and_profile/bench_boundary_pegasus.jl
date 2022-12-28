@@ -50,21 +50,31 @@ function bench()
 
     W = SpinGlassEngine.mpo(ctr, ctr.layers.main, i, indβ)
 
-    println("rand")
-    ψ = rand(QMps{Float64}, local_dims(W, :down), Dcut)
-    canonise!(ψ, :right)
-    canonise!(ψ, :left)
+    # println("rand")
+    # ψ = rand(QMps{Float64}, local_dims(W, :down), Dcut)
+    # println(device(ψ))
+    # @time move_to_CUDA!(ψ)
+    # println(device(ψ))
+    # canonise!(ψ, :right)
+    # canonise!(ψ, :left)
+    # println(device(ψ))
 
-    ψ0 = rand(QMps{Float64}, local_dims(W, :up), Dcut)
-    canonise!(ψ0, :right)
-    canonise!(ψ0, :left)
+    # ψ0 = rand(QMps{Float64}, local_dims(W, :up), Dcut)
+    # move_to_CUDA!(ψ0)
+    # canonise!(ψ0, :right)
+    # canonise!(ψ0, :left)
+    # println(device(ψ0))
 
-    println("var")
-    overlap, env = variational_compress!(ψ0, W, ψ,
-                ctr.params.variational_tol, ctr.params.max_num_sweeps)
+    println(device(W))
+    move_to_CUDA!(W)
+    println(device(W))
 
-    println("zipper")
-    ψ1 = zipper(W, ψ, method=:psvd_sparse, Dcut=Dcut, tol=tolS)
+    # println("var")
+    # overlap, env = variational_compress!(ψ0, W, ψ,
+    #             ctr.params.variational_tol, ctr.params.max_num_sweeps)
+
+    # println("zipper")
+    # ψ1 = zipper(W, ψ, method=:psvd_sparse, Dcut=Dcut, tol=tolS)
 end
 
 # println("pre-sweep")

@@ -26,7 +26,7 @@ fg = factor_graph(
     ig,
     # max_cl_states,
     spectrum = full_spectrum,  #brute_force_gpu, # rm _gpu to use CPU
-    cluster_assignment_rule = zephyr_lattice_5tuple_rotated(m+1, n+1, zephyr_lattice_5tuple((Int(m/2),Int(n/2),t)))
+    cluster_assignment_rule = zephyr_lattice_5tuple_rotated(m+1, n+1, zephyr_lattice_5tuple((Int(m/2), Int(n/2), t)))
 )
 
 params = MpsParameters(bond_dim, 1E-16, 1)
@@ -51,19 +51,20 @@ indβ = 1
 println("Dcut = ", Dcut, " tolV = ", tolV, " tolS = ", tolS, " max_sweeps = ", max_sweeps, " i = ", i)
 
 W = SpinGlassEngine.mpo(ctr, ctr.layers.main, i, indβ)
+
 println("Mpo memory = ", format_bytes(measure_memory(W)))
 
-# @time begin
-#     println("Rand and canonise ")
-#     ψ = rand(QMps{Float64}, local_dims(W, :down), Dcut)
-#     canonise!(ψ, :right)
-#     canonise!(ψ, :left)
-#     println("Mps memory = ", format_bytes(measure_memory(ψ)))
-# end
+@time begin
+    println("Rand and canonise ")
+    ψ = rand(QMps{Float64}, local_dims(W, :down), Dcut)
+    canonise!(ψ, :right)
+    canonise!(ψ, :left)
+    println("Mps memory = ", format_bytes(measure_memory(ψ)))
+end
 
-# ψ0 = rand(QMps{Float64}, local_dims(W, :up), Dcut)
-# canonise!(ψ0, :right)
-# canonise!(ψ0, :left)
+ψ0 = rand(QMps{Float64}, local_dims(W, :up), Dcut)
+canonise!(ψ0, :right)
+canonise!(ψ0, :left)
 
 # @time ψ1 = zipper(W, ψ, :psvd_sparse, Dcut=Dcut, tol=tolS)
 

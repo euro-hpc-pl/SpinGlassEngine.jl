@@ -91,7 +91,8 @@ for (W, msg) ∈ [(Ws, "SPARSE"), (Wd, "DENSE")]
     println(dot(ψ0, ψ3) / (norm(ψ0) * norm(ψ3)))
 
     println("zipper tsvd_sparse")
-    ψ4 = zipper(W, ψ, method=:tsvd_sparse, Dcut=Dcut, tol=tolS) #, maxiter=Dcut+1, tolconv=100, tolreorth=100)
+    #ψ4 = zipper(W, ψ, method=:psvd_sparse, Dcut=Dcut, tol=tolS)
+    ψ4 = zipper(W, ψ, method=:tsvd_sparse, Dcut=Dcut, tol=tolS, maxiter=Dcut+1, tolconv=400, tolreorth=100)
     println(dot(ψ0, ψ4) / (norm(ψ0) * norm(ψ4)))
 
     println("variational")

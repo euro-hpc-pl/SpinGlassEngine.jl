@@ -49,36 +49,36 @@ indβ = 1
 net = PEPSNetwork{Square{Layout}, Sparse}(m, n, fg, tran)
 ctr = MpsContractor{Strategy, Gauge}(net, [β], :graduate_truncate, params)
 Ws = SpinGlassEngine.mpo(ctr, ctr.layers.main, i, indβ)
-println(" Ws -> ", device(Ws), " ", format_bytes(measure_memory(Ws)))
+println(" Ws -> ", device(Ws), " ", format_bytes.(measure_memory(Ws)))
 move_to_CUDA!(Ws)
-println(" Ws -> ", device(Ws), " ", format_bytes(measure_memory(Ws)))
+println(" Ws -> ", device(Ws), " ", format_bytes.(measure_memory(Ws)))
 
 net = PEPSNetwork{Square{Layout}, Dense}(m, n, fg, tran)
 ctr = MpsContractor{Strategy, Gauge}(net, [β], :graduate_truncate, params)
 Wd = SpinGlassEngine.mpo(ctr, ctr.layers.main, i, indβ)
-println(" Wd -> ", device(Wd), " ", format_bytes(measure_memory(Wd)))
+println(" Wd -> ", device(Wd), " ", format_bytes.(measure_memory(Wd)))
 move_to_CUDA!(Wd)
-println(" Wd -> ", device(Wd), " ", format_bytes(measure_memory(Wd)))
+println(" Wd -> ", device(Wd), " ", format_bytes.(measure_memory(Wd)))
 
 println("Dcut = ", Dcut, " tolV = ", tolV, " tolS = ", tolS, " max_sweeps = ", max_sweeps, " i = ", i)
 
 ψ = rand(QMps{Float64}, local_dims(Wd, :down), Dcut) # F64 for now
-println(" ψ -> ", device(ψ), " ", format_bytes(measure_memory(ψ)))
+println(" ψ -> ", device(ψ), " ", format_bytes.(measure_memory(ψ)))
 move_to_CUDA!(ψ)
-println(" ψ -> ", device(ψ), " ", format_bytes(measure_memory(ψ)))
+println(" ψ -> ", device(ψ), " ", format_bytes.(measure_memory(ψ)))
 canonise!(ψ, :left)
 
 for (W, msg) ∈ [(Ws, "SPARSE"), (Wd, "DENSE")]
     println(msg)
     println("dot")
     ψ0 = dot(W, ψ)
-    println(" ψ0 -> ", device(ψ0), " ", format_bytes(measure_memory(ψ0)))
+    println(" ψ0 -> ", device(ψ0), " ", format_bytes.(measure_memory(ψ0)))
     println(bond_dimensions(ψ0))
 
     println("canonize_truncate!")
     ψ1 = dot(W, ψ)
     canonise_truncate!(ψ1, :right, Dcut, tolS)
-    println(" ψ0 -> ", device(ψ1), " ", format_bytes(measure_memory(ψ)))
+    println(" ψ0 -> ", device(ψ1), " ", format_bytes.(measure_memory(ψ)))
     println(bond_dimensions(ψ1))
     println(dot(ψ0, ψ1) / (norm(ψ0) * norm(ψ1)))
 
@@ -129,4 +129,4 @@ end
 # # println(dot(ψ1, ψ10) / (norm(ψ1) * norm(ψ10)))
 
 
-# println(" ψ0 -> ", format_bytes(measure_memory(ψ0)))
+# println(" ψ0 -> ", format_bytes.(measure_memory(ψ0)))

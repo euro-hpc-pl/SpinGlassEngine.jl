@@ -329,7 +329,7 @@ function tensor(
     network::PEPSNetwork{T, Dense}, node::PEPSNode, β::Real, ::Val{:central_v2}
 ) where {T <: AbstractGeometry}
     i, j = floor(Int, node.i), node.j
-    Array(CentralTensor(network, β, (i, j), (i+1, j)))
+    dense_central(CentralTensor(network, β, (i, j), (i+1, j)))
 end
 
 

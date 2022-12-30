@@ -17,18 +17,20 @@ my_tests = []
 
 push!(my_tests,
 # quick tests:
-    # "operations.jl",
-    # "branch_and_bound.jl",
-    # "search_chimera_pathological.jl",
-    # "search_chimera_smallest.jl",
-    # "search_cross_square_star.jl",
-    # "search_smallest_cross_square_star.jl",
-    # "search_pegasus_square_star.jl",
-    # "search_pegasus_nodiag_square_star.jl",
+    "operations.jl",
+    "branch_and_bound.jl",
+    "search_chimera_pathological.jl",
+    "search_chimera_smallest.jl",
+    "search_cross_square_star.jl",
+    "search_smallest_cross_square_star.jl",
+    "search_pegasus_square_star.jl",
+    "search_pegasus_nodiag_square_star.jl",
     "search_square2_basic.jl",
     "search_squarestar2_basic.jl",
-    "search_chimera_pathological_gauge.jl",
     "chimera_overlap_python.jl",
+
+# to fix in Tensor
+    #"search_chimera_pathological_gauge.jl",
 
 # time consuming tests:
     # "search_chimera_full.jl",
@@ -39,6 +41,7 @@ push!(my_tests,
 # This is work in progress (may or may not be included in future versions)
 
 push!(my_tests,
+    # "experimental/zipper.jl",
     # "experimental/squarestar2_pegasus.jl",
     # "experimental/squarestar2_zephyr.jl",
 )

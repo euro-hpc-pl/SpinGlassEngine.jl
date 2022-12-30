@@ -10,14 +10,14 @@ disable_logging(LogLevel(1))
 Profile.init(n = 10^10, delay = 0.01)
 
 function brute_force_gpu(ig::IsingGraph; num_states::Int)
-    brute_force(ig, :GPU, num_states=num_states)
+     brute_force(ig, :GPU, num_states=num_states)
 end
 
-function bench()
 
-    m = 7
-    n = 7
-    t = 3
+function bench()
+    m = 8
+    n = 8
+    t = 4
 
     β = 1.
     Dcut = 4
@@ -26,29 +26,31 @@ function bench()
     max_sweeps = 1
     indβ = 1
 
-    ig = ising_graph("$(@__DIR__)/../test/instances/pegasus_random/P8/RAU/SpinGlass/001_sg.txt")
+    ig = ising_graph("$(@__DIR__)/../test/instances/zephyr_random/Z4/RAU/SpinGlass/001_sg.txt")
 
     @time begin
-        println("factor_graph")
+        println("factor graph")
         fg = factor_graph(
             ig,
-            spectrum= brute_force_gpu, #rm _gpu to use CPU
-            cluster_assignment_rule=pegasus_lattice((m, n, t))
+            # max_cl_states,
+            spectrum = full_spectrum,  #brute_force_gpu, # rm _gpu to use CPU
+            cluster_assignment_rule = zephyr_lattice_5tuple_rotated(m+1, n+1, zephyr_lattice_5tuple((Int(m/2), Int(n/2), t)))
         )
     end
 
     params = MpsParameters(Dcut, tolV, max_sweeps)
     Strategy = MPSAnnealing # SVDTruncate
     Sparsity = Sparse # Dense
-    tran =  LatticeTransformation((3, 4, 1, 2), false)
-    # tran =  LatticeTransformation((1, 2, 3, 4), false)
+    # tran =  LatticeTransformation((3, 4, 1, 2), false)
+    tran =  LatticeTransformation((1, 2, 3, 4), false)
     Layout = GaugesEnergy
     Gauge = NoUpdate
+
 
     net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, tran)
     ctr = MpsContractor{Strategy, Gauge}(net, [β], :graduate_truncate, params)
 
-    i = 4
+    i = div(m, 2)
     @time begin
         println(" MPO ")
         W = SpinGlassEngine.mpo(ctr, ctr.layers.main, i, indβ)
@@ -80,7 +82,7 @@ function bench()
         overlap, env = variational_compress!(ψ0, W, ψ, tolV, max_sweeps)
     end
     overlap
-    
+
     @time begin
         println("zipper")
         ψ1 = zipper(W, ψ, method=:psvd_sparse, Dcut=Dcut, tol=tolS)

@@ -5,7 +5,7 @@ $(TYPEDSIGNATURES)
 
 """
 function tensor(network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, β::Real)
-    if v ∉ keys(network.tensors_map) return ones(1, 1) end
+    if v ∉ keys(network.tensors_map) return ones(Float64, 1, 1) end
     tensor(network, v, β, Val(network.tensors_map[v]))
 end
 

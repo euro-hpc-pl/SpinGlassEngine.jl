@@ -191,17 +191,29 @@ function low_energy_spectrum(
     ctr::T, sparams::SearchParameters, merge_strategy=no_merge; no_cache=false,
 ) where T <: AbstractContractor
     # Build all boundary mps
-    @showprogress "Preprocessing: " for i ∈ ctr.peps.nrows:-1:1 dressed_mps(ctr, i) end
+    CUDA.allowscalar(false)
+
+    @showprogress "Preprocessing: " for i ∈ ctr.peps.nrows:-1:1
+        dressed_mps(ctr, i)
+        clear_memoize_cache_after_row()
+    end
 
     # Start branch and bound search
     sol = empty_solution()
+    old_row = ctr.nodes_search_order[1][1]
     @showprogress "Search: " for node ∈ ctr.nodes_search_order
         ctr.current_node = node
+        current_row = old_row[1]
         sol = branch_solution(sol, ctr)
         sol = bound_solution(sol, sparams.max_states, sparams.cut_off_prob, merge_strategy)
         # TODO: clear memoize cache partially
         if no_cache Memoization.empty_all_caches!() end
+        if current_row > old_row
+            current_row = old_row
+            clear_memoize_cache_after_row()
+        end
     end
+    clear_memoize_cache_after_row()
 
     # Translate variable order (network --> factor graph)
     inner_perm = sortperm([

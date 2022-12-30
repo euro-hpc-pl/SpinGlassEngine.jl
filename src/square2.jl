@@ -139,11 +139,11 @@ function conditional_probability(
         eng_loc = [local_energy(ctr.peps, (i, j, k)) for k ∈ 1:2]
         el = [interaction_energy(ctr.peps, (i, j, k), (i, j-1, m)) for k ∈ 1:2, m ∈ 1:2]
         pl = [projector(ctr.peps, (i, j, k), (i, j-1, m)) for k ∈ 1:2, m ∈ 1:2]
-        eng_l = [@view el[k, m][pl[k, m][:], ∂v[j - 1 + k + (m - 1) * 2]] for k ∈ 1:2, m ∈ 1:2]
+        eng_l = [@view el[k, m][pl[k, m], ∂v[j - 1 + k + (m - 1) * 2]] for k ∈ 1:2, m ∈ 1:2]
 
         eu = [interaction_energy(ctr.peps, (i, j, k), (i-1, j, m)) for k ∈ 1:2, m ∈ 1:2]
         pu = [projector(ctr.peps, (i, j, k), (i-1, j, m)) for k ∈ 1:2, m ∈ 1:2]
-        eng_u = [@view eu[k, m][pu[k, m][:], ∂v[j + 3 + k + (m - 1) * 2]] for k ∈ 1:2, m ∈ 1:2]
+        eng_u = [@view eu[k, m][pu[k, m], ∂v[j + 3 + k + (m - 1) * 2]] for k ∈ 1:2, m ∈ 1:2]
 
         en = [eng_loc[k] .+ eng_l[k, 1] .+ eng_l[k, 2] .+ eng_u[k, 1] .+ eng_u[k, 2] for k ∈ 1:2]
 
@@ -156,29 +156,30 @@ function conditional_probability(
         pd1 = projector(ctr.peps, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
         pd2 = projector(ctr.peps, (i, j, 2), ((i+1, j, 1), (i+1, j, 2)))
 
-        le = reshape(en[1], (:, 1)) .+ en12[p12[:], p21[:]] .+ reshape(en[2], (1, :))
+        le = reshape(en[1], (:, 1)) .+ en12[p12, p21] .+ reshape(en[2], (1, :))
         ele = exp.(-β .* (le .- minimum(le)))
 
         @cast LM3[s1, s2, x] := LM[(s1, s2), x] (s2 ∈ 1:maximum(pd2))
-        @cast R3[s1, s2, x] := R[x, (s1, s2)] (s2 ∈ 1:maximum(pr2))
+        R = permutedims(R, (2, 1))
+        @cast R3[s1, s2, x] := R[(s1, s2), x] (s2 ∈ 1:maximum(pr2))
 
-        LR = dropdims(sum(LM3[pd1[:], pd2[:], :] .* R3[pr1[:], pr2[:], :], dims=3), dims=3)
-        probs = dropdims(sum(LR .* ele, dims=2), dims=2)
+        LR = dropdims(sum(LM3[pd1, pd2, :] .* R3[pr1, pr2, :], dims=3), dims=3)
+        probs = dropdims(sum(Array(LR) .* ele, dims=2), dims=2)
     else  # k == 2 ; here s1 is fixed
         R = right_env(ctr, i, ∂v[(j+7):end], indβ)
         eng_loc = local_energy(ctr.peps, (i, j, 2))
 
         el = [interaction_energy(ctr.peps, (i, j, 2), (i, j-1, m)) for m ∈ 1:2]
         pl = [projector(ctr.peps, (i, j, 2), (i, j-1, m)) for m ∈ 1:2]
-        eng_l = [@view el[m][pl[m][:], ∂v[j - 1 + m]] for m ∈ 1:2]
+        eng_l = [@view el[m][pl[m], ∂v[j - 1 + m]] for m ∈ 1:2]
 
         eu = [interaction_energy(ctr.peps, (i, j, 2), (i-1, j, m)) for m ∈ 1:2]
         pu = [projector(ctr.peps, (i, j, 2), (i-1, j, m)) for m ∈ 1:2]
-        eng_u = [@view eu[m][pu[m][:], ∂v[j + 1 + m]] for m ∈ 1:2]
+        eng_u = [@view eu[m][pu[m], ∂v[j + 1 + m]] for m ∈ 1:2]
 
         e21 = interaction_energy(ctr.peps, (i, j, 2), (i, j, 1))
         p21 = projector(ctr.peps, (i, j, 2), (i, j, 1))
-        eng_21 = @inbounds @view e21[p21[:], ∂v[j + 4]]
+        eng_21 = @inbounds @view e21[p21, ∂v[j + 4]]
 
         le = eng_loc .+ eng_l[1] .+ eng_l[2] .+ eng_u[1] .+ eng_u[2] .+ eng_21
         ele = exp.(-β .* (le .- minimum(le)))
@@ -186,12 +187,13 @@ function conditional_probability(
         pr2 = projector(ctr.peps, (i, j, 2), ((i, j+1, 1), (i, j+1, 2)))
         pd2 = projector(ctr.peps, (i, j, 2), ((i+1, j, 1), (i+1, j, 2)))
 
-        @cast R3[p1, p2, x] := R[x, (p1, p2)] (p2 ∈ 1:maximum(pr2))
-        R2 = @view R3[∂v[j + 5], :, :]
+        R = permutedims(R, (2, 1))
+        @cast R3[p1, p2, x] := R[(p1, p2), x] (p2 ∈ 1:maximum(pr2))
+        R2 = R3[∂v[j + 5], :, :]
         @cast LM3[p1, p2, x] := LM[(p1, p2), x] (p2 ∈ 1:maximum(pd2))
-        LM2 = @view LM3[∂v[j + 6], :, :]
-
-        probs = ele .* dropdims(sum(R2[pr2[:], :] .* LM2[pd2[:], :], dims=2), dims=2)
+        LM2 = LM3[∂v[j + 6], :, :]
+        LR = dropdims(sum(R2[pr2, :] .* LM2[pd2, :], dims=2), dims=2)
+        probs = ele .* Array(LR)
     end
 
     push!(ctr.statistics, ((i, j, k), ∂v) => error_measure(probs))
@@ -307,7 +309,7 @@ function tensor(
     network::PEPSNetwork{T, Dense}, node::PEPSNode, β::Real, ::Val{:central_h2}
 ) where {T <: AbstractGeometry}
     i, j = node.i, floor(Int, node.j)
-    Array(CentralTensor(network, β, (i, j), (i, j+1)))
+    dense_central(CentralTensor(network, β, (i, j), (i, j+1)))
 end
 
 """

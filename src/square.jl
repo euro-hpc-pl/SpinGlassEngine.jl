@@ -218,7 +218,7 @@ function conditional_probability(
 
     A = LM[p_1, :] .* R[:, p_2]'
     @reduce bnd_exp[x] := sum(y) A[x, y]
-    probs .*= bnd_exp
+    probs .*= Array(bnd_exp)
 
     push!(ctr.statistics, ((i, j), ∂v) => error_measure(probs))
     normalize_probability(probs)

@@ -188,7 +188,9 @@ function conditional_probability(
 
     @cast lmx2[b, c, d] := LMX[(b, c), d] (c ∈ 1:maximum(p_rb))
 
-    for σ ∈ 1:length(probs)
+    lmx2, M, R = Array.((lmx2, M, R))  # REWRITE
+
+    for σ ∈ 1:length(probs)   # REWRITE on CUDA + parallelize
         lmx = @inbounds lmx2[∂v[2*j-1], p_rb[σ], :]
         m = @inbounds M[:, pd[σ], :]
         r = @inbounds R[:, pr[σ]]

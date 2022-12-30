@@ -37,6 +37,7 @@ function bench()
             cluster_assignment_rule = zephyr_lattice_5tuple_rotated(m+1, n+1, zephyr_lattice_5tuple((Int(m/2), Int(n/2), t)))
         )
     end
+    println("Factor graph memory = ", format_bytes(Base.summarysize(fg)))
 
     params = MpsParameters(Dcut, tolV, max_sweeps)
     Strategy = MPSAnnealing # SVDTruncate
@@ -46,7 +47,6 @@ function bench()
     Layout = GaugesEnergy
     Gauge = NoUpdate
 
-
     net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, tran)
     ctr = MpsContractor{Strategy, Gauge}(net, [β], :graduate_truncate, params)
 
@@ -55,29 +55,24 @@ function bench()
         println(" MPO ")
         W = SpinGlassEngine.mpo(ctr, ctr.layers.main, i, indβ)
     end
-
+    println(device(W))
     println("Mpo memory = ", format_bytes(measure_memory(W)))
 
     println("rand QMps")
     ψ = rand(QMps{Float64}, local_dims(W, :down), Dcut)
     println(device(ψ))
-    @time move_to_CUDA!(ψ)
-    println(device(ψ))
-    canonise!(ψ, :right)
-    canonise!(ψ, :left)
-    println(device(ψ))
+    println("canonnise")
+    @time begin
+        canonise!(ψ, :right)
+        canonise!(ψ, :left)
+    end
 
     ψ0 = rand(QMps{Float64}, local_dims(W, :up), Dcut)
-    @time move_to_CUDA!(ψ0)
     canonise!(ψ0, :right)
     canonise!(ψ0, :left)
     println(device(ψ0))
 
-    println(device(W))
-    @time move_to_CUDA!(W)
-    println(device(W))
-
-    println("var")
+    println("variational")
     @time begin
         overlap, env = variational_compress!(ψ0, W, ψ, tolV, max_sweeps)
     end

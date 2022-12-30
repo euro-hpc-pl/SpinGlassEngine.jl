@@ -104,8 +104,7 @@ $(TYPEDSIGNATURES)
 
 Construct (and memoize) MPO for a given layers.
 """
-#@memoize Dict
-function mpo(
+@memoize Dict function mpo(
     ctr::MpsContractor{T}, layers::Dict{Site, Sites}, r::Int, indβ::Int
 ) where T <: AbstractStrategy
     mpo = Dict{Site, MpoTensor{Float64}}() # Float64 - for now
@@ -117,7 +116,7 @@ function mpo(
         end
         push!(mpo, site => MpoTensor(lmpo))
     end
-    QMpo(mpo)
+    move_to_CUDA!(QMpo(mpo))
 end
 
 """
@@ -329,11 +328,11 @@ Construct (and memoize) right environment for a given node.
     ctr::MpsContractor{T}, i::Int, ∂v::Vector{Int}, indβ::Int
 ) where T <: AbstractStrategy
     l = length(∂v)
-    if l == 0 return ones(1, 1) end
+    if l == 0 return CUDA.ones(Float64, 1, 1) end  # TODO type propagation
 
     R̃ = right_env(ctr, i, ∂v[2:l], indβ)
     ϕ = dressed_mps(ctr, i, indβ)
-    W = mpo(ctr, ctr.layers.right, i, indβ)
+    W = mpo(ctr, ctr.layers.right, i, indβ)  # WRONG FLOW; now mpo is not memoised
     k = length(ϕ.sites)
     site = ϕ.sites[k-l+1]
     M = W[site]
@@ -360,7 +359,7 @@ $(TYPEDSIGNATURES)
     ctr::MpsContractor{T}, i::Int, ∂v::Vector{Int}, indβ::Int
 ) where T
     l = length(∂v)
-    if l == 0 return ones(1) end
+    if l == 0 return CUDA.ones(Float64, 1) end
     L̃ = left_env(ctr, i, ∂v[1:l-1], indβ)
     ϕ = dressed_mps(ctr, i, indβ)
     m = ∂v[l]
@@ -377,7 +376,10 @@ $(TYPEDSIGNATURES)
 """
 function clear_memoize_cache()
     Memoization.empty_all_caches!()
-    #Memoization.empty_cache!.((left_env, right_env, mpo, mps, mps_top, dressed_mps))
+end
+
+function clear_memoize_cache_after_row()
+    Memoization.empty_cache!.((left_env, right_env, mpo))
 end
 
 """

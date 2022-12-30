@@ -36,7 +36,6 @@ Gauge = NoUpdate
 
 net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, tran)
 ctr = MpsContractor{Strategy, Gauge}(net, [β/4, β/2, β], :graduate_truncate, params)
-println(vertices(fg))
 
 # for i in 1//2 : 1//2 : m
 #     for j in 1 : 1//2 : n

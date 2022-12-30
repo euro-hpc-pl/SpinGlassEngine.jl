@@ -37,7 +37,7 @@ function bench()
             cluster_assignment_rule = zephyr_lattice_5tuple_rotated(m+1, n+1, zephyr_lattice_5tuple((Int(m/2), Int(n/2), t)))
         )
     end
-    println("Factor graph memory = ", format_bytes(Base.summarysize(fg)))
+    println("Factor graph memory = ", format_bytes.(Base.summarysize(fg)))
 
     params = MpsParameters(Dcut, tolV, max_sweeps)
     Strategy = MPSAnnealing # SVDTruncate
@@ -56,7 +56,7 @@ function bench()
         W = SpinGlassEngine.mpo(ctr, ctr.layers.main, i, indβ)
     end
     println(device(W))
-    println("Mpo memory = ", format_bytes(measure_memory(W)))
+    println("Mpo memory = ", format_bytes.(measure_memory(W)))
 
     println("rand QMps")
     ψ = rand(QMps{Float64}, local_dims(W, :down), Dcut)

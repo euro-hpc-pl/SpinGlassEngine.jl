@@ -132,7 +132,7 @@ Construct (and memoize) top MPS using SVD for a given row.
 
     if i < 1
         W = mpo(ctr, ctr.layers.main, 1, indβ)
-        return IdentityQMps(Float64, local_dims(W, :up)) # F64 for now
+        return IdentityQMps(Float64, local_dims(W, :up); onGPU=true) # F64 for now
     end
 
     ψ = mps_top(ctr, i-1, indβ)
@@ -162,7 +162,7 @@ Construct (and memoize) (bottom) MPS using SVD for a given row.
 
     if i > ctr.peps.nrows
         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
-        return IdentityQMps(Float64, local_dims(W, :down)) # Float64 fror now
+        return IdentityQMps(Float64, local_dims(W, :down); onGPU=true) # Float64 fror now
     end
 
     ψ = mps(ctr, i+1, indβ)
@@ -206,11 +206,11 @@ Construct (and memoize) (bottom) MPS using SVD for a given row.
 @memoize Dict function mps_approx(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
     if i > ctr.peps.nrows
         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
-        return IdentityQMps(Float64, local_dims(W, :down)) # F64 for now
+        return IdentityQMps(Float64, local_dims(W, :down); onGPU=true) # F64 for now
     end
 
     W = mpo(ctr, ctr.layers.main, i, indβ)
-    ψ = IdentityQMps(Float64, local_dims(W, :down)) # F64 for now
+    ψ = IdentityQMps(Float64, local_dims(W, :down); onGPU=true) # F64 for now
 
     ψ0 = dot(W, ψ)
     truncate!(ψ0, :left, ctr.params.bond_dimension)
@@ -245,7 +245,7 @@ Construct (and memoize) (bottom) top MPS using Annealing for a given row.
     if indβ > 1
         ψ0 = mps_top(ctr, i, indβ-1)
     else
-        ψ0 = IdentityQMps(Float64, local_dims(W, :up), ctr.params.bond_dimension) # F64 for now
+        ψ0 = IdentityQMps(Float64, local_dims(W, :up), ctr.params.bond_dimension; onGPU=true) # F64 for now
         # ψ0 = IdentityQMps(Float64, local_dims(W, :down), ctr.params.bond_dimension) # F64 for now
         canonise!(ψ0, :left)
     end
@@ -276,7 +276,7 @@ Construct (and memoize) (bottom) MPS using Annealing for a given row.
     if indβ > 1
         ψ0 = mps(ctr, i, indβ-1)
     else
-        ψ0 = IdentityQMps(Float64, local_dims(W, :up), ctr.params.bond_dimension) # F64 for now
+        ψ0 = IdentityQMps(Float64, local_dims(W, :up), ctr.params.bond_dimension; onGPU=true) # F64 for now
         canonise!(ψ0, :left)
     end
 

@@ -26,7 +26,7 @@ function bench(instance::String)
     search_params = SearchParameters(num_states, δp)
 
     energies = Vector{Float64}[]
-    for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, )
+    for Strategy ∈ (SVDTruncate, Zipper), Sparsity ∈ (Dense, )
         for Gauge ∈ (NoUpdate, GaugeStrategy, GaugeStrategyWithBalancing)
             for Layout ∈ (GaugesEnergy,), transform ∈ all_lattice_transformations
                 net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)

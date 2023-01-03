@@ -1,6 +1,7 @@
 export
        SVDTruncate,
        MPSAnnealing,
+       Zipper,
        MpoLayers,
        MpsParameters,
        MpsContractor,
@@ -22,6 +23,7 @@ abstract type AbstractGauge end
 
 struct SVDTruncate <: AbstractStrategy end
 struct MPSAnnealing <: AbstractStrategy end
+struct Zipper <: AbstractStrategy end
 struct GaugeStrategyWithBalancing <: AbstractGauge end
 struct GaugeStrategy <: AbstractGauge end
 struct NoUpdate <: AbstractGauge end
@@ -228,55 +230,55 @@ for ctr ∈ [ctr_1, ctr_2]
 end
 =#
 
-# """
-# $(TYPEDSIGNATURES)
+"""
+$(TYPEDSIGNATURES)
 
-# Construct (and memoize) top MPS using Zipper (truncated SVD) for a given row.
-# """
-# @memoize Dict function mps_top(ctr::MpsContractor{Zipper}, i::Int, indβ::Int)
-#     Dcut = ctr.params.bond_dimension
-#     tolV = ctr.params.variational_tol
-#     tolS = ctr.params.tol_SVD
-#     max_sweeps = ctr.params.max_num_sweeps
+Construct (and memoize) top MPS using Zipper (truncated SVD) for a given row.
+"""
+@memoize Dict function mps_top(ctr::MpsContractor{Zipper}, i::Int, indβ::Int)
+    Dcut = ctr.params.bond_dimension
+    tolV = ctr.params.variational_tol
+    tolS = ctr.params.tol_SVD
+    max_sweeps = ctr.params.max_num_sweeps
 
-#     if i < 1
-#         W = mpo(ctr, ctr.layers.main, 1, indβ)
-#         return IdentityQMps(Float64, local_dims(W, :up)) # F64 for now
-#     end
+    if i < 1
+        W = mpo(ctr, ctr.layers.main, 1, indβ)
+        return IdentityQMps(Float64, local_dims(W, :up); onGPU=true) # F64 for now
+    end
 
-#     ψ = mps_top(ctr, i-1, indβ)
-#     W = transpose(mpo(ctr, ctr.layers.main, i, indβ))
+    ψ = mps_top(ctr, i-1, indβ)
+    W = transpose(mpo(ctr, ctr.layers.main, i, indβ))
 
-#     canonise!(ψ, :left)
-#     ψ0 = zipper(W, ψ, method=:psvd_sparse, Dcut=Dcut, tol=tolS)
-#     variational_compress!(ψ0, W, ψ, tolV, max_sweeps)
-#     ψ0
-# end
+    canonise!(ψ, :left)
+    ψ0 = zipper(W, ψ; method=:psvd_sparse, Dcut=Dcut, tol=tolS)
+    variational_compress!(ψ0, W, ψ, tolV, max_sweeps)
+    ψ0
+end
 
-# """
-# $(TYPEDSIGNATURES)
+"""
+$(TYPEDSIGNATURES)
 
-# Construct (and memoize) (bottom) MPS using Zipper (truncated SVD) for a given row.
-# """
-# @memoize Dict function mps(ctr::MpsContractor{Zipper}, i::Int, indβ::Int)
-#     Dcut = ctr.params.bond_dimension
-#     tolV = ctr.params.variational_tol
-#     tolS = ctr.params.tol_SVD
-#     max_sweeps = ctr.params.max_num_sweeps
+Construct (and memoize) (bottom) MPS using Zipper (truncated SVD) for a given row.
+"""
+@memoize Dict function mps(ctr::MpsContractor{Zipper}, i::Int, indβ::Int)
+    Dcut = ctr.params.bond_dimension
+    tolV = ctr.params.variational_tol
+    tolS = ctr.params.tol_SVD
+    max_sweeps = ctr.params.max_num_sweeps
 
-#     if i > ctr.peps.nrows
-#         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
-#         return IdentityQMps(Float64, local_dims(W, :down)) # Float64 fror now
-#     end
+    if i > ctr.peps.nrows
+        W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
+        return IdentityQMps(Float64, local_dims(W, :down); onGPU=true) # Float64 fror now
+    end
 
-#     ψ = mps(ctr, i+1, indβ)
-#     W = mpo(ctr, ctr.layers.main, i, indβ)
+    ψ = mps(ctr, i+1, indβ)
+    W = mpo(ctr, ctr.layers.main, i, indβ)
 
-#     canonise!(ψ, :left)
-#     ψ0 = zipper(W, ψ, method=:psvd_sparse, Dcut=Dcut, tol=tolS)
-#     variational_compress!(ψ0, W, ψ, tolV, max_sweeps)
-#     ψ0
-# end
+    canonise!(ψ, :left)
+    ψ0 = zipper(W, ψ; method=:psvd_sparse, Dcut=Dcut, tol=tolS)
+    variational_compress!(ψ0, W, ψ, tolV, max_sweeps)
+    ψ0
+end
 
 """
 $(TYPEDSIGNATURES)

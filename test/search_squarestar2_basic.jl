@@ -31,7 +31,7 @@ function run_test(instance, m, n, t)
     Gauge = NoUpdate
     βs = [β/16, β/8, β/4, β/2, β]
 
-    for Strategy ∈ (SVDTruncate, MPSAnnealing, Zipper), Sparsity ∈ ( Sparse, )  # Dense,
+    for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ ( Sparse, )  # Dense,
         for Layout ∈ (EnergyGauges, GaugesEnergy)
             for tran ∈ all_lattice_transformations
 

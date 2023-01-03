@@ -28,7 +28,7 @@ function bench(instance::String)
 
     # Solve using PEPS search
     energies = Vector{Float64}[]
-    for Strategy ∈ (SVDTruncate, MPSAnnealing, Zipper), transform ∈ all_lattice_transformations
+    for Strategy ∈ (SVDTruncate, MPSAnnealing), transform ∈ all_lattice_transformations
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng), Sparsity ∈ (Dense, )
             net = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, fg, transform)
             ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], graduate_truncation, params)

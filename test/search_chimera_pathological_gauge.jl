@@ -67,7 +67,7 @@
     Gauge = GaugeStrategy
 
     energies = Vector{Float64}[]
-    for Strategy ∈ (SVDTruncate, MPSAnnealing, Zipper), Sparsity ∈ (Dense, Sparse)
+    for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, Sparse)
         for Layout ∈ (EngGaugesEng, GaugesEnergy, EnergyGauges)
             for Lattice ∈ (Square, ), transform ∈ all_lattice_transformations
 

@@ -27,7 +27,7 @@ search_params = SearchParameters(num_states, δp)
 
 # Solve using PEPS search
 energies = Vector{Float64}[]
-Strategy = MPSAnnealing # SVDTruncate
+Strategy = Zipper # MPSAnnealing # SVDTruncate
 Sparsity = Sparse #Dense
 tran =  LatticeTransformation((3, 4, 1, 2), false)
 Layout = EnergyGauges

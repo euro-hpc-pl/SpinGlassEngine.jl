@@ -43,7 +43,7 @@ TOL_SVD = 1E-16
 disable_logging(LogLevel(1))
 BLAS.set_num_threads(1)
 
-function pegasus_sim(inst, trans, β, Layout, bd)
+function zephyr_sim(inst, trans, β, Layout, bd)
     δp = 1E-5*exp(-β * DE)
 
     fg = factor_graph(
@@ -72,7 +72,7 @@ function run_bench(inst::String, β::Real, t, l, bd)
         println("Skipping for $β, $t, $l, $bd.")
     else
         data = try
-            tic_toc = @elapsed sol, ctr, cRAM = pegasus_sim(inst, t, β, l, bd)
+            tic_toc = @elapsed sol, ctr, cRAM = zephyr_sim(inst, t, β, l, bd)
 
             data = DataFrame(
                 :instance => inst,

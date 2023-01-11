@@ -8,12 +8,13 @@ m = 6 # for Z3
 n = 6
 t = 4
 
-β = 2
-bond_dim = 3
-δp = 1e-10
+β = 0.25
+DE = 16.0
+bond_dim = 5
+δp = 1E-5*exp(-β * DE)
 num_states = 128
 
-ig = ising_graph("$(@__DIR__)/../instances/zephyr/z3.txt")
+ig = ising_graph("$(@__DIR__)/../instances/zephyr_random/Z3/RAU/SpinGlass/001_sg.txt")
 
 fg = factor_graph(
     ig,
@@ -23,19 +24,19 @@ fg = factor_graph(
 
 )
 
-params = MpsParameters(bond_dim, 1E-8, 2)
+params = MpsParameters(bond_dim, 1E-8, 10, 1E-16)
 search_params = SearchParameters(num_states, δp)
 
 # Solve using PEPS search
 energies = Vector{Float64}[]
-Strategy = MPSAnnealing # SVDTruncate
+Strategy = Zipper # SVDTruncate
 Sparsity = Sparse #Dense
-tran =  rotation(0)
-Layout = EnergyGauges
+tran =  LatticeTransformation((4, 1, 2, 3), true)
+Layout = GaugesEnergy
 Gauge = NoUpdate
 
 net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, tran)
-ctr = MpsContractor{Strategy, Gauge}(net, [β/4, β/2, β], :graduate_truncate, params)
+ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params)
 
 # for i in 1//2 : 1//2 : m
 #     for j in 1 : 1//2 : n

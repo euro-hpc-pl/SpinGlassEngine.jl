@@ -30,7 +30,6 @@ SpinGlassTensors = "0.1.5"
 TensorCast = "0.3, 0.4"
 TensorOperations = "3.0.1"
 julia = "1.5, 1.6, 1.7"
-MKL = "0.4.2"
 Statistics = "1.7.0"
 
 [extras]

@@ -31,7 +31,7 @@ function bench(instance::String)
     fg = factor_graph(
     ig,
     spectrum=full_spectrum, #brute_force_gpu, # rm _gpu to use CPU
-    cluster_assignment_rule = zephyr_lattice_5tuple_rotated(m+1,n+1,zephyr_lattice_5tuple((Int(m/2),Int(n/2),t)))
+    cluster_assignment_rule = zephyr_lattice((m, n, t))
     )
     end
     params = MpsParameters(bond_dim, 1E-8, 10, 1E-16)

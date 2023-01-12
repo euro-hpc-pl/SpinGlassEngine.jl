@@ -50,7 +50,7 @@ function zephyr_sim(inst, trans, β, Layout, bd)
         ising_graph(INSTANCE_DIR * "/" * inst),
         #2^max_cl_states,
         spectrum=full_spectrum,
-        cluster_assignment_rule = zephyr_lattice_5tuple_rotated(M+1,N+1,zephyr_lattice_5tuple((Int(M/2),Int(N/2),T)))
+        cluster_assignment_rule = zephyr_lattice((M, N, T))
         )
     params = MpsParameters(bd, VAR_TOL, MAX_SWEEPS, TOL_SVD)
     search_params = SearchParameters(MAX_STATES, δp)

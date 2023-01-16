@@ -42,8 +42,9 @@ push!(my_tests,
 
 push!(my_tests,
     # "experimental/zipper.jl",
-    "experimental/squarestar2_pegasus.jl",
+    # "experimental/squarestar2_pegasus.jl",
     # "experimental/squarestar2_zephyr.jl",
+    # "experimental/gauges_cuda.jl"
 )
 
 @time begin

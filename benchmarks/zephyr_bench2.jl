@@ -19,10 +19,10 @@ size = MPI.Comm_size(MPI.COMM_WORLD)
 rank = MPI.Comm_rank(MPI.COMM_WORLD)
 
 M, N, T = 6, 6, 4
-INSTANCE_DIR = "$(@__DIR__)/../test/instances/zephyr_random/Z3/RAU/SpinGlass/single"
-OUTPUT_DIR = "$(@__DIR__)/results/zephyr_random/Z3/RAU/zipper_lowbeta"
+INSTANCE_DIR = "$(@__DIR__)/../test/instances/zephyr_random/Z3/RCO/SpinGlass/single"
+OUTPUT_DIR = "$(@__DIR__)/results/zephyr_random/Z3/RCO/zipper"
 
-BETAS = [0.25, 0.5]#collect(1:1:10)
+BETAS = [0.5, 1]#collect(1:1:10)
 LAYOUT = (GaugesEnergy,)
 TRANSFORM = all_lattice_transformations
 
@@ -33,12 +33,12 @@ graduate_truncation = :graduate_truncate
 
 INDβ = [3,] #[1, 2, 3]
 MAX_STATES = 128
-BOND_DIM = [2,3,4,5]
+BOND_DIM = [5, 7]#collect(1:1:10)
 DE = 16.0
 #MAX_CL = [2,4,6,8,10,12]
 
-MAX_SWEEPS = 10
-VAR_TOL = 1E-8
+MAX_SWEEPS = 2
+VAR_TOL = 1E-16
 TOL_SVD = 1E-16
 disable_logging(LogLevel(1))
 BLAS.set_num_threads(1)

@@ -480,6 +480,8 @@ function sweep_gauges!(
 
     ψ_top = deepcopy(ψ_top)
     ψ_bot = deepcopy(ψ_bot)
+    
+    onGPU = ψ_top.onGPU && ψ_bot.onGPU
 
     gauges = optimize_gauges_for_overlaps!!(ψ_top, ψ_bot, tol, max_sweeps)
 
@@ -488,8 +490,12 @@ function sweep_gauges!(
         g_inv = 1.0 ./ g
         @inbounds n_bot = PEPSNode(row + 1 + clm[i][begin], i)
         @inbounds n_top = PEPSNode(row + clm[i][end], i)
-        g_top = ctr.peps.gauges.data[n_top] .* g
-        g_bot = ctr.peps.gauges.data[n_bot] .* g_inv
+        top = ctr.peps.gauges.data[n_top]
+        bot = ctr.peps.gauges.data[n_bot]
+        onGPU ? top = CuArray(top) : top
+        onGPU ? bot = CuArray(bot) : bot
+        g_top = top .* g
+        g_bot = bot .* g_inv
         push!(ctr.peps.gauges.data, n_top => g_top, n_bot => g_bot)
     end
     clear_memoize_cache(ctr, row, indβ)

@@ -1,4 +1,4 @@
-for size in 12 16
+for size in 8
 do
 	for cat in RAU RCO AC3
   	do

@@ -31,7 +31,7 @@ search_params = SearchParameters(num_states, δp)
 Strategy = SVDTruncate
 Gauge = NoUpdate
 @testset "Compare the results for GaugesEnergy with Python" begin
-    for Sparsity ∈ (Dense, ) # Sparse)
+    for Sparsity ∈ (Dense, Sparse) 
         network = PEPSNetwork{Square{GaugesEnergy}, Sparsity}(m, n, fg, rotation(0))
         ctr = MpsContractor{Strategy, Gauge}(network, [β/8, β/4, β/2, β], :graduate_truncate, params)
         @testset "Compare the results with Python" begin
@@ -49,7 +49,7 @@ end
 
 @testset "Compare the results for EnergyGauges with Python" begin
     overlap_python = [0.18603559878582027, 0.36463028391550056, 0.30532555472025247]
-    for Sparsity ∈ (Dense, ) # Sparse)
+    for Sparsity ∈ (Dense, Sparse)
         net = PEPSNetwork{Square{EnergyGauges}, Sparsity}(m, n, fg, rotation(0))
         ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params)
         for i in 1:n-1

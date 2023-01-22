@@ -418,7 +418,7 @@ $(TYPEDSIGNATURES)
     site = ϕ.sites[l]
     M = ϕ[site]
 
-    @matmul L[x] := sum(α) L̃[α] * M[α, $m, x]
+    @matmul L[x] := sum(α) L̃[α] * M[α, x, $m]
     nmr = maximum(abs.(L))
     iszero(nmr) ? L : L ./ nmr
 end

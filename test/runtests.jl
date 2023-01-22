@@ -25,9 +25,9 @@ push!(my_tests,
     # "search_smallest_cross_square_star.jl",
     # "search_pegasus_square_star.jl",
     # "search_pegasus_nodiag_square_star.jl",
-    # "search_square2_basic.jl",
+    "search_square2_basic.jl",
     # "search_squarestar2_basic.jl",
-    "chimera_overlap_python.jl",
+    # "chimera_overlap_python.jl",
 
 # to fix in Tensor
     #"search_chimera_pathological_gauge.jl",

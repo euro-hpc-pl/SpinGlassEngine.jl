@@ -11,7 +11,7 @@ t = 3
 β = 2
 bond_dim = 3
 δp = 1e-10
-num_states = 128
+num_states = 16
 
 #ig = ising_graph("$(@__DIR__)/../instances/pegasus_droplets/4_4_3_00.txt")
 ig = ising_graph("$(@__DIR__)/../instances/pegasus_random/P4/RAU/SpinGlass/001_sg.txt")
@@ -29,21 +29,22 @@ search_params = SearchParameters(num_states, δp)
 energies = Vector{Float64}[]
 Strategy = Zipper # MPSAnnealing # SVDTruncate
 Sparsity = Sparse #Dense
-tran =  LatticeTransformation((3, 4, 1, 2), false)
 Layout = EnergyGauges
 Gauge = NoUpdate
 
-net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, tran)
-ctr = MpsContractor{Strategy, Gauge}(net, [β/4, β/2, β], :graduate_truncate, params)
 
-# for i in 1//2 : 1//2 : m
-#     for j in 1 : 1//2 : n
-#         println("Size", (i,j)," = ", log2.(size(net, PEPSNode(i, j))))
-#     end
-# end
+for tran ∈ all_lattice_transformations
+    println(" ==================== ")
+    println(tran)
 
-sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+    net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, tran)
+    ctr = MpsContractor{Strategy, Gauge}(net, [β/4, β/2, β], :graduate_truncate, params)
 
-println(sol.energies)
+    @time begin
+    sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+    end
+    println(sol.energies)
 
 clear_memoize_cache()
+
+end

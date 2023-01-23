@@ -20,7 +20,7 @@
     Gauge = NoUpdate
 
     energies = Vector{Float64}[]
-    for Strategy ∈ (SVDTruncate, MPSAnnealing, Zipper), Sparsity ∈ (Sparse, Dense)
+    for Strategy ∈ (SVDTruncate, MPSAnnealing, Zipper), Sparsity ∈ (Sparse,  Dense) 
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
             for transform ∈ all_lattice_transformations, Lattice ∈ (SquareStar, )
                 net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform)

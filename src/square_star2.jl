@@ -155,10 +155,10 @@ function conditional_probability(  # TODO
         pd1 = projector(ctr.peps, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
         pd2 = projector(ctr.peps, (i, j, 2), ((i+1, j, 1), (i+1, j, 2)))
 
-        LMX = permutedims(LMX, (2, 1))
+        # LMX = permutedims(LMX, (2, 1))
         @cast LMX5[x, y, v, p1, p2] := LMX[(x, y), (v, p1, p2)]  (p1 ∈ 1:maximum(plb1), p2 ∈ 1:maximum(plb2), y ∈ 1:1)
         LMX4 = LMX5[:, :, ∂v[2 * j - 1], :, :]
-        M = permutedims(M, (1, 3, 2))
+        # M = permutedims(M, (1, 3, 2))
         @cast M4[x, y, p1, p2] := M[x, y, (p1, p2)] (p2 ∈ 1:maximum(pd2))
         @cast R4[x, y, p1, p2] := R[(x, y), (p1, p2)] (p2 ∈ 1:maximum(prf2), x ∈ 1:1)
         LR = dropdims(sum(LMX4[:, :, plb1, plb2] .* M4[:, :, pd1, pd2] .* R4[:, :, prf1, prf2], dims=(1, 2)), dims=(1, 2))
@@ -199,10 +199,10 @@ function conditional_probability(  # TODO
         pd2 = projector(ctr.peps, (i, j, 2), ((i+1, j, 1), (i+1, j, 2)))
 
 
-        LMX = permutedims(LMX, (2, 1))
+        # LMX = permutedims(LMX, (2, 1))
         @cast LMX5[x, y, v, p1, p2] := LMX[(x, y), (v, p1, p2)]  (p1 ∈ 1:maximum(plb1), p2 ∈ 1:maximum(plb2), y ∈ 1:1)  # problem: cast z permute jaka kolejnosc
         LMX3 =  LMX5[:, :, ∂v[2 * j - 1], ∂v[2 * j + 7], :]   # view problem czy nie problem -- gdzie wrzucic "v" "p1"
-        M = permutedims(M, (1,3,2))
+        # M = permutedims(M, (1,3,2))
         @cast M4[x, y, p1, p2] := M[x, y, (p1, p2)] (p2 ∈ 1:maximum(pd2))  # problem: cast z permute; jaka kolejnosc?
         M2 =  M4[:, :, ∂v[2 * j + 8], :]   # view problem czy nie problem -- gdzie wrzucic "v" "p1"
         @cast R4[x, y, p1, p2] := R[(x, y), (p1, p2)] (p2 ∈ 1:maximum(prf2), x ∈ 1:1)  # czy potrzebny permute (patrz nastepna linijka)

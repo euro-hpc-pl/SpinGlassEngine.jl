@@ -20,10 +20,10 @@ function bench(instance::String)
     t = 4
 
     β = 0.5
-    bond_dim = 5
+    bond_dim = 3
     DE = 16.0
     δp = 1E-5*exp(-β * DE)
-    num_states = 128
+    num_states = 32
     println("creating factor graph" )
     @time begin
     ig = ising_graph(instance)
@@ -54,7 +54,7 @@ function bench(instance::String)
 end
 
 instance = "$(@__DIR__)/../test/instances/zephyr_random/Z3/RAU/SpinGlass/001_sg.txt"
-bench(instance)
+# bench(instance)
 @profile bench(instance)
 
 pprof(flamegraph(); webhost = "localhost", webport = 57328)

@@ -26,7 +26,7 @@ push!(my_tests,
     # "search_pegasus_square_star.jl",
     # "search_pegasus_nodiag_square_star.jl",
     # "search_square2_basic.jl",
-    # "search_squarestar2_basic.jl",
+    "search_squarestar2_basic.jl",
     # "chimera_overlap_python.jl",
 
 # to fix in Tensor
@@ -42,7 +42,7 @@ push!(my_tests,
 
 push!(my_tests,
     # "experimental/zipper.jl",
-    "experimental/squarestar2_pegasus.jl",
+    # "experimental/squarestar2_pegasus.jl",
     # "experimental/squarestar2_zephyr.jl",
     # "experimental/gauges_cuda.jl"
 )

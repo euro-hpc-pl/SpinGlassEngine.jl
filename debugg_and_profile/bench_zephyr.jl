@@ -7,7 +7,7 @@ using Profile, PProf
 using FlameGraphs
 
 disable_logging(LogLevel(1))
-Profile.init(n = 10^10, delay = 0.01)
+#Profile.init(n = 10^10, delay = 0.01)
 
 function brute_force_gpu(ig::IsingGraph; num_states::Int)
     brute_force(ig, :GPU, num_states=num_states)
@@ -57,4 +57,4 @@ instance = "$(@__DIR__)/../test/instances/zephyr_random/Z3/RAU/SpinGlass/001_sg.
 # bench(instance)
 @profile bench(instance)
 
-pprof(flamegraph(); webhost = "localhost", webport = 57328)
+pprof(flamegraph(); webhost = "localhost", webport = 57329)

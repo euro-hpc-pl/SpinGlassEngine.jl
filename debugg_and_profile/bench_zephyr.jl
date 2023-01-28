@@ -57,4 +57,4 @@ instance = "$(@__DIR__)/../test/instances/zephyr_random/Z3/RAU/SpinGlass/001_sg.
 # bench(instance)
 @profile bench(instance)
 
-pprof(flamegraph(); webhost = "localhost", webport = 57329)
+pprof(flamegraph(); webhost = "localhost", webport = 57322)

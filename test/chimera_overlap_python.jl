@@ -55,7 +55,7 @@ end
     overlap_python = [0.18603559878582027, 0.36463028391550056, 0.30532555472025247]
     for Sparsity ∈ (Dense, Sparse)
         net = PEPSNetwork{Square{EnergyGauges}, Sparsity}(m, n, fg, rotation(0))
-        ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params)
+        ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
         for i in 1:n-1
             psi_top = mps_top(ctr, i, 4)
             psi_bottom = mps(ctr, i+1, 4)

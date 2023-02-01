@@ -3,7 +3,8 @@ export
        merge_branches,
        low_energy_spectrum,
        Solution,
-       bound_solution
+       bound_solution,
+       gibbs_sampling
 
 """
 $(TYPEDSIGNATURES)
@@ -31,8 +32,7 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-@inline empty_solution() = Solution([0.0], [Vector{Int}[]], [0.0], [1], -Inf)
-
+@inline empty_solution(n::Int=1) = Solution(zeros(n), fill(Vector{Int}[], n) , zeros(n), ones(Int, n), -Inf)
 """
 $(TYPEDSIGNATURES)
 """
@@ -187,6 +187,28 @@ end
 """
 $(TYPEDSIGNATURES)
 """
+function sampling(
+    psol::Solution, max_states::Int, δprob::Real, merge_strategy=no_merge
+)
+    prob = exp.(psol.probabilities)
+    new_prob = cumsum(reshape(prob, :, max_states), dims = 1)
+
+    rr = rand(max_states)
+    idx = zeros(max_states)
+    idx_lin = zeros(Int, max_states)
+    for (i, m) in enumerate(rr)
+        np = new_prob[:, i]
+        new_prob[:, i] = np / np[end]
+        idx[i] = searchsortedfirst(new_prob[:, i], m)
+        idx_lin[i] = Int((i-1) * size(new_prob, 1) + idx[i])
+    end
+    ldp = 0.0
+    Solution(psol, idx_lin, ldp)
+end
+
+"""
+$(TYPEDSIGNATURES)
+"""
 function low_energy_spectrum(
     ctr::T, sparams::SearchParameters, merge_strategy=no_merge; no_cache=false,
 ) where T <: AbstractContractor
@@ -238,3 +260,59 @@ function low_energy_spectrum(
     )
     sol
 end
+
+"""
+$(TYPEDSIGNATURES)
+"""
+function gibbs_sampling(
+    ctr::T, sparams::SearchParameters, merge_strategy=no_merge; no_cache=false,
+) where T <: AbstractContractor
+    # Build all boundary mps
+    CUDA.allowscalar(false)
+
+    @showprogress "Preprocessing: " for i ∈ ctr.peps.nrows:-1:1
+        dressed_mps(ctr, i)
+        clear_memoize_cache_after_row()
+    end
+
+    # Start branch and bound search
+    sol = empty_solution(sparams.max_states)
+    old_row = ctr.nodes_search_order[1][1]
+    @showprogress "Search: " for node ∈ ctr.nodes_search_order
+        ctr.current_node = node
+        current_row = old_row[1]
+        sol = branch_solution(sol, ctr)
+        sol = sampling(sol, sparams.max_states, sparams.cut_off_prob, merge_strategy)
+        Memoization.empty_cache!(precompute_conditional)
+        # TODO: clear memoize cache partially
+        if no_cache Memoization.empty_all_caches!() end
+        if current_row > old_row
+            current_row = old_row
+            clear_memoize_cache_after_row()
+        end
+    end
+    clear_memoize_cache_after_row()
+
+    # Translate variable order (network --> factor graph)
+    inner_perm = sortperm([
+        ctr.peps.factor_graph.reverse_label_map[idx]
+        for idx ∈ ctr.peps.vertex_map.(ctr.nodes_search_order)
+    ])
+
+    # Sort using energies as keys
+    outer_perm = sortperm(sol.energies)
+    sol = Solution(
+        sol.energies[outer_perm],
+        [σ[inner_perm] for σ ∈ sol.states[outer_perm]],
+        sol.probabilities[outer_perm],
+        sol.degeneracy[outer_perm],
+        sol.largest_discarded_probability
+    )
+
+    # Final check if states correspond energies
+    @assert sol.energies ≈ energy.(
+        Ref(ctr.peps.factor_graph), decode_state.(Ref(ctr.peps), sol.states)
+    )
+    sol
+end
+

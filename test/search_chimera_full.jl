@@ -2,6 +2,10 @@ using SpinGlassNetworks
 using SpinGlassTensors
 using SpinGlassEngine
 
+function my_brute_force(ig::IsingGraph; num_states::Int)
+    brute_force(ig, onGPU ? :GPU : :CPU, num_states=num_states)
+end
+
 function bench(instance::String)
     m, n, t = 16, 16, 8
 
@@ -19,7 +23,7 @@ function bench(instance::String)
     fg = factor_graph(
         ising_graph(instance),
         max_cl_states,
-        spectrum=brute_force,
+        spectrum=my_brute_force,
         cluster_assignment_rule=super_square_lattice((m, n, t))
     )
     params = MpsParameters(bond_dim, 1E-8, 10, 1E-16)
@@ -30,7 +34,7 @@ function bench(instance::String)
         for Gauge ∈ (NoUpdate, GaugeStrategy, GaugeStrategyWithBalancing)
             for Layout ∈ (GaugesEnergy,), transform ∈ all_lattice_transformations
                 net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
-                ctr = MpsContractor{Strategy, Gauge}(net, all_betas, :graduate_truncate, params)
+                ctr = MpsContractor{Strategy, Gauge}(net, all_betas, :graduate_truncate, params; onGPU=onGPU)
                 sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit))
 
                 @test sol.energies[begin] ≈ ground_energy

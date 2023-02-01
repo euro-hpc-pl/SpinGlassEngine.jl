@@ -85,7 +85,7 @@ mutable struct MpsContractor{T <: AbstractStrategy, R <: AbstractGauge} <: Abstr
     current_node::Node
     onGPU::Bool
 
-    function MpsContractor{T, R}(net, βs, graduate_truncation::Symbol, params; onGPU=false) where {T, R}
+    function MpsContractor{T, R}(net, βs, graduate_truncation::Symbol, params; onGPU=true) where {T, R}
         ml = MpoLayers(layout(net), net.ncols)
         stat = Dict()
         ord, node_out = nodes_search_order_Mps(net)

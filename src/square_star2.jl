@@ -111,6 +111,29 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar2{GaugesEnergy}
     )
 end
 
+
+@memoize Dict function precompute_conditional(
+    ::Type{T}, ctr::MpsContractor{S}, current_node
+) where {T <: SquareStar2, S}
+        i, j, k = current_node
+
+        β = last(ctr.betas)
+        en12 = interaction_energy(ctr.peps, (i, j, 1), (i, j, 2))
+        p12 = projector(ctr.peps, (i, j, 1), (i, j, 2))
+        p21 = projector(ctr.peps, (i, j, 2), (i, j, 1))
+
+        plb1 = projector(ctr.peps, (i, j, 1), ((i+1, j-1, 1), (i+1, j-1, 2)))
+        plb2 = projector(ctr.peps, (i, j, 2), ((i+1, j-1, 1), (i+1, j-1, 2)))
+        prf1 = projector(ctr.peps, (i, j, 1), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2)))
+        prf2 = projector(ctr.peps, (i, j, 2), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2)))
+        pd1 = projector(ctr.peps, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
+        pd2 = projector(ctr.peps, (i, j, 2), ((i+1, j, 1), (i+1, j, 2)))
+
+        le = en12[p12, p21]
+        ele = exp.(-β .* (le .- minimum(le)))
+        ele, plb1, plb2, prf1, prf2, pd1, pd2
+end
+
 """
 $(TYPEDSIGNATURES)
 """
@@ -145,15 +168,9 @@ function conditional_probability(  # TODO
         eng_u = [@view eu[k, m][pu[k, m], ∂v[2 * j + 7 + k + (m - 1) * 2]] for k ∈ 1:2, m ∈ 1:2]
 
         en = [eng_loc[k] .+ eng_l[k, 1] .+ eng_l[k, 2] .+ eng_lu[k, 1] .+ eng_lu[k, 2] .+ eng_u[k, 1] .+ eng_u[k, 2] for k ∈ 1:2]
-        en12 = interaction_energy(ctr.peps, (i, j, 1), (i, j, 2))
-        p12 = projector(ctr.peps, (i, j, 1), (i, j, 2))
-        p21 = projector(ctr.peps, (i, j, 2), (i, j, 1))
-        plb1 = projector(ctr.peps, (i, j, 1), ((i+1, j-1, 1), (i+1, j-1, 2)))
-        plb2 = projector(ctr.peps, (i, j, 2), ((i+1, j-1, 1), (i+1, j-1, 2)))
-        prf1 = projector(ctr.peps, (i, j, 1), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2)))
-        prf2 = projector(ctr.peps, (i, j, 2), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2)))
-        pd1 = projector(ctr.peps, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
-        pd2 = projector(ctr.peps, (i, j, 2), ((i+1, j, 1), (i+1, j, 2)))
+        en = [exp.(-β .* (en[k] .- minimum(en[k]))) for k ∈ 1:2]
+        ele, plb1, plb2, prf1, prf2, pd1, pd2 = precompute_conditional(T, ctr, ctr.current_node)
+        tele = reshape(en[1], (:, 1)) .* ele .* reshape(en[2], (1, :))
 
         # LMX = permutedims(LMX, (2, 1))
         @cast LMX5[x, y, v, p1, p2] := LMX[(x, y), (v, p1, p2)]  (p1 ∈ 1:maximum(plb1), p2 ∈ 1:maximum(plb2), y ∈ 1:1)
@@ -163,11 +180,7 @@ function conditional_probability(  # TODO
         @cast R4[x, y, p1, p2] := R[(x, y), (p1, p2)] (p2 ∈ 1:maximum(prf2), x ∈ 1:1)
         LR = dropdims(sum(LMX4[:, :, plb1, plb2] .* M4[:, :, pd1, pd2] .* R4[:, :, prf1, prf2], dims=(1, 2)), dims=(1, 2))
 
-        le = reshape(en[1], (:, 1)) .+ en12[p12, p21] .+ reshape(en[2], (1, :))
-        ele = exp.(-β .* (le .- minimum(le)))
-
-        probs = dropdims(sum(Array(LR) .* ele, dims=2), dims=2)
-
+        probs = dropdims(sum(Array(LR) .* tele, dims=2), dims=2)
     else  # k == 2
         #R = right_env(ctr, i, ∂v[(2 * j + 10) : end], indβ)
         R = right_env(ctr, i, ∂v[(2 * j + 10) : end], indβ)

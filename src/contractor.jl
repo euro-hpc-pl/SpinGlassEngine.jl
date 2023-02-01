@@ -83,14 +83,15 @@ mutable struct MpsContractor{T <: AbstractStrategy, R <: AbstractGauge} <: Abstr
     node_outside::Node
     node_search_index::Dict{Node, Int}
     current_node::Node
+    onGPU::Bool
 
-    function MpsContractor{T, R}(net, βs, graduate_truncation::Symbol, params) where {T, R}
+    function MpsContractor{T, R}(net, βs, graduate_truncation::Symbol, params; onGPU=false) where {T, R}
         ml = MpoLayers(layout(net), net.ncols)
         stat = Dict()
         ord, node_out = nodes_search_order_Mps(net)
         enum_ord = Dict(node => i for (i, node) ∈ enumerate(ord))
         node = ord[begin]
-        new(net, βs, graduate_truncation, params, ml, stat, ord, node_out, enum_ord, node)
+        new(net, βs, graduate_truncation, params, ml, stat, ord, node_out, enum_ord, node, onGPU)
     end
 end
 
@@ -118,7 +119,7 @@ Construct (and memoize) MPO for a given layers.
         end
         push!(mpo, site => MpoTensor(lmpo))
     end
-    move_to_CUDA!(QMpo(mpo))
+    ctr.onGPU ? move_to_CUDA!(QMpo(mpo)) : QMpo(mpo)
 end
 
 """
@@ -134,7 +135,7 @@ Construct (and memoize) top MPS using SVD for a given row.
 
     if i < 1
         W = mpo(ctr, ctr.layers.main, 1, indβ)
-        return IdentityQMps(Float64, local_dims(W, :up); onGPU=true) # F64 for now
+        return IdentityQMps(Float64, local_dims(W, :up); onGPU=ctr.onGPU) # F64 for now
     end
 
     ψ = mps_top(ctr, i-1, indβ)
@@ -164,7 +165,7 @@ Construct (and memoize) (bottom) MPS using SVD for a given row.
 
     if i > ctr.peps.nrows
         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
-        return IdentityQMps(Float64, local_dims(W, :down); onGPU=true) # Float64 fror now
+        return IdentityQMps(Float64, local_dims(W, :down); onGPU=ctr.onGPU) # Float64 fror now
     end
 
     ψ = mps(ctr, i+1, indβ)
@@ -208,11 +209,11 @@ Construct (and memoize) (bottom) MPS using SVD for a given row.
 @memoize Dict function mps_approx(ctr::MpsContractor{SVDTruncate}, i::Int, indβ::Int)
     if i > ctr.peps.nrows
         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
-        return IdentityQMps(Float64, local_dims(W, :down); onGPU=true) # F64 for now
+        return IdentityQMps(Float64, local_dims(W, :down); onGPU=ctr.onGPU) # F64 for now
     end
 
     W = mpo(ctr, ctr.layers.main, i, indβ)
-    ψ = IdentityQMps(Float64, local_dims(W, :down); onGPU=true) # F64 for now
+    ψ = IdentityQMps(Float64, local_dims(W, :down); onGPU=ctr.onGPU) # F64 for now
 
     ψ0 = dot(W, ψ)
     truncate!(ψ0, :left, ctr.params.bond_dimension)
@@ -243,7 +244,7 @@ Construct (and memoize) top MPS using Zipper (truncated SVD) for a given row.
 
     if i < 1
         W = mpo(ctr, ctr.layers.main, 1, indβ)
-        return IdentityQMps(Float64, local_dims(W, :up); onGPU=true) # F64 for now
+        return IdentityQMps(Float64, local_dims(W, :up); onGPU=ctr.onGPU) # F64 for now
     end
 
     ψ = mps_top(ctr, i-1, indβ)
@@ -268,7 +269,7 @@ Construct (and memoize) (bottom) MPS using Zipper (truncated SVD) for a given ro
 
     if i > ctr.peps.nrows
         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
-        return IdentityQMps(Float64, local_dims(W, :down); onGPU=true) # Float64 fror now
+        return IdentityQMps(Float64, local_dims(W, :down); onGPU=ctr.onGPU) # Float64 fror now
     end
 
     ψ = mps(ctr, i+1, indβ)
@@ -288,7 +289,7 @@ Construct (and memoize) (bottom) top MPS using Annealing for a given row.
 @memoize Dict function mps_top(ctr::MpsContractor{MPSAnnealing}, i::Int, indβ::Int)
     if i < 1
         W = mpo(ctr, ctr.layers.main, 1, indβ)
-        return IdentityQMps(Float64, local_dims(W, :up)) # F64 for now
+        return IdentityQMps(Float64, local_dims(W, :up); onGPU=ctr.onGPU) # F64 for now
     end
 
     ψ = mps_top(ctr, i-1, indβ)
@@ -297,7 +298,7 @@ Construct (and memoize) (bottom) top MPS using Annealing for a given row.
     if indβ > 1
         ψ0 = mps_top(ctr, i, indβ-1)
     else
-        ψ0 = IdentityQMps(Float64, local_dims(W, :up), ctr.params.bond_dimension; onGPU=true) # F64 for now
+        ψ0 = IdentityQMps(Float64, local_dims(W, :up), ctr.params.bond_dimension; onGPU=ctr.onGPU) # F64 for now
         # ψ0 = IdentityQMps(Float64, local_dims(W, :down), ctr.params.bond_dimension) # F64 for now
         canonise!(ψ0, :left)
     end
@@ -319,7 +320,7 @@ Construct (and memoize) (bottom) MPS using Annealing for a given row.
 @memoize Dict function mps(ctr::MpsContractor{MPSAnnealing}, i::Int, indβ::Int)
     if i > ctr.peps.nrows
         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
-        return IdentityQMps(Float64, local_dims(W, :down)) # F64 for now
+        return IdentityQMps(Float64, local_dims(W, :down); onGPU=ctr.onGPU) # F64 for now
     end
 
     ψ = mps(ctr, i+1, indβ)
@@ -328,7 +329,7 @@ Construct (and memoize) (bottom) MPS using Annealing for a given row.
     if indβ > 1
         ψ0 = mps(ctr, i, indβ-1)
     else
-        ψ0 = IdentityQMps(Float64, local_dims(W, :up), ctr.params.bond_dimension; onGPU=true) # F64 for now
+        ψ0 = IdentityQMps(Float64, local_dims(W, :up), ctr.params.bond_dimension; onGPU=ctr.onGPU) # F64 for now
         canonise!(ψ0, :left)
     end
 
@@ -380,7 +381,7 @@ Construct (and memoize) right environment for a given node.
     ctr::MpsContractor{T}, i::Int, ∂v::Vector{Int}, indβ::Int
 ) where T <: AbstractStrategy
     l = length(∂v)
-    if l == 0 return CUDA.ones(Float64, 1, 1) end  # TODO type propagation
+    if l == 0 return ctr.onGPU ? CUDA.ones(Float64, 1, 1) : ones(Float64, 1, 1) end
 
     R̃ = right_env(ctr, i, ∂v[2:l], indβ)
     ϕ = dressed_mps(ctr, i, indβ)
@@ -411,7 +412,8 @@ $(TYPEDSIGNATURES)
     ctr::MpsContractor{T}, i::Int, ∂v::Vector{Int}, indβ::Int
 ) where T
     l = length(∂v)
-    if l == 0 return CUDA.ones(Float64, 1) end
+    if l == 0 return ctr.onGPU ? CUDA.ones(Float64, 1) : ones(Float64, 1) end
+
     L̃ = left_env(ctr, i, ∂v[1:l-1], indβ)
     ϕ = dressed_mps(ctr, i, indβ)
     m = ∂v[l]

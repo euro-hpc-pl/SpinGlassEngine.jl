@@ -10,7 +10,7 @@ using Statistics
 
 disable_logging(LogLevel(1))
 
-onGPU = false
+onGPU = true
 
 using Test
 my_tests = []
@@ -23,10 +23,10 @@ push!(my_tests,
     # "search_chimera_smallest.jl",
     # "search_cross_square_star.jl",
     # "search_smallest_cross_square_star.jl",
-    "search_pegasus_square_star.jl",
+    # "search_pegasus_square_star.jl",
     # "search_pegasus_nodiag_square_star.jl",
     # "search_square2_basic.jl",
-    # "search_squarestar2_basic.jl",
+    "search_squarestar2_basic.jl",
     # "chimera_overlap_python.jl",
 
 # to fix in Tensor

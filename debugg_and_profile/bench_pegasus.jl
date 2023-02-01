@@ -13,6 +13,7 @@ function brute_force_gpu(ig::IsingGraph; num_states::Int)
     brute_force(ig, :GPU, num_states=num_states)
 end
 
+onGPU = true
 
 function bench(instance::String)
     m = 3
@@ -47,7 +48,7 @@ function bench(instance::String)
     println("creating network and contractor")
     @time begin
     net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, tran)
-    ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params)
+    ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)
     end
     println("solving")
     @time sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))

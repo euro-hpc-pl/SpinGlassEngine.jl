@@ -1,7 +1,7 @@
 using SpinGlassExhaustive
 
 function brute_force_gpu(ig::IsingGraph; num_states::Int)
-     brute_force(ig, :GPU, num_states=num_states)
+     brute_force(ig, :CPU, num_states=num_states)
 end
 
 m = 6 # for Z3

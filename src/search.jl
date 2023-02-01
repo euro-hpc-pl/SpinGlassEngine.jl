@@ -206,6 +206,7 @@ function low_energy_spectrum(
         current_row = old_row[1]
         sol = branch_solution(sol, ctr)
         sol = bound_solution(sol, sparams.max_states, sparams.cut_off_prob, merge_strategy)
+        Memoization.empty_cache!(precompute_conditional)
         # TODO: clear memoize cache partially
         if no_cache Memoization.empty_all_caches!() end
         if current_row > old_row

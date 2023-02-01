@@ -29,7 +29,7 @@
         for Layout ∈ (GaugesEnergy,)
             for transform ∈ all_lattice_transformations
                 net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
-                ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params)
+                ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)
                 update_gauges!(ctr, m, INDβ, Val(:up))
                 sol = low_energy_spectrum(ctr, search_params)
                 #sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))

@@ -1,7 +1,7 @@
 using SpinGlassExhaustive
 
-function brute_force_gpu(ig::IsingGraph; num_states::Int)
-     brute_force(ig, :CPU, num_states=num_states)
+function my_brute_force(ig::IsingGraph; num_states::Int)
+    brute_force(ig, onGPU ? :GPU : :CPU, num_states=num_states)
 end
 
 m = 6 # for Z3
@@ -35,7 +35,7 @@ Layout = GaugesEnergy
 Gauge = NoUpdate
 
 net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, tran)
-ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params)
+ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)
 
 # for i in 1//2 : 1//2 : m
 #     for j in 1 : 1//2 : n

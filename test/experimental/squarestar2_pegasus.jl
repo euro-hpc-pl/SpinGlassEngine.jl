@@ -1,7 +1,7 @@
 using SpinGlassExhaustive
 
-function brute_force_gpu(ig::IsingGraph; num_states::Int)
-     brute_force(ig, :GPU, num_states=num_states)
+function my_brute_force(ig::IsingGraph; num_states::Int)
+    brute_force(ig, onGPU ? :GPU : :CPU, num_states=num_states)
 end
 
 m = 3
@@ -18,7 +18,7 @@ ig = ising_graph("$(@__DIR__)/../instances/pegasus_random/P4/RAU/SpinGlass/001_s
 
 fg = factor_graph(
     ig,
-    spectrum= brute_force_gpu, #rm _gpu to use CPU
+    spectrum=my_brute_force, #rm _gpu to use CPU
     cluster_assignment_rule=pegasus_lattice((m, n, t))
 )
 
@@ -38,7 +38,7 @@ for tran ∈ all_lattice_transformations
     println(tran)
 
     net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, tran)
-    ctr = MpsContractor{Strategy, Gauge}(net, [β/4, β/2, β], :graduate_truncate, params)
+    ctr = MpsContractor{Strategy, Gauge}(net, [β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
 
     @time begin
     sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))

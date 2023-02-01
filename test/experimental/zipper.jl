@@ -12,8 +12,8 @@ using LowRankApprox
 
 disable_logging(LogLevel(1))
 
-function brute_force_gpu(ig::IsingGraph; num_states::Int)
-     brute_force(ig, :GPU, num_states=num_states)
+function my_brute_force(ig::IsingGraph; num_states::Int)
+    brute_force(ig, onGPU ? :GPU : :CPU, num_states=num_states)
 end
 
 m, n, t = 8, 8, 8
@@ -32,7 +32,7 @@ ig = ising_graph("$(@__DIR__)/../instances/chimera_droplets/512power/001.txt")
 
 fg = factor_graph(
     ig,
-    spectrum= brute_force_gpu, #rm _gpu to use CPU
+    spectrum=my_brute_force, #rm _gpu to use CPU
     cluster_assignment_rule=super_square_lattice((m, n, t))
 )
 
@@ -47,14 +47,14 @@ i = div(m, 2)
 indβ = 1
 
 net = PEPSNetwork{Square{Layout}, Sparse}(m, n, fg, tran)
-ctr = MpsContractor{Strategy, Gauge}(net, [β], :graduate_truncate, params)
+ctr = MpsContractor{Strategy, Gauge}(net, [β], :graduate_truncate, params; onGPU=onGPU)
 Ws = SpinGlassEngine.mpo(ctr, ctr.layers.main, i, indβ)
 println(" Ws -> ", which_device(Ws), " ", format_bytes.(measure_memory(Ws)))
 move_to_CUDA!(Ws)
 println(" Ws -> ", which_device(Ws), " ", format_bytes.(measure_memory(Ws)))
 
 net = PEPSNetwork{Square{Layout}, Dense}(m, n, fg, tran)
-ctr = MpsContractor{Strategy, Gauge}(net, [β], :graduate_truncate, params)
+ctr = MpsContractor{Strategy, Gauge}(net, [β], :graduate_truncate, params; onGPU=onGPU)
 Wd = SpinGlassEngine.mpo(ctr, ctr.layers.main, i, indβ)
 println(" Wd -> ", which_device(Wd), " ", format_bytes.(measure_memory(Wd)))
 move_to_CUDA!(Wd)

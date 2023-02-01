@@ -2,6 +2,9 @@ using SpinGlassNetworks
 using SpinGlassTensors
 using SpinGlassEngine
 
+function my_brute_force(ig::IsingGraph; num_states::Int)
+    brute_force(ig, onGPU ? :GPU : :CPU, num_states=num_states)
+end
 m = 4
 n = 4
 t = 8
@@ -19,7 +22,7 @@ instance = "$(@__DIR__)/instances/chimera_droplets/128power/001.txt"
 fg = factor_graph(
     ising_graph(instance),
     max_cl_states,
-    spectrum=brute_force,
+    spectrum=my_brute_force,
     cluster_assignment_rule=super_square_lattice((m, n, t))
 )
 
@@ -31,8 +34,8 @@ for Lattice ∈ (Square, SquareStar)
     for Sparsity ∈ (Dense, Sparse), transform ∈ all_lattice_transformations[[1]]
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
             net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform, :id)
-            ctr_svd = MpsContractor{SVDTruncate, GaugeStrategy}(net, [β/8, β/4, β/2, β], :graduate_truncate, params)
-            ctr_anneal = MpsContractor{MPSAnnealing, GaugeStrategy}(net, [β/8, β/4, β/2, β], :graduate_truncate, params)
+            ctr_svd = MpsContractor{SVDTruncate, GaugeStrategy}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
+            ctr_anneal = MpsContractor{MPSAnnealing, GaugeStrategy}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
 
             @testset "Overlaps calculated for different Starategies are the same." begin
                 indβ = 3
@@ -49,7 +52,7 @@ for Lattice ∈ (Square, SquareStar)
 
         for Layout ∈ (GaugesEnergy, )
             net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform, :id)
-            ctr_svd = MpsContractor{SVDTruncate, GaugeStrategy}(net, [β/8, β/4, β/2, β], :graduate_truncate, params)
+            ctr_svd = MpsContractor{SVDTruncate, GaugeStrategy}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
             @testset "Overlaps calculated in Python are the same as in Julia." begin
                 indβ = [4, ]
                 overlap_python = [0.2637787707674837, 0.2501621729619047, 0.2951954406837012]
@@ -73,7 +76,7 @@ for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, Sparse)
         for Gauge ∈ (GaugeStrategy, )
             for Lattice ∈ (Square, SquareStar), transform ∈ all_lattice_transformations
                 net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform, :id)
-                ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params)
+                ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
 
                 @testset "Overlaps calculated differently are the same." begin
                     indβ = 3

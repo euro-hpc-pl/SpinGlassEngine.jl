@@ -1,10 +1,9 @@
 using SpinGlassEngine
 using Test
 
-# function brute_force_gpu(ig::IsingGraph; num_states::Int)
-#     brute_force(ig, :GPU, num_states=num_states)
+# function my_brute_force(ig::IsingGraph; num_states::Int)
+#     brute_force(ig, onGPU ? :GPU : :CPU, num_states=num_states)
 # end
-
 
 function run_test(instance, m, n, t)
     β = 2
@@ -38,8 +37,8 @@ function run_test(instance, m, n, t)
                 net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, tran)
                 net2 = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, fg2, tran)
 
-                ctr = MpsContractor{Strategy, Gauge}(net, βs, :graduate_truncate, params)
-                ctr2 = MpsContractor{Strategy, Gauge}(net2, βs, :graduate_truncate, params)
+                ctr = MpsContractor{Strategy, Gauge}(net, βs, :graduate_truncate, params; onGPU=onGPU)
+                ctr2 = MpsContractor{Strategy, Gauge}(net2, βs, :graduate_truncate, params; onGPU=onGPU)
 
                 sol = low_energy_spectrum(ctr, search_params) #, merge_branches(ctr))
                 sol2 = low_energy_spectrum(ctr2, search_params) #, merge_branches(ctr2))

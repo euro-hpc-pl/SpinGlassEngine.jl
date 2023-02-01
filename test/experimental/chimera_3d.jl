@@ -36,7 +36,7 @@ function run_test(instance, m, n, t, tran)
         #net = PEPSNetwork{Square2{Layout}, Sparsity}(m, n, fg, tran)
         net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, tran)
     
-        ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params)
+        ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
 
         sol = low_energy_spectrum(ctr, search_params , merge_branches(ctr))
 

@@ -1,7 +1,7 @@
 using SpinGlassExhaustive
 
-function brute_force_gpu(ig::IsingGraph; num_states::Int)
-    brute_force(ig, :GPU, num_states=num_states)
+function my_brute_force(ig::IsingGraph; num_states::Int)
+    brute_force(ig, onGPU ? :GPU : :CPU, num_states=num_states)
 end
 
 @testset "Pegasus instance has the correct spectrum for all transformations" begin
@@ -20,7 +20,7 @@ end
     INDβ = [1, 2, 3,]
     fg = factor_graph(
         ig,
-        spectrum=brute_force_gpu,
+        spectrum=my_brute_force,
         cluster_assignment_rule=pegasus_lattice((m, n, t))
     )
 
@@ -35,7 +35,7 @@ end
 
     for transform ∈ all_lattice_transformations
         net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, transform)
-        ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params)
+        ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)
         update_gauges!(ctr, m, INDβ, Val(:up))
         sol = low_energy_spectrum(ctr, search_params)
         #sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))

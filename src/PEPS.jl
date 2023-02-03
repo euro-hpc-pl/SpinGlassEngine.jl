@@ -25,6 +25,7 @@ mutable struct PEPSNetwork{
     T <: AbstractGeometry, S <: AbstractSparsity
 } <: AbstractGibbsNetwork{Node, PEPSNode}
     factor_graph::LabelledGraph
+    lp::PoolOfProjectors
     vertex_map::Function
     m::Int
     n::Int
@@ -37,10 +38,11 @@ mutable struct PEPSNetwork{
         m::Int,
         n::Int,
         factor_graph::LabelledGraph,
+        lp::PoolOfProjectors,
         transformation::LatticeTransformation,
         gauge_type::Symbol=:id
     ) where {T <: AbstractGeometry, S <: AbstractSparsity}
-        net = new(factor_graph, vertex_map(transformation, m, n), m, n)
+        net = new(factor_graph, lp, vertex_map(transformation, m, n), m, n)
         net.nrows, net.ncols = transformation.flips_dimensions ? (n, m) : (m, n)
 
         if !is_compatible(net.factor_graph, T.name.wrapper(m, n))
@@ -75,14 +77,18 @@ $(TYPEDSIGNATURES)
 function bond_energy(net::AbstractGibbsNetwork{T, S}, u::Node, v::Node, σ::Int) where {T, S}
     fg_u, fg_v = net.vertex_map(u), net.vertex_map(v)
     if has_edge(net.factor_graph, fg_u, fg_v)
-        pu, en, pv = get_prop.(
+        ku, en, kv = get_prop.(
                         Ref(net.factor_graph), Ref(fg_u), Ref(fg_v), (:pl, :en, :pr)
                     )
+        pu = get_projector!(net.lp, ku)
+        pv = get_projector!(net.lp, kv)
         @inbounds energies = en[pu, pv[σ]]
     elseif has_edge(net.factor_graph, fg_v, fg_u)
-        pv, en, pu = get_prop.(
+        kv, en, ku = get_prop.(
                         Ref(net.factor_graph), Ref(fg_v), Ref(fg_u), (:pl, :en, :pr)
                     )
+        pv = get_projector!(net.lp, kv)
+        pu = get_projector!(net.lp, ku)
         @inbounds energies = en[pv[σ], pu]
     else
         energies = zeros(cluster_size(net, u))
@@ -97,13 +103,14 @@ function projector(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
     fg = network.factor_graph
     fg_v, fg_w = network.vertex_map(v), network.vertex_map(w)
     if has_edge(fg, fg_w, fg_v)
-        p = get_prop(fg, fg_w, fg_v, :pr)
+        k = get_prop(fg, fg_w, fg_v, :pr)
     elseif has_edge(fg, fg_v, fg_w)
-        p = get_prop(fg, fg_v, fg_w, :pl)
+        k = get_prop(fg, fg_v, fg_w, :pl)
     else
-        p = ones(Int, fg_v ∈ vertices(fg) ? cluster_size(network, v) : 1, 1)
+        p = ones(eltype(network.lp), fg_v ∈ vertices(fg) ? cluster_size(network, v) : 1)
+        k = add_projector!(network.lp, p)
     end
-    vec(p)
+    get_projector!(network.lp, k)
 end
 
 """

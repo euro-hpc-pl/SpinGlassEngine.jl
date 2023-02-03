@@ -13,12 +13,12 @@ function run_test(instance, m, n, t)
 
     ig = ising_graph(instance)
 
-    fg = factor_graph(
+    fg, lp = factor_graph(
         ig,
         spectrum=full_spectrum, #_gpu, # rm _gpu to use CPU
         cluster_assignment_rule=pegasus_lattice((m, n, t))
     )
-    fg2 = factor_graph(
+    fg2, lp2 = factor_graph(
         ig,
         spectrum=full_spectrum, #_gpu, # rm _gpu to use CPU
         cluster_assignment_rule=super_square_lattice((m, n, 8))
@@ -34,8 +34,8 @@ function run_test(instance, m, n, t)
         for Layout ∈ (EnergyGauges, GaugesEnergy)
             for tran ∈ all_lattice_transformations
 
-                net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, tran)
-                net2 = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, fg2, tran)
+                net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, lp, tran)
+                net2 = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, fg2, lp2, tran)
 
                 ctr = MpsContractor{Strategy, Gauge}(net, βs, :graduate_truncate, params; onGPU=onGPU)
                 ctr2 = MpsContractor{Strategy, Gauge}(net2, βs, :graduate_truncate, params; onGPU=onGPU)
@@ -46,7 +46,7 @@ function run_test(instance, m, n, t)
                 # ig_states = decode_factor_graph_state.(Ref(fg), sol.states)
                 # @test sol.energies ≈ energy.(Ref(ig), ig_states)
                 # fg_states = decode_state.(Ref(net), sol.states)
-                # @test sol.energies ≈ energy.(Ref(fg), fg_states)
+                # @test sol.energies ≈ energy.(Ref(fg), Ref(lp), fg_states)
 
                 @test sol.energies[1: div(num_states, 2)] ≈ sol2.energies[1: div(num_states, 2)]
                 #@test sol.states == sol2.states

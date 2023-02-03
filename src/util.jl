@@ -5,7 +5,7 @@ export
     """
 $(TYPEDSIGNATURES)
 """
-@memoize function exact_spectrum(factor_graph::LabelledGraph{S, T}) where {S, T}
+@memoize function exact_spectrum(factor_graph::LabelledGraph{S, T}) where {S, T}  # TODO: Not going to work without PoolOfProjectors
     ver = vertices(factor_graph)
     rank = cluster_size.(Ref(factor_graph), ver)
     states = [Dict(ver .=> σ) for σ ∈ Iterators.product([1:r for r ∈ rank]...)]
@@ -15,7 +15,7 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function exact_marginal_probability(ctr::MpsContractor{T}, σ::Vector{Int}) where T
+function exact_marginal_probability(ctr::MpsContractor{T}, σ::Vector{Int}) where T # TODO: Not going to work without PoolOfProjectors
     target_state = decode_state(ctr.peps, σ, true)
     energies, states = exact_spectrum(ctr.peps.factor_graph)
     prob = exp.(-ctr.betas[end] .* energies)
@@ -26,7 +26,7 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function exact_conditional_probability(ctr::MpsContractor{T}, σ::Vector{Int}) where T
+function exact_conditional_probability(ctr::MpsContractor{T}, σ::Vector{Int}) where T # TODO: Not going to work without PoolOfProjectors
     local_basis = collect(1:cluster_size(ctr.peps, ctr.current_node))
     probs = exact_marginal_probability.(Ref(ctr), branch_state(local_basis, σ))
     probs ./= sum(probs)

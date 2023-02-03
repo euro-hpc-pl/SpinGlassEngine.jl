@@ -256,7 +256,7 @@ function low_energy_spectrum(
 
     # Final check if states correspond energies
     @assert sol.energies ≈ energy.(
-        Ref(ctr.peps.factor_graph), decode_state.(Ref(ctr.peps), sol.states)
+        Ref(ctr.peps.factor_graph), Ref(ctr.peps.lp), decode_state.(Ref(ctr.peps), sol.states)
     )
     sol
 end
@@ -311,7 +311,7 @@ function gibbs_sampling(
 
     # Final check if states correspond energies
     @assert sol.energies ≈ energy.(
-        Ref(ctr.peps.factor_graph), decode_state.(Ref(ctr.peps), sol.states)
+        Ref(ctr.peps.factor_graph), Ref(ctr.peps.lp), decode_state.(Ref(ctr.peps), sol.states)
     )
     sol
 end

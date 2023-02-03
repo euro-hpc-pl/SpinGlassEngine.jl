@@ -22,7 +22,7 @@ num_states = 1000
 
 instance = "$(@__DIR__)/instances/chimera_droplets/128power/001.txt"
 
-fg = factor_graph(
+fg, lp = factor_graph(
     ising_graph(instance),
     max_cl_states,
     spectrum=my_brute_force,
@@ -36,7 +36,7 @@ Strategy = SVDTruncate
 Gauge = NoUpdate
 @testset "Compare the results for GaugesEnergy with Python" begin
     for Sparsity ∈ (Dense, Sparse) 
-        network = PEPSNetwork{Square{GaugesEnergy}, Sparsity}(m, n, fg, rotation(0))
+        network = PEPSNetwork{Square{GaugesEnergy}, Sparsity}(m, n, fg, lp, rotation(0))
         ctr = MpsContractor{Strategy, Gauge}(network, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
         @testset "Compare the results with Python" begin
             overlap_python = [0.2637787707674837, 0.2501621729619047, 0.2951954406837012]
@@ -54,7 +54,7 @@ end
 @testset "Compare the results for EnergyGauges with Python" begin
     overlap_python = [0.18603559878582027, 0.36463028391550056, 0.30532555472025247]
     for Sparsity ∈ (Dense, Sparse)
-        net = PEPSNetwork{Square{EnergyGauges}, Sparsity}(m, n, fg, rotation(0))
+        net = PEPSNetwork{Square{EnergyGauges}, Sparsity}(m, n, fg, lp, rotation(0))
         ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
         for i in 1:n-1
             psi_top = mps_top(ctr, i, 4)

@@ -7,7 +7,7 @@ using Profile, PProf
 using FlameGraphs
 
 disable_logging(LogLevel(1))
-#Profile.init(n = 10^10, delay = 0.01)
+Profile.init(n = 10^9, delay = 0.01)
 
 function brute_force_gpu(ig::IsingGraph; num_states::Int)
     brute_force(ig, :GPU, num_states=num_states)
@@ -28,7 +28,7 @@ function bench(instance::String)
     @time begin
     ig = ising_graph(instance)
 
-    fg = factor_graph(
+    fg, lp = factor_graph(
     ig,
     spectrum=full_spectrum, #brute_force_gpu, # rm _gpu to use CPU
     cluster_assignment_rule = zephyr_lattice((m, n, t))
@@ -46,7 +46,7 @@ function bench(instance::String)
     Gauge = NoUpdate
     println("creating network and contractor")
     @time begin
-    net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, tran)
+    net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, lp, tran)
     ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params)
     end
     println("solving")

@@ -26,6 +26,7 @@ function tensor(
     net::PEPSNetwork{T, S}, v::PEPSNode, β::Real, ::Val{:sparse_site}
 ) where {T <: AbstractGeometry, S}
     SiteTensor(
+        net.lp,
         probability(local_energy(net, Node(v)), β),
         projectors_site_tensor(net, Node(v))
     )
@@ -48,9 +49,10 @@ function tensor(
     net::PEPSNetwork{T, Dense}, v::PEPSNode, β::Real, ::Val{:site}
 ) where T <: AbstractGeometry
     sp = tensor(net, v, β, Val(:sparse_site))
-    A = zeros(maximum.(sp.projs))
+    projs = Tuple(get_projector!(sp.lp, x) for x in sp.projs)
+    A = zeros(maximum.(projs))
     for (σ, lexp) ∈ enumerate(sp.loc_exp)
-        @inbounds A[getindex.(sp.projs, Ref(σ))...] += lexp
+        @inbounds A[getindex.(projs, Ref(σ))...] += lexp
     end
     A
 end

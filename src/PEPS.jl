@@ -117,15 +117,18 @@ end
 $(TYPEDSIGNATURES)
 """
 function projector(
-    network::AbstractGibbsNetwork{S, T}, v::S, vertices::NTuple{N, S}
+    net::AbstractGibbsNetwork{S, T}, v::S, vertices::NTuple{N, S}
 ) where {S, T, N}
-    first(fuse_projectors(projector.(Ref(network), Ref(v), vertices)))
+    first(fuse_projectors(projector.(Ref(net), Ref(v), vertices)))
 end
 
 """
 $(TYPEDSIGNATURES)
 """
-function fuse_projectors(projectors::Union{Vector{T}, NTuple{N, T}}) where {N, T}
+function fuse_projectors(
+    projectors::NTuple{N, K}
+    #projectors::Union{Vector{S}, NTuple{N, S}}
+    ) where {N, K}
     fused, transitions_matrix = rank_reveal(hcat(projectors...), :PE)
     # transitions = collect(eachcol(transitions_matrix))
     transitions = Tuple(Array(t) for t ∈ eachcol(transitions_matrix))

@@ -269,15 +269,16 @@ Construct (and memoize) (bottom) MPS using Zipper (truncated SVD) for a given ro
 
     if i > ctr.peps.nrows
         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
-        return IdentityQMps(Float64, local_dims(W, :down); onGPU=ctr.onGPU) # Float64 fror now
+        ψ0 = IdentityQMps(Float64, local_dims(W, :down); onGPU=ctr.onGPU) # Float64 fror now
+    else
+        ψ = mps(ctr, i+1, indβ)
+        W = mpo(ctr, ctr.layers.main, i, indβ)
+        canonise!(ψ, :left)
+        ψ0 = zipper(W, ψ; method=:psvd_sparse, Dcut=Dcut, tol=tolS)
+        variational_compress!(ψ0, W, ψ, tolV, max_sweeps)
     end
-
-    ψ = mps(ctr, i+1, indβ)
-    W = mpo(ctr, ctr.layers.main, i, indβ)
-
-    canonise!(ψ, :left)
-    ψ0 = zipper(W, ψ; method=:psvd_sparse, Dcut=Dcut, tol=tolS)
-    variational_compress!(ψ0, W, ψ, tolV, max_sweeps)
+    println("Mpo i = ",i ," memory = ", format_bytes.(measure_memory(W)))
+    println("Mps i = ",i ," memory  = ", format_bytes.(measure_memory(ψ0)))
     ψ0
 end
 

@@ -35,6 +35,9 @@ function bench(instance::String)
     cluster_assignment_rule = pegasus_lattice((m,n,t))
     )
     end
+
+    println("Memory lp = ", format_bytes.(measure_memory(lp)), " elements = ", length(lp))
+
     params = MpsParameters(bond_dim, 1E-8, 10, 1E-16)
     search_params = SearchParameters(num_states, δp)
 
@@ -47,15 +50,17 @@ function bench(instance::String)
     Gauge = NoUpdate
     println("creating network and contractor")
     @time begin
-    net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, lp, tran)
-    ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)
+        net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, lp, tran)
+        ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)
     end
     println("solving")
     @time sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+    println("Result ", sol.energies)
+    println("Memory lp = ", format_bytes.(measure_memory(lp)), " elements = ", length(lp))
 end
 
 instance = "$(@__DIR__)/../test/instances/pegasus_random/P4/RAU/SpinGlass/001_sg.txt"
-bench(instance)
+# bench(instance)
 @profile bench(instance)
 
 pprof(flamegraph(); webhost = "localhost", webport = 57327)

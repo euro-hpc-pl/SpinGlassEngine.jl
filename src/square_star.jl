@@ -300,6 +300,7 @@ function tensor(
         @ntuple 3 k->projector(net, (i, j+1), (i+2-k, j)) # p_rb, p_r, p_rt
     ))
     VirtualTensor(
+       net.lp,
        connecting_tensor(net, floor.(Int, v), ceil.(Int, v), β),
        (pl..., pr...)
     )
@@ -312,7 +313,7 @@ function tensor(
     net::PEPSNetwork{SquareStar{T}, Dense}, node::PEPSNode, β::Real, ::Val{:virtual}
 ) where T <: AbstractTensorsLayout
     sp = tensor(net, node, β, Val(:sparse_virtual))
-    p_lb, p_l, p_lt, p_rb, p_r, p_rt = sp.projs
+    p_lb, p_l, p_lt, p_rb, p_r, p_rt = (get_projector!(sp.lp, x) for x in sp.projs)
 
     A = zeros(
         eltype(sp.con),

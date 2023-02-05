@@ -277,8 +277,6 @@ Construct (and memoize) (bottom) MPS using Zipper (truncated SVD) for a given ro
         ψ0 = zipper(W, ψ; method=:psvd_sparse, Dcut=Dcut, tol=tolS)
         variational_compress!(ψ0, W, ψ, tolV, max_sweeps)
     end
-    println("Mpo i = ",i ," memory = ", format_bytes.(measure_memory(W)))
-    println("Mps i = ",i ," memory  = ", format_bytes.(measure_memory(ψ0)))
     ψ0
 end
 

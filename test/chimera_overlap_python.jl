@@ -24,8 +24,7 @@ instance = "$(@__DIR__)/instances/chimera_droplets/128power/001.txt"
 
 fg, lp = factor_graph(
     ising_graph(instance),
-    max_cl_states,
-    spectrum=my_brute_force,
+    spectrum= full_spectrum, #my_brute_force,
     cluster_assignment_rule=super_square_lattice((m, n, t))
 )
 

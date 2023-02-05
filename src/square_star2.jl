@@ -386,6 +386,7 @@ function tensor(  #TODO
     p_rt = outer_projector(p_rt[1], p_rt[2])
 
     VirtualTensor(
+        net.lp,
         CentralTensor(net, β, (i, j), (i, j+1)),
         (p_lb, p_l, p_lt, p_rb, p_r, p_rt))
 end
@@ -397,8 +398,7 @@ function tensor(
     net::PEPSNetwork{T, Dense}, node::PEPSNode, β::Real, ::Val{:virtual2}
 ) where{T <: AbstractGeometry}
     sp = tensor(net, node, β, Val(:sparse_virtual2))
-    p_lb, p_l, p_lt, p_rb, p_r, p_rt = sp.projs
-
+    p_lb, p_l, p_lt, p_rb, p_r, p_rt = (get_projector!(sp.lp, x) for x in sp.projs)
     dense_con = dense_central_tensor(sp.con)
 
     A = zeros(

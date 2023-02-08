@@ -10,11 +10,11 @@ disable_logging(LogLevel(1))
 
 using Test
 
-function proj(state, dims::Union{Vector, NTuple})
+function proj(state, dims::Union{Vector,NTuple})
     P = Matrix{Float64}[]
     for (σ, r) ∈ zip(state, dims)
         v = zeros(r)
-        v[idx(σ)...] = 1.
+        v[idx(σ)...] = 1.0
         push!(P, v * v')
     end
     P

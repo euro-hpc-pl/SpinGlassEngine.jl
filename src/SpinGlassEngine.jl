@@ -9,9 +9,10 @@ using LinearAlgebra
 using LightGraphs
 using ProgressMeter
 
-SpinGlassNetworks.local_basis(ψ::AbstractMPS, i::Int) = SpinGlassNetworks.local_basis(physical_dim(ψ, i))
+SpinGlassNetworks.local_basis(ψ::AbstractMPS, i::Int) =
+    SpinGlassNetworks.local_basis(physical_dim(ψ, i))
 
-function LinearAlgebra.dot(ψ::AbstractMPS, state::Union{AbstractVector, NTuple})
+function LinearAlgebra.dot(ψ::AbstractMPS, state::Union{AbstractVector,NTuple})
     C = I
 
     for (M, σ) ∈ zip(ψ, state)

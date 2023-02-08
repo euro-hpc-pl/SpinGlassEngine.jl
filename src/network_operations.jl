@@ -2,15 +2,14 @@ export LatticeTransformation, rotation, reflection, all_lattice_transformations
 
 
 struct LatticeTransformation
-    permutation::NTuple{4, Int}
+    permutation::NTuple{4,Int}
     flips_dimensions::Bool
 end
 
-Base.:(∘)(op1::LatticeTransformation, op2::LatticeTransformation) =
-    LatticeTransformation(
-        op1.permutation[collect(op2.permutation)],
-        op1.flips_dimensions ⊻ op2.flips_dimensions
-    )
+Base.:(∘)(op1::LatticeTransformation, op2::LatticeTransformation) = LatticeTransformation(
+    op1.permutation[collect(op2.permutation)],
+    op1.flips_dimensions ⊻ op2.flips_dimensions,
+)
 
 
 function reflection(axis::Symbol)
@@ -58,7 +57,7 @@ function check_bounds(m, n)
 end
 
 
-function vertex_map(vert_permutation::NTuple{4, Int}, nrows, ncols)
+function vertex_map(vert_permutation::NTuple{4,Int}, nrows, ncols)
     if vert_permutation == (1, 2, 3, 4) #
         f = (i, j) -> (i, j)
     elseif vert_permutation == (4, 1, 2, 3) # 90 deg rotation
@@ -81,9 +80,8 @@ function vertex_map(vert_permutation::NTuple{4, Int}, nrows, ncols)
     (tuple) -> f(tuple[1], tuple[2])
 end
 
-vertex_map(trans::LatticeTransformation, m::Int, n::Int) = vertex_map(trans.permutation, m, n)
+vertex_map(trans::LatticeTransformation, m::Int, n::Int) =
+    vertex_map(trans.permutation, m, n)
 
-const all_lattice_transformations = (
-    rotation.([0, 90, 180, 270])...,
-    reflection.([:x, :y, :diag, :antydiag])...
-)
+const all_lattice_transformations =
+    (rotation.([0, 90, 180, 270])..., reflection.([:x, :y, :diag, :antydiag])...)

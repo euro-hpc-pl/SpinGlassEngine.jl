@@ -99,28 +99,28 @@ end
 
 
 for transform ∈ all_lattice_transformations
-@testset "$(transform) of square lattice is a bijection" begin
-    op = vertex_map(transform, 3, 3)
-    all_points = [(i, j) for i ∈ 1:3, j ∈ 1:3]
-    @test Set(op.(all_points)) == Set(all_points)
-end
+    @testset "$(transform) of square lattice is a bijection" begin
+        op = vertex_map(transform, 3, 3)
+        all_points = [(i, j) for i ∈ 1:3, j ∈ 1:3]
+        @test Set(op.(all_points)) == Set(all_points)
+    end
 end
 
 
 for transform ∈ (rotation.([90, 270])..., reflection.([:diag, :antydiag])...)
-@testset "$(transform) of rectangular lattice is bijection flipping lattice dimensions" begin
-    op = vertex_map(transform, 2, 3)
-    original_points = [(i, j) for i ∈ 1:3, j ∈ 1:2]
-    transformed_points = [(i, j) for i ∈ 1:2, j ∈ 1:3]
-    @test Set(op.(original_points)) == Set(transformed_points)
-end
+    @testset "$(transform) of rectangular lattice is bijection flipping lattice dimensions" begin
+        op = vertex_map(transform, 2, 3)
+        original_points = [(i, j) for i ∈ 1:3, j ∈ 1:2]
+        transformed_points = [(i, j) for i ∈ 1:2, j ∈ 1:3]
+        @test Set(op.(original_points)) == Set(transformed_points)
+    end
 end
 
 
 for transform ∈ (rotation.([0, 180])..., reflection.([:x, :y])...)
-@testset "$(transform) of rectangular lattice is bijection leaving lattice dimensions unchanged" begin
-    op = vertex_map(transform, 7, 3)
-    all_points = [(i, j) for i ∈ 1:7, j ∈ 1:3]
-    @test Set(op.(all_points)) == Set(all_points)
-end
+    @testset "$(transform) of rectangular lattice is bijection leaving lattice dimensions unchanged" begin
+        op = vertex_map(transform, 7, 3)
+        all_points = [(i, j) for i ∈ 1:7, j ∈ 1:3]
+        @test Set(op.(all_points)) == Set(all_points)
+    end
 end

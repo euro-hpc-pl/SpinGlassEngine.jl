@@ -15,8 +15,7 @@ struct Solution
     largest_discarded_probability::Float64
 end
 
-
-empty_solution() = Solution([0.], [[]], [1.], [1], -Inf)
+Solution() = Solution([0.], [[]], [1.], [1], -Inf)
 
 
 function branch_state(network, σ)
@@ -122,7 +121,7 @@ function low_energy_spectrum(network::AbstractGibbsNetwork, max_states::Int, mer
     @showprogress "Preprocesing: " for i ∈ network.nrows:-1:1 dressed_mps(network, i) end
 
     # Start branch and bound search
-    sol = empty_solution()
+    sol = Solution()
     @showprogress "Search: " for _ ∈ 1:nv(network_graph(network))
         sol = branch_solution(sol, network)
         sol = bound_solution(sol, max_states, merge_strategy)

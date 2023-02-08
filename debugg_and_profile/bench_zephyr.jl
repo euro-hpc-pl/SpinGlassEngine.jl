@@ -31,7 +31,7 @@ function bench(instance::String)
     @time begin
     ig = ising_graph(instance)
 
-    fg, lp = factor_graph(
+    fg = factor_graph(
     ig,
     spectrum=full_spectrum, #brute_force_gpu, # rm _gpu to use CPU
     cluster_assignment_rule = zephyr_lattice((m, n, t))
@@ -49,20 +49,16 @@ function bench(instance::String)
     Gauge = NoUpdate
     println("creating network and contractor")
     @time begin
-    net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, lp, tran)
-    ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)
+        net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, tran)
+        ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)
+        println("Memory lp = ", format_bytes.(measure_memory(net.lp)), " elements = ", length(net.lp))
     end
-    println("solving")
-    @time begin
-        W = SpinGlassEngine.mpo(ctr, ctr.layers.main, 8, 4)
-    end
-    for st in W.sites
-        println(st, "  ", size(W[st]), "  btm ", size.(W[st].bot), " top ",  size.(W[st].top), " ctr ",  size(W[st].ctr))
-
-        # println() <: VirtualTensor
-        #     println(size(W[st].con))
-        # end
-    end
+    # @time begin
+    #     W = SpinGlassEngine.mpo(ctr, ctr.layers.main, 8, 4)
+    # end
+    # for st in W.sites
+    #     println(st, "  ", size(W[st]), "  btm ", size.(W[st].bot), " top ",  size.(W[st].top), " ctr ",  size(W[st].ctr))
+    # end
 
     # st = 8
     # DD = 8
@@ -74,21 +70,21 @@ function bench(instance::String)
     # # B  = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
     # @time xx = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
 
-    st = 17 // 2
-    println(size(W[st].ctr.con), " size  ", size.(Ref(W[st].ctr.lp), W[st].ctr.projs), " length  ", length.(Ref(W[st].ctr.lp), W[st].ctr.projs))
-    DD = 8
+    # st = 17 // 2
+    # println(size(W[st].ctr.con), " size  ", size.(Ref(W[st].ctr.lp), W[st].ctr.projs), " length  ", length.(Ref(W[st].ctr.lp), W[st].ctr.projs))
+    # DD = 8
     # LE = rand(Float64, DD, DD, size(W[st], 1))
     # RE = rand(Float64, DD, DD, size(W[st], 3))
     # B = rand(Float64, DD, DD, size(W[st], 4))
-    LE = CuArray(rand(Float64, DD, DD, size(W[st], 1)))
-    RE = CuArray(rand(Float64, DD, DD, size(W[st], 3)))
-    B = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
-    @time yy = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
+    # LE = CuArray(rand(Float64, DD, DD, size(W[st], 1)))
+    # RE = CuArray(rand(Float64, DD, DD, size(W[st], 3)))
+    # B = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
+    # @time yy = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
 
-   # println("solving")
-   # @time sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
-   # println("Result ", sol.energies)
-   println("Memory lp = ", format_bytes.(measure_memory(lp)), " elements = ", length(lp))
+    println("solving")
+    @time sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+    println("Result ", sol.energies)
+    println("Memory lp = ", format_bytes.(measure_memory(net.lp)), " elements = ", length(net.lp))
 end
 
 instance = "$(@__DIR__)/../test/instances/zephyr_random/Z8/RAU/SpinGlass/001_sg.txt"

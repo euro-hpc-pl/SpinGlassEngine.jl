@@ -19,7 +19,7 @@ num_states = 1000
 
 instance = "$(@__DIR__)/instances/chimera_droplets/128power/001.txt"
 
-fg, lp = factor_graph(
+fg = factor_graph(
     ising_graph(instance),
     max_cl_states,
     spectrum=my_brute_force,
@@ -33,7 +33,7 @@ search_params = SearchParameters(num_states, δp)
 for Lattice ∈ (Square, SquareStar) 
     for Sparsity ∈ (Dense, Sparse), transform ∈ all_lattice_transformations[[1]]
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
-            net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, lp, transform, :id)
+            net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform, :id)
             ctr_svd = MpsContractor{SVDTruncate, GaugeStrategy}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
             ctr_anneal = MpsContractor{MPSAnnealing, GaugeStrategy}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
 
@@ -51,7 +51,7 @@ for Lattice ∈ (Square, SquareStar)
         clear_memoize_cache()
 
         for Layout ∈ (GaugesEnergy, )
-            net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, lp, transform, :id)
+            net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform, :id)
             ctr_svd = MpsContractor{SVDTruncate, GaugeStrategy}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
             @testset "Overlaps calculated in Python are the same as in Julia." begin
                 indβ = [4, ]
@@ -75,7 +75,7 @@ for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, Sparse)
     for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
         for Gauge ∈ (GaugeStrategy, )
             for Lattice ∈ (Square, SquareStar), transform ∈ all_lattice_transformations
-                net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, lp, transform, :id)
+                net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform, :id)
                 ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
 
                 @testset "Overlaps calculated differently are the same." begin

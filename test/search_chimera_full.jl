@@ -20,7 +20,7 @@ function bench(instance::String)
     num_states = 500
     all_betas = [β/8, β/4, β/2, β]
 
-    fg, lp = factor_graph(
+    fg = factor_graph(
         ising_graph(instance),
         max_cl_states,
         spectrum=my_brute_force,
@@ -33,7 +33,7 @@ function bench(instance::String)
     for Strategy ∈ (SVDTruncate, Zipper), Sparsity ∈ (Dense, )
         for Gauge ∈ (NoUpdate, GaugeStrategy, GaugeStrategyWithBalancing)
             for Layout ∈ (GaugesEnergy,), transform ∈ all_lattice_transformations
-                net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, lp, transform)
+                net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
                 ctr = MpsContractor{Strategy, Gauge}(net, all_betas, :graduate_truncate, params; onGPU=onGPU)
                 sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit))
 

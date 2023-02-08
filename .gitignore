@@ -11,3 +11,4 @@ docs/build
 Manifest.toml
 sysimage.so
 benchmarks/run_bench.sh
+*.pb.gz

@@ -104,7 +104,7 @@ function interaction_energy(network::AbstractGibbsNetwork{S,T}, v::S, w::S) wher
         zeros(1, 1)
     end
 end
-#TODO: W T F 
+
 function _boundary_index(
     network::AbstractGibbsNetwork{S,T},
     v::S,
@@ -119,7 +119,6 @@ function _boundary_index(
     [findfirst(x -> x > 0, pv[i, :]) for i ∈ 1:size(pv)[1]][state]
 end
 
-#TODO: W T F ^ 2
 function _boundary_index(
     network::AbstractGibbsNetwork{S,T},
     v::S,

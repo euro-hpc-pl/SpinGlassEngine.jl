@@ -12,7 +12,7 @@ Q = qubo(h, J)
 
 model = Model(CPLEX.Optimizer)
 @variable(model, x[i ∈ vertices(ig)], Bin)
-@objective(model, Max, x.data' * Q * x.data)
+@objective(model, Min, x.data' * Q * x.data)
 optimize!(model)
 
 σ = value.(x)

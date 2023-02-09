@@ -1,7 +1,18 @@
+using LinearAlgebra
 using CPLEX, JuMP
 using CSV, DataFrames
 
 
+function ising2qubo(h::Vector{T}, J::Matrix{T}) where T
+    n = length(h)
+    Q = Matrix(Diagonal(2 .* (h .- dropdims(sum(J, dims=2), dims=2))))
+    for i ∈ 1:n, j ∈ (i+1):n
+        Q[i, j] = 4 * J[i, j]
+    end
+    Q
+end
+
+#=
 function ising2qubo(h::Array{Float64, 1}, J::Array{Float64, 2})
     n = length(h)
     Q = zeros(Float64, n, n)
@@ -13,7 +24,7 @@ function ising2qubo(h::Array{Float64, 1}, J::Array{Float64, 2})
     end
     return Q
 end
-
+=#
 
 function get_parameters(instance::String)
     #load
@@ -23,7 +34,7 @@ function get_parameters(instance::String)
     h_dict = Dict()
     J_dict = Dict()
     for row ∈ eachrow(ising)
-        if row.i == row.j 
+        if row.i == row.j
             push!(h_dict, row.i => row.v)
         else
             push!(J_dict, (row.i, row.j) => row.v)

@@ -5,6 +5,7 @@ using SpinGlassExhaustive
 using Logging
 using Profile, PProf
 using FlameGraphs
+using CUDA
 
 disable_logging(LogLevel(1))
 Profile.init(n = 10^9, delay = 0.01)
@@ -13,10 +14,12 @@ function brute_force_gpu(ig::IsingGraph; num_states::Int)
     brute_force(ig, :GPU, num_states=num_states)
 end
 
+onGPU = true
+
 
 function bench(instance::String)
-    m = 6
-    n = 6
+    m = 16
+    n = 16
     t = 4
 
     β = 0.5
@@ -28,7 +31,7 @@ function bench(instance::String)
     @time begin
     ig = ising_graph(instance)
 
-    fg, lp = factor_graph(
+    fg = factor_graph(
     ig,
     spectrum=full_spectrum, #brute_force_gpu, # rm _gpu to use CPU
     cluster_assignment_rule = zephyr_lattice((m, n, t))
@@ -41,20 +44,51 @@ function bench(instance::String)
     energies = Vector{Float64}[]
     Strategy = Zipper # SVDTruncate
     Sparsity = Sparse #Dense
-    tran =  rotation(0)
+    tran = all_lattice_transformations[5]
     Layout = GaugesEnergy
     Gauge = NoUpdate
     println("creating network and contractor")
     @time begin
-    net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, lp, tran)
-    ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params)
+        net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, tran)
+        ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)
+        println("Memory lp = ", format_bytes.(measure_memory(net.lp)), " elements = ", length(net.lp))
     end
+    # @time begin
+    #     W = SpinGlassEngine.mpo(ctr, ctr.layers.main, 8, 4)
+    # end
+    # for st in W.sites
+    #     println(st, "  ", size(W[st]), "  btm ", size.(W[st].bot), " top ",  size.(W[st].top), " ctr ",  size(W[st].ctr))
+    # end
+
+    # st = 8
+    # DD = 8
+    # LE = rand(Float64, DD, DD, size(W[st], 1))
+    # RE = rand(Float64, DD, DD, size(W[st], 3))
+    # B  = rand(Float64, DD, DD, size(W[st], 4))
+    # # LE = CuArray(rand(Float64, DD, DD, size(W[st], 1)))
+    # # RE = CuArray(rand(Float64, DD, DD, size(W[st], 3)))
+    # # B  = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
+    # @time xx = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
+
+    # st = 17 // 2
+    # println(size(W[st].ctr.con), " size  ", size.(Ref(W[st].ctr.lp), W[st].ctr.projs), " length  ", length.(Ref(W[st].ctr.lp), W[st].ctr.projs))
+    # DD = 8
+    # LE = rand(Float64, DD, DD, size(W[st], 1))
+    # RE = rand(Float64, DD, DD, size(W[st], 3))
+    # B = rand(Float64, DD, DD, size(W[st], 4))
+    # LE = CuArray(rand(Float64, DD, DD, size(W[st], 1)))
+    # RE = CuArray(rand(Float64, DD, DD, size(W[st], 3)))
+    # B = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
+    # @time yy = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
+
     println("solving")
     @time sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+    println("Result ", sol.energies)
+    println("Memory lp = ", format_bytes.(measure_memory(net.lp)), " elements = ", length(net.lp))
 end
 
-instance = "$(@__DIR__)/../test/instances/zephyr_random/Z3/RAU/SpinGlass/001_sg.txt"
-# bench(instance)
+instance = "$(@__DIR__)/../test/instances/zephyr_random/Z8/RAU/SpinGlass/001_sg.txt"
+bench(instance)
 @profile bench(instance)
 
 pprof(flamegraph(); webhost = "localhost", webport = 57322)

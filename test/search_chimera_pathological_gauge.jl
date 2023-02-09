@@ -57,7 +57,7 @@
     )
 
     ig = ising_graph("$(@__DIR__)/instances/pathological/chim_$(m)_$(n)_$(t).txt")
-    fg, lp = factor_graph(
+    fg = factor_graph(
         ig,
         spectrum=full_spectrum,
         cluster_assignment_rule=super_square_lattice((m, n, t))
@@ -71,7 +71,7 @@
         for Layout ∈ (EngGaugesEng, GaugesEnergy, EnergyGauges)
             for Lattice ∈ (Square, ), transform ∈ all_lattice_transformations
 
-                net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, lp, transform)
+                net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform)
                 ctr = MpsContractor{Strategy, Gauge}(net, [β/6., β/3., β/2., β], :graduate_truncate, params; onGPU=onGPU)
                 update_gauges!(ctr, m, INDβ, Val(:up))
 
@@ -83,7 +83,7 @@
                 @test sol.energies ≈ energy.(Ref(ig), ig_states)
 
                 fg_states = decode_state.(Ref(net), sol.states)
-                @test sol.energies ≈ energy.(Ref(fg), Ref(lp), fg_states)
+                @test sol.energies ≈ energy.(Ref(fg), fg_states)
 
                 for (i, σ) ∈ enumerate(sol.states) @test σ ∈ exact_states[deg[i]] end
 

@@ -1,7 +1,6 @@
 using CPLEX, JuMP
 using CSV, DataFrames
 
-
 function ising2qubo(h::Array{Float64, 1}, J::Array{Float64, 2})
     n = length(h)
     Q = zeros(Float64, n, n)

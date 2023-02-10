@@ -2,9 +2,10 @@ using LinearAlgebra
 using CPLEX, JuMP
 using SpinGlassNetworks, LightGraphs
 
-qubo(h::Vector{T}, J::Matrix{T}) where T = 4 .* J .+ 2 .* Diagonal((h .- sum(J)))
+qubo(h::Vector, J::Matrix) = 4 .* J .+ 2 .* Diagonal(h .- sum(J))
 
 instance = "$(@__DIR__)/../test/instances/pegasus_random/P4/CBFM-P/001_sg.txt"
+#instance = Dict((1, 2) => -1.0)
 ig = ising_graph(instance)
 h = biases(ig)
 J = couplings(ig)
@@ -16,4 +17,4 @@ model = Model(CPLEX.Optimizer)
 optimize!(model)
 
 σ = value.(x)
-E = σ' * Q * σ + sum(h) - sum(J)
+E = σ' * Q * σ + sum(J) - sum(h)

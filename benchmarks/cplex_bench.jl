@@ -1,37 +1,55 @@
 using CPLEX, JuMP
 using SpinGlassNetworks, LightGraphs
 using LinearAlgebra
+using CSV, DataFrames
 
-function ising2qubo(h::Vector{T}, J::Matrix{T}) where T
-    n = length(h)
-    Q = zeros(Float64, n, n)
-    for i in 1:n
-        Q[i,i] = 2 * (h[i] - sum(J[i:i, :]) - sum(J[:, i:i]))
-        for j in (i+1):n
-            Q[i,j] = J[i,j] * 4
-        end
-    end
-    return Q
+
+function qubo(h::Vector, J::Matrix)
+    b = [sum(J[i, :]) + sum(J[:, i]) for i ∈ 1:length(h)]
+    4 .* J .+ 2 .* Diagonal(h .- b)
+end
+
+function run_cplex(instance::String, out_dir::String)
+    ig = ising_graph(instance)
+    h = biases(ig)
+    J = couplings(ig)
+    Q = qubo(h, J)
+
+    inst = instance[end-9:end-7] # works only for standard instance file format
+    out_path = string(out_dir, "/", inst, ".csv")
+
+    model = Model(CPLEX.Optimizer)
+    #set_silent(model)
+    @variable(model, x[i ∈ vertices(ig)], Bin)
+    @objective(model, Min, x.data' * Q * x.data)
+    optimize!(model)
+
+    σ = value.(x.data)
+    s = [i == 1 ? 1 : -1 for i in σ]
+    E_qubo = objective_value(model) + sum(J) - sum(h)
+    E_ising = s' * J * s + s' * h
+
+    data = DataFrame(
+        :instance => inst,
+        :state => [σ],
+        :energy_qubo => E_qubo,
+        :energy_ising => E_ising,
+        :status => raw_status(model)
+    )
+    println(data)
+    CSV.write(out_path, data, delim = ';', append = false)
+
 end
 
 
-qubo(h::Vector{T}, J::Matrix{T}) where T = 4 .* J + 2 .* Diagonal((h .- sum(J)))
+instance_dir = "$(@__DIR__)/../test/instances/pegasus_random/P4/CBFM-P/SpinGlass"
+#instance = "$(@__DIR__)/../test/instances/pathological/pegasus_3_4_1.txt"
+#instance = Dict((1, 2) => 1.0, (1, 3) => 1.0)
 
-#instance = "$(@__DIR__)/../test/instances/pegasus_random/P4/AC3/SpinGlass/001_sg.txt"
-instance = "$(@__DIR__)/../test/instances/pathological/pegasus_3_4_1.txt"
-ig = ising_graph(instance)
-h = biases(ig)
-J = couplings(ig)
-Q = ising2qubo(h, J)
+for file in readdir(instance_dir, join=true)
+    run_cplex(file, "$(@__DIR__)/results/CPLEX/P4/CBFM-P")
+end
 
-model = Model(CPLEX.Optimizer)
-set_silent(model)
-@variable(model, x[i ∈ vertices(ig)], Bin)
-@objective(model, Min, x.data' * Q * x.data)
-optimize!(model)
-println(raw_status(model))
-σ = value.(x.data)
-s = [i == 1 ? 1 : -1 for i in σ]
-println(s' * J * s + s' * h)
-E = objective_value(model) + sum(J) - sum(h)
+
+
 

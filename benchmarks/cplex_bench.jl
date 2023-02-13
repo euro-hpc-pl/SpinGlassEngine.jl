@@ -34,7 +34,9 @@ function run_cplex(instance::String, out_dir::String)
         :state => [s],
         :energy_qubo => E_qubo,
         :energy_ising => E_ising,
-        :status => raw_status(model)
+        :time => solve_time(model),
+        :status => raw_status(model) 
+        
     )
     println(data)
     CSV.write(out_path, data, delim = ';', append = false)

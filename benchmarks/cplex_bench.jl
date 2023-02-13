@@ -25,13 +25,13 @@ function run_cplex(instance::String, out_dir::String)
     optimize!(model)
 
     σ = value.(x.data)
-    s = [i == 1 ? 1 : -1 for i in σ]
+    s = [i ≈ 1 ? 1 : -1 for i in σ]
     E_qubo = objective_value(model) + sum(J) - sum(h)
     E_ising = s' * J * s + s' * h
 
     data = DataFrame(
         :instance => inst,
-        :state => [σ],
+        :state => [s],
         :energy_qubo => E_qubo,
         :energy_ising => E_ising,
         :status => raw_status(model)
@@ -47,7 +47,7 @@ instance_dir = "$(@__DIR__)/../test/instances/pegasus_random/P4/CBFM-P/SpinGlass
 #instance = Dict((1, 2) => 1.0, (1, 3) => 1.0)
 
 for file in readdir(instance_dir, join=true)
-    run_cplex(file, "$(@__DIR__)/results/CPLEX/P4/CBFM-P")
+    run_cplex(file, "$(@__DIR__)/results/CPLEX/P4/CBFM-P/tmp")
 end
 
 

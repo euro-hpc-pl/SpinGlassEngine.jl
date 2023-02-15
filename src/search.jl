@@ -215,12 +215,22 @@ function low_energy_spectrum(
     # Build all boundary mps
     CUDA.allowscalar(false)
 
+    schmidts = Dict()
     @showprogress "Preprocessing: " for i ∈ ctr.peps.nrows:-1:1
-        dressed_mps(ctr, i)
+        ψ0 = mps(ctr, i, length(ctr.betas))
+        push!(schmidts, i=> measure_spectrum(ψ0))
         clear_memoize_cache_after_row()
     end
-    Memoization.empty_cache!.((mps, SpinGlassTensors.SparseCSC))
+    Memoization.empty_cache!(SpinGlassTensors.SparseCSC)
     empty!(ctr.peps.lp, :GPU)
+
+    for i ∈ ctr.peps.nrows:-1:1
+        dressed_mps(ctr, i)
+    end
+    Memoization.empty_cache!(mps)
+
+    println("Schmidt spectrum : remove those two lines and put it into sol")
+    println(schmidts)
 
     # Start branch and bound search
     sol = empty_solution()

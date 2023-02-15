@@ -18,12 +18,12 @@ end
 onGPU = true
 
 function bench(instance::String)
-    m = 7
-    n = 7
+    m = 3
+    n = 3
     t = 3
 
     β = 1.0
-    bond_dim = 8
+    bond_dim = 16
     DE = 16.0
     δp = 1E-5 * exp(-β * DE)
     num_states = 128
@@ -52,7 +52,7 @@ function bench(instance::String)
     println("creating network and contractor")
     @time begin
         net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, tran)
-        ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)
+        ctr = MpsContractor{Strategy, Gauge}(net, [β], :graduate_truncate, params; onGPU=onGPU)
     end
     println("Memory lp = ", format_bytes.(measure_memory(net.lp)), " elements = ", length(net.lp))
     println("Memory memoize = ", measure_memory(Memoization.caches))
@@ -96,14 +96,20 @@ function bench(instance::String)
     # B = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
     # @time yy = SpinGlassTensors.update_env_left(LE, A, W[st], B)
 
-   println("solving")
-   @time sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
-   println("Memory lp = ", format_bytes.(measure_memory(net.lp)), " elements = ", length(net.lp))
-   println("Memory memoize", measure_memory(Memoization.caches))
-   println("Result ", sol.energies)
+    println("solving ... ")
+    try 
+        sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+        println("Memory lp = ", format_bytes.(measure_memory(net.lp)), " elements = ", length(net.lp))
+        println("Memory memoize", measure_memory(Memoization.caches))
+        println("Result ", sol.energies)
+    catch err
+        println("Memory lp = ", format_bytes.(measure_memory(net.lp)), " elements = ", length(net.lp))
+        println("Memory memoize", measure_memory(Memoization.caches))
+        println(err.msg)
+    end
 end
 
-instance = "$(@__DIR__)/../test/instances/pegasus_random/P8/RAU/SpinGlass/001_sg.txt"
-#bench(instance)
+instance = "$(@__DIR__)/../test/instances/pegasus_random/P4/RAU/SpinGlass/001_sg.txt"
+# bench(instance)
 @profile bench(instance)
 pprof(flamegraph(); webhost = "localhost", webport = 57333)

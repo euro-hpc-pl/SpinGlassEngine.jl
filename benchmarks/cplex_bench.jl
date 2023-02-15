@@ -34,7 +34,7 @@ function run_cplex(instance::String, out_dir::String)
         :state => [s],
         :energy_qubo => E_qubo,
         :energy_ising => E_ising,
-        :time => solve_time(model),
+        :time => round(solve_time(model), digits=2),
         :status => raw_status(model) 
         
     )
@@ -44,12 +44,12 @@ function run_cplex(instance::String, out_dir::String)
 end
 
 
-instance_dir = "$(@__DIR__)/../test/instances/pegasus_random/P4/CBFM-P/SpinGlass"
+instance_dir = "$(@__DIR__)/../test/instances/pegasus_random/P8/CBFM-P/SpinGlass"
 #instance = "$(@__DIR__)/../test/instances/pathological/pegasus_3_4_1.txt"
 #instance = Dict((1, 2) => 1.0, (1, 3) => 1.0)
 
 for file in readdir(instance_dir, join=true)
-    run_cplex(file, "$(@__DIR__)/results/CPLEX/P4/CBFM-P/tmp")
+    run_cplex(file, "$(@__DIR__)/results/CPLEX/P8/CBFM-P/tmp")
 end
 
 

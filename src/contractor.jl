@@ -252,6 +252,7 @@ Construct (and memoize) top MPS using Zipper (truncated SVD) for a given row.
 
     canonise!(ψ, :left)
     ψ0 = zipper(W, ψ; method=:psvd_sparse, Dcut=Dcut, tol=tolS)
+    canonise!(ψ0, :left)
     variational_compress!(ψ0, W, ψ, tolV, max_sweeps)
     ψ0
 end
@@ -275,6 +276,7 @@ Construct (and memoize) (bottom) MPS using Zipper (truncated SVD) for a given ro
         W = mpo(ctr, ctr.layers.main, i, indβ)
         canonise!(ψ, :left)
         ψ0 = zipper(W, ψ; method=:psvd_sparse, Dcut=Dcut, tol=tolS)
+        canonise!(ψ0, :left)
         variational_compress!(ψ0, W, ψ, tolV, max_sweeps)
     end
     ψ0

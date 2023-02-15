@@ -115,12 +115,12 @@ end
 @memoize Dict function precompute_conditional(
     ::Type{T}, ctr::MpsContractor{S}, current_node
 ) where {T <: SquareStar2, S}
-        i, j, k = current_node
-
-        β = last(ctr.betas)
-        en12 = interaction_energy(ctr.peps, (i, j, 1), (i, j, 2))
-        p12 = projector(ctr.peps, (i, j, 1), (i, j, 2))
-        p21 = projector(ctr.peps, (i, j, 2), (i, j, 1))
+    i, j, k = current_node
+    β = last(ctr.betas)
+    if k == 1
+        en12 = CuArray(interaction_energy(ctr.peps, (i, j, 1), (i, j, 2)))
+        p12 = CuArray(projector(ctr.peps, (i, j, 1), (i, j, 2)))
+        p21 = CuArray(projector(ctr.peps, (i, j, 2), (i, j, 1)))
 
         plb1 = projector(ctr.peps, (i, j, 1), ((i+1, j-1, 1), (i+1, j-1, 2)))
         plb2 = projector(ctr.peps, (i, j, 2), ((i+1, j-1, 1), (i+1, j-1, 2)))
@@ -129,16 +129,67 @@ end
         pd1 = projector(ctr.peps, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
         pd2 = projector(ctr.peps, (i, j, 2), ((i+1, j, 1), (i+1, j, 2)))
 
+        plb = CuArray(outer_projector(plb1, plb2))
+        prf = CuArray(outer_projector(prf1, prf2))
+        pd = CuArray(outer_projector(pd1, pd2))
+
+        eng_loc = [CuArray(local_energy(ctr.peps, (i, j, k))) for k ∈ 1:2]
+
+        el = [CuArray(interaction_energy(ctr.peps, (i, j, k), (i, j-1, m))) for k ∈ 1:2, m ∈ 1:2]
+        pl = [CuArray(projector(ctr.peps, (i, j, k), (i, j-1, m))) for k ∈ 1:2, m ∈ 1:2]
+        eng_l = [el[k, m][pl[k, m], :] for k ∈ 1:2, m ∈ 1:2]
+
+        elu = [CuArray(interaction_energy(ctr.peps, (i, j, k), (i-1, j-1, m))) for k ∈ 1:2, m ∈ 1:2]
+        plu = [CuArray(projector(ctr.peps, (i, j, k), (i-1, j-1, m))) for k ∈ 1:2, m ∈ 1:2]
+        eng_lu = [elu[k, m][plu[k, m], :] for k ∈ 1:2, m ∈ 1:2]
+
+        eu = [CuArray(interaction_energy(ctr.peps, (i, j, k), (i-1, j, m))) for k ∈ 1:2, m ∈ 1:2]
+        pu = [CuArray(projector(ctr.peps, (i, j, k), (i-1, j, m))) for k ∈ 1:2, m ∈ 1:2]
+        eng_u = [eu[k, m][pu[k, m], :] for k ∈ 1:2, m ∈ 1:2]
+
         le = en12[p12, p21]
         ele = exp.(-β .* (le .- minimum(le)))
-        ele, plb1, plb2, prf1, prf2, pd1, pd2
+
+        splb = maximum(plb)
+
+        return (ele, eng_loc, eng_l, eng_lu, eng_u, plb, prf, pd, splb)
+    else
+        eng_loc = CuArray(local_energy(ctr.peps, (i, j, 2)))
+
+        el = [CuArray(interaction_energy(ctr.peps, (i, j, 2), (i, j-1, m))) for m ∈ 1:2]
+        pl = [CuArray(projector(ctr.peps, (i, j, 2), (i, j-1, m))) for m ∈ 1:2]
+        eng_l = [el[m][pl[m], :] for m ∈ 1:2]
+
+        elu = [CuArray(interaction_energy(ctr.peps, (i, j, 2), (i-1, j-1, m))) for m ∈ 1:2]
+        plu = [CuArray(projector(ctr.peps, (i, j, 2), (i-1, j-1, m))) for m ∈ 1:2]
+        eng_lu = [elu[m][plu[m], :] for m ∈ 1:2]
+
+        eu = [CuArray(interaction_energy(ctr.peps, (i, j, 2), (i-1, j, m))) for m ∈ 1:2]
+        pu = [CuArray(projector(ctr.peps, (i, j, 2), (i-1, j, m))) for m ∈ 1:2]
+        eng_u = [eu[m][pu[m], :] for m ∈ 1:2]
+
+        en12 = CuArray(interaction_energy(ctr.peps, (i, j, 1), (i, j, 2)))
+        p21 = CuArray(projector(ctr.peps, (i, j, 2), (i, j, 1)))
+        eng_12 = @view en12[:, p21]
+
+        plb1 = CuArray(projector(ctr.peps, (i, j, 1), ((i+1, j-1, 1), (i+1, j-1, 2))))
+        plb2 = CuArray(projector(ctr.peps, (i, j, 2), ((i+1, j-1, 1), (i+1, j-1, 2))))
+        prf2 = CuArray(projector(ctr.peps, (i, j, 2), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2))))
+        pd2 = CuArray(projector(ctr.peps, (i, j, 2), ((i+1, j, 1), (i+1, j, 2))))
+
+        splb1, splb2, sprf2, spd2 = maximum.((plb1, plb2, prf2, pd2))
+
+        return (eng_loc, eng_l, eng_lu, eng_u, eng_12, plb2, prf2, pd2, splb1, splb2, sprf2, spd2)
+    end
 end
+
+
+
 
 """
 $(TYPEDSIGNATURES)
 """
-# TODO: rewrite this using brodcasting if possible
-function conditional_probability(  # TODO
+function conditional_probability(
     ::Type{T}, ctr::MpsContractor{S}, ∂v::Vector{Int}
 ) where {T <: SquareStar2, S}
     indβ, β = length(ctr.betas), last(ctr.betas)
@@ -150,83 +201,158 @@ function conditional_probability(  # TODO
     @tensor LMX[y, z] := L[x] * MX[x, y, z]
 
     if k == 1  # here has to avarage over s2
-
         R = right_env(ctr, i, ∂v[(2 * j + 12) : end], indβ)
 
-        eng_loc = [local_energy(ctr.peps, (i, j, k)) for k ∈ 1:2]
+        ele, eng_loc, eng_l, eng_lu, eng_u, plb, prf, pd, splb = precompute_conditional(T, ctr, ctr.current_node)
 
-        el = [interaction_energy(ctr.peps, (i, j, k), (i, j-1, m)) for k ∈ 1:2, m ∈ 1:2]
-        pl = [projector(ctr.peps, (i, j, k), (i, j-1, m)) for k ∈ 1:2, m ∈ 1:2]
-        eng_l = [@view el[k, m][pl[k, m], ∂v[2 * j - 1 + k + (m - 1) * 2]] for k ∈ 1:2, m ∈ 1:2]
-
-        elu = [interaction_energy(ctr.peps, (i, j, k), (i-1, j-1, m)) for k ∈ 1:2, m ∈ 1:2]
-        plu = [projector(ctr.peps, (i, j, k), (i-1, j-1, m)) for k ∈ 1:2, m ∈ 1:2]
-        eng_lu = [@view elu[k, m][plu[k, m], ∂v[2 * j + 3 + k + (m - 1) * 2]] for k ∈ 1:2, m ∈ 1:2]
-
-        eu = [interaction_energy(ctr.peps, (i, j, k), (i-1, j, m)) for k ∈ 1:2, m ∈ 1:2]
-        pu = [projector(ctr.peps, (i, j, k), (i-1, j, m)) for k ∈ 1:2, m ∈ 1:2]
-        eng_u = [@view eu[k, m][pu[k, m], ∂v[2 * j + 7 + k + (m - 1) * 2]] for k ∈ 1:2, m ∈ 1:2]
-
+        eng_l = [@view eng_l[k, m][:, ∂v[2 * j - 1 + k + (m - 1) * 2]] for k ∈ 1:2, m ∈ 1:2]
+        eng_lu = [@view eng_lu[k, m][:, ∂v[2 * j + 3 + k + (m - 1) * 2]] for k ∈ 1:2, m ∈ 1:2]
+        eng_u = [@view eng_u[k, m][:, ∂v[2 * j + 7 + k + (m - 1) * 2]] for k ∈ 1:2, m ∈ 1:2]
         en = [eng_loc[k] .+ eng_l[k, 1] .+ eng_l[k, 2] .+ eng_lu[k, 1] .+ eng_lu[k, 2] .+ eng_u[k, 1] .+ eng_u[k, 2] for k ∈ 1:2]
         en = [exp.(-β .* (en[k] .- minimum(en[k]))) for k ∈ 1:2]
-        ele, plb1, plb2, prf1, prf2, pd1, pd2 = precompute_conditional(T, ctr, ctr.current_node)
         tele = reshape(en[1], (:, 1)) .* ele .* reshape(en[2], (1, :))
 
-        # LMX = permutedims(LMX, (2, 1))
-        @cast LMX5[x, y, v, p1, p2] := LMX[(x, y), (v, p1, p2)]  (p1 ∈ 1:maximum(plb1), p2 ∈ 1:maximum(plb2), y ∈ 1:1)
-        LMX4 = LMX5[:, :, ∂v[2 * j - 1], :, :]
-        # M = permutedims(M, (1, 3, 2))
-        @cast M4[x, y, p1, p2] := M[x, y, (p1, p2)] (p2 ∈ 1:maximum(pd2))
-        @cast R4[x, y, p1, p2] := R[(x, y), (p1, p2)] (p2 ∈ 1:maximum(prf2), x ∈ 1:1)
-        LR = dropdims(sum(LMX4[:, :, plb1, plb2] .* M4[:, :, pd1, pd2] .* R4[:, :, prf1, prf2], dims=(1, 2)), dims=(1, 2))
+        @cast LMX4[x, y, v, p] := LMX[(x, y), (v, p)]  (x ∈ 1:1, p ∈ 1:splb)
+        LMX3 = LMX4[:, :, ∂v[2 * j - 1], :]
+        @cast R3[x, y, p] := R[(x, y), p] (y ∈ 1:1)
 
-        probs = dropdims(sum(Array(LR) .* tele, dims=2), dims=2)
+        from = 1
+        total_size = length(pd)
+
+        total_memory = 2^33
+        s1, s2, _ = size(M)
+        batch_size = max(Int(floor(total_memory / (8 * (s1 * s2 + s1 + s2 + 1)))), 1)
+        batch_size = Int(2^floor(log2(batch_size) + 1e-6))
+        LR = typeof(M) <: CuArray ? CUDA.zeros(eltype(M), total_size) : zeros(eltype(M), total_size)
+        while from <= total_size
+            to = min(total_size, from + batch_size - 1)
+            vplb = @view plb[from:to]
+            vpd = @view pd[from:to]
+            vprf = @view prf[from:to]
+            @inbounds LMX3p = LMX3[:, :, vplb]
+            @inbounds Mp = M[:, :, vpd]
+            @inbounds R3p = R3[:, :, vprf]
+            @inbounds LR[from:to] = dropdims(LMX3p ⊠ Mp ⊠ R3p, dims=(1, 2))
+            from = to + 1
+        end
+        LR = reshape(LR, size(tele))
+        LR .*= tele
+        probs = Array(dropdims(sum(LR, dims=2), dims=2))
     else  # k == 2
-        #R = right_env(ctr, i, ∂v[(2 * j + 10) : end], indβ)
         R = right_env(ctr, i, ∂v[(2 * j + 10) : end], indβ)
 
-        eng_loc = local_energy(ctr.peps, (i, j, 2))
+        eng_loc, eng_l, eng_lu, eng_u, eng_12, plb2, prf2, pd2, splb1, splb2, sprf2, spd2 = precompute_conditional(T, ctr, ctr.current_node)
 
-        el = [interaction_energy(ctr.peps, (i, j, 2), (i, j-1, m)) for m ∈ 1:2]
-        pl = [projector(ctr.peps, (i, j, 2), (i, j-1, m)) for m ∈ 1:2]
-        eng_l = [@view el[m][pl[m], ∂v[2 * j - 1 + m]] for m ∈ 1:2]
-
-        elu = [interaction_energy(ctr.peps, (i, j, 2), (i-1, j-1, m)) for m ∈ 1:2]
-        plu = [projector(ctr.peps, (i, j, 2), (i-1, j-1, m)) for m ∈ 1:2]
-        eng_lu = [@view elu[m][plu[m], ∂v[2 * j + 1 + m]] for m ∈ 1:2]
-
-        eu = [interaction_energy(ctr.peps, (i, j, 2), (i-1, j, m)) for m ∈ 1:2]
-        pu = [projector(ctr.peps, (i, j, 2), (i-1, j, m)) for m ∈ 1:2]
-        eng_u = [@view eu[m][pu[m], ∂v[2 * j + 3 + m]] for m ∈ 1:2]
-
-        en12 = interaction_energy(ctr.peps, (i, j, 1), (i, j, 2))
-        p21 = projector(ctr.peps, (i, j, 2), (i, j, 1))
-        eng_12 = @view en12[∂v[2 * j + 6], p21]
+        eng_l = [@view eng_l[m][:, ∂v[2 * j - 1 + m]] for m ∈ 1:2]
+        eng_lu = [@view eng_lu[m][:, ∂v[2 * j + 1 + m]] for m ∈ 1:2]
+        eng_u = [@view eng_u[m][:, ∂v[2 * j + 3 + m]] for m ∈ 1:2]
+        eng_12 = @view eng_12[∂v[2 * j + 6], :]
 
         le = eng_loc .+ eng_l[1] .+ eng_l[2] .+ eng_lu[1] .+ eng_lu[2] .+ eng_u[1] .+ eng_u[2] .+ eng_12
         ele = exp.(-β .* (le .- minimum(le)))
 
-        plb1 = projector(ctr.peps, (i, j, 1), ((i+1, j-1, 1), (i+1, j-1, 2)))
-        plb2 = projector(ctr.peps, (i, j, 2), ((i+1, j-1, 1), (i+1, j-1, 2)))
-        prf2 = projector(ctr.peps, (i, j, 2), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2)))
-        pd2 = projector(ctr.peps, (i, j, 2), ((i+1, j, 1), (i+1, j, 2)))
-
-
-        # LMX = permutedims(LMX, (2, 1))
-        @cast LMX5[x, y, v, p1, p2] := LMX[(x, y), (v, p1, p2)]  (p1 ∈ 1:maximum(plb1), p2 ∈ 1:maximum(plb2), y ∈ 1:1)  # problem: cast z permute jaka kolejnosc
-        LMX3 =  LMX5[:, :, ∂v[2 * j - 1], ∂v[2 * j + 7], :]   # view problem czy nie problem -- gdzie wrzucic "v" "p1"
-        # M = permutedims(M, (1,3,2))
-        @cast M4[x, y, p1, p2] := M[x, y, (p1, p2)] (p2 ∈ 1:maximum(pd2))  # problem: cast z permute; jaka kolejnosc?
-        M2 =  M4[:, :, ∂v[2 * j + 8], :]   # view problem czy nie problem -- gdzie wrzucic "v" "p1"
-        @cast R4[x, y, p1, p2] := R[(x, y), (p1, p2)] (p2 ∈ 1:maximum(prf2), x ∈ 1:1)  # czy potrzebny permute (patrz nastepna linijka)
-        R2 =  R4[:, :, ∂v[2 * j + 9], :]   # view problem czy nie problem -- gdzie wrzucic "v" "p1"
-        LR = dropdims(sum(LMX3[:, :, plb2] .* M2[:, :, pd2] .* R2[:, :, prf2], dims=(1, 2)), dims=(1, 2))
-        probs = ele .* Array(LR)
+        @cast LMX5[x, y, v, p1, p2] := LMX[(x, y), (v, p1, p2)]  (p1 ∈ 1:splb1, p2 ∈ 1:splb2, x ∈ 1:1)
+        LMX3 =  LMX5[:, :, ∂v[2 * j - 1], ∂v[2 * j + 7], :]
+        @cast M4[x, y, p1, p2] := M[x, y, (p1, p2)] (p2 ∈ 1:spd2)
+        M2 =  M4[:, :, ∂v[2 * j + 8], :]
+        @cast R4[x, y, p1, p2] := R[(x, y), (p1, p2)] (p2 ∈ 1:sprf2, y ∈ 1:1)
+        R2 =  R4[:, :, ∂v[2 * j + 9], :]
+        LR = dropdims(LMX3[:, :, plb2] ⊠ M2[:, :, pd2] ⊠ R2[:, :, prf2], dims=(1, 2))
+        probs = Array(ele .* LR)
     end
     push!(ctr.statistics, ((i, j), ∂v) => error_measure(probs))
     normalize_probability(probs)
 end
 
+
+# function conditional_probability(
+#     ::Type{T}, ctr::MpsContractor{S}, ∂v::Vector{Int}
+# ) where {T <: SquareStar2, S}
+#     indβ, β = length(ctr.betas), last(ctr.betas)
+#     i, j, k = ctr.current_node
+
+#     L = left_env(ctr, i, ∂v[1:2*j-2], indβ)
+#     ψ = dressed_mps(ctr, i, indβ)
+#     MX, M = ψ[j - 1//2], ψ[j]
+#     @tensor LMX[y, z] := L[x] * MX[x, y, z]
+
+#     if k == 1  # here has to avarage over s2
+
+#         R = right_env(ctr, i, ∂v[(2 * j + 12) : end], indβ)
+
+#         eng_loc = [local_energy(ctr.peps, (i, j, k)) for k ∈ 1:2]
+
+#         el = [interaction_energy(ctr.peps, (i, j, k), (i, j-1, m)) for k ∈ 1:2, m ∈ 1:2]
+#         pl = [projector(ctr.peps, (i, j, k), (i, j-1, m)) for k ∈ 1:2, m ∈ 1:2]
+#         eng_l = [@view el[k, m][pl[k, m], ∂v[2 * j - 1 + k + (m - 1) * 2]] for k ∈ 1:2, m ∈ 1:2]
+
+#         elu = [interaction_energy(ctr.peps, (i, j, k), (i-1, j-1, m)) for k ∈ 1:2, m ∈ 1:2]
+#         plu = [projector(ctr.peps, (i, j, k), (i-1, j-1, m)) for k ∈ 1:2, m ∈ 1:2]
+#         eng_lu = [@view elu[k, m][plu[k, m], ∂v[2 * j + 3 + k + (m - 1) * 2]] for k ∈ 1:2, m ∈ 1:2]
+
+#         eu = [interaction_energy(ctr.peps, (i, j, k), (i-1, j, m)) for k ∈ 1:2, m ∈ 1:2]
+#         pu = [projector(ctr.peps, (i, j, k), (i-1, j, m)) for k ∈ 1:2, m ∈ 1:2]
+#         eng_u = [@view eu[k, m][pu[k, m], ∂v[2 * j + 7 + k + (m - 1) * 2]] for k ∈ 1:2, m ∈ 1:2]
+
+#         en = [eng_loc[k] .+ eng_l[k, 1] .+ eng_l[k, 2] .+ eng_lu[k, 1] .+ eng_lu[k, 2] .+ eng_u[k, 1] .+ eng_u[k, 2] for k ∈ 1:2]
+#         en = [exp.(-β .* (en[k] .- minimum(en[k]))) for k ∈ 1:2]
+#         ele, plb, prf, pd = precompute_conditional(T, ctr, ctr.current_node)
+#         tele = reshape(en[1], (:, 1)) .* ele .* reshape(en[2], (1, :))
+
+#         @cast LMX4[x, y, v, p] := LMX[(x, y), (v, p)]  (p ∈ 1:maximum(plb), x ∈ 1:1)
+#         LMX3 = LMX4[:, :, ∂v[2 * j - 1], :]
+ 
+#         @cast R3[x, y, p] := R[(x, y), p] (y ∈ 1:1)
+
+#         LR = dropdims(LMX3[:, :, plb] ⊠ M[:, :, pd] ⊠ R3[:, :, prf], dims=(1, 2))
+#         LR = Array(reshape(LR, size(tele)))
+#         LR .*= tele
+#         probs = dropdims(sum(LR, dims=2), dims=2)
+#     else  # k == 2
+#         #R = right_env(ctr, i, ∂v[(2 * j + 10) : end], indβ)
+#         R = right_env(ctr, i, ∂v[(2 * j + 10) : end], indβ)
+
+#         eng_loc = local_energy(ctr.peps, (i, j, 2))
+
+#         el = [interaction_energy(ctr.peps, (i, j, 2), (i, j-1, m)) for m ∈ 1:2]
+#         pl = [projector(ctr.peps, (i, j, 2), (i, j-1, m)) for m ∈ 1:2]
+#         eng_l = [@view el[m][pl[m], ∂v[2 * j - 1 + m]] for m ∈ 1:2]
+
+#         elu = [interaction_energy(ctr.peps, (i, j, 2), (i-1, j-1, m)) for m ∈ 1:2]
+#         plu = [projector(ctr.peps, (i, j, 2), (i-1, j-1, m)) for m ∈ 1:2]
+#         eng_lu = [@view elu[m][plu[m], ∂v[2 * j + 1 + m]] for m ∈ 1:2]
+
+#         eu = [interaction_energy(ctr.peps, (i, j, 2), (i-1, j, m)) for m ∈ 1:2]
+#         pu = [projector(ctr.peps, (i, j, 2), (i-1, j, m)) for m ∈ 1:2]
+#         eng_u = [@view eu[m][pu[m], ∂v[2 * j + 3 + m]] for m ∈ 1:2]
+
+#         en12 = interaction_energy(ctr.peps, (i, j, 1), (i, j, 2))
+#         p21 = projector(ctr.peps, (i, j, 2), (i, j, 1))
+#         eng_12 = @view en12[∂v[2 * j + 6], p21]
+
+#         le = eng_loc .+ eng_l[1] .+ eng_l[2] .+ eng_lu[1] .+ eng_lu[2] .+ eng_u[1] .+ eng_u[2] .+ eng_12
+#         ele = exp.(-β .* (le .- minimum(le)))
+
+#         plb1 = projector(ctr.peps, (i, j, 1), ((i+1, j-1, 1), (i+1, j-1, 2)))
+#         plb2 = projector(ctr.peps, (i, j, 2), ((i+1, j-1, 1), (i+1, j-1, 2)))
+#         prf2 = projector(ctr.peps, (i, j, 2), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2)))
+#         pd2 = projector(ctr.peps, (i, j, 2), ((i+1, j, 1), (i+1, j, 2)))
+
+
+#         # LMX = permutedims(LMX, (2, 1))
+#         @cast LMX5[x, y, v, p1, p2] := LMX[(x, y), (v, p1, p2)]  (p1 ∈ 1:maximum(plb1), p2 ∈ 1:maximum(plb2), y ∈ 1:1)  # problem: cast z permute jaka kolejnosc
+#         LMX3 =  LMX5[:, :, ∂v[2 * j - 1], ∂v[2 * j + 7], :]   # view problem czy nie problem -- gdzie wrzucic "v" "p1"
+#         # M = permutedims(M, (1,3,2))
+#         @cast M4[x, y, p1, p2] := M[x, y, (p1, p2)] (p2 ∈ 1:maximum(pd2))  # problem: cast z permute; jaka kolejnosc?
+#         M2 =  M4[:, :, ∂v[2 * j + 8], :]   # view problem czy nie problem -- gdzie wrzucic "v" "p1"
+#         @cast R4[x, y, p1, p2] := R[(x, y), (p1, p2)] (p2 ∈ 1:maximum(prf2), x ∈ 1:1)  # czy potrzebny permute (patrz nastepna linijka)
+#         R2 =  R4[:, :, ∂v[2 * j + 9], :]   # view problem czy nie problem -- gdzie wrzucic "v" "p1"
+#         LR = dropdims(sum(LMX3[:, :, plb2] .* M2[:, :, pd2] .* R2[:, :, prf2], dims=(1, 2)), dims=(1, 2))
+#         probs = ele .* Array(LR)
+#     end
+#     push!(ctr.statistics, ((i, j), ∂v) => error_measure(probs))
+#     normalize_probability(probs)
+# end
 
 """
 $(TYPEDSIGNATURES)

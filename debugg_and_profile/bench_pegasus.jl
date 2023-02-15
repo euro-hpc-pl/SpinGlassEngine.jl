@@ -22,11 +22,11 @@ function bench(instance::String)
     n = 7
     t = 3
 
-    β = 0.5
-    bond_dim = 3
+    β = 1.0
+    bond_dim = 8
     DE = 16.0
     δp = 1E-5 * exp(-β * DE)
-    num_states = 32
+    num_states = 128
     println("creating factor graph" )
     @time begin
     ig = ising_graph(instance)
@@ -39,7 +39,7 @@ function bench(instance::String)
     end
 
     clear_memoize_cache()
-    params = MpsParameters(bond_dim, 1E-8, 10, 1E-16)
+    params = MpsParameters(bond_dim, 1E-8, 6, 1E-16)
     search_params = SearchParameters(num_states, δp)
 
     # Solve using PEPS search
@@ -55,7 +55,7 @@ function bench(instance::String)
         ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)
     end
     println("Memory lp = ", format_bytes.(measure_memory(net.lp)), " elements = ", length(net.lp))
-    println("Memory memoize", measure_memory(Memoization.caches))
+    println("Memory memoize = ", measure_memory(Memoization.caches))
 
     # @time begin
     #     W = SpinGlassEngine.mpo(ctr, ctr.layers.main, 4, 4)
@@ -106,4 +106,4 @@ end
 instance = "$(@__DIR__)/../test/instances/pegasus_random/P8/RAU/SpinGlass/001_sg.txt"
 #bench(instance)
 @profile bench(instance)
-pprof(flamegraph(); webhost = "localhost", webport = 57326)
+pprof(flamegraph(); webhost = "localhost", webport = 57333)

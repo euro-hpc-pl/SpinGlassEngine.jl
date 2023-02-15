@@ -384,7 +384,7 @@ Construct (and memoize) right environment for a given node.
 
     R̃ = right_env(ctr, i, ∂v[2:l], indβ)
     ϕ = dressed_mps(ctr, i, indβ)
-    W = mpo(ctr, ctr.layers.right, i, indβ)  # WRONG FLOW; now mpo is not memoised
+    W = mpo(ctr, ctr.layers.right, i, indβ)
     k = length(ϕ.sites)
     site = ϕ.sites[k-l+1]
     M = W[site]

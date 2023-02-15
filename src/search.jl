@@ -219,6 +219,8 @@ function low_energy_spectrum(
         dressed_mps(ctr, i)
         clear_memoize_cache_after_row()
     end
+    Memoization.empty_cache!.((mps, SpinGlassTensors.SparseCSC))
+    empty!(ctr.peps.lp, :GPU)
 
     # Start branch and bound search
     sol = empty_solution()

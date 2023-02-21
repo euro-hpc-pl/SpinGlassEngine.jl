@@ -44,7 +44,7 @@ function bench(instance::String)
     energies = Vector{Float64}[]
     Strategy = Zipper # SVDTruncate
     Sparsity = Sparse #Dense
-    tran = all_lattice_transformations[5]
+    tran = all_lattice_transformations[1]
     Layout = GaugesEnergy
     Gauge = NoUpdate
     println("creating network and contractor")
@@ -53,42 +53,60 @@ function bench(instance::String)
         ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)
         println("Memory lp = ", format_bytes.(measure_memory(net.lp)), " elements = ", length(net.lp))
     end
-    # @time begin
-    #     W = SpinGlassEngine.mpo(ctr, ctr.layers.main, 8, 4)
-    # end
-    # for st in W.sites
-    #     println(st, "  ", size(W[st]), "  btm ", size.(W[st].bot), " top ",  size.(W[st].top), " ctr ",  size(W[st].ctr))
-    # end
+    
+    @time begin
+        W = SpinGlassEngine.mpo(ctr, ctr.layers.main, 8, 4)
+    end
+    for st in W.sites
+        println(st, "  ", size(W[st]), "  btm ", size.(W[st].bot), " top ",  size.(W[st].top), " ctr ",  size(W[st].ctr))
+    end
 
-    # st = 8
-    # DD = 8
-    # LE = rand(Float64, DD, DD, size(W[st], 1))
-    # RE = rand(Float64, DD, DD, size(W[st], 3))
-    # B  = rand(Float64, DD, DD, size(W[st], 4))
-    # # LE = CuArray(rand(Float64, DD, DD, size(W[st], 1)))
-    # # RE = CuArray(rand(Float64, DD, DD, size(W[st], 3)))
-    # # B  = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
-    # @time xx = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
+    st = 8
+    DD = 8
+    LE = CuArray(rand(Float64, DD, DD, size(W[st], 1)))
+    RE = CuArray(rand(Float64, DD, DD, size(W[st], 3)))
+    B  = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
+    @time for ii in 1:10
+        xx = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
+    end
 
-    # st = 17 // 2
-    # println(size(W[st].ctr.con), " size  ", size.(Ref(W[st].ctr.lp), W[st].ctr.projs), " length  ", length.(Ref(W[st].ctr.lp), W[st].ctr.projs))
-    # DD = 8
-    # LE = rand(Float64, DD, DD, size(W[st], 1))
-    # RE = rand(Float64, DD, DD, size(W[st], 3))
-    # B = rand(Float64, DD, DD, size(W[st], 4))
-    # LE = CuArray(rand(Float64, DD, DD, size(W[st], 1)))
-    # RE = CuArray(rand(Float64, DD, DD, size(W[st], 3)))
-    # B = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
-    # @time yy = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
+    st = 17 // 2
+    println(size(W[st].ctr.con), " size  ", size.(Ref(W[st].ctr.lp), W[st].ctr.projs), " length  ", length.(Ref(W[st].ctr.lp), W[st].ctr.projs))
+    DD = 8
 
-    println("solving")
-    @time sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
-    println("Result ", sol.energies)
-    println("Memory lp = ", format_bytes.(measure_memory(net.lp)), " elements = ", length(net.lp))
+    println(" ")
+    println(" PROJECT ")
+    LE = CuArray(rand(Float64, DD, DD, size(W[st], 1)))
+    RE = CuArray(rand(Float64, DD, DD, size(W[st], 3)))
+    B = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
+    @time for ii in 1:10 
+        yy = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
+    end
+
+    println("  RIGHT  ")
+    RE = CuArray(rand(Float64, DD, DD, size(W[st], 3)))
+    A = CuArray(rand(Float64, DD, DD, size(W[st], 2)))
+    B = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
+    @time for ii in 1:10
+        yy = SpinGlassTensors.update_env_right(RE, A, W[st], B)
+    end
+
+    println("  LEFT  ")
+    LE = CuArray(rand(Float64, DD, DD, size(W[st], 1)))
+    A = CuArray(rand(Float64, DD, DD, size(W[st], 2)))
+    B = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
+    @time for ii in 1:10
+        yy = SpinGlassTensors.update_env_left(LE, A, W[st], B)
+    end
+
+    # println("solving")
+    # @time sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+    # println("Result ", sol.energies)
+    # println("Memory lp = ", format_bytes.(measure_memory(net.lp)), " elements = ", length(net.lp))
 end
 
 instance = "$(@__DIR__)/../test/instances/zephyr_random/Z8/RAU/SpinGlass/001_sg.txt"
 bench(instance)
 @profile bench(instance)
 
-pprof(flamegraph(); webhost = "localhost", webport = 57322)
+pprof(flamegraph(); webhost = "localhost", webport = 57323)

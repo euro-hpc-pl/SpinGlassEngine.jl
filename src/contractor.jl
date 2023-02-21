@@ -363,9 +363,12 @@ Construct (and memoize) dressed MPS for a given row and strategy.
 ) where T <: AbstractStrategy
 
     ψ = mps(ctr, i+1, indβ)
+    delete!(Memoization.caches[mps], ((ctr, i+1, indβ), ()))
+    if ctr.onGPU
+        ψ = move_to_CUDA!(ψ)
+    end
     W = mpo(ctr, ctr.layers.dress, i, indβ)
     ϕ = dot(W, ψ)
-
     for j ∈ ϕ.sites
         nrm = maximum(abs.(ϕ[j]))
         if !iszero(nrm) ϕ[j] ./= nrm end
@@ -434,7 +437,7 @@ function clear_memoize_cache()
 end
 
 function clear_memoize_cache_after_row()
-    Memoization.empty_cache!.((left_env, right_env, mpo))
+    Memoization.empty_cache!.((left_env, right_env, mpo, dressed_mps))
 end
 
 """

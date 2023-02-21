@@ -18,11 +18,11 @@ MPI.Init()
 size = MPI.Comm_size(MPI.COMM_WORLD)
 rank = MPI.Comm_rank(MPI.COMM_WORLD)
 
-M, N, T = 1, 1, 3
-INSTANCE_DIR = "$(@__DIR__)/../test/instances/pegasus_random/P2"
-OUTPUT_DIR = "$(@__DIR__)/results/pegasus_random/P2/RAU/zipper"
+M, N, T = 3, 3, 3
+INSTANCE_DIR = "$(@__DIR__)/../test/instances/pegasus_random/P4/CBFM-P/five"
+OUTPUT_DIR = "$(@__DIR__)/results/pegasus_random/P4/CBFM-P/new_ten"
 
-BETAS = [0.25, 0.5] #collect(1:1:10)
+BETAS = [0.5, 1, 2] #collect(1:1:10)
 LAYOUT = (GaugesEnergy,)
 TRANSFORM = all_lattice_transformations
 
@@ -37,22 +37,22 @@ BOND_DIM = collect(2:1:10)
 DE = 16.0
 #MAX_CL = [2,4,6,8,10,12]
 
-MAX_SWEEPS = 2
+MAX_SWEEPS = [2, 5, 10]
 VAR_TOL = 1E-16
 TOL_SVD = 1E-16
 disable_logging(LogLevel(1))
 BLAS.set_num_threads(1)
 
-function pegasus_sim(inst, trans, β, Layout, bd)
+function pegasus_sim(inst, trans, β, Layout, bd, ms)
     δp = 1E-5*exp(-β * DE)
 
     fg = factor_graph(
         ising_graph(INSTANCE_DIR * "/" * inst),
         #2^max_cl_states,
-        spectrum=brute_force_gpu,
+        spectrum=full_spectrum,
         cluster_assignment_rule=pegasus_lattice((M, N, T))
         )
-    params = MpsParameters(bd, VAR_TOL, MAX_SWEEPS, TOL_SVD)
+    params = MpsParameters(bd, VAR_TOL, ms, TOL_SVD)
     search_params = SearchParameters(MAX_STATES, δp)
   
     net = PEPSNetwork{SquareStar2{Layout}, SPARSITY}(M, N, fg, trans)
@@ -64,15 +64,15 @@ function pegasus_sim(inst, trans, β, Layout, bd)
     sol, ctr, cRAM
 end
 
-function run_bench(inst::String, β::Real, t, l, bd)
-    hash_name = hash(string(inst, β, t, l, bd))
+function run_bench(inst::String, β::Real, t, l, bd, ms)
+    hash_name = hash(string(inst, β, t, l, bd, ms))
     out_path = string(OUTPUT_DIR, "/", hash_name, ".csv")
 
     if isfile(out_path)
-        println("Skipping for $β, $t, $l, $bd.")
+        println("Skipping for $β, $t, $l, $bd, $ms.")
     else
         data = try
-            tic_toc = @elapsed sol, ctr, cRAM = pegasus_sim(inst, t, β, l, bd)
+            tic_toc = @elapsed sol, ctr, cRAM = pegasus_sim(inst, t, β, l, bd, ms)
 
             data = DataFrame(
                 :instance => inst,
@@ -86,7 +86,7 @@ function run_bench(inst::String, β::Real, t, l, bd)
                 :max_states => MAX_STATES,
                 :bond_dim => bd,
                 :de => DE,
-                :max_sweeps => MAX_SWEEPS,
+                :max_sweeps => ms,
                 :var_tol => VAR_TOL,
                 :time => tic_toc,
                 :cRAM => cRAM
@@ -100,7 +100,7 @@ function run_bench(inst::String, β::Real, t, l, bd)
                 :max_states => MAX_STATES,
                 :bond_dim => bd,
                 :de => DE,
-                :max_sweeps => MAX_SWEEPS,
+                :max_sweeps => ms,
                 :var_tol => VAR_TOL,
                 :error => err
             )
@@ -112,7 +112,7 @@ end
 
 all_params = collect(
     Iterators.product(
-        readdir(INSTANCE_DIR, join=false), BETAS, TRANSFORM, LAYOUT, BOND_DIM)
+        readdir(INSTANCE_DIR, join=false), BETAS, TRANSFORM, LAYOUT, BOND_DIM, MAX_SWEEPS)
 )
 
 for i ∈ (1+rank):size:length(all_params)

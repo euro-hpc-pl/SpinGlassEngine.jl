@@ -135,7 +135,10 @@ function conditional_probability(
 
     if k == 1  # here has to avarage over s2
         R = right_env(ctr, i, ∂v[(j+8):end], indβ)
-
+        if ctr.onGPU
+            R = CuArray(R)
+        end
+    
         eng_loc = [local_energy(ctr.peps, (i, j, k)) for k ∈ 1:2]
         el = [interaction_energy(ctr.peps, (i, j, k), (i, j-1, m)) for k ∈ 1:2, m ∈ 1:2]
         pl = [projector(ctr.peps, (i, j, k), (i, j-1, m)) for k ∈ 1:2, m ∈ 1:2]
@@ -172,6 +175,9 @@ function conditional_probability(
         probs = dropdims(sum(Array(LR) .* ele, dims=2), dims=2)
     else  # k == 2 ; here s1 is fixed
         R = right_env(ctr, i, ∂v[(j+7):end], indβ)
+        if ctr.onGPU
+            R = CuArray(R)
+        end
         eng_loc = local_energy(ctr.peps, (i, j, 2))
 
         el = [interaction_energy(ctr.peps, (i, j, 2), (i, j-1, m)) for m ∈ 1:2]

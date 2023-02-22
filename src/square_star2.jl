@@ -202,7 +202,10 @@ function conditional_probability(
 
     if k == 1  # here has to avarage over s2
         R = right_env(ctr, i, ∂v[(2 * j + 12) : end], indβ)
-
+        if ctr.onGPU
+            R = CuArray(R)
+        end
+    
         ele, eng_loc, eng_l, eng_lu, eng_u, plb, prf, pd, splb = precompute_conditional(T, ctr, ctr.current_node)
 
         eng_l = [@view eng_l[k, m][:, ∂v[2 * j - 1 + k + (m - 1) * 2]] for k ∈ 1:2, m ∈ 1:2]
@@ -240,7 +243,10 @@ function conditional_probability(
         probs = Array(dropdims(sum(LR, dims=2), dims=2))
     else  # k == 2
         R = right_env(ctr, i, ∂v[(2 * j + 10) : end], indβ)
-
+        if ctr.onGPU
+            R = CuArray(R)
+        end
+    
         eng_loc, eng_l, eng_lu, eng_u, eng_12, plb2, prf2, pd2, splb1, splb2, sprf2, spd2 = precompute_conditional(T, ctr, ctr.current_node)
 
         eng_l = [@view eng_l[m][:, ∂v[2 * j - 1 + m]] for m ∈ 1:2]

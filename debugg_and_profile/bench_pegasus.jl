@@ -18,28 +18,26 @@ end
 onGPU = true
 
 function bench(instance::String)
-    m = 3
-    n = 3
+    m = 15
+    n = 15
     t = 3
-
-    β = 1.
+    β = 1
     bond_dim = 4
-    DE = 16.0
-    δp = 1E-5 * exp(-β * DE)
+    δp = 1E-6
     num_states = 32
     println("creating factor graph" )
+
     @time begin
     ig = ising_graph(instance)
-
     fg = factor_graph(
-    ig,
-    spectrum=full_spectrum, #brute_force_gpu, # rm _gpu to use CPU
-    cluster_assignment_rule = pegasus_lattice((m, n, t))
+        ig,
+        spectrum=full_spectrum, #brute_force_gpu, # rm _gpu to use CPU
+        cluster_assignment_rule = pegasus_lattice((m, n, t))
     )
     end
 
     clear_memoize_cache()
-    params = MpsParameters(bond_dim, 1E-8, 10, 1E-16)
+    params = MpsParameters(bond_dim, 1E-12, 1, 1E-16)
     search_params = SearchParameters(num_states, δp)
 
     # Solve using PEPS search
@@ -116,7 +114,7 @@ function bench(instance::String)
     end
 end
 
-instance = "$(@__DIR__)/../test/instances/pegasus_random/P4/RAU/SpinGlass/001_sg.txt"
+instance = "$(@__DIR__)/../test/instances/pegasus_random/P16/RAU/SpinGlass/001_sg.txt"
 #bench(instance)
 @profile bench(instance)
-pprof(flamegraph(); webhost = "localhost", webport = 57316)
+pprof(flamegraph(); webhost = "localhost", webport = 57317)

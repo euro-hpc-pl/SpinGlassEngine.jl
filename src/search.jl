@@ -221,6 +221,7 @@ function low_energy_spectrum(
         push!(schmidts, i=> measure_spectrum(ψ0))
         clear_memoize_cache_after_row()
         Memoization.empty_cache!(SpinGlassTensors.SparseCSC)
+        empty!(ctr.peps.lp, :GPU)
         if i <= ctr.peps.nrows
             ψ0 = mps(ctr, i + 1, length(ctr.betas))
             move_to_CPU!(ψ0)
@@ -228,7 +229,6 @@ function low_energy_spectrum(
     end
     ψ0 = mps(ctr, 2, length(ctr.betas))
     move_to_CPU!(ψ0)
-    empty!(ctr.peps.lp, :GPU)
 
     println("Memory memoize = ", measure_memory(Memoization.caches))
     println("Memory lp = ", format_bytes.(measure_memory(ctr.peps.lp)), " elements = ", length(ctr.peps.lp))
@@ -255,6 +255,7 @@ function low_energy_spectrum(
         if no_cache Memoization.empty_all_caches!() end
     end
     clear_memoize_cache_after_row()
+    empty!(ctr.peps.lp, :GPU)
 
     # Translate variable order (network --> factor graph)
     inner_perm = sortperm([

@@ -206,6 +206,9 @@ function conditional_probability(
 
     L = left_env(ctr, i, ∂v[1:j-1], indβ)
     R = right_env(ctr, i, ∂v[(j+2):ctr.peps.ncols+1], indβ)
+    if ctr.onGPU
+        R = CuArray(R)
+    end
     M = dressed_mps(ctr, i, indβ)[j]
 
     @tensor LM[y, z] := L[x] * M[x, y, z]

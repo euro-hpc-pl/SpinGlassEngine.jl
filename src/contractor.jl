@@ -270,7 +270,7 @@ Construct (and memoize) (bottom) MPS using Zipper (truncated SVD) for a given ro
 
     if i > ctr.peps.nrows
         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
-        ψ0 = IdentityQMps(Float64, local_dims(W, :down); onGPU=ctr.onGPU) # Float64 fror now
+        ψ0 = IdentityQMps(Float64, local_dims(W, :down); onGPU=ctr.onGPU) # Float64 for now
     else
         ψ = mps(ctr, i+1, indβ)
         W = mpo(ctr, ctr.layers.main, i, indβ)
@@ -363,9 +363,12 @@ Construct (and memoize) dressed MPS for a given row and strategy.
 ) where T <: AbstractStrategy
 
     ψ = mps(ctr, i+1, indβ)
+    delete!(Memoization.caches[mps], ((ctr, i+1, indβ), ()))
+    if ctr.onGPU
+        ψ = move_to_CUDA!(ψ)
+    end
     W = mpo(ctr, ctr.layers.dress, i, indβ)
     ϕ = dot(W, ψ)
-
     for j ∈ ϕ.sites
         nrm = maximum(abs.(ϕ[j]))
         if !iszero(nrm) ϕ[j] ./= nrm end
@@ -385,6 +388,9 @@ Construct (and memoize) right environment for a given node.
     if l == 0 return ctr.onGPU ? CUDA.ones(Float64, 1, 1) : ones(Float64, 1, 1) end
 
     R̃ = right_env(ctr, i, ∂v[2:l], indβ)
+    if ctr.onGPU
+        R̃ = CuArray(R̃)
+    end
     ϕ = dressed_mps(ctr, i, indβ)
     W = mpo(ctr, ctr.layers.right, i, indβ)
     k = length(ϕ.sites)
@@ -402,7 +408,13 @@ Construct (and memoize) right environment for a given node.
         ls = left_nbrs_site(ls, W.sites)
     end
     nmr = maximum(abs.(RR))
-    iszero(nmr) ? RR : RR ./ nmr
+    if ~iszero(nmr)
+        RR ./= nmr
+    end
+    if typeof(RR) <: CuArray
+        RR = Array(RR)
+    end
+    RR
 end
 
 
@@ -434,7 +446,7 @@ function clear_memoize_cache()
 end
 
 function clear_memoize_cache_after_row()
-    Memoization.empty_cache!.((left_env, right_env, mpo))
+    Memoization.empty_cache!.((left_env, right_env, mpo, dressed_mps))
 end
 
 """

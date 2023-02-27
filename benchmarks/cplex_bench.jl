@@ -44,14 +44,19 @@ function run_cplex(instance::String, out_dir::String)
 end
 
 
-instance_dir = "$(@__DIR__)/../test/instances/pegasus_random/P8/CBFM-P/SpinGlass"
+instance_dir = "$(@__DIR__)/../test/instances/zephyr_random/Z2/RAU/SpinGlass"
 #instance = "$(@__DIR__)/../test/instances/pathological/pegasus_3_4_1.txt"
 #instance = Dict((1, 2) => 1.0, (1, 3) => 1.0)
 
 for file in readdir(instance_dir, join=true)
-    run_cplex(file, "$(@__DIR__)/results/CPLEX/P8/CBFM-P/tmp")
+    run_cplex(file, "$(@__DIR__)/results/CPLEX/Z2/RAU/tmp")
 end
 
-
+# out =  "$(@__DIR__)/results/CPLEX/Z2/AC3/tmp"
+# for i in collect(39:100)
+#     inst_name = "00$i"[end-2: end] * "_sg.txt"
+#     inst = instance_dir * "/" * inst_name
+#     run_cplex(inst, out)
+# end
 
 

@@ -21,11 +21,20 @@ println("just matrix: ", format_bytes(a))
 println("permutedims: ", format_bytes(b))
 # permutedims copies array, permutedims! by definition copies array
 
+# cast
 a = @allocated @cast X[x, (y, z)] := X[x, y, z] 
 b = @allocated @cast X[x, y, z] := X[x, (y, z)] y in 1:1000
 c = @allocated @cast Y[y, z, x] := X[x, y, z]
 println("@cast conecting legs: ", format_bytes(a))
 println("@cast dividing legs: ", format_bytes(b))
-println("@cast with reshape: ", format_bytes(c))
+println("@cast with permutedims: ", format_bytes(c))
 
 #cast doesn't copy, even when reshaping
+
+#reshape
+a = @allocated reshape(X, (:, 10, 1000, 1000))
+b = @allocated @cast X[i, j, y, z] := X[(i, j), y, z] j in 1:10
+println("reshape: ", format_bytes(a))
+println("reshape by @cast: ", format_bytes(b))
+
+#neither of them seems to be coping full array, but @cast is more afective

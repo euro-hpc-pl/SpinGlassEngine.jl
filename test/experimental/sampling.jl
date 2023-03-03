@@ -4,7 +4,7 @@ function my_brute_force(ig::IsingGraph; num_states::Int)
     brute_force(ig, onGPU ? :GPU : :CPU, num_states=num_states)
 end
 
-m, n, t = 2, 2, 1
+m, n, t = 2, 2, 4
 
 β = 1.0
 bond_dim = 2
@@ -30,6 +30,5 @@ transform = rotation(0)
 net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform)
 ctr = MpsContractor{Strategy, Gauge}(net, [β/8., β/4., β/2., β], :graduate_truncate, params; onGPU=onGPU)
 sol = gibbs_sampling(ctr, search_params, merge_branches(ctr))
-
 println(sol)
 #println(sol.states)

@@ -18,11 +18,11 @@ MPI.Init()
 size = MPI.Comm_size(MPI.COMM_WORLD)
 rank = MPI.Comm_rank(MPI.COMM_WORLD)
 
-M, N, T = 6, 6, 4
-BETAS = [1, ] #collect(0.2:0.2:5)
+M, N, T = 4, 4, 4
+BETAS = collect(0.1:0.1:0.5)
 i = BETAS[1]
-INSTANCE_DIR = "$(@__DIR__)/../test/instances/square_gauss/S12"
-OUTPUT_DIR = "$(@__DIR__)/results/square_gauss/S12/beta$(i)"
+INSTANCE_DIR = "$(@__DIR__)/../test/instances/square_gauss/S8"
+OUTPUT_DIR = "$(@__DIR__)/results/square_gauss/S8/beta$(i)"
 
 LAYOUT = (GaugesEnergy,)
 TRANSFORM = [rotation(0),] #all_lattice_transformations
@@ -62,9 +62,9 @@ function sampling_sim(inst, trans, β, Layout, bd)
     sol = gibbs_sampling(ctr, search_params, merge_branches(ctr))
     st = decode_samples(ctr, sol)
 
-    cRAM = round(Base.summarysize(Memoization.caches) * 1E-9; sigdigits=2)
+    # cRAM = round(Base.summarysize(Memoization.caches) * 1E-9; sigdigits=2)
     clear_memoize_cache()
-    sol, st, ctr, cRAM
+    sol, st, ctr #, cRAM
 end
 
 function run_bench(inst::String, β::Real, t, l, bd)
@@ -75,7 +75,7 @@ function run_bench(inst::String, β::Real, t, l, bd)
         println("Skipping for $β, $t, $l, $bd.")
     else
         data = try
-            tic_toc = @elapsed sol, st, ctr, cRAM = sampling_sim(inst, t, β, l, bd)
+            tic_toc = @elapsed sol, st, ctr = sampling_sim(inst, t, β, l, bd)
             data = DataFrame(
                 :instance => inst,
                 :β => β,
@@ -93,7 +93,7 @@ function run_bench(inst::String, β::Real, t, l, bd)
                 :max_sweeps => MAX_SWEEPS,
                 :var_tol => VAR_TOL,
                 :time => tic_toc,
-                :cRAM => cRAM
+                #:cRAM => cRAM
             )
         catch err
             data = DataFrame(

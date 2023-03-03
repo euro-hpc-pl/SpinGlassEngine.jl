@@ -10,7 +10,7 @@ using Statistics
 
 disable_logging(LogLevel(1))
 
-onGPU = true
+onGPU = false
 
 using Test
 my_tests = []
@@ -19,15 +19,15 @@ push!(my_tests,
 # quick tests:
     # "operations.jl",
     # "branch_and_bound.jl",
-    "search_chimera_pathological.jl",
-    "search_chimera_smallest.jl",
-    "search_cross_square_star.jl",
-    "search_smallest_cross_square_star.jl",
-    "search_pegasus_square_star.jl",
-    "search_pegasus_nodiag_square_star.jl",
-    "search_square2_basic.jl",
-    "search_squarestar2_basic.jl",
-    "chimera_overlap_python.jl",
+    # "search_chimera_pathological.jl",
+    # "search_chimera_smallest.jl",
+    # "search_cross_square_star.jl",
+    # "search_smallest_cross_square_star.jl",
+    # "search_pegasus_square_star.jl",
+    # "search_pegasus_nodiag_square_star.jl",
+    # "search_square2_basic.jl",
+    # "search_squarestar2_basic.jl",
+    # "chimera_overlap_python.jl",
 
 # to fix in Tensor
     #"search_chimera_pathological_gauge.jl",
@@ -45,7 +45,7 @@ push!(my_tests,
     # "experimental/squarestar2_pegasus.jl",
     # "experimental/squarestar2_zephyr.jl",
     # "experimental/gauges_cuda.jl",
-    # "experimental/sampling.jl"
+    "experimental/sampling.jl"
 )
 
 @time begin

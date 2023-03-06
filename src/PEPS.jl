@@ -1,32 +1,25 @@
-export PEPSNetwork, contract_network
-export generate_boundary, peps_indices
+export PEPSNetwork, generate_boundary, node_from_index, conditional_probability
 
-"""
-$(TYPEDSIGNATURES)
+const IntOrRational = Union{Int,Rational{Int}}
 
-Stores control parameters.
-    * bond-dim: bond dimension
-    * var_tol: condition for overlap convergence of one sweep
-    * sweeps (Int): maximal number of sweeps during variational compression
-    * β: inverse temperature
-"""
-const DEFAULT_CONTROL_PARAMS = Dict(
-    "bond_dim" => typemax(Int),
-    "var_tol" => 1E-8,
-    "sweeps" => 4.,
-    "β" => 1.
-)
-
-struct PEPSNetwork <: AbstractGibbsNetwork
-    size::NTuple{2, Int}
-    map::Dict
-    fg::MetaDiGraph
-    nbrs::Dict
-    origin::Symbol
-    i_max::Int
-    j_max::Int
-    β::Number # TODO: get rid of this
-    args::Dict{String, Number}
+struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2,Int},NTuple{2,Int}}
+    factor_graph::LabelledGraph{T,NTuple{2,Int}} where {T}
+    network_graph::LabelledGraph{S,NTuple{2,Int}} where {S}
+    vertex_map::Function
+    m::Int
+    n::Int
+    nrows::Int
+    ncols::Int
+    β::Real
+    bond_dim::Int
+    var_tol::Real
+    sweeps::Int
+    gauges::Dict{Tuple{Rational,IntOrRational},Vector{Float64}}
+    tensor_spiecies::Dict{NTuple{2,IntOrRational},Symbol}
+    columns_MPO::NTuple{N,IntOrRational} where {N}
+    layers_MPS::NTuple{M,IntOrRational} where {M}
+    layers_left_env::NTuple{K,IntOrRational} where {K}
+    layers_right_env::NTuple{L,IntOrRational} where {L}
 
     """
     $(TYPEDSIGNATURES)
@@ -36,372 +29,126 @@ struct PEPSNetwork <: AbstractGibbsNetwork
     function PEPSNetwork(
         m::Int,
         n::Int,
-        fg::MetaDiGraph,
-        β::Number,
-        origin::Symbol=:NW,
-        args_override::Dict{String, T}=Dict{String, Number}()  # TODO: change String to Symbol
-    ) where T <: Number
-        map, i_max, j_max = peps_indices(m, n, origin)
+        factor_graph::LabelledGraph,
+        transformation::LatticeTransformation;
+        β::Real,
+        bond_dim::Int = typemax(Int),
+        var_tol::Real = 1E-8,
+        sweeps::Int = 4,
+        columns_MPO = (-1 // 2, 0),  # from left to right
+        layers_MPS = (4 // 6, 3 // 6, 0, -1 // 6),  # from bottom to top
+        layers_left_env = (4 // 6, 3 // 6),
+        layers_right_env = (0, -3 // 6),
+    )
+        vmap = vertex_map(transformation, m, n)
+        ng = peps_lattice(m, n)
+        nrows, ncols = transformation.flips_dimensions ? (n, m) : (m, n)
 
-        # v => (l, u, r, d)
-        nbrs = Dict(
-            map[i, j] => (map[i, j-1], map[i-1, j], map[i, j+1], map[i+1, j])
-            for i ∈ 1:i_max, j ∈ 1:j_max
-        )
-
-        args = merge(DEFAULT_CONTROL_PARAMS, args_override)
-        pn = new((m, n), map, fg, nbrs, origin, i_max, j_max, β, args)
-    end
-end
-
-function _get_projector(fg::MetaDiGraph, v::Int, w::Int)
-    if has_edge(fg, w, v)
-        get_prop(fg, w, v, :pr)'
-    elseif has_edge(fg, v, w)
-        get_prop(fg, v, w, :pl)
-    else
-        loc_dim = length(get_prop(fg, v, :loc_en))
-        ones(loc_dim, 1)
-    end
-end
-
-"""
-$(TYPEDSIGNATURES)
-    
-Creates tensors for 
-```math
-\\exp{-\\beta H}
-```
-"""
-@memoize function generate_tensor(network::PEPSNetwork, v::Int)
-    # TODO: does this require full network, or can we pass only fg?
-    loc_exp = exp.(-network.β .* get_prop(network.fg, v, :loc_en))
-
-    dim = zeros(Int, length(network.nbrs[v]))
-    @cast A[_, i] := loc_exp[i]
-
-    for (j, w) ∈ enumerate(network.nbrs[v])
-        pv = _get_projector(network.fg, v, w)
-        @cast A[(c, γ), σ] |= A[c, σ] * pv[σ, γ]
-        dim[j] = size(pv, 2)
-    end
-    reshape(A, dim..., :)
-end
-
-"""
-$(TYPEDSIGNATURES)
-    
-Creates tensors for 
-```math
-\\exp{-\\beta H}
-```
-"""
-@memoize function generate_tensor(network::PEPSNetwork, v::Int, w::Int)
-    fg = network.fg
-    if has_edge(fg, w, v)
-        en = get_prop(fg, w, v, :en)'
-    elseif has_edge(fg, v, w)
-        en = get_prop(fg, v, w, :en)
-    else
-        en = zeros(1, 1)
-    end
-    exp.(-network.β .* (en .- minimum(en)))
-end
-
-"""
-$(TYPEDSIGNATURES)
-    
-Creates peps tensors for 
-```math
-\\exp{-\\beta H}
-```
-"""
-function peps_tensor(::Type{T}, peps::PEPSNetwork, i::Int, j::Int) where {T <: Number}
-    # generate tensors from projectors
-    A = generate_tensor(peps, peps.map[i, j])
-
-    # include energy
-    h = generate_tensor(peps, peps.map[i, j-1], peps.map[i, j])
-    v = generate_tensor(peps, peps.map[i-1, j], peps.map[i, j])
-    @tensor B[l, u, r, d, σ] := h[l, l̃] * v[u, ũ] * A[l̃, ũ, r, d, σ]
-    B
-end
-peps_tensor(peps::PEPSNetwork, i::Int, j::Int) = peps_tensor(Float64, peps, i, j)
-
-"""
-$(TYPEDSIGNATURES)
-    
-Creates row of PEPS tensors.
-"""
-function SpinGlassTensors.PEPSRow(::Type{T}, peps::PEPSNetwork, i::Int) where {T <: Number}
-    ψ = PEPSRow(T, peps.j_max)
-    for j ∈ 1:peps.j_max
-        ψ[j] = peps_tensor(T, peps, i, j)
-    end
-    ψ
-end
-SpinGlassTensors.PEPSRow(peps::PEPSNetwork, i::Int) = PEPSRow(Float64, peps, i)
-
-"""
-$(TYPEDSIGNATURES)
-    
-Matrix Product Operator
-"""
-function SpinGlassTensors.MPO(::Type{T},
-    peps::PEPSNetwork,
-    i::Int,
-    config::Dict{Int, Int} = Dict{Int, Int}()
-    ) where {T <: Number}
-
-    W = MPO(T, peps.j_max)
-    R = PEPSRow(T, peps, i)
-
-    for (j, A) ∈ enumerate(R)
-        v = get(config, j + peps.j_max * (i - 1), nothing)
-        if v !== nothing
-            @cast B[l, u, r, d] |= A[l, u, r, d, $(v)]
-        else
-            @reduce B[l, u, r, d] |= sum(σ) A[l, u, r, d, σ]
+        if !is_compatible(factor_graph, ng)
+            throw(ArgumentError("Factor graph not compatible with given network."))
         end
-        W[j] = B
+
+        _gauges = Dict{Tuple{Rational,Int},Vector{Float64}}()
+        _tensor_spiecies = Dict{NTuple{2,IntOrRational},Symbol}()
+
+        network = new(
+            factor_graph,
+            ng,
+            vmap,
+            m,
+            n,
+            nrows,
+            ncols,
+            β,
+            bond_dim,
+            var_tol,
+            sweeps,
+            _gauges,
+            _tensor_spiecies,
+            columns_MPO,
+            layers_MPS,
+            layers_left_env,
+            layers_right_env,
+        )
+
+        assign_tensors!(network)
+        update_gauges!(network, :id)
+        network
     end
-    W
 end
 
-"""
-$(TYPEDSIGNATURES)
-    
-Matrix Product Operator
-"""
-SpinGlassTensors.MPO(peps::PEPSNetwork,
-    i::Int,
-    config::Dict{Int, Int} = Dict{Int, Int}()
-    ) = MPO(Float64, peps, i, config)
-
-"""
-$(TYPEDSIGNATURES)
-    
-Compresses MPS variationally. Uses arguments from PEPS. 
-# Args:
-    * ψ (AbstractMPS): MPS.
-    * peps(PEPSNetwork): PEPS
-# Returns:
-    compressed MPS.
-"""
-function compress(ψ::AbstractMPS, peps::PEPSNetwork)
-    Dcut = peps.args["bond_dim"]
-    if bond_dimension(ψ) < Dcut return ψ end
-    compress(ψ, Dcut, peps.args["var_tol"], peps.args["sweeps"])
+function peps_lattice(m::Int, n::Int)
+    labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
+    LabelledGraph(labels, grid((m, n)))
 end
 
-"""
-$(TYPEDSIGNATURES)
-    
-Matrix Product State
-"""
-@memoize function SpinGlassTensors.MPS(
-    peps::PEPSNetwork,
-    i::Int,
-    cfg::Dict{Int, Int} = Dict{Int, Int}(),
+function projectors(network::PEPSNetwork, vertex::NTuple{2,Int})
+    i, j = vertex
+    neighbours = ((i, j - 1), (i - 1, j), (i, j + 1), (i + 1, j))
+    projector.(Ref(network), Ref(vertex), neighbours)
+end
+
+
+node_index(peps::AbstractGibbsNetwork, node::NTuple{2,Int}) =
+    peps.ncols * (node[1] - 1) + node[2]
+
+
+node_from_index(peps::AbstractGibbsNetwork, index::Int) =
+    ((index - 1) ÷ peps.ncols + 1, mod1(index, peps.ncols))
+
+function boundary(peps::PEPSNetwork, node::NTuple{2,Int})
+    i, j = node
+    x = (-4, -2)
+    vcat(
+        [[(x, x), ((i, k), (i + 1, k))] for k ∈ 1:j-1]...,
+        (x, x),
+        ((i, j - 1), (i, j)),
+        [[(x, x), ((i - 1, k), (i, k))] for k ∈ j:peps.ncols]...,
     )
-    if i > peps.i_max return IdentityMPS() end
-    W = MPO(peps, i, cfg)
-    ψ = MPS(peps, i+1, cfg)
-    compress(W * ψ, peps)
 end
 
-""" 
-$(TYPEDSIGNATURES)
-    
-Contracts PEPS network.
-"""
-function contract_network(
-    peps::PEPSNetwork,
-    config::Dict{Int, Int} = Dict{Int, Int}(),
+
+function conditional_probability(peps::PEPSNetwork, w::Vector{Int})
+    i, j = node_from_index(peps, length(w) + 1)
+    ∂v = boundary_state(peps, w, (i, j))
+
+    L = left_env(peps, i, ∂v[1:2*j-1])
+    R = right_env(peps, i, ∂v[2*j+3:2*peps.ncols+2])
+    A = reduced_site_tensor(peps, (i, j), ∂v[2*j], ∂v[2*j+2])
+
+    ψ = dressed_mps(peps, i)
+    M = ψ[2*j]
+
+    @tensor prob[σ] := L[x] * M[x, d, y] * A[r, d, σ] * R[y, r] order = (x, d, r, y)
+
+    normalize_probability(prob)
+end
+
+
+function bond_energy(
+    network::AbstractGibbsNetwork,
+    u::NTuple{2,Int},
+    v::NTuple{2,Int},
+    σ::Int,
 )
-    ψ = MPS(peps, 1, config)
-    prod(dropindices(ψ))[]
-end
-
-@inline function get_coordinates(peps::PEPSNetwork, k::Int)
-    ceil(Int, k / peps.j_max), (k - 1) % peps.j_max + 1
-end
-
-""" 
-$(TYPEDSIGNATURES)
-    
-Creates boundary matrix product state.
-"""
-function generate_boundary(fg::MetaDiGraph, v::Int, w::Int, state::Int)
-    if v ∉ vertices(fg) return 1 end
-    loc_dim = length(get_prop(fg, v, :loc_en))
-    pv = _get_projector(fg, v, w)
-    findfirst(x -> x > 0, pv[state, :])
-end
-
-""" 
-$(TYPEDSIGNATURES)
-    
-Creates boundary matrix product state.
-"""
-function generate_boundary(peps::PEPSNetwork, v::Vector{Int}, w::NTuple{2, Int})
-    i, j = w
-    ∂v = zeros(Int, peps.j_max + 1)
-
-    # on the left below
-    for k ∈ 1:j-1
-        ∂v[k] = generate_boundary(
-            peps.fg,
-            peps.map[i, k],
-            peps.map[i+1, k],
-            _get_local_state(peps, v, (i, k))
-        )
-    end
-
-    # on the left at the current row
-    ∂v[j] = generate_boundary(
-        peps.fg,
-        peps.map[i, j-1],
-        peps.map[i, j],
-        _get_local_state(peps, v, (i, j-1))
-    )
-
-    # on the right above
-    for k ∈ j:peps.j_max
-        ∂v[k+1] = generate_boundary(
-            peps.fg,
-            peps.map[i-1, k],
-            peps.map[i, k],
-            _get_local_state(peps, v, (i-1, k))
-        )
-    end
-    ∂v
-end
-
-function _get_local_state(peps::PEPSNetwork, σ::Vector{Int}, w::NTuple{2, Int})
-    k = w[2] + peps.j_max * (w[1] - 1)
-    0 < k <= length(σ) ? σ[k] : 1
-end
-
-function _normalize_probability(prob::Vector{T}) where {T <: Number}
-    # exceptions (negative pdo, etc)
-    # will be added here later
-    prob / sum(prob)
-end
-
-"""
-$(TYPEDSIGNATURES)
-
-Calculates conditional probability
-"""
-function conditional_probability(
-    peps::PEPSNetwork,
-    v::Vector{Int},
-    )
-    i, j = get_coordinates(peps, length(v)+1)
-    ∂v = generate_boundary(peps, v, (i, j))
-
-    W = MPO(peps, i)
-    ψ = MPS(peps, i+1)
-
-    L = left_env(ψ, ∂v[1:j-1])
-    R = right_env(ψ, W, ∂v[j+2:peps.j_max+1])
-    A = peps_tensor(peps, i, j)
-
-    l, u = ∂v[j:j+1]
-    M = ψ[j]
-    Ã = A[l, u, :, :, :]
-    @tensor prob[σ] := L[x] * M[x, d, y] *
-                       Ã[r, d, σ] * R[y, r] order = (x, d, r, y)
-    _normalize_probability(prob)
-end
-
-"""
-$(TYPEDSIGNATURES)
-
-Add energy of nearest neighbors of local state.
-#Args:
-    * fg - factor graph
-    * u,v - coordinates of nearest neighbors
-    * σ - local state
-#Returns:
-    vector of energies
-"""
-function bond_energy(fg::MetaDiGraph, u::Int, v::Int, σ::Int)
-    if has_edge(fg, u, v)
-        pu, en, pv = get_prop.(Ref(fg), u, v, (:pl, :en, :pr))
+    fg_u, fg_v = network.vertex_map(u), network.vertex_map(v)
+    if has_edge(network.factor_graph, fg_u, fg_v)
+        pu, en, pv =
+            get_prop.(Ref(network.factor_graph), Ref(fg_u), Ref(fg_v), (:pl, :en, :pr))
         energies = (pu * (en * pv[:, σ:σ]))'
-    elseif has_edge(fg, v, u)
-        pv, en, pu = get_prop.(Ref(fg), v, u, (:pl, :en, :pr))
+    elseif has_edge(network.factor_graph, fg_v, fg_u)
+        pv, en, pu =
+            get_prop.(Ref(network.factor_graph), Ref(fg_v), Ref(fg_u), (:pl, :en, :pr))
         energies = (pv[σ:σ, :] * en) * pu
     else
-        energies = zeros(get_prop(fg, u, :loc_dim))
+        energies = zeros(length(local_energy(network, u)))
     end
     vec(energies)
 end
 
-"""
-$(TYPEDSIGNATURES)
-
-Updates energy of partial configuration during the search.
-"""
-function update_energy(
-    network::AbstractGibbsNetwork,
-    σ::Vector{Int},
-    )
-    i, j = get_coordinates(network, length(σ)+1)
-
-    σkj = _get_local_state(network, σ, (i-1, j))
-    σil = _get_local_state(network, σ, (i, j-1))
-
-    bond_energy(network.fg, network.map[i, j], network.map[i, j-1], σil) +
-    bond_energy(network.fg, network.map[i, j], network.map[i-1, j], σkj) +
-    get_prop(network.fg, network.map[i, j], :loc_en)
-end
-
-#TODO: translate this into rotations and reflections
-"""
-$(TYPEDSIGNATURES)
-
-Translate lattice indices into PEPS indices.
-"""
-function peps_indices(m::Int, n::Int, origin::Symbol=:NW)
-    @assert origin ∈ (:NW, :WN, :NE, :EN, :SE, :ES, :SW, :WS)
-
-    ind = Dict()
-    if origin == :NW
-        for i ∈ 1:m, j ∈ 1:n push!(ind, (i, j) => (i - 1) * n + j) end
-    elseif origin == :WN
-        for i ∈ 1:n, j ∈ 1:m push!(ind, (i, j) => (j - 1) * n + i) end
-    elseif origin == :NE
-        for i ∈ 1:m, j ∈ 1:n push!(ind, (i, j) => (i - 1) * n + (n + 1 - j)) end
-    elseif origin == :EN
-        for i ∈ 1:n, j ∈ 1:m push!(ind, (i, j) => (j - 1) * n + (n + 1 - i)) end
-    elseif origin == :SE
-        for i ∈ 1:m, j ∈ 1:n push!(ind, (i, j) => (m - i) * n + (n + 1 - j)) end
-    elseif origin == :ES
-        for i ∈ 1:n, j ∈ 1:m push!(ind, (i, j) => (m - j) * n + (n + 1 - i)) end
-    elseif origin == :SW
-        for i ∈ 1:m, j ∈ 1:n push!(ind, (i, j) => (m - i) * n + j) end
-    elseif origin == :WS
-        for i ∈ 1:n, j ∈ 1:m push!(ind, (i, j) => (m - j) * n + i) end
-    end
-
-    if origin ∈ (:NW, :NE, :SE, :SW)
-        i_max, j_max = m, n
-    else
-        i_max, j_max = n, m
-    end
-
-    for i ∈ 0:i_max+1
-        push!(ind, (i, 0) => 0)
-        push!(ind, (i, j_max + 1) => 0)
-    end
-
-    for j ∈ 0:j_max+1
-        push!(ind, (0, j) => 0)
-        push!(ind, (i_max + 1, j) => 0)
-    end
-
-    ind, i_max, j_max
+function update_energy(network::PEPSNetwork, σ::Vector{Int})
+    i, j = node_from_index(network, length(σ) + 1)
+    bond_energy(network, (i, j), (i, j - 1), local_state_for_node(network, σ, (i, j - 1))) +
+    bond_energy(network, (i, j), (i - 1, j), local_state_for_node(network, σ, (i - 1, j))) +
+    local_energy(network, (i, j))
 end

@@ -1,8 +1,5 @@
-export AbstractGibbsNetwork
-export low_energy_spectrum
-export Solution
-
-abstract type AbstractGibbsNetwork end
+export AbstractGibbsNetwork,
+    low_energy_spectrum, branch_state, bound_solution, merge_branches, Solution, Memoize
 
 """
 $(TYPEDSIGNATURES)
@@ -13,64 +10,117 @@ struct Solution
     energies::Vector{Float64}
     states::Vector{Vector{Int}}
     probabilities::Vector{Float64}
+    degeneracy::Vector{Int}
     largest_discarded_probability::Float64
 end
 
-#TODO: this can probably be done better
-function _branch_state(
-    cfg::Vector,
-    state::Vector,
-    basis::Vector,
-    )
-    tmp = Vector{Int}[]
-    for σ ∈ basis push!(tmp, vcat(state, σ)) end
-    vcat(cfg, tmp)
+Solution() = Solution([0.0], [[]], [1.0], [1], -Inf)
+
+
+function branch_state(network, σ)
+    node = node_from_index(network, length(σ) + 1)
+    basis = collect(1:length(local_energy(network, node)))
+    vcat.(Ref(σ), basis)
 end
 
-# TODO: logic here can probably be done better
-function _bound(probabilities::Vector{Float64}, cut::Int)
-    k = length(probabilities)
-    second_phase = false
 
-    if k > cut + 1 
-        k = cut + 1
-        second_phase = true 
+function branch_solution(partial_sol::Solution, network::AbstractGibbsNetwork)
+    local_dim = length(
+        local_energy(network, node_from_index(network, length(partial_sol.states[1]) + 1)),
+    )
+    new_energies = vcat(
+        [
+            (en .+ update_energy(network, state)) for
+            (en, state) ∈ zip(partial_sol.energies, partial_sol.states)
+        ]...,
+    )
+    new_states = vcat(branch_state.(Ref(network), partial_sol.states)...)
+    new_probabilities = vcat(
+        [
+            partial_sol.probabilities[i] .+ log.(p) for (i, p) ∈
+            enumerate(conditional_probability.(Ref(network), partial_sol.states))
+        ]...,
+    )
+    degeneracies = repeat(partial_sol.degeneracy, inner = local_dim)
+    ldp = partial_sol.largest_discarded_probability
+    Solution(new_energies, new_states, new_probabilities, degeneracies, ldp)
+end
+
+function merge_branches(network::AbstractGibbsNetwork{S,T}) where {S,T}
+    function _merge(partial_sol::Solution)
+        node = node_from_index(network, length(partial_sol.states[1]) + 1)
+        boundaries = hcat(boundary_state.(Ref(network), partial_sol.states, Ref(node))...)'
+        _unique_boundaries, indices = SpinGlassNetworks.unique_dims(boundaries, 1)
+
+        sorting_idx = sortperm(indices)
+        sorted_indices = indices[sorting_idx]
+        start = 1
+
+        energies = partial_sol.energies[sorting_idx]
+        states = partial_sol.states[sorting_idx]
+        probs = partial_sol.probabilities[sorting_idx]
+        degeneracy = partial_sol.degeneracy[sorting_idx]
+
+        new_energies = []
+        new_states = []
+        new_probs = []
+        new_degeneracy = []
+
+        while start <= size(boundaries, 1)
+            stop = start
+            while stop + 1 <= size(boundaries, 1) &&
+                sorted_indices[start] == sorted_indices[stop+1]
+                stop = stop + 1
+            end
+
+            best_idx = argmin(@view energies[start:stop]) + start - 1
+
+            push!(new_energies, energies[best_idx])
+            push!(new_states, states[best_idx])
+            push!(new_probs, probs[best_idx])
+            push!(new_degeneracy, degeneracy[best_idx])
+
+            start = stop + 1
+        end
+        Solution(
+            new_energies,
+            new_states,
+            new_probs,
+            new_degeneracy,
+            partial_sol.largest_discarded_probability,
+        )
     end
+    _merge
+end
 
-    idx = partialsortperm(probabilities, 1:k, rev=true)
+no_merge(partial_sol::Solution) = partial_sol
 
-    if second_phase
-        return idx[1:end-1], probabilities[last(idx)]
+function bound_solution(partial_sol::Solution, max_states::Int, merge_strategy = no_merge)
+    if length(partial_sol.probabilities) <= max_states
+        probs = vcat(partial_sol.probabilities, -Inf)
+        k = length(probs)
     else
-        return idx, -Inf
+        probs = partial_sol.probabilities
+        k = max_states + 1
     end
-end
 
-function _branch_and_bound(
-    sol::Solution,
-    network::AbstractGibbsNetwork,
-    node::Int,
-    cut::Int,
+    indices = partialsortperm(probs, 1:k, rev = true)
+    new_max_discarded_prob =
+        max(partial_sol.largest_discarded_probability, probs[indices[end]])
+
+    indices = @view indices[1:k-1]
+
+    merge_strategy(
+        Solution(
+            partial_sol.energies[indices],
+            partial_sol.states[indices],
+            partial_sol.probabilities[indices],
+            partial_sol.degeneracy[indices],
+            new_max_discarded_prob,
+        ),
     )
-
-    # branch
-    pdo, eng, cfg = Float64[], Float64[], Vector{Int}[]
-
-    k = get_prop(network.fg, node, :loc_dim)
-
-    for (p, σ, e) ∈ zip(sol.probabilities, sol.states, sol.energies)
-        pdo = [pdo; p .* conditional_probability(network, σ)]
-        eng = [eng; e .+ update_energy(network, σ)]
-        cfg = _branch_state(cfg, σ, collect(1:k))
-     end
-
-    # bound
-    indices, lowest_prob = _bound(pdo, cut)
-    lpCut = sol.largest_discarded_probability
-    lpCut < lowest_prob ? lpCut = lowest_prob : ()
-
-    Solution(eng[indices], cfg[indices], pdo[indices], lpCut)
 end
+
 
 #TODO: incorporate "going back" move to improve alghoritm
 """
@@ -93,23 +143,35 @@ Results are stored as Solution structure.
 """
 function low_energy_spectrum(
     network::AbstractGibbsNetwork,
-    cut::Int
+    max_states::Int,
+    merge_strategy = no_merge,
 )
-    sol = Solution([0.], [[]], [1.], -Inf)
-
-    perm = zeros(Int, nv(network.fg)) # TODO: to be removed
-
-    #TODO: this should be replaced with the iteration over fg that is consistent with the order network
-    for i ∈ 1:network.i_max, j ∈ 1:network.j_max
-        v_fg = network.map[i, j]
-        perm[v_fg] = j + network.j_max * (i - 1)
-        sol = _branch_and_bound(sol, network, v_fg, cut)
+    # Build all boundary mps
+    @showprogress "Preprocesing: " for i ∈ network.nrows:-1:1
+        dressed_mps(network, i)
     end
-    K = partialsortperm(sol.energies, 1:length(sol.energies), rev=false)
 
+    # Start branch and bound search
+    sol = Solution()
+    @showprogress "Search: " for _ ∈ 1:nv(network_graph(network))
+        sol = branch_solution(sol, network)
+        sol = bound_solution(sol, max_states, merge_strategy)
+        # _clear_cache(network, sol)
+    end
+
+    # Translate variable order (from network to factor graph)
+    inner_perm = sortperm([
+        factor_graph(network).reverse_label_map[idx] for
+        idx ∈ network.vertex_map.(iteration_order(network))
+    ])
+
+    # Sort using energies as keys
+    outer_perm = sortperm(sol.energies)
     Solution(
-        sol.energies[K],
-        [ σ[perm] for σ ∈ sol.states[K] ], #TODO: to be changed
-        sol.probabilities[K],
-        sol.largest_discarded_probability)
+        sol.energies[outer_perm],
+        [σ[inner_perm] for σ ∈ sol.states[outer_perm]],
+        sol.probabilities[outer_perm],
+        sol.degeneracy[outer_perm],
+        sol.largest_discarded_probability,
+    )
 end

@@ -11,7 +11,7 @@ vp = @view p[1:300]
 a = @allocated X1p = X[:, :, vp]
 println("allocation using normal slicing: ", format_bytes(a))
 
-#using view doesn't create copy
+#using view doesn't create copy, and we must use copy! function to use preallocated memory
 b = @allocated copy!(X2p, @view X[:, :, vp])
 println("allocation using @view: ", format_bytes(b))
 

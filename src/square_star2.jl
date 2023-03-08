@@ -118,9 +118,9 @@ end
     i, j, k = current_node
     β = last(ctr.betas)
     if k == 1
-        en12 = CuArray(interaction_energy(ctr.peps, (i, j, 1), (i, j, 2)))
-        p12 = CuArray(projector(ctr.peps, (i, j, 1), (i, j, 2)))
-        p21 = CuArray(projector(ctr.peps, (i, j, 2), (i, j, 1)))
+        en12 = interaction_energy(ctr.peps, (i, j, 1), (i, j, 2))
+        p12 = projector(ctr.peps, (i, j, 1), (i, j, 2))
+        p21 = projector(ctr.peps, (i, j, 2), (i, j, 1))
 
         plb1 = projector(ctr.peps, (i, j, 1), ((i+1, j-1, 1), (i+1, j-1, 2)))
         plb2 = projector(ctr.peps, (i, j, 2), ((i+1, j-1, 1), (i+1, j-1, 2)))
@@ -129,22 +129,22 @@ end
         pd1 = projector(ctr.peps, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
         pd2 = projector(ctr.peps, (i, j, 2), ((i+1, j, 1), (i+1, j, 2)))
 
-        plb = CuArray(outer_projector(plb1, plb2))
-        prf = CuArray(outer_projector(prf1, prf2))
-        pd = CuArray(outer_projector(pd1, pd2))
+        plb = outer_projector(plb1, plb2)
+        prf = outer_projector(prf1, prf2)
+        pd = outer_projector(pd1, pd2)
 
-        eng_loc = [CuArray(local_energy(ctr.peps, (i, j, k))) for k ∈ 1:2]
+        eng_loc = [local_energy(ctr.peps, (i, j, k)) for k ∈ 1:2]
 
-        el = [CuArray(interaction_energy(ctr.peps, (i, j, k), (i, j-1, m))) for k ∈ 1:2, m ∈ 1:2]
-        pl = [CuArray(projector(ctr.peps, (i, j, k), (i, j-1, m))) for k ∈ 1:2, m ∈ 1:2]
+        el = [interaction_energy(ctr.peps, (i, j, k), (i, j-1, m)) for k ∈ 1:2, m ∈ 1:2]
+        pl = [projector(ctr.peps, (i, j, k), (i, j-1, m)) for k ∈ 1:2, m ∈ 1:2]
         eng_l = [el[k, m][pl[k, m], :] for k ∈ 1:2, m ∈ 1:2]
 
-        elu = [CuArray(interaction_energy(ctr.peps, (i, j, k), (i-1, j-1, m))) for k ∈ 1:2, m ∈ 1:2]
-        plu = [CuArray(projector(ctr.peps, (i, j, k), (i-1, j-1, m))) for k ∈ 1:2, m ∈ 1:2]
+        elu = [interaction_energy(ctr.peps, (i, j, k), (i-1, j-1, m)) for k ∈ 1:2, m ∈ 1:2]
+        plu = [projector(ctr.peps, (i, j, k), (i-1, j-1, m)) for k ∈ 1:2, m ∈ 1:2]
         eng_lu = [elu[k, m][plu[k, m], :] for k ∈ 1:2, m ∈ 1:2]
 
-        eu = [CuArray(interaction_energy(ctr.peps, (i, j, k), (i-1, j, m))) for k ∈ 1:2, m ∈ 1:2]
-        pu = [CuArray(projector(ctr.peps, (i, j, k), (i-1, j, m))) for k ∈ 1:2, m ∈ 1:2]
+        eu = [interaction_energy(ctr.peps, (i, j, k), (i-1, j, m)) for k ∈ 1:2, m ∈ 1:2]
+        pu = [projector(ctr.peps, (i, j, k), (i-1, j, m)) for k ∈ 1:2, m ∈ 1:2]
         eng_u = [eu[k, m][pu[k, m], :] for k ∈ 1:2, m ∈ 1:2]
 
         le = en12[p12, p21]
@@ -152,32 +152,54 @@ end
 
         splb = maximum(plb)
 
+        if ctr.onGPU
+            ele = CuArray(ele)
+            eng_loc = [CuArray(eng_loc[k]) for k ∈ 1:2]
+            eng_l = [CuArray(eng_l[k, m]) for k ∈ 1:2, m ∈ 1:2]
+            eng_lu = [CuArray(eng_lu[k, m]) for k ∈ 1:2, m ∈ 1:2]
+            eng_u = [CuArray(eng_u[k, m]) for k ∈ 1:2, m ∈ 1:2]
+            plb = CuArray(plb)
+            prf = CuArray(prf)
+            pd = CuArray(pd)
+        end
+
         return (ele, eng_loc, eng_l, eng_lu, eng_u, plb, prf, pd, splb)
     else
-        eng_loc = CuArray(local_energy(ctr.peps, (i, j, 2)))
+        eng_loc = local_energy(ctr.peps, (i, j, 2))
 
-        el = [CuArray(interaction_energy(ctr.peps, (i, j, 2), (i, j-1, m))) for m ∈ 1:2]
-        pl = [CuArray(projector(ctr.peps, (i, j, 2), (i, j-1, m))) for m ∈ 1:2]
+        el = [interaction_energy(ctr.peps, (i, j, 2), (i, j-1, m)) for m ∈ 1:2]
+        pl = [projector(ctr.peps, (i, j, 2), (i, j-1, m)) for m ∈ 1:2]
         eng_l = [el[m][pl[m], :] for m ∈ 1:2]
 
-        elu = [CuArray(interaction_energy(ctr.peps, (i, j, 2), (i-1, j-1, m))) for m ∈ 1:2]
-        plu = [CuArray(projector(ctr.peps, (i, j, 2), (i-1, j-1, m))) for m ∈ 1:2]
+        elu = [interaction_energy(ctr.peps, (i, j, 2), (i-1, j-1, m)) for m ∈ 1:2]
+        plu = [projector(ctr.peps, (i, j, 2), (i-1, j-1, m)) for m ∈ 1:2]
         eng_lu = [elu[m][plu[m], :] for m ∈ 1:2]
 
-        eu = [CuArray(interaction_energy(ctr.peps, (i, j, 2), (i-1, j, m))) for m ∈ 1:2]
-        pu = [CuArray(projector(ctr.peps, (i, j, 2), (i-1, j, m))) for m ∈ 1:2]
+        eu = [interaction_energy(ctr.peps, (i, j, 2), (i-1, j, m)) for m ∈ 1:2]
+        pu = [projector(ctr.peps, (i, j, 2), (i-1, j, m)) for m ∈ 1:2]
         eng_u = [eu[m][pu[m], :] for m ∈ 1:2]
 
-        en12 = CuArray(interaction_energy(ctr.peps, (i, j, 1), (i, j, 2)))
-        p21 = CuArray(projector(ctr.peps, (i, j, 2), (i, j, 1)))
+        en12 = interaction_energy(ctr.peps, (i, j, 1), (i, j, 2))
+        p21 = projector(ctr.peps, (i, j, 2), (i, j, 1))
         eng_12 = @view en12[:, p21]
 
-        plb1 = CuArray(projector(ctr.peps, (i, j, 1), ((i+1, j-1, 1), (i+1, j-1, 2))))
-        plb2 = CuArray(projector(ctr.peps, (i, j, 2), ((i+1, j-1, 1), (i+1, j-1, 2))))
-        prf2 = CuArray(projector(ctr.peps, (i, j, 2), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2))))
-        pd2 = CuArray(projector(ctr.peps, (i, j, 2), ((i+1, j, 1), (i+1, j, 2))))
+        plb1 = projector(ctr.peps, (i, j, 1), ((i+1, j-1, 1), (i+1, j-1, 2)))
+        plb2 = projector(ctr.peps, (i, j, 2), ((i+1, j-1, 1), (i+1, j-1, 2)))
+        prf2 = projector(ctr.peps, (i, j, 2), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2)))
+        pd2 = projector(ctr.peps, (i, j, 2), ((i+1, j, 1), (i+1, j, 2)))
 
         splb1, splb2, sprf2, spd2 = maximum.((plb1, plb2, prf2, pd2))
+
+        if ctr.onGPU
+            eng_loc = CuArray(eng_loc)
+            eng_l = [CuArray(eng_l[m]) for m ∈ 1:2]
+            eng_lu = [CuArray(eng_lu[m]) for m ∈ 1:2]
+            eng_u = [CuArray(eng_u[m]) for m ∈ 1:2]
+            eng_12 = CuArray(eng_12)
+            plb2 = CuArray(plb2)
+            prf2 = CuArray(prf2)
+            pd2 = CuArray(pd2)
+        end
 
         return (eng_loc, eng_l, eng_lu, eng_u, eng_12, plb2, prf2, pd2, splb1, splb2, sprf2, spd2)
     end

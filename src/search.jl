@@ -2,8 +2,6 @@ export AbstractGibbsNetwork,
     low_energy_spectrum, branch_state, bound_solution, merge_branches, Solution, Memoize
 
 """
-$(TYPEDSIGNATURES)
-
 Stores results from branch-and-bound search.
 """
 struct Solution
@@ -124,8 +122,6 @@ end
 
 #TODO: incorporate "going back" move to improve alghoritm
 """
-$(TYPEDSIGNATURES)
-
 Searches for the low-energy spectrum on a quasi-2d graph.
 
 # Details

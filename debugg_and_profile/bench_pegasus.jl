@@ -18,20 +18,20 @@ end
 onGPU = true
 
 function bench(instance::String)
-    m = 15
-    n = 15
+    m = 7
+    n = 7
     t = 3
     β = 1
-    bond_dim = 4
+    bond_dim = 8
     δp = 1E-6
-    num_states = 32
+    num_states = 128
     println("creating factor graph" )
 
     @time begin
     ig = ising_graph(instance)
     fg = factor_graph(
         ig,
-        spectrum=full_spectrum, #brute_force_gpu, # rm _gpu to use CPU
+        spectrum=full_spectrum,  # brute_force_gpu, # rm _gpu to use CPU
         cluster_assignment_rule = pegasus_lattice((m, n, t))
     )
     end
@@ -44,7 +44,7 @@ function bench(instance::String)
     energies = Vector{Float64}[]
     Strategy = Zipper # SVDTruncate
     Sparsity = Sparse #Dense
-    tran = all_lattice_transformations[3]
+    tran = all_lattice_transformations[1]
     Layout = GaugesEnergy
     Gauge = NoUpdate
     println("creating network and contractor")
@@ -55,66 +55,70 @@ function bench(instance::String)
     println("Memory lp = ", format_bytes.(measure_memory(net.lp)), " elements = ", length(net.lp))
     println("Memory memoize = ", measure_memory(Memoization.caches))
 
-    # @time begin
-    #     W = SpinGlassEngine.mpo(ctr, ctr.layers.main, 4, 1)
-    # end
+    @time begin
+        W = SpinGlassEngine.mpo(ctr, ctr.layers.main, 4, 1)
+    end
     # for st in W.sites
     #     println(st, "  ", size(W[st]), "  btm ", size.(W[st].bot), " top ",  size.(W[st].top), " ctr ",  size(W[st].ctr))
     # end
 
-    # println("  PROJECT SITE ")
+    println("  PROJECT SITE ")
 
-    # st = 4
-    # DD = 8
-    # LE = CuArray(rand(Float64, DD, DD, size(W[st], 1)))
-    # RE = CuArray(rand(Float64, DD, DD, size(W[st], 3)))
-    # B  = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
-    # @time for ii in 1:10
-    #     xx = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
-    # end
-
-    # st = 9 // 2
-    # println(size(W[st].ctr.con), " size  ", size.(Ref(W[st].ctr.lp), W[st].ctr.projs), " length  ", length.(Ref(W[st].ctr.lp), W[st].ctr.projs))
-    # DD = 8
-
-    # println(" ")
-    # println(" PROJECT ")
-    # LE = CuArray(rand(Float64, DD, DD, size(W[st], 1)))
-    # RE = CuArray(rand(Float64, DD, DD, size(W[st], 3)))
-    # B = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
-    # @time for ii in 1:10 
-    #     yy = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
-    # end
-
-    # println("  RIGHT  ")
-    # RE = CuArray(rand(Float64, DD, DD, size(W[st], 3)))
-    # A = CuArray(rand(Float64, DD, DD, size(W[st], 2)))
-    # B = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
-    # @time for ii in 1:10
-    #     yy = SpinGlassTensors.update_env_right(RE, A, W[st], B)
-    # end
-
-    # println("  LEFT  ")
-    # LE = CuArray(rand(Float64, DD, DD, size(W[st], 1)))
-    # A = CuArray(rand(Float64, DD, DD, size(W[st], 2)))
-    # B = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
-    # @time for ii in 1:10
-    #     yy = SpinGlassTensors.update_env_left(LE, A, W[st], B)
-    # end
-    println("solving ... ")
-    try 
-        sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
-        println("Memory lp = ", format_bytes.(measure_memory(net.lp)), " elements = ", length(net.lp))
-        println("Memory memoize", measure_memory(Memoization.caches))
-        println("Result ", sol.energies)
-    catch err
-        println("Memory lp = ", format_bytes.(measure_memory(net.lp)), " elements = ", length(net.lp))
-        println("Memory memoize", measure_memory(Memoization.caches))
-        println(err.msg)
+    st = 4
+    DD = 8
+    LE = CuArray(rand(Float64, DD, DD, size(W[st], 1)))
+    RE = CuArray(rand(Float64, DD, DD, size(W[st], 3)))
+    B  = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
+    xx = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
+    @time for ii in 1:10
+        xx = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
     end
+
+    st = 9 // 2
+    println(size(W[st].ctr.con), " size  ", size.(Ref(W[st].ctr.lp), W[st].ctr.projs), " length  ", length.(Ref(W[st].ctr.lp), W[st].ctr.projs))
+    DD = 8
+
+    println(" ")
+    println(" PROJECT ")
+    LE = CuArray(rand(Float64, DD, DD, size(W[st], 1)))
+    RE = CuArray(rand(Float64, DD, DD, size(W[st], 3)))
+    B = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
+    yy = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
+    @time for ii in 1:10 
+        yy = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
+    end
+
+    println("  RIGHT  ")
+    RE = CuArray(rand(Float64, DD, DD, size(W[st], 3)))
+    A = CuArray(rand(Float64, DD, DD, size(W[st], 2)))
+    B = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
+    yy = SpinGlassTensors.update_env_right(RE, A, W[st], B)
+    @time for ii in 1:10
+        yy = SpinGlassTensors.update_env_right(RE, A, W[st], B)
+    end
+
+    println("  LEFT  ")
+    LE = CuArray(rand(Float64, DD, DD, size(W[st], 1)))
+    A = CuArray(rand(Float64, DD, DD, size(W[st], 2)))
+    B = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
+    yy = SpinGlassTensors.update_env_left(LE, A, W[st], B)
+    @time for ii in 1:10
+        yy = SpinGlassTensors.update_env_left(LE, A, W[st], B)
+    end
+    # println("solving ... ")
+    # try 
+    #     sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+    #     println("Memory lp = ", format_bytes.(measure_memory(net.lp)), " elements = ", length(net.lp))
+    #     println("Memory memoize", measure_memory(Memoization.caches))
+    #     println("Result ", sol.energies)
+    # catch err
+    #     println("Memory lp = ", format_bytes.(measure_memory(net.lp)), " elements = ", length(net.lp))
+    #     println("Memory memoize", measure_memory(Memoization.caches))
+    #     println(err.msg)
+    # end
 end
 
-instance = "$(@__DIR__)/../test/instances/pegasus_random/P16/RAU/SpinGlass/001_sg.txt"
+instance = "$(@__DIR__)/../test/instances/pegasus_random/P8/RAU/SpinGlass/001_sg.txt"
 #bench(instance)
 @profile bench(instance)
-pprof(flamegraph(); webhost = "localhost", webport = 57317)
+pprof(flamegraph(); webhost = "localhost", webport = 57320)

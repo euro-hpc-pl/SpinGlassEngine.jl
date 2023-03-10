@@ -22,7 +22,7 @@ function bench(instance::String)
     n = 7
     t = 3
     β = 1
-    bond_dim = 8
+    bond_dim = 4
     δp = 1E-6
     num_states = 128
     println("creating factor graph" )
@@ -70,41 +70,46 @@ function bench(instance::String)
     RE = CuArray(rand(Float64, DD, DD, size(W[st], 3)))
     B  = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
     xx = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
-    @time for ii in 1:10
-        xx = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
+    
+    @time begin
+        CUDA.@sync begin
+            for ii in 1:30
+                xx = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
+            end
+        end
     end
 
-    st = 9 // 2
-    println(size(W[st].ctr.con), " size  ", size.(Ref(W[st].ctr.lp), W[st].ctr.projs), " length  ", length.(Ref(W[st].ctr.lp), W[st].ctr.projs))
-    DD = 8
+    # st = 9 // 2
+    # println(size(W[st].ctr.con), " size  ", size.(Ref(W[st].ctr.lp), W[st].ctr.projs), " length  ", length.(Ref(W[st].ctr.lp), W[st].ctr.projs))
+    # DD = 8
 
-    println(" ")
-    println(" PROJECT ")
-    LE = CuArray(rand(Float64, DD, DD, size(W[st], 1)))
-    RE = CuArray(rand(Float64, DD, DD, size(W[st], 3)))
-    B = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
-    yy = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
-    @time for ii in 1:10 
-        yy = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
-    end
+    # println(" ")
+    # println(" PROJECT ")
+    # LE = CuArray(rand(Float64, DD, DD, size(W[st], 1)))
+    # RE = CuArray(rand(Float64, DD, DD, size(W[st], 3)))
+    # B = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
+    # yy = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
+    # @time for ii in 1:10 
+    #     yy = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
+    # end
 
-    println("  RIGHT  ")
-    RE = CuArray(rand(Float64, DD, DD, size(W[st], 3)))
-    A = CuArray(rand(Float64, DD, DD, size(W[st], 2)))
-    B = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
-    yy = SpinGlassTensors.update_env_right(RE, A, W[st], B)
-    @time for ii in 1:10
-        yy = SpinGlassTensors.update_env_right(RE, A, W[st], B)
-    end
+    # println("  RIGHT  ")
+    # RE = CuArray(rand(Float64, DD, DD, size(W[st], 3)))
+    # A = CuArray(rand(Float64, DD, DD, size(W[st], 2)))
+    # B = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
+    # yy = SpinGlassTensors.update_env_right(RE, A, W[st], B)
+    # @time for ii in 1:10
+    #     yy = SpinGlassTensors.update_env_right(RE, A, W[st], B)
+    # end
 
-    println("  LEFT  ")
-    LE = CuArray(rand(Float64, DD, DD, size(W[st], 1)))
-    A = CuArray(rand(Float64, DD, DD, size(W[st], 2)))
-    B = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
-    yy = SpinGlassTensors.update_env_left(LE, A, W[st], B)
-    @time for ii in 1:10
-        yy = SpinGlassTensors.update_env_left(LE, A, W[st], B)
-    end
+    # println("  LEFT  ")
+    # LE = CuArray(rand(Float64, DD, DD, size(W[st], 1)))
+    # A = CuArray(rand(Float64, DD, DD, size(W[st], 2)))
+    # B = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
+    # yy = SpinGlassTensors.update_env_left(LE, A, W[st], B)
+    # @time for ii in 1:10
+    #     yy = SpinGlassTensors.update_env_left(LE, A, W[st], B)
+    # end
     # println("solving ... ")
     # try 
     #     sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
@@ -119,6 +124,6 @@ function bench(instance::String)
 end
 
 instance = "$(@__DIR__)/../test/instances/pegasus_random/P8/RAU/SpinGlass/001_sg.txt"
-#bench(instance)
-@profile bench(instance)
-pprof(flamegraph(); webhost = "localhost", webport = 57320)
+bench(instance)
+# @profile bench(instance)
+# pprof(flamegraph(); webhost = "localhost", webport = 57320)

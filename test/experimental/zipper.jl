@@ -9,8 +9,12 @@ using TensorCast
 using MetaGraphs
 using Statistics
 using LowRankApprox
+using CUDA
 
 disable_logging(LogLevel(1))
+CUDA.allowscalar(false)
+
+onGPU = true
 
 function my_brute_force(ig::IsingGraph; num_states::Int)
     brute_force(ig, onGPU ? :GPU : :CPU, num_states=num_states)
@@ -23,7 +27,7 @@ Dcut = 8
 
 β = 1.
 Dcut = 8
-tolV = 0.
+tolV = 0.01
 tolS = 0.
 max_sweeps = 4
 indβ = 1
@@ -50,21 +54,15 @@ net = PEPSNetwork{Square{Layout}, Sparse}(m, n, fg, tran)
 ctr = MpsContractor{Strategy, Gauge}(net, [β], :graduate_truncate, params; onGPU=onGPU)
 Ws = SpinGlassEngine.mpo(ctr, ctr.layers.main, i, indβ)
 println(" Ws -> ", which_device(Ws), " ", format_bytes.(measure_memory(Ws)))
-move_to_CUDA!(Ws)
-println(" Ws -> ", which_device(Ws), " ", format_bytes.(measure_memory(Ws)))
 
 net = PEPSNetwork{Square{Layout}, Dense}(m, n, fg, tran)
 ctr = MpsContractor{Strategy, Gauge}(net, [β], :graduate_truncate, params; onGPU=onGPU)
 Wd = SpinGlassEngine.mpo(ctr, ctr.layers.main, i, indβ)
 println(" Wd -> ", which_device(Wd), " ", format_bytes.(measure_memory(Wd)))
-move_to_CUDA!(Wd)
-println(" Wd -> ", which_device(Wd), " ", format_bytes.(measure_memory(Wd)))
 
 println("Dcut = ", Dcut, " tolV = ", tolV, " tolS = ", tolS, " max_sweeps = ", max_sweeps, " i = ", i)
 
-ψ = rand(QMps{Float64}, local_dims(Wd, :down), Dcut) # F64 for now
-println(" ψ -> ", which_device(ψ), " ", format_bytes.(measure_memory(ψ)))
-move_to_CUDA!(ψ)
+ψ = rand(QMps{Float64}, local_dims(Wd, :down), Dcut; onGPU=onGPU) # F64 for now
 println(" ψ -> ", which_device(ψ), " ", format_bytes.(measure_memory(ψ)))
 canonise!(ψ, :left)
 
@@ -77,33 +75,51 @@ for (W, msg) ∈ [(Ws, "SPARSE"), (Wd, "DENSE")] #
 
     println("canonize_truncate!")
     ψ1 = dot(W, ψ)
+    canonise!(ψ1, :left)
     canonise_truncate!(ψ1, :right, Dcut, tolS)
     println(" ψ0 -> ", which_device(ψ1), " ", format_bytes.(measure_memory(ψ)))
     println(bond_dimensions(ψ1))
-    println(dot(ψ0, ψ1) / (norm(ψ0) * norm(ψ1)))
+    println(dot(ψ0, ψ1) / (norm(ψ0) * norm(ψ1)), "  ", dot(ψ0, ψ1) / norm(ψ0))
+    canonise!(ψ1, :left)
+
 
     println("zipper dense svd")
     ψ2 = zipper(W, ψ, method=:svd, Dcut=Dcut, tol=tolS)
-    println(dot(ψ0, ψ2) / (norm(ψ0) * norm(ψ2)))
+    println(dot(ψ0, ψ2) / (norm(ψ0) * norm(ψ2)), "  ", dot(ψ0, ψ2) / norm(ψ0))
+    canonise!(ψ2, :left)
+
+    println("zipper psvd")
+    ψ3 = zipper(W, ψ, method=:psvd, Dcut=Dcut, tol=tolS)
+    println(dot(ψ0, ψ3) / (norm(ψ0) * norm(ψ3)), "  ", dot(ψ0, ψ3) / norm(ψ0))
+    canonise!(ψ3, :left)
+
 
     println("zipper psvd_sparse")
     ψ3 = zipper(W, ψ, method=:psvd_sparse, Dcut=Dcut, tol=tolS)
-    println(dot(ψ0, ψ3) / (norm(ψ0) * norm(ψ3)))
+    println(dot(ψ0, ψ3) / (norm(ψ0) * norm(ψ3)), "  ", dot(ψ0, ψ3) / norm(ψ0))
+    canonise!(ψ3, :left)
 
-    println("zipper tsvd_sparse")
-    #ψ4 = zipper(W, ψ, method=:psvd_sparse, Dcut=Dcut, tol=tolS)
-    ψ4 = zipper(W, ψ, method=:tsvd_sparse, Dcut=Dcut, tol=tolS, maxiter=Dcut+1, tolconv=400, tolreorth=100)
-    println(dot(ψ0, ψ4) / (norm(ψ0) * norm(ψ4)))
+    # println("zipper tsvd_sparse")
+    # #ψ4 = zipper(W, ψ, method=:psvd_sparse, Dcut=Dcut, tol=tolS)
+    # ψ4 = zipper(W, ψ, method=:tsvd_sparse, Dcut=Dcut, tol=tolS, maxiter=Dcut+1, tolconv=400, tolreorth=100)
+    # println(dot(ψ0, ψ4) / (norm(ψ0) * norm(ψ4)), "  ", dot(ψ0, ψ4) / norm(ψ0))
+    # canonise!(ψ4, :left)
 
-    println("variational")
+    # println("variational")
     overlap, env = variational_compress!(ψ1, W, ψ, tolV, max_sweeps)
     println(dot(ψ0, ψ1) / (norm(ψ0) * norm(ψ1)))
+    println(dot(ψ0, ψ1), "   vs   ", exp(overlap))
+
     overlap, env = variational_compress!(ψ2, W, ψ, tolV, max_sweeps)
     println(dot(ψ0, ψ2) / (norm(ψ0) * norm(ψ2)))
+    println(dot(ψ0, ψ2), "   vs   ", exp(overlap))
+    
     overlap, env = variational_compress!(ψ3, W, ψ, tolV, max_sweeps)
     println(dot(ψ0, ψ3) / (norm(ψ0) * norm(ψ3)))
-    overlap, env = variational_compress!(ψ4, W, ψ, tolV, max_sweeps)
-    println(dot(ψ0, ψ4) / (norm(ψ0) * norm(ψ4)))
+    println(dot(ψ0, ψ3), "   vs   ", exp(overlap))
+
+    # overlap, env = variational_compress!(ψ4, W, ψ, tolV, max_sweeps)
+    # println(dot(ψ0, ψ4) / (norm(ψ0) * norm(ψ4)))
 end
 
 # @time ψ4 = zipper(Ws, ψ, method=:psvd, Dcut=Dcut, tol=tolS)

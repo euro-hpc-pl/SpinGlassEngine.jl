@@ -21,10 +21,10 @@ function bench(instance::String)
     m = 7
     n = 7
     t = 3
-    β = 1
-    bond_dim = 4
+    β = 0.5
+    bond_dim = 8
     δp = 1E-6
-    num_states = 128
+    num_states = 64
     println("creating factor graph" )
 
     @time begin
@@ -37,14 +37,14 @@ function bench(instance::String)
     end
 
     clear_memoize_cache()
-    params = MpsParameters(bond_dim, 1E-12, 1, 1E-16)
+    params = MpsParameters(bond_dim, 1E-2, 5, 1E-16)
     search_params = SearchParameters(num_states, δp)
 
     # Solve using PEPS search
     energies = Vector{Float64}[]
     Strategy = Zipper # SVDTruncate
     Sparsity = Sparse #Dense
-    tran = all_lattice_transformations[1]
+    tran = all_lattice_transformations[8]
     Layout = GaugesEnergy
     Gauge = NoUpdate
     println("creating network and contractor")
@@ -55,29 +55,29 @@ function bench(instance::String)
     println("Memory lp = ", format_bytes.(measure_memory(net.lp)), " elements = ", length(net.lp))
     println("Memory memoize = ", measure_memory(Memoization.caches))
 
-    @time begin
-        W = SpinGlassEngine.mpo(ctr, ctr.layers.main, 4, 1)
-    end
+    # @time begin
+    #     W = SpinGlassEngine.mpo(ctr, ctr.layers.main, 4, 1)
+    # end
     # for st in W.sites
     #     println(st, "  ", size(W[st]), "  btm ", size.(W[st].bot), " top ",  size.(W[st].top), " ctr ",  size(W[st].ctr))
     # end
 
-    println("  PROJECT SITE ")
+    # println("  PROJECT SITE ")
 
-    st = 4
-    DD = 8
-    LE = CuArray(rand(Float64, DD, DD, size(W[st], 1)))
-    RE = CuArray(rand(Float64, DD, DD, size(W[st], 3)))
-    B  = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
-    xx = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
+    # st = 4
+    # DD = 8
+    # LE = CuArray(rand(Float64, DD, DD, size(W[st], 1)))
+    # RE = CuArray(rand(Float64, DD, DD, size(W[st], 3)))
+    # B  = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
+    # xx = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
     
-    @time begin
-        CUDA.@sync begin
-            for ii in 1:30
-                xx = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
-            end
-        end
-    end
+    # @time begin
+    #     CUDA.@sync begin
+    #         for ii in 1:30
+    #             xx = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
+    #         end
+    #     end
+    # end
 
     # st = 9 // 2
     # println(size(W[st].ctr.con), " size  ", size.(Ref(W[st].ctr.lp), W[st].ctr.projs), " length  ", length.(Ref(W[st].ctr.lp), W[st].ctr.projs))
@@ -110,20 +110,20 @@ function bench(instance::String)
     # @time for ii in 1:10
     #     yy = SpinGlassTensors.update_env_left(LE, A, W[st], B)
     # end
-    # println("solving ... ")
-    # try 
-    #     sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
-    #     println("Memory lp = ", format_bytes.(measure_memory(net.lp)), " elements = ", length(net.lp))
-    #     println("Memory memoize", measure_memory(Memoization.caches))
-    #     println("Result ", sol.energies)
-    # catch err
-    #     println("Memory lp = ", format_bytes.(measure_memory(net.lp)), " elements = ", length(net.lp))
-    #     println("Memory memoize", measure_memory(Memoization.caches))
-    #     println(err.msg)
-    # end
+    println("solving ... ")
+    try 
+        sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+        println("Memory lp = ", format_bytes.(measure_memory(net.lp)), " elements = ", length(net.lp))
+        println("Memory memoize", measure_memory(Memoization.caches))
+        println("Result ", sol.energies)
+    catch err
+        println("Memory lp = ", format_bytes.(measure_memory(net.lp)), " elements = ", length(net.lp))
+        println("Memory memoize", measure_memory(Memoization.caches))
+        println(err.msg)
+    end
 end
 
-instance = "$(@__DIR__)/../test/instances/pegasus_random/P8/RAU/SpinGlass/001_sg.txt"
+instance = "$(@__DIR__)/../test/instances/pegasus_random/P8/CBFM-P/SpinGlass/001_sg.txt"
 bench(instance)
 # @profile bench(instance)
 # pprof(flamegraph(); webhost = "localhost", webport = 57320)

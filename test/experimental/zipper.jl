@@ -26,7 +26,7 @@ m, n, t = 8, 8, 8
 Dcut = 8
 
 β = 1.
-Dcut = 8
+Dcut = 7
 tolV = 0.01
 tolS = 0.
 max_sweeps = 4

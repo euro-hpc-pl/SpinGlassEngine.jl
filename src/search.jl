@@ -1,6 +1,21 @@
 export AbstractGibbsNetwork,
     low_energy_spectrum, branch_state, bound_solution, merge_branches, Solution, Memoize
 
+
+"""
+Store results from branch-and-bound search.
+
+# Fields
+
+    energies::Vector{Float64}: A vector storing the energies of the system.
+    states::Vector{Vector{Int}}: A vector storing states of the system. These 
+    are states of factor graph representation of the system.
+    probabilities::Vector{Float64}: A vector storing representing the probabilities
+     of each state in the states field. Probabilities are kept as `log2`.
+    degeneracy::Vector{Int}: A vector storing the degeneracy of each energy level in the energies field.
+    largest_discarded_probability::Float64: A  value representing the largest probability that was discarded during the branch-and-bound search .
+
+"""
 struct Solution
     energies::Vector{Float64}
     states::Vector{Vector{Int}}
@@ -9,6 +24,11 @@ struct Solution
     largest_discarded_probability::Float64
 end
 
+"""
+    Solution()
+
+Creates empty `Solution`
+"""
 Solution() = Solution([0.0], [[]], [1.0], [1], -Inf)
 
 
@@ -118,6 +138,31 @@ end
 
 
 #TODO: incorporate "going back" move to improve alghoritm
+"""
+    low_energy_spectrum(
+        network::AbstractGibbsNetwork,
+        max_states::Int,
+        merge_strategy = no_merge,
+    )
+
+Search for the low-energy spectrum on a quasi-2d graph.
+
+# Details
+Compute the low energy spectrum of an Ising system represented
+by a `network` object, using a branch-and-bound search algorithm with a
+maximum number of `max_states` states and an optional `merge_strategy`.
+
+# Arguments
+- `network::AbstractGibbsNetwork`: PEPS tesnor network representing Ising system.
+- `max_states::Int`: The maximum number of states to use in the search algorithm.
+- `merge_strategy=no_merge`: An optional argument that specifies the strategy to use 
+    when merging states. The default is no_merge, which means no merging will be performed.
+
+Return value
+
+The function returns a `Solution` object representing the low energy spectrum of the system. 
+
+"""
 function low_energy_spectrum(
     network::AbstractGibbsNetwork,
     max_states::Int,

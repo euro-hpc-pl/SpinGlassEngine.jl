@@ -2,6 +2,11 @@ export PEPSNetwork, generate_boundary, node_from_index, conditional_probability
 
 const IntOrRational = Union{Int,Rational{Int}}
 
+"""
+    PEPSNetwork
+
+Structure that stores PEPS tensor network 
+"""
 struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2,Int},NTuple{2,Int}}
     factor_graph::LabelledGraph{T,NTuple{2,Int}} where {T}
     network_graph::LabelledGraph{S,NTuple{2,Int}} where {S}
@@ -20,6 +25,7 @@ struct PEPSNetwork <: AbstractGibbsNetwork{NTuple{2,Int},NTuple{2,Int}}
     layers_MPS::NTuple{M,IntOrRational} where {M}
     layers_left_env::NTuple{K,IntOrRational} where {K}
     layers_right_env::NTuple{L,IntOrRational} where {L}
+
 
     function PEPSNetwork(
         m::Int,

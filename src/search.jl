@@ -25,6 +25,8 @@ struct Solution
 end
 
 """
+    Solution()
+
 Creates empty `Solution`
 """
 Solution() = Solution([0.0], [[]], [1.0], [1], -Inf)

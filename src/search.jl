@@ -240,14 +240,11 @@ function low_energy_spectrum(
     @showprogress "Search: " for node ∈ ctr.nodes_search_order
         ctr.current_node = node
         current_row = node[1]
-        println(node, " ", current_row, " ", old_row)
         if current_row > old_row
             old_row = current_row
             clear_memoize_cache_after_row()
             empty!(ctr.peps.lp, :GPU)
         end
-        println("Memory memoize = ", measure_memory(Memoization.caches))
-        println("Memory lp = ", format_bytes.(measure_memory(ctr.peps.lp)), " elements = ", length(ctr.peps.lp))
         sol = branch_solution(sol, ctr)
         sol = bound_solution(sol, sparams.max_states, sparams.cut_off_prob, merge_strategy)
         Memoization.empty_cache!(precompute_conditional)
@@ -289,10 +286,20 @@ function gibbs_sampling(
     # Build all boundary mps
     CUDA.allowscalar(false)
 
-    @showprogress "Preprocessing: " for i ∈ ctr.peps.nrows:-1:1
-        dressed_mps(ctr, i)
+    schmidts = Dict()
+    @showprogress "Preprocessing: " for i ∈ ctr.peps.nrows + 1 : -1 : 2
+        ψ0 = mps(ctr, i, length(ctr.betas))
+        push!(schmidts, i=> measure_spectrum(ψ0))
         clear_memoize_cache_after_row()
+        Memoization.empty_cache!(SpinGlassTensors.SparseCSC)
+        empty!(ctr.peps.lp, :GPU)
+        if i <= ctr.peps.nrows
+            ψ0 = mps(ctr, i + 1, length(ctr.betas))
+            move_to_CPU!(ψ0)
+        end
     end
+    ψ0 = mps(ctr, 2, length(ctr.betas))
+    move_to_CPU!(ψ0)
 
     # Start branch and bound search
     sol = empty_solution(sparams.max_states)
@@ -303,6 +310,7 @@ function gibbs_sampling(
         if current_row > old_row
             old_row = current_row
             clear_memoize_cache_after_row()
+            empty!(ctr.peps.lp, :GPU)
         end
         sol = branch_solution(sol, ctr)
         sol = sampling(sol, sparams.max_states, sparams.cut_off_prob, merge_strategy)

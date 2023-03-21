@@ -70,68 +70,62 @@ function average_EA_parameter_all(s, num_states::Int)
     o_ea/count
 end
 
+function neighbor_left(i::Int, j::Int, N::Int, r::Int)
+    (i, mod(j - r - 1, N) + 1)
+end
+
+function neighbor_right(i::Int, j::Int, N::Int, r::Int)
+    (i, mod(j + r - 1, N) + 1)
+end
+
+function neighbor_up(i::Int, j::Int, N::Int, r::Int)
+    (mod(i - r - 1, N) + 1, j)
+end
+
+function neighbor_down(i::Int, j::Int, N::Int, r::Int)
+    (mod(i + r - 1, N) + 1, j)
+end
+
+function l2k(n::Int, N::Int)
+    a = zeros(N, N)
+    li = LinearIndices(a)
+    k = CartesianIndices(a)[n]
+    (k[2], k[1])
+end
+
+function k2l(t::Tuple, N::Int)
+    (i, j) = t
+    LinearIndices((N, N))[j, i]
+end
+
 #nearest neighbors
 function HLW_correlation_on_site(st::Vector{Vector{Int}}, i::Int, n::Int, s1::Int, s2::Int)
     s1 = st[s1]
     s2 = st[s2]
     s = HLW_parameter(s1, s2)
     tau_c = s[i]
-    if i in collect(1:n)
-        tau_u = s[i+n*(n-1)]
-        i == 1 ? tau_l = s[n] : tau_l = s[i-1]
-        i == n ? tau_r = s[1] : tau_r = s[i+1]
-        tau_d = s[i+n]
-    elseif i in collect(n*n-n+1 : n*n)
-        tau_d = s[i-n*(n-1)]
-        i == n*n-n+1 ? tau_l = s[n] : tau_l = s[i-1]
-        i == n*n ? tau_r = s[n*n-n+1] : tau_r = s[i+1]
-        tau_u = s[i-n]
-    elseif i in collect(n+1:n:n*n-2*n+1)
-        tau_l = s[i+n-1]
-        tau_r = s[i+1]
-        tau_u, tau_d = s[i-n], s[i+n]
-    elseif i in collect(2*n:n:n*n-n)
-        tau_r = s[i-n+1]
-        tau_l = s[i-1]
-        tau_u, tau_d = s[i-n], s[i+n]
-    else
-        tau_l, tau_r = s[i-1], s[i+1]
-        tau_u, tau_d = s[i-n], s[i+n]
-    end
+    (lk1, lk2) = l2k(i, n)
+    tau_u = s[k2l(neighbor_up(lk1, lk2, n, 1), n)]
+    tau_d = s[k2l(neighbor_down(lk1, lk2, n, 1), n)]
+    tau_l = s[k2l(neighbor_left(lk1, lk2, n, 1), n)]
+    tau_r = s[k2l(neighbor_right(lk1, lk2, n, 1), n)]
     (tau_c * tau_l, tau_c * tau_u, tau_c * tau_r, tau_c * tau_d)
 end
 
-#next nearest neighbors
+#nearest neighbors
 function HLW_correlation_on_site_nnn(st::Vector{Vector{Int}}, i::Int, n::Int, s1::Int, s2::Int)
     s1 = st[s1]
     s2 = st[s2]
     s = HLW_parameter(s1, s2)
     tau_c = s[i]
-    if i in collect(1:2*n)
-        tau_u = s[n*n + (i-2*n)]
-        i in [1, 2, n+1, n+2] ? tau_l = s[i+n-2] : tau_l = s[i-2]
-        i in [n, n-1, 2*n, 2*n-1] ? tau_r = s[i-n+2] : tau_r = s[i+2]
-        tau_d = s[i+2*n]
-    elseif i in collect(n*n-2*n+1 : n*n)
-        tau_d = s[i-n*(n-1)+n]
-        i in [n*n-2*n+1, n*n-2*n+2, n*n-n+1, n*n-n+2] ? tau_l = s[i+n-2] : tau_l = s[i-2]
-        i in [n*n, n*n-1, n*n-n, n*n-n-1] ? tau_r = s[i-n+2] : tau_r = s[i+2]
-        tau_u = s[i-n]
-    elseif i in collect(n+1:n:n*n-2*n+1) || i in collect(n+2:n:n*n-2*n+2)
-        tau_l = s[i+n-2]
-        tau_r = s[i+2]
-        tau_u, tau_d = s[i-2*n], s[i+2*n]
-    elseif i in collect(2*n:n:n*n-n) || i in collect(2*n-1:n:n*n-n-1)
-        tau_r = s[i-n+2]
-        tau_l = s[i-2]
-        tau_u, tau_d = s[i-2*n], s[i+2*n]
-    else
-        tau_l, tau_r = s[i-2], s[i+2]
-        tau_u, tau_d = s[i-2*n], s[i+2*n]
-    end
+    (lk1, lk2) = l2k(i, n)
+    tau_u = s[k2l(neighbor_up(lk1, lk2, n, 2), n)]
+    tau_d = s[k2l(neighbor_down(lk1, lk2, n, 2), n)]
+    tau_l = s[k2l(neighbor_left(lk1, lk2, n, 2), n)]
+    tau_r = s[k2l(neighbor_right(lk1, lk2, n, 2), n)]
     (tau_c * tau_l, tau_c * tau_u, tau_c * tau_r, tau_c * tau_d)
 end
-
+    
 function HLW_correlations_plaquette(st::Vector{Vector{Int}}, i::Int, n::Int, s1::Int, s2::Int)
     s1 = st[s1]
     s2 = st[s2]

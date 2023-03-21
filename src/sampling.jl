@@ -87,9 +87,7 @@ function neighbor_down(i::Int, j::Int, N::Int, r::Int)
 end
 
 function l2k(n::Int, N::Int)
-    a = zeros(N, N)
-    li = LinearIndices(a)
-    k = CartesianIndices(a)[n]
+    k = CartesianIndices((N,N))[n]
     (k[2], k[1])
 end
 

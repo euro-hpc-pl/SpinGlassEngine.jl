@@ -327,12 +327,12 @@ function gibbs_sampling(
     ])
 
     # Sort using energies as keys
-    outer_perm = sortperm(sol.energies)
+    # outer_perm = sortperm(sol.energies)
     sol = Solution(
-        sol.energies[outer_perm],
-        [σ[inner_perm] for σ ∈ sol.states[outer_perm]],
-        sol.probabilities[outer_perm],
-        sol.degeneracy[outer_perm],
+        sol.energies,
+        [σ[inner_perm] for σ ∈ sol.states],
+        sol.probabilities,
+        sol.degeneracy,
         sol.largest_discarded_probability
     )
 

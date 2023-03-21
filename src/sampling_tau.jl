@@ -71,10 +71,8 @@ function average_EA_parameter_all(s, num_states::Int)
 end
 
 #nearest neighbors
-function HLW_correlation_on_site(st::Vector{Vector{Int}}, i::Int, n::Int, s1::Int, s2::Int)
-    s1 = st[s1]
-    s2 = st[s2]
-    s = HLW_parameter(s1, s2)
+function HLW_correlation_on_site(st::Vector{Vector{Int}}, i::Int, n::Int, s1::Int)
+    s = st[s1]
     tau_c = s[i]
     if i in collect(1:n)
         tau_u = s[i+n*(n-1)]
@@ -102,10 +100,8 @@ function HLW_correlation_on_site(st::Vector{Vector{Int}}, i::Int, n::Int, s1::In
 end
 
 #next nearest neighbors
-function HLW_correlation_on_site_nnn(st::Vector{Vector{Int}}, i::Int, n::Int, s1::Int, s2::Int)
-    s1 = st[s1]
-    s2 = st[s2]
-    s = HLW_parameter(s1, s2)
+function HLW_correlation_on_site_nnn(st::Vector{Vector{Int}}, i::Int, n::Int, s1::Int)
+    s = st[s1]
     tau_c = s[i]
     if i in collect(1:2*n)
         tau_u = s[n*n + (i-2*n)]
@@ -132,18 +128,15 @@ function HLW_correlation_on_site_nnn(st::Vector{Vector{Int}}, i::Int, n::Int, s1
     (tau_c * tau_l, tau_c * tau_u, tau_c * tau_r, tau_c * tau_d)
 end
 
-function HLW_correlations_plaquette(st::Vector{Vector{Int}}, i::Int, n::Int, s1::Int, s2::Int)
-    s1 = st[s1]
-    s2 = st[s2]
-    s = HLW_parameter(s1, s2)
+function HLW_correlations_plaquette(st::Vector{Vector{Int}}, i::Int, n::Int, s1::Int)
+    s = st[s1]
     tau4 = s[i] * s[i+1] * s[i-n] * s[i+1-n]
     tau4
 end
 
-function tau_r(st::Vector{Vector{Int}}, i::Int, s1::Int, s2::Int, r::Int)
-    s1 = st[s1]
-    s2 = st[s2]
-    s = HLW_parameter(s1, s2)
+function tau_r(st::Vector{Vector{Int}}, i::Int, s1::Int, r::Int)
+    s = st[s1]
+
     tau = []
     for rr in 0:r-1
         append!(tau, s[i]*s[i+rr])
@@ -153,14 +146,12 @@ end
 
 function average_tau_r(st::Vector{Vector{Int}}, i::Int, num_states::Int, r::Int)
     t = zeros(i, r)
-    R = rand(1:num_states, num_states)
-    K = rand(1:num_states, num_states)
     for k in 1:i
         tr = zeros(r)
         count = 0
-        for (jj, j) in enumerate(R)
+        for j in 1:2:num_states
             count += 1
-            tr += tau_r(st, k, j, K[jj], r)
+            tr += tau_r(st, k, j, r)
         end
         t[k,:] = tr./count
     end
@@ -170,13 +161,12 @@ end
 #HLW correlations tau in space for nearest neighbors 
 #(left, up, right, down from central)
 function average_HLW_parameter_nn(st, N::Int, num_states::Int)
-    tt = zeros(Int(num_states), 4)
-    R = rand(1:num_states, num_states)
-    K = rand(1:num_states, num_states)
-    for (i, k) in enumerate(R[1:end])
+    tt = zeros(Int(num_states/2), 4)
+    
+    for (i, k) in enumerate(1:2:num_states)
         tau_l, tau_u, tau_r, tau_d = [], [], [], []
         for n in 1:N*N 
-            correlations = HLW_correlation_on_site(st, n, N, k, K[i])
+            correlations = HLW_correlation_on_site(st, n, N, k)
             append!(tau_l, correlations[1])
             append!(tau_u, correlations[2])
             append!(tau_r, correlations[3])
@@ -187,20 +177,18 @@ function average_HLW_parameter_nn(st, N::Int, num_states::Int)
         tt[i, 3] = sum(tau_r)./length(tau_r)
         tt[i, 4] = sum(tau_d)./length(tau_d)
     end
-    sum(tt, dims=1) ./ (num_states)
+    sum(tt, dims=1) ./ (num_states/2)
 end
 
 #HLW correlations tau in space for next nearest neighbors 
 #(left, up, right, down from central)
 # TODO: dispatching
 function average_HLW_parameter_nnn(st, N::Int, num_states::Int)
-    tt = zeros(Int(num_states), 4)
-    R = rand(1:num_states, num_states)
-    K = rand(1:num_states, num_states)
-    for (i, k) in enumerate(R)
+    tt = zeros(Int(num_states/2), 4)
+    for (i, k) in enumerate(1:2:num_states)
         tau_l, tau_u, tau_r, tau_d = [], [], [], []
         for n in 1:N*N
-            correlations = HLW_correlation_on_site_nnn(st, n, N, k, K[i])
+            correlations = HLW_correlation_on_site_nnn(st, n, N, k)
             append!(tau_l, correlations[1])
             append!(tau_u, correlations[2])
             append!(tau_r, correlations[3])
@@ -211,21 +199,19 @@ function average_HLW_parameter_nnn(st, N::Int, num_states::Int)
         tt[i, 3] = sum(tau_r)./length(tau_r)
         tt[i, 4] = sum(tau_d)./length(tau_d)
     end
-    sum(tt, dims=1) ./ (num_states)
+    sum(tt, dims=1) ./ (num_states/2)
 end
 
 function average_HLW_parameter_plaquette(st, N::Int, num_states::Int)
-    tt = zeros(Int(num_states), 4)
+    tt = zeros(Int(num_states/2), 4)
     tau = []
-    R = rand(1:num_states, num_states)
-    K = rand(1:num_states, num_states)
     for j in 1:N-1
         for n in 1:N-1
             t = 0
             count = 0
-            for (i, k) in enumerate(R)
+            for (i, k) in enumerate(1:2:num_states)
                 count = count + 1
-                t += HLW_correlations_plaquette(st, n+j*N, N, k, K[i])
+                t += HLW_correlations_plaquette(st, n+j*N, N, k)
             end
             append!(tau, t/count)
         end

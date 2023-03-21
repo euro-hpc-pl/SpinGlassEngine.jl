@@ -9,8 +9,8 @@ using ProgressMeter
 # CSV_DIR = "$(@__DIR__)/results/1152power/tmp"
 
 folder = "RCO"
-OUT_FILE  = "$(@__DIR__)/results/CPLEX/P4/$folder/$(folder)_CPLEX.csv"
-CSV_DIR = "$(@__DIR__)/results/CPLEX/P4/$folder/tmp"
+OUT_FILE  = "$(@__DIR__)/results/square_gauss/S8/beta1.1/merged.csv"
+CSV_DIR = "$(@__DIR__)/results/square_gauss/S8/beta1.1"
 
 function merge(csv_dir::String, out_path::String)
 

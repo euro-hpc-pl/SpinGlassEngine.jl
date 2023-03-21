@@ -18,11 +18,11 @@ MPI.Init()
 size = MPI.Comm_size(MPI.COMM_WORLD)
 rank = MPI.Comm_rank(MPI.COMM_WORLD)
 
-M, N, T = 4, 4, 4
-BETAS = collect(0.5:0.5:4)
+M, N, T = 8, 8, 4
+BETAS = collect(3.2:0.2:4.0)
 i = BETAS[1]
-INSTANCE_DIR = "$(@__DIR__)/../test/instances/square_gauss/S8"
-OUTPUT_DIR = "$(@__DIR__)/results/square_gauss/S8/sampling_tau"
+INSTANCE_DIR = "$(@__DIR__)/../test/instances/square_gauss/S16"
+OUTPUT_DIR = "$(@__DIR__)/results/square_gauss/S16/beta$(i)"
 
 LAYOUT = (GaugesEnergy,)
 TRANSFORM = [rotation(0),] #all_lattice_transformations
@@ -33,7 +33,7 @@ SPARSITY = Sparse
 graduate_truncation = :graduate_truncate
 
 INDβ = [3,] #[1, 2, 3]
-MAX_STATES = 100
+MAX_STATES = 10000
 BOND_DIM = [16,]
 DE = 16.0
 

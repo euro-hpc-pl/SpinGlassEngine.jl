@@ -44,7 +44,7 @@ include("square2.jl")
 include("square_star2.jl")
 include("tensors.jl")
 include("search.jl")
-# include("sampling_tau.jl")
 include("sampling.jl")
+include("sampling_tau.jl")
 
 end # module

@@ -66,7 +66,7 @@ println("Dcut = ", Dcut, " tolV = ", tolV, " tolS = ", tolS, " max_sweeps = ", m
 println(" ψ -> ", which_device(ψ), " ", format_bytes.(measure_memory(ψ)))
 canonise!(ψ, :left)
 
-for (W, msg) ∈ [(Ws, "SPARSE"), (Wd, "DENSE")] # 
+for (W, msg) ∈ [(Ws, "SPARSE"), (Wd, "DENSE")] #
     println(msg)
     println("dot")
     ψ0 = dot(W, ψ)
@@ -78,10 +78,8 @@ for (W, msg) ∈ [(Ws, "SPARSE"), (Wd, "DENSE")] #
     canonise!(ψ1, :left)
     canonise_truncate!(ψ1, :right, Dcut, tolS)
     println(" ψ0 -> ", which_device(ψ1), " ", format_bytes.(measure_memory(ψ)))
-    println(bond_dimensions(ψ1))
     println(dot(ψ0, ψ1) / (norm(ψ0) * norm(ψ1)), "  ", dot(ψ0, ψ1) / norm(ψ0))
     canonise!(ψ1, :left)
-
 
     println("zipper dense svd")
     ψ2 = zipper(W, ψ, method=:svd, Dcut=Dcut, tol=tolS)
@@ -93,19 +91,12 @@ for (W, msg) ∈ [(Ws, "SPARSE"), (Wd, "DENSE")] #
     println(dot(ψ0, ψ3) / (norm(ψ0) * norm(ψ3)), "  ", dot(ψ0, ψ3) / norm(ψ0))
     canonise!(ψ3, :left)
 
-
     println("zipper psvd_sparse")
     ψ3 = zipper(W, ψ, method=:psvd_sparse, Dcut=Dcut, tol=tolS)
     println(dot(ψ0, ψ3) / (norm(ψ0) * norm(ψ3)), "  ", dot(ψ0, ψ3) / norm(ψ0))
     canonise!(ψ3, :left)
 
-    # println("zipper tsvd_sparse")
-    # #ψ4 = zipper(W, ψ, method=:psvd_sparse, Dcut=Dcut, tol=tolS)
-    # ψ4 = zipper(W, ψ, method=:tsvd_sparse, Dcut=Dcut, tol=tolS, maxiter=Dcut+1, tolconv=400, tolreorth=100)
-    # println(dot(ψ0, ψ4) / (norm(ψ0) * norm(ψ4)), "  ", dot(ψ0, ψ4) / norm(ψ0))
-    # canonise!(ψ4, :left)
-
-    # println("variational")
+    println("variational compressions")
     overlap, env = variational_compress!(ψ1, W, ψ, tolV, max_sweeps)
     println(dot(ψ0, ψ1) / (norm(ψ0) * norm(ψ1)))
     println(dot(ψ0, ψ1), "   vs   ", exp(overlap))
@@ -113,7 +104,7 @@ for (W, msg) ∈ [(Ws, "SPARSE"), (Wd, "DENSE")] #
     overlap, env = variational_compress!(ψ2, W, ψ, tolV, max_sweeps)
     println(dot(ψ0, ψ2) / (norm(ψ0) * norm(ψ2)))
     println(dot(ψ0, ψ2), "   vs   ", exp(overlap))
-    
+
     overlap, env = variational_compress!(ψ3, W, ψ, tolV, max_sweeps)
     println(dot(ψ0, ψ3) / (norm(ψ0) * norm(ψ3)))
     println(dot(ψ0, ψ3), "   vs   ", exp(overlap))

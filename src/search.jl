@@ -227,6 +227,18 @@ function low_energy_spectrum(
             move_to_CPU!(ψ0)
         end
     end
+
+    s = Dict()
+    for k in keys(schmidts)
+        B = schmidts[k]
+        v = []
+        B = sort!(collect(B))
+        for (i, _) in enumerate(B)
+            push!(v, minimum(B[i][2]))
+        end
+        push!(s, k => v)
+    end
+
     ψ0 = mps(ctr, 2, length(ctr.betas))
     move_to_CPU!(ψ0)
 
@@ -273,7 +285,7 @@ function low_energy_spectrum(
     @assert sol.energies ≈ energy.(
         Ref(ctr.peps.factor_graph), decode_state.(Ref(ctr.peps), sol.states)
     )
-    sol
+    sol, s
 end
 
 """

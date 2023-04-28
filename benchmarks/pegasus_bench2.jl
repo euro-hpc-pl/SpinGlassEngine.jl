@@ -22,6 +22,10 @@ M, N, T = 3, 3, 3
 INSTANCE_DIR = "$(@__DIR__)/../test/instances/pegasus_random/P4/CBFM-P/SpinGlass/single"
 OUTPUT_DIR = "$(@__DIR__)/results/pegasus_random/P4/CBFM-P/new_zipper/i1"
 
+if !Base.Filesystem.isdir(OUTPUT_DIR)
+    Base.Filesystem.mkpath(OUTPUT_DIR)
+end
+
 BETAS = collect(0.3:0.1:2.0)
 LAYOUT = (GaugesEnergy,)
 TRANSFORM = all_lattice_transformations 

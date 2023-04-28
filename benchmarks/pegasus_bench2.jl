@@ -24,7 +24,7 @@ OUTPUT_DIR = "$(@__DIR__)/results/pegasus_random/P4/CBFM-P/new_zipper/i1"
 
 BETAS = collect(0.3:0.1:2.0)
 LAYOUT = (GaugesEnergy,)
-TRANSFORM = (LatticeTransformation((4, 3, 2, 1), false),) #all_lattice_transformations 
+TRANSFORM = all_lattice_transformations 
 
 GAUGE =  NoUpdate
 STRATEGY = Zipper #MPSAnnealing #SVDTruncate

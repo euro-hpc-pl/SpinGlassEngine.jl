@@ -38,7 +38,7 @@ function run_test(instance, m, n, t, tran)
     
         ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
 
-        sol = low_energy_spectrum(ctr, search_params , merge_branches(ctr))
+        sol, s = low_energy_spectrum(ctr, search_params , merge_branches(ctr))
 
         ig_states = decode_factor_graph_state.(Ref(fg), sol.states)
         @test sol.energies ≈ energy.(Ref(ig), ig_states)

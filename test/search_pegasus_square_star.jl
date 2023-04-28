@@ -32,7 +32,7 @@ function bench(instance::String)
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng), Sparsity ∈ (Dense, )
             net = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, fg, transform)
             ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], graduate_truncation, params; onGPU=onGPU)
-            sol_peps = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+            sol_peps, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
             push!(energies, sol_peps.energies)
             clear_memoize_cache()
         end

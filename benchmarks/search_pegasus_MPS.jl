@@ -8,7 +8,7 @@ function bench(instance::String, num_states::Int=10000)
     variational_tol = 1E-10
     max_num_sweeps = 10
 
-    @time sol = low_energy_spectrum(
+    @time sol, s = low_energy_spectrum(
         ising_graph(instance),
         bond_dimension,
         variational_tol,

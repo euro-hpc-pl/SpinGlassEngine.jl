@@ -55,7 +55,7 @@ function chimera_sim(inst, trans, β, Layout)
     net = PEPSNetwork{Square{Layout}, SPARSITY}(M, N, fg, trans)
     ctr = MpsContractor{STRATEGY, GAUGE}(net, [β/6, β/3, β/2, β], graduate_truncation, params; onGPU=onGPU)
     
-    sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+    sol, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 
     lZ = log2(exp(-β * (sol.energies[begin]))) - log2(exp(sol.probabilities[begin]))
     ns = N * M * T 

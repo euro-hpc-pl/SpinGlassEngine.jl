@@ -48,7 +48,7 @@ function bench(instance::String, beta::Float64)
     ctr = MpsContractor{Strategy, Gauge}(net, [β], :graduate_truncate, params)
 
 
-    @time sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+    @time sol, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
     energy = sol.energies[begin]
     open("$(@__DIR__)/results_dwave/P8_2_b1.txt","a") do io
         println(io, "beta ", β)

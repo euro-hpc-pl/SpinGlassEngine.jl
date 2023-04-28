@@ -72,7 +72,7 @@
 
                 net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform)
                 ctr = MpsContractor{Strategy, Gauge}(net, [β/8., β/4., β/2., β], :graduate_truncate, params; onGPU=onGPU)
-                sol = low_energy_spectrum(ctr, search_params)
+                sol, s = low_energy_spectrum(ctr, search_params)
 
                 @test sol.energies ≈ exact_energies
 

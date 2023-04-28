@@ -65,7 +65,7 @@ function chimera_sim(inst, trans, β, Layout)
     update_gauges!(ctr, M, INDβ, Val(:up))
 
     
-    sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+    sol, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 
     cRAM = round(Base.summarysize(Memoization.caches) * 1E-9; sigdigits=2)
     clear_memoize_cache()

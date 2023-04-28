@@ -8,13 +8,20 @@ m = 3
 n = 3
 t = 3
 
-β = 2
-bond_dim = 3
-δp = 1e-10
-num_states = 16
+β = 0.5
+bond_dim = 8
+DE = 16.0
+δp = 1E-5*exp(-β * DE)
+num_states = 128
+
+VAR_TOL = 1E-16
+MS = 0
+TOL_SVD = 1E-16
+ITERS_SVD = 0
+ITERS_VAR = 0
 
 #ig = ising_graph("$(@__DIR__)/../instances/pegasus_droplets/4_4_3_00.txt")
-ig = ising_graph("$(@__DIR__)/../instances/pegasus_random/P4/RAU/SpinGlass/001_sg.txt")
+ig = ising_graph("$(@__DIR__)/../instances/pegasus_random/P4/CBFM-P/SpinGlass/single/001_sg.txt")
 
 fg = factor_graph(
     ig,
@@ -22,28 +29,27 @@ fg = factor_graph(
     cluster_assignment_rule=pegasus_lattice((m, n, t))
 )
 
-params = MpsParameters(bond_dim, 1E-8, 2)
+params = MpsParameters(bond_dim, VAR_TOL, MS, TOL_SVD, ITERS_SVD, ITERS_VAR)
 search_params = SearchParameters(num_states, δp)
 
 # Solve using PEPS search
 energies = Vector{Float64}[]
 Strategy = Zipper # MPSAnnealing # SVDTruncate
 Sparsity = Sparse #Dense
-Layout = EnergyGauges
+Layout = GaugesEnergy
 Gauge = NoUpdate
 
 
-for tran ∈ all_lattice_transformations
+for tran ∈ [LatticeTransformation((4, 3, 2, 1), false), ]
     println(" ==================== ")
     println(tran)
 
     net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, tran)
-    ctr = MpsContractor{Strategy, Gauge}(net, [β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
+    ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)
 
-    @time begin
-    sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
-    end
+    sol, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
     println(sol.energies)
+    println(s)
 
 clear_memoize_cache()
 

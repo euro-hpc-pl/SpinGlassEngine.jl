@@ -82,17 +82,17 @@ for (W, msg) ∈ [(Ws, "SPARSE"), (Wd, "DENSE")] #
     canonise!(ψ1, :left)
 
     println("zipper dense svd")
-    ψ2 = zipper(W, ψ, method=:svd, Dcut=Dcut, tol=tolS)
+    ψ2 = zipper(W, ψ, method=:svd, Dcut=Dcut, tol=tolS, iters_svd=0, iters_var=1)
     println(dot(ψ0, ψ2) / (norm(ψ0) * norm(ψ2)), "  ", dot(ψ0, ψ2) / norm(ψ0))
     canonise!(ψ2, :left)
 
     println("zipper psvd")
-    ψ3 = zipper(W, ψ, method=:psvd, Dcut=Dcut, tol=tolS)
+    ψ3 = zipper(W, ψ, method=:psvd, Dcut=Dcut, tol=tolS, iters_svd=0, iters_var=1)
     println(dot(ψ0, ψ3) / (norm(ψ0) * norm(ψ3)), "  ", dot(ψ0, ψ3) / norm(ψ0))
     canonise!(ψ3, :left)
 
     println("zipper psvd_sparse")
-    ψ3 = zipper(W, ψ, method=:psvd_sparse, Dcut=Dcut, tol=tolS)
+    ψ3 = zipper(W, ψ, method=:psvd_sparse, Dcut=Dcut, tol=tolS, iters_svd=0, iters_var=1)
     println(dot(ψ0, ψ3) / (norm(ψ0) * norm(ψ3)), "  ", dot(ψ0, ψ3) / norm(ψ0))
     canonise!(ψ3, :left)
 

@@ -1,6 +1,6 @@
-for size in 4 8 12 16
+for size in 12 16
 do
-  for cat in RAU RCO AC3
+  for cat in CBFM-P
   do
     cd "P$size"
     cd "$cat"

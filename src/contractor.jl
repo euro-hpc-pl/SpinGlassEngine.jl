@@ -49,8 +49,10 @@ struct MpsParameters
     variational_tol::Real
     max_num_sweeps::Int
     tol_SVD::Real
+    iters_svd::Int
+    iters_var::Int
 
-    MpsParameters(bd=typemax(Int), ϵ=1E-8, sw=4, ts=1E-16) = new(bd, ϵ, sw, ts)
+    MpsParameters(bd=typemax(Int), ϵ=1E-8, sw=4, ts=1E-16, is=1, iv=1) = new(bd, ϵ, sw, ts, is, iv)
 end
 
 """
@@ -241,6 +243,8 @@ Construct (and memoize) top MPS using Zipper (truncated SVD) for a given row.
     tolV = ctr.params.variational_tol
     tolS = ctr.params.tol_SVD
     max_sweeps = ctr.params.max_num_sweeps
+    iters_svd = ctr.params.iters_svd
+    iters_var = ctr.params.iters_var
 
     if i < 1
         W = mpo(ctr, ctr.layers.main, 1, indβ)
@@ -251,7 +255,7 @@ Construct (and memoize) top MPS using Zipper (truncated SVD) for a given row.
     W = transpose(mpo(ctr, ctr.layers.main, i, indβ))
 
     canonise!(ψ, :left)
-    ψ0 = zipper(W, ψ; method=:psvd_sparse, Dcut=Dcut, tol=tolS)
+    ψ0 = zipper(W, ψ; method=:psvd_sparse, Dcut=Dcut, tol=tolS, iters_svd=iters_svd, iters_var=iters_var)
     canonise!(ψ0, :left)
     variational_compress!(ψ0, W, ψ, tolV, max_sweeps)
     ψ0
@@ -267,6 +271,8 @@ Construct (and memoize) (bottom) MPS using Zipper (truncated SVD) for a given ro
     tolV = ctr.params.variational_tol
     tolS = ctr.params.tol_SVD
     max_sweeps = ctr.params.max_num_sweeps
+    iters_svd = ctr.params.iters_svd
+    iters_var = ctr.params.iters_var
 
     if i > ctr.peps.nrows
         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
@@ -275,7 +281,7 @@ Construct (and memoize) (bottom) MPS using Zipper (truncated SVD) for a given ro
         ψ = mps(ctr, i+1, indβ)
         W = mpo(ctr, ctr.layers.main, i, indβ)
         canonise!(ψ, :left)
-        ψ0 = zipper(W, ψ; method=:psvd_sparse, Dcut=Dcut, tol=tolS)
+        ψ0 = zipper(W, ψ; method=:psvd_sparse, Dcut=Dcut, tol=tolS, iters_svd=iters_svd, iters_var=iters_var)
         canonise!(ψ0, :left)
         variational_compress!(ψ0, W, ψ, tolV, max_sweeps)
     end

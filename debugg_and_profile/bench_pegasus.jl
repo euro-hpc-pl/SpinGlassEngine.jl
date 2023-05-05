@@ -112,7 +112,7 @@ function bench(instance::String)
     # end
     println("solving ... ")
     try 
-        sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+        sol, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
         println("Memory lp = ", format_bytes.(measure_memory(net.lp)), " elements = ", length(net.lp))
         println("Memory memoize", measure_memory(Memoization.caches))
         println("Result ", sol.energies)

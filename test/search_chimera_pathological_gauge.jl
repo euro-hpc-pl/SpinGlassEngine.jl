@@ -75,7 +75,7 @@
                 ctr = MpsContractor{Strategy, Gauge}(net, [β/6., β/3., β/2., β], :graduate_truncate, params; onGPU=onGPU)
                 update_gauges!(ctr, m, INDβ, Val(:up))
 
-                sol = low_energy_spectrum(ctr, search_params)
+                sol, s = low_energy_spectrum(ctr, search_params)
 
                 @test sol.energies ≈ exact_energies
 

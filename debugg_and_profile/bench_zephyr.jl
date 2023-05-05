@@ -100,7 +100,7 @@ function bench(instance::String)
     end
 
     # println("solving")
-    # @time sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+    # @time sol, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
     # println("Result ", sol.energies)
     # println("Memory lp = ", format_bytes.(measure_memory(net.lp)), " elements = ", length(net.lp))
 end

@@ -111,10 +111,10 @@ for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, Sparse)
                 @testset "Updating gauges from top and bottom gives the same energy." begin
                     indβ = [3,]
                     update_gauges!(ctr, m, indβ, Val(:down))
-                    sol_l = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+                    sol_l, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
                     clear_memoize_cache()
                     update_gauges!(ctr, m, indβ, Val(:up))
-                    sol_r = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+                    sol_r, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
                     @test sol_l.energies[begin] ≈ sol_r.energies[begin]
                 end
                 clear_memoize_cache()

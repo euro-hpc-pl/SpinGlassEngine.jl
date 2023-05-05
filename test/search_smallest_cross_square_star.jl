@@ -23,7 +23,7 @@
             for transform ∈ all_lattice_transformations
                 net = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, fg, transform)
                 ctr = MpsContractor{Strategy, NoUpdate}(net, [β/8., β/4., β/2., β], :graduate_truncate, params; onGPU=onGPU)
-                sol = low_energy_spectrum(ctr, search_params)
+                sol, s = low_energy_spectrum(ctr, search_params)
 
                 ig_states = decode_factor_graph_state.(Ref(fg), sol.states)
                 @test sol.energies ≈ energy.(Ref(ig), ig_states)

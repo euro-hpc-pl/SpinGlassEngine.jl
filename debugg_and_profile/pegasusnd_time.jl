@@ -49,7 +49,7 @@ function bench(instance::String)
     ctr = MpsContractor{Strategy, Gauge}(net, [β], :graduate_truncate, params)
     end
     println("solving")
-    @time sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+    @time sol, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 end
 
 instance = "$(@__DIR__)/../test/instances/pegasus_nondiag/test/003.txt"

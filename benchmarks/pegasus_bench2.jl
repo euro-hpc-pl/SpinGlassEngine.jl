@@ -19,12 +19,16 @@ size = MPI.Comm_size(MPI.COMM_WORLD)
 rank = MPI.Comm_rank(MPI.COMM_WORLD)
 
 M, N, T = 3, 3, 3
-INSTANCE_DIR = "$(@__DIR__)/../test/instances/pegasus_random/P4/CBFM-P/five"
-OUTPUT_DIR = "$(@__DIR__)/results/pegasus_random/P4/CBFM-P/new_ten"
+INSTANCE_DIR = "$(@__DIR__)/../test/instances/pegasus_random/P4/CBFM-P/SpinGlass/single"
+OUTPUT_DIR = "$(@__DIR__)/results/pegasus_random/P4/CBFM-P/new_zipper/i1"
 
-BETAS = [0.5, 1, 2] #collect(1:1:10)
+if !Base.Filesystem.isdir(OUTPUT_DIR)
+    Base.Filesystem.mkpath(OUTPUT_DIR)
+end
+
+BETAS = collect(0.3:0.1:2.0)
 LAYOUT = (GaugesEnergy,)
-TRANSFORM = all_lattice_transformations
+TRANSFORM = all_lattice_transformations 
 
 GAUGE =  NoUpdate
 STRATEGY = Zipper #MPSAnnealing #SVDTruncate
@@ -33,13 +37,16 @@ graduate_truncation = :graduate_truncate
 
 INDβ = [3,] #[1, 2, 3]
 MAX_STATES = 128
-BOND_DIM = collect(2:1:10)
+BOND_DIM = [8, 12, 16, ]
 DE = 16.0
 #MAX_CL = [2,4,6,8,10,12]
 
-MAX_SWEEPS = [2, 5, 10]
+MAX_SWEEPS = [0,]
 VAR_TOL = 1E-16
 TOL_SVD = 1E-16
+ITERS_SVD = 0
+ITERS_VAR = 0
+I = [1,2,]
 disable_logging(LogLevel(1))
 BLAS.set_num_threads(1)
 
@@ -52,27 +59,27 @@ function pegasus_sim(inst, trans, β, Layout, bd, ms)
         spectrum=full_spectrum,
         cluster_assignment_rule=pegasus_lattice((M, N, T))
         )
-    params = MpsParameters(bd, VAR_TOL, ms, TOL_SVD)
+    params = MpsParameters(bd, VAR_TOL, ms, TOL_SVD, ITERS_SVD, ITERS_VAR)
     search_params = SearchParameters(MAX_STATES, δp)
-  
+
     net = PEPSNetwork{SquareStar2{Layout}, SPARSITY}(M, N, fg, trans)
     ctr = MpsContractor{STRATEGY, GAUGE}(net, [β/6, β/3, β/2, β], graduate_truncation, params)
-    sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+    sol, schmidts = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 
     cRAM = round(Base.summarysize(Memoization.caches) * 1E-9; sigdigits=2)
     clear_memoize_cache()
-    sol, ctr, cRAM
+    sol, ctr, cRAM, schmidts
 end
 
-function run_bench(inst::String, β::Real, t, l, bd, ms)
-    hash_name = hash(string(inst, β, t, l, bd, ms))
+function run_bench(inst::String, β::Real, t, l, bd, ms, i)
+    hash_name = hash(string(inst, β, t, l, bd, ms, i))
     out_path = string(OUTPUT_DIR, "/", hash_name, ".csv")
 
     if isfile(out_path)
         println("Skipping for $β, $t, $l, $bd, $ms.")
     else
         data = try
-            tic_toc = @elapsed sol, ctr, cRAM = pegasus_sim(inst, t, β, l, bd, ms)
+            tic_toc = @elapsed sol, ctr, cRAM, schmidts = pegasus_sim(inst, t, β, l, bd, ms)
 
             data = DataFrame(
                 :instance => inst,
@@ -87,9 +94,12 @@ function run_bench(inst::String, β::Real, t, l, bd, ms)
                 :bond_dim => bd,
                 :de => DE,
                 :max_sweeps => ms,
+                :iters_svd => ITERS_SVD,
+                :iters_var => ITERS_VAR,
                 :var_tol => VAR_TOL,
                 :time => tic_toc,
-                :cRAM => cRAM
+                :cRAM => cRAM,
+                :schmidts => schmidts
             )
         catch err
             data = DataFrame(
@@ -98,6 +108,8 @@ function run_bench(inst::String, β::Real, t, l, bd, ms)
                 :Layout => l,
                 :transform => t,
                 :max_states => MAX_STATES,
+                :iters_svd => ITERS_SVD,
+                :iters_var => ITERS_VAR,
                 :bond_dim => bd,
                 :de => DE,
                 :max_sweeps => ms,
@@ -112,7 +124,7 @@ end
 
 all_params = collect(
     Iterators.product(
-        readdir(INSTANCE_DIR, join=false), BETAS, TRANSFORM, LAYOUT, BOND_DIM, MAX_SWEEPS)
+        readdir(INSTANCE_DIR, join=false), BETAS, TRANSFORM, LAYOUT, BOND_DIM, MAX_SWEEPS, I)
 )
 
 for i ∈ (1+rank):size:length(all_params)

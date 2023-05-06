@@ -17,11 +17,12 @@ num_states = 128
 VAR_TOL = 1E-16
 MS = 0
 TOL_SVD = 1E-16
-ITERS_SVD = 0
-ITERS_VAR = 0
+ITERS_SVD = 1
+ITERS_VAR = 1
+DTEMP_MULT = 2
 
 #ig = ising_graph("$(@__DIR__)/../instances/pegasus_droplets/4_4_3_00.txt")
-ig = ising_graph("$(@__DIR__)/../instances/pegasus_random/P4/CBFM-P/SpinGlass/single/001_sg.txt")
+ig = ising_graph("$(@__DIR__)/../instances/pegasus_random/P4/CBFM-P/SpinGlass/001_sg.txt")
 
 fg = factor_graph(
     ig,
@@ -29,7 +30,7 @@ fg = factor_graph(
     cluster_assignment_rule=pegasus_lattice((m, n, t))
 )
 
-params = MpsParameters(bond_dim, VAR_TOL, MS, TOL_SVD, ITERS_SVD, ITERS_VAR)
+params = MpsParameters(bond_dim, VAR_TOL, MS, TOL_SVD, ITERS_SVD, ITERS_VAR, DTEMP_MULT)
 search_params = SearchParameters(num_states, δp)
 
 # Solve using PEPS search

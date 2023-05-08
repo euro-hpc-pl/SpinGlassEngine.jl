@@ -39,15 +39,15 @@ ig = ising_graph("$(@__DIR__)/../instances/pegasus_random/P4/CBFM-P/SpinGlass/00
 
 fg = factor_graph(
     ig,
-    100,
-    spectrum=full_spectrum, #rm _gpu to use CPU
+    128,
+    spectrum=my_brute_force, #rm _gpu to use CPU
     cluster_assignment_rule=pegasus_lattice((m, n, t))
 )
 
 params = MpsParameters(Dcut, tolV, max_sweeps, tolS, ITERS_SVD, ITERS_VAR, DTEMP_MULT)
 search_params = SearchParameters(MAX_STATES, δp)
 
-Strategy = [MPSAnnealing, Zipper, ] #SVDTruncate
+Strategy = [SVDTruncate, Zipper,]  # MPSAnnealing
 tran = LatticeTransformation((1, 2, 3, 4), true)
 Layout = EnergyGauges
 Gauge = NoUpdate

@@ -52,7 +52,8 @@ struct MpsParameters
     iters_svd::Int
     iters_var::Int
     Dtemp_multiplier::Int
-    MpsParameters(bd=typemax(Int), ϵ=1E-8, sw=4, ts=1E-16, is=1, iv=1, dm=2) = new(bd, ϵ, sw, ts, is, iv, dm)
+    method::Symbol
+    MpsParameters(bd=typemax(Int), ϵ=1E-8, sw=4, ts=1E-16, is=1, iv=1, dm=2, m=:psvd_sparse) = new(bd, ϵ, sw, ts, is, iv, dm, m)
 end
 
 """
@@ -246,7 +247,7 @@ Construct (and memoize) top MPS using Zipper (truncated SVD) for a given row.
     iters_svd = ctr.params.iters_svd
     iters_var = ctr.params.iters_var
     Dtemp_multiplier = ctr.params.Dtemp_multiplier
-
+    method = ctr.params.method
     if i < 1
         W = mpo(ctr, ctr.layers.main, 1, indβ)
         return IdentityQMps(Float64, local_dims(W, :up); onGPU=ctr.onGPU) # F64 for now
@@ -256,7 +257,8 @@ Construct (and memoize) top MPS using Zipper (truncated SVD) for a given row.
     W = transpose(mpo(ctr, ctr.layers.main, i, indβ))
 
     canonise!(ψ, :left)
-    ψ0 = zipper(W, ψ; method=:psvd_sparse, Dcut=Dcut, tol=tolS, iters_svd=iters_svd, iters_var=iters_var, Dtemp_multiplier = Dtemp_multiplier)
+    # ψ0 = zipper(W, ψ; method=:svd, Dcut=Dcut, tol=tolS, iters_svd=iters_svd, iters_var=iters_var, Dtemp_multiplier = Dtemp_multiplier)
+    ψ0 = zipper(W, ψ; method=method, Dcut=Dcut, tol=tolS, iters_svd=iters_svd, iters_var=iters_var, Dtemp_multiplier = Dtemp_multiplier)
     canonise!(ψ0, :left)
     variational_compress!(ψ0, W, ψ, tolV, max_sweeps)
     ψ0
@@ -275,6 +277,7 @@ Construct (and memoize) (bottom) MPS using Zipper (truncated SVD) for a given ro
     iters_svd = ctr.params.iters_svd
     iters_var = ctr.params.iters_var
     Dtemp_multiplier = ctr.params.Dtemp_multiplier
+    method = ctr.params.method
 
     if i > ctr.peps.nrows
         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
@@ -283,7 +286,8 @@ Construct (and memoize) (bottom) MPS using Zipper (truncated SVD) for a given ro
         ψ = mps(ctr, i+1, indβ)
         W = mpo(ctr, ctr.layers.main, i, indβ)
         canonise!(ψ, :left)
-        ψ0 = zipper(W, ψ; method=:psvd_sparse, Dcut=Dcut, tol=tolS, iters_svd=iters_svd, iters_var=iters_var, Dtemp_multiplier=Dtemp_multiplier)
+        #ψ0 = zipper(W, ψ; method=:svd, Dcut=Dcut, tol=tolS, iters_svd=iters_svd, iters_var=iters_var, Dtemp_multiplier = Dtemp_multiplier)
+        ψ0 = zipper(W, ψ; method=method, Dcut=Dcut, tol=tolS, iters_svd=iters_svd, iters_var=iters_var, Dtemp_multiplier=Dtemp_multiplier)
         canonise!(ψ0, :left)
         variational_compress!(ψ0, W, ψ, tolV, max_sweeps)
     end

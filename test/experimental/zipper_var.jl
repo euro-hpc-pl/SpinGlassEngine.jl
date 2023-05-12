@@ -26,39 +26,52 @@ Dcut = 8
 β = 1.
 tolV = 1E-16
 tolS = 1E-16
-max_sweeps = 4
+max_sweeps = 1
 indβ = 1
-ITERS_SVD = 4
-ITERS_VAR = 4
+ITERS_SVD = 1
+ITERS_VAR = 1
 DTEMP_MULT = 2
 MAX_STATES = 128
+METHOD = :psvd_sparse #:psvd_sparse #:svd
 DE = 16.0
 δp = 1E-5*exp(-β * DE)
 
-ig = ising_graph("$(@__DIR__)/../instances/pegasus_random/P4/CBFM-P/SpinGlass/001_sg.txt")
+ig = ising_graph("$(@__DIR__)/../instances/pegasus_random/P4/CBFM-P/SpinGlass/single/001_sg.txt")
+
+# fg = factor_graph(
+#     ig,
+#     100,
+#     spectrum=my_brute_force, #rm _gpu to use CPU
+#     cluster_assignment_rule=pegasus_lattice((m, n, t))
+# )
 
 fg = factor_graph(
     ig,
-    128,
-    spectrum=my_brute_force, #rm _gpu to use CPU
+    spectrum=full_spectrum, #rm _gpu to use CPU
     cluster_assignment_rule=pegasus_lattice((m, n, t))
 )
 
-params = MpsParameters(Dcut, tolV, max_sweeps, tolS, ITERS_SVD, ITERS_VAR, DTEMP_MULT)
+fg = truncate_factor_graph(fg, 0.5, 100)
+
+params = MpsParameters(Dcut, tolV, max_sweeps, tolS, ITERS_SVD, ITERS_VAR, DTEMP_MULT, METHOD)
 search_params = SearchParameters(MAX_STATES, δp)
 
-Strategy = [SVDTruncate, Zipper,]  # MPSAnnealing
-tran = LatticeTransformation((1, 2, 3, 4), true)
-Layout = EnergyGauges
+Strategy = [Zipper, ]  # MPSAnnealing SVDTruncate
+tran = all_lattice_transformations #LatticeTransformation((1, 2, 3, 4), true)
+Layout = GaugesEnergy
 Gauge = NoUpdate
 
 indβ = 1
 
-net = PEPSNetwork{SquareStar2{Layout}, Sparse}(m, n, fg, tran)
 for s in Strategy
-    ctr = MpsContractor{s, Gauge}(net, [β], :graduate_truncate, params; onGPU=onGPU)
-    sol, schmidts = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
-    println("Strategy ", s)
-    println("sol ", sol)
-    println("Schmidts ", schmidts)
+    for tran ∈ all_lattice_transformations #3,4,5,6,8
+        net = PEPSNetwork{SquareStar2{Layout}, Sparse}(m, n, fg, tran)
+
+        ctr = MpsContractor{s, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)
+        sol, schmidts = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+        println("Strategy ", s)
+        println("Transform ", tran)
+        println("sol ", sol)
+        println("Schmidts ", schmidts)
+    end
 end

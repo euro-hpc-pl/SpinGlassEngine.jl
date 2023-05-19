@@ -41,7 +41,7 @@ MAX_STATES = 128
 METHOD = :psvd_sparse #:psvd_sparse #:svd
 DE = 16.0
 δp = 1E-5*exp(-β * DE)
-cluster_states = [2^20,2^12,2^10,2^8,2^6,2^4,] #2^20, 2^16, 2^12, 2^8, 
+cluster_states = [2^4, 2^8, 2^12, 2^16, 2^20,]
 
 ig = ising_graph("$(@__DIR__)/../instances/pegasus_random/P8/CBFM-P/SpinGlass/001_sg.txt")
 
@@ -62,7 +62,7 @@ for cl_states in cluster_states
     cluster_assignment_rule=pegasus_lattice((m, n, t))
     )
 
-    fg = truncate_factor_graph(fg, 0.5, cl_states, Val(:pegasus))
+    fg = truncate_factor_graph_2site(fg, cl_states)
 
     params = MpsParameters(Dcut, tolV, max_sweeps, tolS, ITERS_SVD, ITERS_VAR, DTEMP_MULT, METHOD)
     search_params = SearchParameters(MAX_STATES, δp)

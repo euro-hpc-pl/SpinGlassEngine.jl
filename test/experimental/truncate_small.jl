@@ -51,12 +51,12 @@ function run_test(instance, m, n, t)
 
 
     for cl in cl_states
-        println("===================================") 
+        println("===================================")
         println("Cluster states ", cl)
-        println("===================================") 
+        println("===================================")
 
         for tran ∈ all_lattice_transformations #[LatticeTransformation((1, 2, 3, 4), false),]
-            println("===============") 
+            println("===============")
             println("Transform ", tran)
 
             fg = factor_graph(
@@ -64,8 +64,8 @@ function run_test(instance, m, n, t)
                 spectrum=full_spectrum, #_gpu, # rm _gpu to use CPU
                 cluster_assignment_rule=pegasus_lattice((m, n, t))
             )
-            fg = truncate_factor_graph(fg, β, cl, Val(:pegasus))
-            
+            fg = truncate_factor_graph_2site(fg, cl)
+
             net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, tran)
 
             ctr = MpsContractor{Strategy, Gauge}(net, βs, :graduate_truncate, params; onGPU=onGPU)

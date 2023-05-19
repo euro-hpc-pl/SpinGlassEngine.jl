@@ -23,7 +23,7 @@ end
 m, n, t = 3, 3, 3
 
 Dcut = 8
-β = 1.
+β = 0.5
 tolV = 1E-16
 tolS = 1E-16
 max_sweeps = 1
@@ -36,7 +36,7 @@ METHOD = :psvd_sparse #:psvd_sparse #:svd
 DE = 16.0
 δp = 1E-5*exp(-β * DE)
 
-ig = ising_graph("$(@__DIR__)/../instances/pegasus_random/P4/CBFM-P/SpinGlass/single/001_sg.txt")
+ig = ising_graph("$(@__DIR__)/../instances/pegasus_random/P4/CBFM-P/SpinGlass/001_sg.txt")
 
 # fg = factor_graph(
 #     ig,
@@ -51,7 +51,7 @@ fg = factor_graph(
     cluster_assignment_rule=pegasus_lattice((m, n, t))
 )
 
-fg = truncate_factor_graph(fg, 0.5, 100)
+fg = truncate_factor_graph_1site_meanfield(fg, 1, 1000)
 
 params = MpsParameters(Dcut, tolV, max_sweeps, tolS, ITERS_SVD, ITERS_VAR, DTEMP_MULT, METHOD)
 search_params = SearchParameters(MAX_STATES, δp)

@@ -19,14 +19,14 @@ size = MPI.Comm_size(MPI.COMM_WORLD)
 rank = MPI.Comm_rank(MPI.COMM_WORLD)
 
 M, N, T = 3, 3, 3
-INSTANCE_DIR = "$(@__DIR__)/../test/instances/pegasus_random/P4/CBFM-P/SpinGlass/single"
-OUTPUT_DIR = "$(@__DIR__)/results/pegasus_random/P4/CBFM-P/new_zipper/i2"
+INSTANCE_DIR = "$(@__DIR__)/../test/instances/pegasus_random/P4/CBFM-P/SpinGlass"
+OUTPUT_DIR = "$(@__DIR__)/results/pegasus_random/P4/CBFM-P/new_zipper/truncate_2_12"
 
 if !Base.Filesystem.isdir(OUTPUT_DIR)
     Base.Filesystem.mkpath(OUTPUT_DIR)
 end
 
-BETAS = collect(0.2:0.1:1.0)
+BETAS = [0.5,] #collect(0.2:0.1:1.0)
 LAYOUT = (GaugesEnergy,)
 TRANSFORM = all_lattice_transformations 
 
@@ -39,14 +39,16 @@ INDβ = [3,] #[1, 2, 3]
 MAX_STATES = 128
 BOND_DIM = [8, 12, 16, ]
 DE = 16.0
-#MAX_CL = [2,4,6,8,10,12]
+cs = 2^12
 
 MAX_SWEEPS = [0,]
 VAR_TOL = 1E-16
 TOL_SVD = 1E-16
 ITERS_SVD = 2
 ITERS_VAR = 1
-I = [1,2,]
+DTEMP_MULT = 2
+METHOD = :psvd_sparse
+I = [1,]
 disable_logging(LogLevel(1))
 BLAS.set_num_threads(1)
 
@@ -55,11 +57,13 @@ function pegasus_sim(inst, trans, β, Layout, bd, ms)
 
     fg = factor_graph(
         ising_graph(INSTANCE_DIR * "/" * inst),
-        #2^max_cl_states,
         spectrum=full_spectrum,
         cluster_assignment_rule=pegasus_lattice((M, N, T))
         )
-    params = MpsParameters(bd, VAR_TOL, ms, TOL_SVD, ITERS_SVD, ITERS_VAR)
+    
+    fg = truncate_factor_graph_2site(fg, cs)
+
+    params = MpsParameters(bd, VAR_TOL, ms, TOL_SVD, ITERS_SVD, ITERS_VAR, DTEMP_MULT, METHOD)
     search_params = SearchParameters(MAX_STATES, δp)
 
     net = PEPSNetwork{SquareStar2{Layout}, SPARSITY}(M, N, fg, trans)
@@ -94,8 +98,10 @@ function run_bench(inst::String, β::Real, t, l, bd, ms, i)
                 :bond_dim => bd,
                 :de => DE,
                 :max_sweeps => ms,
+                :cl_states => cs,
                 :iters_svd => ITERS_SVD,
                 :iters_var => ITERS_VAR,
+                :dtemp_mult => DTEMP_MULT,
                 :var_tol => VAR_TOL,
                 :time => tic_toc,
                 :cRAM => cRAM,
@@ -108,8 +114,10 @@ function run_bench(inst::String, β::Real, t, l, bd, ms, i)
                 :Layout => l,
                 :transform => t,
                 :max_states => MAX_STATES,
+                :cl_states => cs,
                 :iters_svd => ITERS_SVD,
                 :iters_var => ITERS_VAR,
+                :dtemp_mult => DTEMP_MULT,
                 :bond_dim => bd,
                 :de => DE,
                 :max_sweeps => ms,

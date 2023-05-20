@@ -37,7 +37,7 @@ graduate_truncation = :graduate_truncate
 
 INDβ = [3,] #[1, 2, 3]
 MAX_STATES = 128
-BOND_DIM = [8, 12, 16, ]
+BOND_DIM = [8, ]
 DE = 16.0
 cs = 2^12
 
@@ -84,7 +84,7 @@ function run_bench(inst::String, β::Real, t, l, bd, ms, i)
     else
         data = try
             tic_toc = @elapsed sol, ctr, cRAM, schmidts = pegasus_sim(inst, t, β, l, bd, ms)
-
+        
             data = DataFrame(
                 :instance => inst,
                 :β => β,

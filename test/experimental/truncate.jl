@@ -26,9 +26,9 @@ Dcut = 8
 β = 0.5
 tolV = 1E-16
 tolS = 1E-16
-max_sweeps = 1
+max_sweeps = 0
 indβ = 1
-ITERS_SVD = 1
+ITERS_SVD = 2
 ITERS_VAR = 1
 DTEMP_MULT = 2
 MAX_STATES = 128
@@ -50,7 +50,8 @@ search_params = SearchParameters(MAX_STATES, δp)
 Strategy = Zipper  # MPSAnnealing SVDTruncate
 Layout = GaugesEnergy
 Gauge = NoUpdate
-cl_states = [10000,]
+cl_states = [2^8,]
+iter = 10
 
 for cs ∈ cl_states
     println("===================================")
@@ -67,12 +68,12 @@ for cs ∈ cl_states
             cluster_assignment_rule=pegasus_lattice((m, n, t))
         )
 
-        fg = truncate_factor_graph_2site(fg, cs)
+        fg = truncate_factor_graph_belief_propagation(fg, β, cs, iter)
 
         net = PEPSNetwork{SquareStar2{Layout}, Sparse}(m, n, fg, tran)
         ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)
         sol, schmidts = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
         println("sol ", sol)
-        println("Schmidts ", schmidts)
+        # println("Schmidts ", schmidts)
     end
 end

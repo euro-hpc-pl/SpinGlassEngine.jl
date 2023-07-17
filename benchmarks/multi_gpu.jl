@@ -74,7 +74,7 @@ addprocs(n_gpus)
             cluster_assignment_rule=pegasus_lattice((M, N, T))
             )
         
-        fg = truncate_factor_graph_2site_precise(fg, cs)
+        fg = truncate_factor_graph_2site_energy(fg, cs)
     
         params = MpsParameters(bd, VAR_TOL, ms, TOL_SVD, ITERS_SVD, ITERS_VAR, DTEMP_MULT, METHOD)
         search_params = SearchParameters(MAX_STATES, δp)

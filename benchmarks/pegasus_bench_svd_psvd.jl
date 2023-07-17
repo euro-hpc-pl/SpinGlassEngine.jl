@@ -18,20 +18,20 @@ MPI.Init()
 size = MPI.Comm_size(MPI.COMM_WORLD)
 rank = MPI.Comm_rank(MPI.COMM_WORLD)
 
-M, N, T = 3, 3, 3
-INSTANCE_DIR = "$(@__DIR__)/../test/instances/pegasus_random/P4/CBFM-P/SpinGlass/single"
-OUTPUT_DIR = "$(@__DIR__)/results/pegasus_random/P4/CBFM-P/new_zipper/psvd_vs_svd"
+M, N, T = 7, 7, 3
+INSTANCE_DIR = "$(@__DIR__)/../test/instances/pegasus_random/P8/CBFM-P/SpinGlass/single"
+OUTPUT_DIR = "$(@__DIR__)/results/pegasus_random/P8/CBFM-P/new_zipper/GE_truncate_SVDTruncate"
 
 if !Base.Filesystem.isdir(OUTPUT_DIR)
     Base.Filesystem.mkpath(OUTPUT_DIR)
 end
 
-BETAS = [1,]#collect(0.3:0.1:2.0)
-LAYOUT = (GaugesEnergy,)
+BETAS = [0.6,] #collect(0.2:0.1:1.0)
+LAYOUT = (GaugesEnergy,) #GaugesEnergy - stabilne, EnergyGauges - niestabilne
 TRANSFORM = all_lattice_transformations 
 
 GAUGE =  NoUpdate
-STRATEGY = [Zipper,] #MPSAnnealing #SVDTruncate
+STRATEGY = [SVDTruncate, ] #MPSAnnealing #SVDTruncate
 SPARSITY = Sparse
 graduate_truncation = :graduate_truncate
 
@@ -44,24 +44,28 @@ DE = 16.0
 MAX_SWEEPS = [1,]
 VAR_TOL = 1E-16
 TOL_SVD = 1E-16
-ITERS_SVD = 1
+ITERS_SVD = 2
 ITERS_VAR = 1
 DTEMP_MULT = 2
-METHOD = [:svd, :psvd_sparse,] #:psvd_sparse #:svd
+METHOD = [:psvd_sparse, :svd,] #:psvd_sparse #:svd
 
 I = [1,]
 disable_logging(LogLevel(1))
 BLAS.set_num_threads(1)
+CL_STATES = [2^8,]
 
-function pegasus_sim(inst, trans, β, Layout, bd, ms, st, met)
+
+function pegasus_sim(inst, trans, β, Layout, bd, ms, st, met, cs)
     δp = 1E-5*exp(-β * DE)
 
     fg = factor_graph(
         ising_graph(INSTANCE_DIR * "/" * inst),
-        100,
-        spectrum=brute_force_gpu,
+        spectrum=full_spectrum,
         cluster_assignment_rule=pegasus_lattice((M, N, T))
         )
+
+    fg = truncate_factor_graph_2site_energy(fg, cs)
+
     params = MpsParameters(bd, VAR_TOL, ms, TOL_SVD, ITERS_SVD, ITERS_VAR, DTEMP_MULT, met)
     search_params = SearchParameters(MAX_STATES, δp)
 
@@ -74,15 +78,15 @@ function pegasus_sim(inst, trans, β, Layout, bd, ms, st, met)
     sol, ctr, cRAM, schmidts
 end
 
-function run_bench(inst::String, β::Real, t, l, bd, ms, st, met, i)
-    hash_name = hash(string(inst, β, t, l, bd, ms, st, met, i))
+function run_bench(inst::String, β::Real, t, l, bd, ms, st, met, cs, i)
+    hash_name = hash(string(inst, β, t, l, bd, ms, st, met, cs, i))
     out_path = string(OUTPUT_DIR, "/", hash_name, ".csv")
 
     if isfile(out_path)
-        println("Skipping for $β, $t, $l, $bd, $ms, $st, $met.")
+        println("Skipping for $β, $t, $l, $bd, $ms, $st, $met, $cs.")
     else
         data = try
-            tic_toc = @elapsed sol, ctr, cRAM, schmidts = pegasus_sim(inst, t, β, l, bd, ms, st, met)
+            tic_toc = @elapsed sol, ctr, cRAM, schmidts = pegasus_sim(inst, t, β, l, bd, ms, st, met, cs)
 
             data = DataFrame(
                 :instance => inst,
@@ -91,6 +95,7 @@ function run_bench(inst::String, β::Real, t, l, bd, ms, st, met, i)
                 :Strategy => st,
                 :transform => t,
                 :method => met,
+                :cluster_states => cs,
                 :energy => sol.energies[begin],
                 :probabilities => sol.probabilities,
                 :discarded_probability => sol.largest_discarded_probability,
@@ -114,6 +119,7 @@ function run_bench(inst::String, β::Real, t, l, bd, ms, st, met, i)
                 :Strategy => st,
                 :transform => t,
                 :method => met,
+                :cluster_states => cs,
                 :max_states => MAX_STATES,
                 :iters_svd => ITERS_SVD,
                 :iters_var => ITERS_VAR,
@@ -131,7 +137,7 @@ end
 
 all_params = collect(
     Iterators.product(
-        readdir(INSTANCE_DIR, join=false), BETAS, TRANSFORM, LAYOUT, BOND_DIM, MAX_SWEEPS, STRATEGY, METHOD, I)
+        readdir(INSTANCE_DIR, join=false), BETAS, TRANSFORM, LAYOUT, BOND_DIM, MAX_SWEEPS, STRATEGY, METHOD, CL_STATES, I)
 )
 
 for i ∈ (1+rank):size:length(all_params)

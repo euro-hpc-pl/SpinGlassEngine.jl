@@ -51,7 +51,7 @@ fg = factor_graph(
     cluster_assignment_rule=pegasus_lattice((m, n, t))
 )
 
-fg = truncate_factor_graph_1site_meanfield(fg, 1, 1000)
+fg = truncate_factor_graph_1site_BP(fg, 1)
 
 params = MpsParameters(Dcut, tolV, max_sweeps, tolS, ITERS_SVD, ITERS_VAR, DTEMP_MULT, METHOD)
 search_params = SearchParameters(MAX_STATES, δp)

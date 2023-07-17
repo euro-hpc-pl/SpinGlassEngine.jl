@@ -64,7 +64,7 @@ function run_test(instance, m, n, t)
                 spectrum=full_spectrum, #_gpu, # rm _gpu to use CPU
                 cluster_assignment_rule=pegasus_lattice((m, n, t))
             )
-            fg = truncate_factor_graph_2site(fg, cl)
+            fg = truncate_factor_graph_2site_energy(fg, cl)
 
             net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, tran)
 

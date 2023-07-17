@@ -18,9 +18,9 @@ MPI.Init()
 size = MPI.Comm_size(MPI.COMM_WORLD)
 rank = MPI.Comm_rank(MPI.COMM_WORLD)
 
-M, N, T = 7, 7, 3
-INSTANCE_DIR = "$(@__DIR__)/../test/instances/pegasus_random/P8/CBFM-P/SpinGlass/single"
-OUTPUT_DIR = "$(@__DIR__)/results/pegasus_random/P8/CBFM-P/BP/new_P8_truncate_2_10_i1-10_iter10"
+M, N, T = 6, 6, 4
+INSTANCE_DIR = "$(@__DIR__)/../test/instances/zephyr_random/Z3/RCO/SpinGlass/single"
+OUTPUT_DIR = "$(@__DIR__)/results/zephyr_random/Z3/RCO/new_zipper/Z3_truncate_2_14"
 
 if !Base.Filesystem.isdir(OUTPUT_DIR)
     Base.Filesystem.mkpath(OUTPUT_DIR)
@@ -28,7 +28,7 @@ end
 
 BETAS = [0.5,] #collect(0.2:0.1:1.0)
 LAYOUT = (GaugesEnergy,)
-TRANSFORM = all_lattice_transformations 
+TRANSFORM = all_lattice_transformations
 
 GAUGE =  NoUpdate
 STRATEGY = Zipper #MPSAnnealing #SVDTruncate
@@ -39,8 +39,8 @@ INDβ = [3,] #[1, 2, 3]
 MAX_STATES = 128
 BOND_DIM = [8, ]
 DE = 16.0
-cs = 2^10
-iter = 10
+cs = 2^14
+iter = 1
 
 MAX_SWEEPS = [0,]
 VAR_TOL = 1E-16
@@ -59,7 +59,7 @@ function pegasus_sim(inst, trans, β, Layout, bd, ms)
     fg = factor_graph(
         ising_graph(INSTANCE_DIR * "/" * inst),
         spectrum=full_spectrum,
-        cluster_assignment_rule=pegasus_lattice((M, N, T))
+        cluster_assignment_rule=zephyr_lattice((M, N, T))
         )
     
     fg = truncate_factor_graph_1site_BP(fg, cs; beta=β, iter=iter)

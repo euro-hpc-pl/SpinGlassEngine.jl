@@ -35,7 +35,8 @@ MAX_STATES = 128
 METHOD = :psvd_sparse #:psvd_sparse #:svd
 DE = 16.0
 δp = 1E-5*exp(-β * DE)
-ig = ising_graph("$(@__DIR__)/../instances/pegasus_random/P4/CBFM-P/SpinGlass/001_sg.txt")
+ig = ising_graph("$(@__DIR__)/../instances/pegasus_random/P4/CBFM-P/SpinGlass/single/001_sg.txt")
+# ig = ising_graph("$(@__DIR__)/../instances/pegasus_random/P2/P2_CBFM-P_sg.txt")
 
 # fg = factor_graph(
 #     ig,
@@ -50,25 +51,26 @@ search_params = SearchParameters(MAX_STATES, δp)
 Strategy = Zipper  # MPSAnnealing SVDTruncate
 Layout = GaugesEnergy
 Gauge = NoUpdate
-cl_states = [2^8,]
-iter = 10
+cl_states = [2^10,]
+iter = 2
 
 for cs ∈ cl_states
     println("===================================")
     println("Cluster states ", cs)
     println("===================================")
 
-    for tran ∈ all_lattice_transformations
+    for tran ∈ [LatticeTransformation((1, 2, 3, 4), false),]#all_lattice_transformations
         println("===============")
         println("Transform ", tran)
+        println("Iter ", iter)
 
         fg = factor_graph(
             ig,
             spectrum= full_spectrum, #rm _gpu to use CPU
             cluster_assignment_rule=pegasus_lattice((m, n, t))
         )
-
-        fg = truncate_factor_graph_belief_propagation(fg, β, cs, iter)
+        # fg = truncate_factor_graph_2site_energy(fg, cs)
+        fg = truncate_factor_graph_1site_BP(fg, cs; beta = β, iter=iter)
 
         net = PEPSNetwork{SquareStar2{Layout}, Sparse}(m, n, fg, tran)
         ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)

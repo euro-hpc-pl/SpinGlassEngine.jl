@@ -62,7 +62,7 @@ for cl_states in cluster_states
     cluster_assignment_rule=pegasus_lattice((m, n, t))
     )
 
-    fg = truncate_factor_graph_2site(fg, cl_states)
+    fg = truncate_factor_graph_2site_energy(fg, cl_states)
 
     params = MpsParameters(Dcut, tolV, max_sweeps, tolS, ITERS_SVD, ITERS_VAR, DTEMP_MULT, METHOD)
     search_params = SearchParameters(MAX_STATES, δp)

@@ -73,7 +73,6 @@ function run_test(instance, m, n, t)
             sol, schmidts = low_energy_spectrum(ctr, search_params, merge_branches(ctr)) #, merge_branches(ctr))
 
             println("sol ", sol)
-            println("Schmidts ", schmidts)
             clear_memoize_cache()
         end
     end

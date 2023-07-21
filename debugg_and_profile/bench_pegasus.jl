@@ -70,7 +70,7 @@ function bench(instance::String)
     # RE = CuArray(rand(Float64, DD, DD, size(W[st], 3)))
     # B  = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
     # xx = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
-    
+
     # @time begin
     #     CUDA.@sync begin
     #         for ii in 1:30
@@ -89,7 +89,7 @@ function bench(instance::String)
     # RE = CuArray(rand(Float64, DD, DD, size(W[st], 3)))
     # B = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
     # yy = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
-    # @time for ii in 1:10 
+    # @time for ii in 1:10
     #     yy = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
     # end
 
@@ -111,7 +111,7 @@ function bench(instance::String)
     #     yy = SpinGlassTensors.update_env_left(LE, A, W[st], B)
     # end
     println("solving ... ")
-    try 
+    try
         sol, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
         println("Memory lp = ", format_bytes.(measure_memory(net.lp)), " elements = ", length(net.lp))
         println("Memory memoize", measure_memory(Memoization.caches))

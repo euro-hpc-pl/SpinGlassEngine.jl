@@ -71,7 +71,9 @@ for cs ∈ cl_states
 
         println("Truncate iter ", iter)
         #@time fg = truncate_factor_graph_2site_energy(fg, cs)
-        @time fg = truncate_factor_graph_2site_BP(fg, cs; beta = β, iter=iter)
+        new_fg = factor_graph_2site(fg, β)
+        beliefs = belief_propagation(new_fg, β; tol=1e-6, iter=iter)
+        @time fg = truncate_factor_graph_2site_BP(fg, beliefs, cs; beta = β)
         for v ∈ vertices(fg)
             println(v, " -> ", length(get_prop(fg, v, :spectrum).energies))
         end

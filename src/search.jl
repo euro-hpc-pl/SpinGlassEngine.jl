@@ -18,6 +18,19 @@ struct SearchParameters
     end
 end
 
+
+# struct NoDroplet end
+
+# mutable struct NonemptyDroplet
+#     denergy :: Real  # excitation energy
+#     from :: Int  # site where droplet starts
+#     to :: Int  # site where droplet ends
+#     flip :: Int  # key to pool_of_flips
+#     droplets :: Vector{Droplet}  # droplets on top of the current droplet; can be empty
+# end
+
+# Droplet = Union{}
+
 """
 $(TYPEDSIGNATURES)
 """
@@ -27,6 +40,8 @@ struct Solution
     probabilities::Vector{<:Real}
     degeneracy::Vector{Int}
     largest_discarded_probability::Real
+    # excitations::Vector{Vector{Droplet}}  # no droplets = Vector{Empty Vectors}
+    # pool_of_flips::Dict
 end
 
 """
@@ -112,7 +127,7 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit) where {T}
+function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit) where {T}  # update_droplets=no_droplets
     function _merge(psol::Solution)
         node = get(ctr.nodes_search_order, length(psol.states[1])+1, ctr.node_outside)
         boundaries = boundary_states(ctr, psol.states, node)
@@ -156,6 +171,11 @@ function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit) where 
                 push!(probs, Statistics.mean(nsol.probabilities[ind_deg]))
             end
 
+            ## states with unique boundary => we take the one with best energy
+            ## treat other states with the same boundary as droplets on top of the best one
+            # excitation = update_excitations(best_idx, start, stop, states, energies, droplets; parameters_which_droplets_to_keep)
+            # push!(droplets, excitation)
+
             push!(energies, nsol.energies[best_idx])
             push!(states, nsol.states[best_idx])
             push!(degeneracy, new_degeneracy)
@@ -166,6 +186,64 @@ function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit) where 
     _merge
 end
 
+
+
+# """
+# $(TYPEDSIGNATURES)
+# """
+# function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit) where {T}
+#     function _merge(psol::Solution)
+#         node = get(ctr.nodes_search_order, length(psol.states[1])+1, ctr.node_outside)
+#         boundaries = boundary_states(ctr, psol.states, node)
+#         _, bnd_types = SpinGlassNetworks.unique_dims(boundaries, 1)
+
+#         sorting_idx = sortperm(bnd_types)
+#         sorted_bnd_types = bnd_types[sorting_idx]
+#         nsol = Solution(psol, Vector{Int}(sorting_idx)) #TODO Vector{Int} should be rm
+#         energies = typeof(nsol.energies[begin])[]
+#         states = typeof(nsol.states[begin])[]
+#         probs = typeof(nsol.probabilities[begin])[]
+#         degeneracy = typeof(nsol.degeneracy[begin])[]
+
+#         start = 1
+#         bsize = size(boundaries, 1)
+#         while start <= bsize
+#             stop = start
+#             while stop + 1 <= bsize && sorted_bnd_types[start] == sorted_bnd_types[stop+1]
+#                 stop = stop + 1
+#             end
+#             best_idx = argmin(@view nsol.energies[start:stop]) + start - 1
+
+#             new_degeneracy = 0
+#             ind_deg = []
+#             for i in start:stop
+#                 if nsol.energies[i] <= nsol.energies[best_idx] + 1E-12 # this is hack for now
+#                     new_degeneracy += nsol.degeneracy[i]
+#                     push!(ind_deg, i)
+#                 end
+#             end
+
+#             if merge_type == :fit
+#                 c = Statistics.median(
+#                     ctr.betas[end] .* nsol.energies[start:stop] .+ nsol.probabilities[start:stop]
+#                 )
+#                 new_prob = -ctr.betas[end] .* nsol.energies[best_idx] .+ c
+#                 push!(probs, new_prob)
+#             elseif merge_type == :nofit
+#                 push!(probs, nsol.probabilities[best_idx])
+#             elseif merge_type == :python
+#                 push!(probs, Statistics.mean(nsol.probabilities[ind_deg]))
+#             end
+
+#             push!(energies, nsol.energies[best_idx])
+#             push!(states, nsol.states[best_idx])
+#             push!(degeneracy, new_degeneracy)
+#             start = stop + 1
+#         end
+#         Solution(energies, states, probs, degeneracy, psol.largest_discarded_probability)
+#     end
+#     _merge
+# end
 """
 $(TYPEDSIGNATURES)
 """

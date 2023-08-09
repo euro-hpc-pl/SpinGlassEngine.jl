@@ -15,7 +15,37 @@ function brute_force_gpu(ig::IsingGraph; num_states::Int)
     brute_force(ig, :GPU, num_states=num_states)
 end
 
+
+Dcut = 8
+β = 0.5
+tolV = 1E-16
+tolS = 1E-16
+max_sweeps = 0
+indβ = 1
+ITERS_SVD = 2
+ITERS_VAR = 1
+DTEMP_MULT = 2
+MAX_STATES = 128
+METHOD = :psvd_sparse #:psvd_sparse #:svd
+DE = 16.0
+δp = 1E-5*exp(-β * DE)
+
+# fg = factor_graph(
+#     ig,
+#     spectrum=my_brute_force, #rm _gpu to use CPU
+#     cluster_assignment_rule=pegasus_lattice((m, n, t))
+# )
+
+
+params = MpsParameters(Dcut, tolV, max_sweeps, tolS, ITERS_SVD, ITERS_VAR, DTEMP_MULT, METHOD)
+search_params = SearchParameters(MAX_STATES, δp)
+
 onGPU = true
+Strategy = Zipper  # MPSAnnealing SVDTruncate
+Layout = GaugesEnergy
+Gauge = NoUpdate
+cl_states = [2^10,]
+tran = LatticeTransformation((1, 2, 3, 4), false)
 
 function bench(instance::String)
     m = 7
@@ -37,7 +67,12 @@ function bench(instance::String)
         cluster_assignment_rule = pegasus_lattice((m, n, t))
     )
     end
-    @time fg2 = truncate_factor_graph_2site_BP(fg, cs; beta = β, iter=iter)
+    @time fg = truncate_factor_graph_2site_BP(fg, cs; beta = β, iter=iter)
+
+    net = PEPSNetwork{SquareStar2{Layout}, Sparse}(m, n, fg, tran)
+    ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)
+    @time sol, schmidts = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+    println("sol ", sol)
 end
 
 instance = "$(@__DIR__)/../test/instances/pegasus_random/P8/CBFM-P/SpinGlass/001_sg.txt"

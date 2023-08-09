@@ -19,17 +19,18 @@ struct SearchParameters
 end
 
 
-# struct NoDroplet end
+# struct NoDroplets end
 
-# mutable struct NonemptyDroplet
+# Droplets = Union{NoDroplets, Vector{Droplet}}
+
+# mutable struct Droplet
 #     denergy :: Real  # excitation energy
 #     from :: Int  # site where droplet starts
 #     to :: Int  # site where droplet ends
 #     flip :: Int  # key to pool_of_flips
-#     droplets :: Vector{Droplet}  # droplets on top of the current droplet; can be empty
+#     droplets :: Droplets  # droplets on top of the current droplet; can be empty
 # end
 
-# Droplet = Union{}
 
 """
 $(TYPEDSIGNATURES)
@@ -40,7 +41,7 @@ struct Solution
     probabilities::Vector{<:Real}
     degeneracy::Vector{Int}
     largest_discarded_probability::Real
-    # excitations::Vector{Vector{Droplet}}  # no droplets = Vector{Empty Vectors}
+    # excitations::Vector{Droplets}
     # pool_of_flips::Dict
 end
 

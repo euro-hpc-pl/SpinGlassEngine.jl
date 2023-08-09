@@ -20,7 +20,7 @@ rank = MPI.Comm_rank(MPI.COMM_WORLD)
 
 M, N, T = 7, 7, 3
 INSTANCE_DIR = "$(@__DIR__)/../test/instances/pegasus_random/P8/CBFM-P/SpinGlass/single"
-OUTPUT_DIR = "$(@__DIR__)/results/pegasus_random/P8/CBFM-P/BP/new_P8_truncate_2_10_i1-10_iter10"
+OUTPUT_DIR = "$(@__DIR__)/results/pegasus_random/P8/CBFM-P/BP/P8_truncate2site_2_12_i1-10_iter1"
 
 if !Base.Filesystem.isdir(OUTPUT_DIR)
     Base.Filesystem.mkpath(OUTPUT_DIR)
@@ -39,8 +39,8 @@ INDβ = [3,] #[1, 2, 3]
 MAX_STATES = 128
 BOND_DIM = [8, ]
 DE = 16.0
-cs = 2^10
-iter = 10
+cs = 2^12
+iter = 1
 
 MAX_SWEEPS = [0,]
 VAR_TOL = 1E-16
@@ -61,8 +61,10 @@ function pegasus_sim(inst, trans, β, Layout, bd, ms)
         spectrum=full_spectrum,
         cluster_assignment_rule=pegasus_lattice((M, N, T))
         )
-    
-    fg = truncate_factor_graph_1site_BP(fg, cs; beta=β, iter=iter)
+        
+    new_fg = factor_graph_2site(fg, β)
+    beliefs = belief_propagation(new_fg, β; tol=1e-6, iter=iter)
+    fg = truncate_factor_graph_2site_BP(fg, beliefs, cs; beta=β)
 
     params = MpsParameters(bd, VAR_TOL, ms, TOL_SVD, ITERS_SVD, ITERS_VAR, DTEMP_MULT, METHOD)
     search_params = SearchParameters(MAX_STATES, δp)

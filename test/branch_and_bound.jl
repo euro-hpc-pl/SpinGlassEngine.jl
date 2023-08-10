@@ -3,7 +3,9 @@ const example_solution_short = Solution(
     [[1, 2], [0, 1], [3, 4]],
     [0.25, 0.1, 0.2],
     [1, 1, 1],
-    0.666
+    0.666,
+    EmptyDroplet(),
+    Dict()
 )
 
 const example_degenerate_solution = Solution(
@@ -11,7 +13,9 @@ const example_degenerate_solution = Solution(
     [[1, 2, 3], [1, 3, 1], [3, 4, 1], [1, 4, 2], [4, 2, 1]],
     [0.23, 0.1, 0.23, 0.25, 0.05],
     [1, 1, 1, 1, 1],
-    0.22
+    0.22,
+    EmptyDroplet(),
+    Dict()
 )
 
 

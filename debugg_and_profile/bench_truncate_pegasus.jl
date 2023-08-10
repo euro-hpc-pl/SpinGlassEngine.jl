@@ -67,7 +67,9 @@ function bench(instance::String)
         cluster_assignment_rule = pegasus_lattice((m, n, t))
     )
     end
-    @time fg = truncate_factor_graph_2site_BP(fg, cs; beta = β, iter=iter)
+    new_fg = factor_graph_2site(fg, β)
+    beliefs = belief_propagation(new_fg, β; tol=1e-6, iter=iter)
+    @time fg = truncate_factor_graph_2site_BP(fg, beliefs, cs; beta = β)
 
     net = PEPSNetwork{SquareStar2{Layout}, Sparse}(m, n, fg, tran)
     ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)

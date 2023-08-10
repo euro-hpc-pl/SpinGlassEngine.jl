@@ -4,7 +4,8 @@ export
        low_energy_spectrum,
        Solution,
        bound_solution,
-       gibbs_sampling
+       gibbs_sampling,
+       EmptyDroplet
 
 """
 $(TYPEDSIGNATURES)
@@ -18,18 +19,19 @@ struct SearchParameters
     end
 end
 
+struct EmptyDroplet end
 
-# struct NoDroplets end
+mutable struct Droplet
+    denergy :: Real  # excitation energy
+    from :: Int  # site where droplet starts
+    to :: Int  # site where droplet ends
+    flip :: Int  # key to pool_of_flips
+    droplets :: Union{EmptyDroplet, Vector{Droplet}}  # droplets on top of the current droplet; can be empty
+end
 
-# Droplets = Union{NoDroplets, Vector{Droplet}}
+Droplets = Union{EmptyDroplet, Vector{Droplet}}  # Can't be defined before Droplet struct 
 
-# mutable struct Droplet
-#     denergy :: Real  # excitation energy
-#     from :: Int  # site where droplet starts
-#     to :: Int  # site where droplet ends
-#     flip :: Int  # key to pool_of_flips
-#     droplets :: Droplets  # droplets on top of the current droplet; can be empty
-# end
+Base.getindex(s::EmptyDroplet, ::Any) = EmptyDroplet()
 
 
 """
@@ -41,14 +43,14 @@ struct Solution
     probabilities::Vector{<:Real}
     degeneracy::Vector{Int}
     largest_discarded_probability::Real
-    # excitations::Vector{Droplets}
-    # pool_of_flips::Dict
+    excitations::Droplets
+    pool_of_flips::Dict
 end
 
 """
 $(TYPEDSIGNATURES)
 """
-@inline empty_solution(n::Int=1) = Solution(zeros(n), fill(Vector{Int}[], n) , zeros(n), ones(Int, n), -Inf)
+@inline empty_solution(n::Int=1) = Solution(zeros(n), fill(Vector{Int}[], n) , zeros(n), ones(Int, n), -Inf, EmptyDroplet(), Dict())
 """
 $(TYPEDSIGNATURES)
 """
@@ -60,7 +62,9 @@ function Solution(
         sol.states[idx],
         sol.probabilities[idx],
         sol.degeneracy[idx],
-        ldp
+        ldp,
+        sol.excitations[idx],  
+        Dict() # TODO
     )
 end
 
@@ -121,14 +125,24 @@ function branch_solution(psol::Solution, ctr::T) where T <: AbstractContractor
         branch_states(num_states, psol.states),
         reduce(vcat, branch_probability.(Ref(ctr), zip(psol.probabilities, boundaries))),
         repeat(psol.degeneracy, inner=num_states),
-        psol.largest_discarded_probability
+        psol.largest_discarded_probability,
+        psol.excitations,
+        Dict() # TODO
     )
 end
 
 """
 $(TYPEDSIGNATURES)
 """
-function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit) where {T}  # update_droplets=no_droplets
+function update_excitations(best_idx::Int, start::Int, stop::Int, states::Vector{Vector{Int}}, 
+                            energies::Vector{<:Real}, droplets::Droplets; parameters_which_droplets_to_keep)
+# TODO
+end
+
+"""
+$(TYPEDSIGNATURES)
+"""
+function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit, droplets_type::Symbol=:nodroplets) where {T}  # update_droplets=no_droplets
     function _merge(psol::Solution)
         node = get(ctr.nodes_search_order, length(psol.states[1])+1, ctr.node_outside)
         boundaries = boundary_states(ctr, psol.states, node)
@@ -141,6 +155,7 @@ function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit) where 
         states = typeof(nsol.states[begin])[]
         probs = typeof(nsol.probabilities[begin])[]
         degeneracy = typeof(nsol.degeneracy[begin])[]
+        droplets = typeof(nsol.excitations)
 
         start = 1
         bsize = size(boundaries, 1)
@@ -171,18 +186,22 @@ function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit) where 
             elseif merge_type == :python
                 push!(probs, Statistics.mean(nsol.probabilities[ind_deg]))
             end
-
+            
             ## states with unique boundary => we take the one with best energy
             ## treat other states with the same boundary as droplets on top of the best one
-            # excitation = update_excitations(best_idx, start, stop, states, energies, droplets; parameters_which_droplets_to_keep)
-            # push!(droplets, excitation)
+            if droplets_type == nodroplets
+                droplets = EmptyDroplet()
+            elseif droplets_type == droplets
+                excitation = update_excitations(best_idx, start, stop, states, energies, droplets; parameters_which_droplets_to_keep)
+                push!(droplets, excitation)
+            end
 
             push!(energies, nsol.energies[best_idx])
             push!(states, nsol.states[best_idx])
             push!(degeneracy, new_degeneracy)
             start = stop + 1
         end
-        Solution(energies, states, probs, degeneracy, psol.largest_discarded_probability)
+        Solution(energies, states, probs, degeneracy, psol.largest_discarded_probability, droplets, Dict())
     end
     _merge
 end
@@ -357,7 +376,9 @@ function low_energy_spectrum(
         [σ[inner_perm] for σ ∈ sol.states[outer_perm]],
         sol.probabilities[outer_perm],
         sol.degeneracy[outer_perm],
-        sol.largest_discarded_probability
+        sol.largest_discarded_probability,
+        sol.excitations[outer_perm],
+        sol.pool_of_flips # TODO
     )
 
     # Final check if states correspond energies
@@ -412,7 +433,9 @@ function gibbs_sampling(
         [σ[inner_perm] for σ ∈ sol.states[outer_perm]],
         sol.probabilities[outer_perm],
         sol.degeneracy[outer_perm],
-        sol.largest_discarded_probability
+        sol.largest_discarded_probability,
+        sol.excitations[outer_perm],  # TODO add sort 
+        sol.pool_of_flips
     )
 
     # Final check if states correspond energies

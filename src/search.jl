@@ -189,9 +189,9 @@ function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit, drople
             
             ## states with unique boundary => we take the one with best energy
             ## treat other states with the same boundary as droplets on top of the best one
-            if droplets_type == nodroplets
+            if droplets_type == :nodroplets
                 droplets = EmptyDroplet()
-            elseif droplets_type == droplets
+            elseif droplets_type == :droplets
                 excitation = update_excitations(best_idx, start, stop, states, energies, droplets; parameters_which_droplets_to_keep)
                 push!(droplets, excitation)
             end

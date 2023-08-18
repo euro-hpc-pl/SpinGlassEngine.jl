@@ -22,7 +22,7 @@ function bench(instance::String)
     n = 7
     t = 3
     β = 0.5
-    bond_dim = 4
+    bond_dim = 8
     δp = 1E-6
     num_states = 64
     println("creating factor graph" )
@@ -85,49 +85,65 @@ function bench(instance::String)
         # println(size(W[st].ctr.con), " size  ", size.(Ref(W[st].ctr.lp), W[st].ctr.projs), " length  ", length.(Ref(W[st].ctr.lp), W[st].ctr.projs))
         DD = bond_dim
 
-        println(" ")
-        println(" PROJECT ")
-        LE = CuArray(rand(Float64, DD, DD, size(W[st], 1)))
-        RE = CuArray(rand(Float64, DD, DD, size(W[st], 3)))
+        # println(" ")
+        # println(" PROJECT ")
+        # LE = CuArray(rand(Float64, DD, DD, size(W[st], 1)))
+        # RE = CuArray(rand(Float64, DD, DD, size(W[st], 3)))
+        # B = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
+        # yy = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
+        # @time for _ in 1:100
+        #     yy = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
+        # end
+        # yy1 = SpinGlassTensors.project_ket_on_bra2(LE, B, W[st], RE)
+        # @time for _ in 1:100
+        #     yy1 = SpinGlassTensors.project_ket_on_bra2(LE, B, W[st], RE)
+        # end
+        # println("DIFFERENCE = ", maximum(abs.(yy - yy1)))
+
+
+        # println("  RIGHT  ")
+        # RE = CuArray(rand(Float64, DD, DD, size(W[st], 3)))
+        # A = CuArray(rand(Float64, DD, DD, size(W[st], 2)))
+        # B = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
+        # yy = SpinGlassTensors.update_env_right(RE, A, W[st], B)
+        # @time for _ in 1:100
+        #     yy = SpinGlassTensors.update_env_right(RE, A, W[st], B)
+        # end
+        # yy1 = SpinGlassTensors.update_env_right2(RE, A, W[st], B)
+        # @time for _ in 1:100
+        #     yy1 = SpinGlassTensors.update_env_right2(RE, A, W[st], B)
+        # end
+        # println("DIFFERENCE = ", maximum(abs.(yy - yy1)))
+
+        # println("  LEFT  ")
+        # LE = CuArray(rand(Float64, DD-1, DD, size(W[st], 1)))
+        # A = CuArray(rand(Float64, DD, DD+1, size(W[st], 2)))
+        # B = CuArray(rand(Float64, DD-1, DD+2, size(W[st], 4)))
+        # yy = SpinGlassTensors.update_env_left(LE, A, W[st], B)
+        # @time for _ in 1:1
+        #     yy = SpinGlassTensors.update_env_left(LE, A, W[st], B)
+        # end
+        # yy1 = SpinGlassTensors.update_env_left2(LE, A, W[st], B)
+        # @time for _ in 1:1
+        #     yy1 = SpinGlassTensors.update_env_left2(LE, A, W[st], B)
+        # end
+        # println("DIFFERENCE = ", maximum(abs.(yy - yy1)))
+
+        println("  REDUCED ")
+        RE = CuArray(rand(Float64, DD, size(W[st], 3)))
+        A = 3
         B = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
-        yy = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
-        @time for _ in 1:100
-            yy = SpinGlassTensors.project_ket_on_bra(LE, B, W[st], RE)
+        yy = SpinGlassTensors.update_reduced_env_right(RE, A, W[st], B)
+        @time for _ in 1:1000
+            yy = SpinGlassTensors.update_reduced_env_right(RE, A, W[st], B)
         end
-        yy1 = SpinGlassTensors.project_ket_on_bra2(LE, B, W[st], RE)
-        @time for _ in 1:100
-            yy1 = SpinGlassTensors.project_ket_on_bra2(LE, B, W[st], RE)
+        yy1 = SpinGlassTensors.update_reduced_env_right2(RE, A, W[st], B)
+        @time for _ in 1:1000
+            yy1 = SpinGlassTensors.update_reduced_env_right(RE, A, W[st], B)
         end
         println("DIFFERENCE = ", maximum(abs.(yy - yy1)))
 
 
-        println("  RIGHT  ")
-        RE = CuArray(rand(Float64, DD, DD, size(W[st], 3)))
-        A = CuArray(rand(Float64, DD, DD, size(W[st], 2)))
-        B = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
-        yy = SpinGlassTensors.update_env_right(RE, A, W[st], B)
-        @time for _ in 1:100
-            yy = SpinGlassTensors.update_env_right(RE, A, W[st], B)
-        end
-        yy1 = SpinGlassTensors.update_env_right2(RE, A, W[st], B)
-        @time for _ in 1:100
-            yy1 = SpinGlassTensors.update_env_right2(RE, A, W[st], B)
-        end
-        println("DIFFERENCE = ", maximum(abs.(yy - yy1)))
-
-        println("  LEFT  ")
-        LE = CuArray(rand(Float64, DD, DD, size(W[st], 1)))
-        A = CuArray(rand(Float64, DD, DD, size(W[st], 2)))
-        B = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
-        yy = SpinGlassTensors.update_env_left(LE, A, W[st], B)
-        @time for _ in 1:100
-            yy = SpinGlassTensors.update_env_left(LE, A, W[st], B)
-        end
-        yy1 = SpinGlassTensors.update_env_left2(LE, A, W[st], B)
-        @time for _ in 1:100
-            yy1 = SpinGlassTensors.update_env_left2(LE, A, W[st], B)
-        end
-        println("DIFFERENCE = ", maximum(abs.(yy - yy1)))
     end
 
     # println("solving ... ")

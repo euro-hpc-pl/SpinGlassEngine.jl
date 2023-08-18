@@ -20,8 +20,8 @@
     Gauge = NoUpdate
 
     energies = Vector{Float64}[]
-    for Strategy ∈ (SVDTruncate, MPSAnnealing, Zipper), Sparsity ∈ (Sparse,  Dense) 
-        for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
+    for Strategy ∈ (MPSAnnealing, Zipper, SVDTruncate), Sparsity ∈ (Dense, Sparse)
+        for Layout ∈ (GaugesEnergy, EngGaugesEng, EnergyGauges,)  #
             for transform ∈ all_lattice_transformations, Lattice ∈ (SquareStar, )
                 net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform)
                 ctr = MpsContractor{Strategy, Gauge}(net, [β/2, β], :graduate_truncate, params; onGPU=onGPU)

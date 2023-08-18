@@ -23,7 +23,7 @@ function bench(instance::String)
     t = 4
 
     β = 0.5
-    bond_dim = 3
+    bond_dim = 8
     DE = 16.0
     δp = 1E-5*exp(-β * DE)
     num_states = 32
@@ -57,9 +57,9 @@ function bench(instance::String)
     @time begin
         W = SpinGlassEngine.mpo(ctr, ctr.layers.main, 8, 4)
     end
-    for st in W.sites
-        println(st, "  ", size(W[st]), "  btm ", size.(W[st].bot), " top ",  size.(W[st].top), " ctr ",  size(W[st].ctr))
-    end
+    # for st in W.sites
+    #     println(st, "  ", size(W[st]), "  btm ", size.(W[st].bot), " top ",  size.(W[st].top), " ctr ",  size(W[st].ctr))
+    # end
 
     # st = 8
     # DD = 8
@@ -71,10 +71,10 @@ function bench(instance::String)
     # end
 
     st = 17 // 2
-    println(size(W[st].ctr.con), " size  ", size.(Ref(W[st].ctr.lp), W[st].ctr.projs), " length  ", length.(Ref(W[st].ctr.lp), W[st].ctr.projs))
+    # println(size(W[st].ctr.con), " size  ", size.(Ref(W[st].ctr.lp), W[st].ctr.projs), " length  ", length.(Ref(W[st].ctr.lp), W[st].ctr.projs))
     DD = 8
 
-    # # println(" ")
+    # # # println(" ")
     # println(" PROJECT ")
     # LE = CuArray(rand(Float64, DD, DD, size(W[st], 1)))
     # RE = CuArray(rand(Float64, DD, DD, size(W[st], 3)))
@@ -104,25 +104,40 @@ function bench(instance::String)
     # end
     # println("DIFFERENCE = ", maximum(abs.(yy - yy1)))
 
-    println("  LEFT  ")
-    LE = CuArray(rand(Float64, DD, DD, size(W[st], 1)))
-    A = CuArray(rand(Float64, DD, DD, size(W[st], 2)))
-    B = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
-    yy = SpinGlassTensors.update_env_left(LE, A, W[st], B)
-    @time for _ in 1:20
-        yy = SpinGlassTensors.update_env_left(LE, A, W[st], B)
-    end
+    # println("  LEFT  ")
+    # LE = CuArray(rand(Float64, DD, DD, size(W[st], 1)))
+    # A = CuArray(rand(Float64, DD, DD, size(W[st], 2)))
+    # B = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
+    # yy = SpinGlassTensors.update_env_left(LE, A, W[st], B)
+    # @time for _ in 1:10
+    #     yy = SpinGlassTensors.update_env_left(LE, A, W[st], B)
+    # end
 
-    yy1 = SpinGlassTensors.update_env_left2(LE, A, W[st], B)
-    @time for _ in 1:2
-        yy1 = SpinGlassTensors.update_env_left2(LE, A, W[st], B)
-    end
-    println("DIFFERENCE = ", maximum(abs.(yy - yy1)))
+    # yy1 = SpinGlassTensors.update_env_left2(LE, A, W[st], B)
+    # @time for _ in 1:1
+    #     yy1 = SpinGlassTensors.update_env_left2(LE, A, W[st], B)
+    # end
+    # println("DIFFERENCE = ", maximum(abs.(yy - yy1)))
 
     # println("solving")
     # @time sol, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
     # println("Result ", sol.energies)
     # println("Memory lp = ", format_bytes.(measure_memory(net.lp)), " elements = ", length(net.lp))
+
+    println("  REDUCED ")
+    RE = CuArray(rand(Float64, DD, size(W[st], 3)))
+    A = 3
+    B = CuArray(rand(Float64, DD, DD, size(W[st], 4)))
+    yy = SpinGlassTensors.update_reduced_env_right(RE, A, W[st], B)
+    @time for _ in 1:10
+        yy = SpinGlassTensors.update_reduced_env_right(RE, A, W[st], B)
+    end
+    yy1 = SpinGlassTensors.update_reduced_env_right2(RE, A, W[st], B)
+    @time for _ in 1:10
+        yy1 = SpinGlassTensors.update_reduced_env_right2(RE, A, W[st], B)
+    end
+    println("DIFFERENCE = ", maximum(abs.(yy - yy1)))
+
 end
 
 instance = "$(@__DIR__)/../test/instances/zephyr_random/Z8/RAU/SpinGlass/001_sg.txt"

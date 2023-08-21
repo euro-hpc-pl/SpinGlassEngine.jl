@@ -6,8 +6,8 @@ export
        bound_solution,
        gibbs_sampling,
        NoDroplets,
-       SingleLayerDroplets
-
+       SingleLayerDroplets,
+       unpack_droplets
 """
 $(TYPEDSIGNATURES)
 """
@@ -147,29 +147,31 @@ $(TYPEDSIGNATURES)
 (method::NoDroplets)(best_idx::Int, energies::Vector{<:Real},  states::Vector{Vector{Int}}, droplets::Vector{Droplets}) = NoDroplets()
 
 function (method::SingleLayerDroplets)(best_idx::Int, energies::Vector{<:Real},  states::Vector{Vector{Int}}, droplets::Vector{Droplets})
-    ndroplets = droplets[best_idx]
+    ndroplets = copy(droplets[best_idx])
 
     bstate  = states[best_idx]
     benergy = energies[best_idx]
 
 
-    for ind ∈ 1 : length(energies)
-        if ind != best_idx
-            flip = xor.(bstate, states[ind])
-            first = findfirst(x -> x != 0, flip)
-            last = findlast(x -> x != 0, flip)
-            flip = flip[first:last]
-            deng = energies[ind] - benergy
-            droplet = Droplet(deng, first, last, flip, NoDroplets())
-            if deng <= method.max_energy
-                if typeof(ndroplets) == NoDroplets
-                    ndroplets = Droplet[]
-                end
-                println("droplet ========= ",droplet)
-                push!(ndroplets, droplet)
-                if typeof(droplets[best_idx]) != NoDroplets
-                    for subdroplet ∈ droplets[best_idx]
-                        push!(ndroplets, droplet_xor_simple(droplet, subdroplet))
+    for ind ∈ (1 : best_idx - 1..., best_idx + 1 : length(energies)...)
+        flip = xor.(bstate, states[ind])
+        first = findfirst(x -> x != 0, flip)
+        last = findlast(x -> x != 0, flip)
+        flip = flip[first:last]
+        deng = energies[ind] - benergy
+
+        droplet = Droplet(deng, first, last, flip, NoDroplets())
+
+        if deng <= method.max_energy
+            if typeof(ndroplets) == NoDroplets
+                ndroplets = Droplet[]
+            end
+            push!(ndroplets, droplet)
+            if typeof(droplets[ind]) != NoDroplets
+                for subdroplet ∈ droplets[ind]
+                    new_droplet = droplet_xor_simple(droplet, subdroplet)
+                    if new_droplet.denergy <= method.max_energy
+                        push!(ndroplets, new_droplet)
                     end
                 end
             end
@@ -182,35 +184,43 @@ function droplet_xor_simple(drop1, drop2)
     denergy = drop1.denergy + drop2.denergy
     first = min(drop1.from, drop2.from)
     last = max(drop1.to, drop2.to)
-    flip = zeros(last - first + 1)
-    # Calculate the XOR flip between drop1 and drop2
-    for i in 1:length(flip)
-        idx_drop1 = first - drop1.from + i
-        idx_drop2 = first - drop2.from + i
-        if 1 <= idx_drop1 <= length(drop1.flip) && 1 <= idx_drop2 <= length(drop2.flip)
-            flip[i] = drop1.flip[idx_drop1] ⊻ drop2.flip[idx_drop2]
-        elseif 1 <= idx_drop1 <= length(drop1.flip)
-            flip[i] = drop1.flip[idx_drop1]
-        elseif 1 <= idx_drop2 <= length(drop2.flip)
-            flip[i] = drop2.flip[idx_drop2]
-        else
-            flip[i] = 0  # Default value if both flips are out of bounds
-        end
-    end
-    println("subdroplet: -------",   Droplet(denergy, first, last, flip, NoDroplets())    )
+    flip = zeros(Int, last - first + 1)
+    flip[drop1.from - first + 1 : drop1.to - first + 1] .⊻= drop1.flip
+    flip[drop2.from - first + 1 : drop2.to - first + 1] .⊻= drop2.flip
     Droplet(denergy, first, last, flip, NoDroplets())
 end
 
-function flips_to_state(droplet::Droplet, state::Vector{Int})
-    state_length = droplet.to - droplet.from + 1
+function flip_state(state::Vector{Int}, droplet::Droplet)
     new_state = copy(state)
-    
-    for i in 1:state_length
-        idx = droplet.from + i - 1
-        new_state[idx] = xor(droplet.flip[i], new_state[idx])
-    end
-    
+    new_state[droplet.from:droplet.to] .⊻= droplet.flip
     new_state
+end
+
+function unpack_droplets(sol, β)  # have β in sol ?
+    energies = typeof(sol.energies[begin])[]
+    states = typeof(sol.states[begin])[]
+    probs = typeof(sol.probabilities[begin])[]
+    degeneracy = typeof(sol.degeneracy[begin])[]
+    droplets = Droplets[]
+
+    for i in 1:length(sol.energies)
+        push!(energies, sol.energies[i])
+        push!(states, sol.states[i])
+        push!(probs, sol.probabilities[i])
+        push!(degeneracy, 1)
+        push!(droplets, NoDroplets())
+
+        for droplet in sol.droplets[i]
+            push!(energies, sol.energies[i] + droplet.denergy)
+            push!(states, flip_state(sol.states[i], droplet))
+            push!(probs, sol.probabilities[i] - β * droplet.denergy)
+            push!(degeneracy, 1)
+            push!(droplets, NoDroplets())
+        end
+    end
+
+    inds = sortperm(energies)
+    Solution(energies[inds], states[inds], probs[inds], degeneracy[inds], sol.largest_discarded_probability, droplets[inds])
 end
 
 # function update_droplets

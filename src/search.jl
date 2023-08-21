@@ -165,13 +165,13 @@ function (method::SingleLayerDroplets)(best_idx::Int, energies::Vector{<:Real}, 
                 if typeof(ndroplets) == NoDroplets
                     ndroplets = Droplet[]
                 end
+                println("droplet ========= ",droplet)
                 push!(ndroplets, droplet)
-                # if typeof(droplets[best_idx]) != NoDroplets
-                #     for subdroplet ∈ droplets[best_idx]
-                #
-                #     push!(ndroplets, droplet_xor_simple(droplet, subdroplet))
-                #     end
-                # end
+                if typeof(droplets[best_idx]) != NoDroplets
+                    for subdroplet ∈ droplets[best_idx]
+                        push!(ndroplets, droplet_xor_simple(droplet, subdroplet))
+                    end
+                end
             end
         end
     end
@@ -179,13 +179,40 @@ function (method::SingleLayerDroplets)(best_idx::Int, energies::Vector{<:Real}, 
 end
 
 function droplet_xor_simple(drop1, drop2)
-    denergy = drop1.energy + drop2.energy
-    first = min(drop1.first, drop2.first)
-    last = max(drop1.last, drop2.last)
+    denergy = drop1.denergy + drop2.denergy
+    first = min(drop1.from, drop2.from)
+    last = max(drop1.to, drop2.to)
     flip = zeros(last - first + 1)
-    # xor drop1.flip drop2.flip
+    # Calculate the XOR flip between drop1 and drop2
+    for i in 1:length(flip)
+        idx_drop1 = first - drop1.from + i
+        idx_drop2 = first - drop2.from + i
+        if 1 <= idx_drop1 <= length(drop1.flip) && 1 <= idx_drop2 <= length(drop2.flip)
+            flip[i] = drop1.flip[idx_drop1] ⊻ drop2.flip[idx_drop2]
+        elseif 1 <= idx_drop1 <= length(drop1.flip)
+            flip[i] = drop1.flip[idx_drop1]
+        elseif 1 <= idx_drop2 <= length(drop2.flip)
+            flip[i] = drop2.flip[idx_drop2]
+        else
+            flip[i] = 0  # Default value if both flips are out of bounds
+        end
+    end
+    println("subdroplet: -------",   Droplet(denergy, first, last, flip, NoDroplets())    )
     Droplet(denergy, first, last, flip, NoDroplets())
 end
+
+function flips_to_state(droplet::Droplet, state::Vector{Int})
+    state_length = droplet.to - droplet.from + 1
+    new_state = copy(state)
+    
+    for i in 1:state_length
+        idx = droplet.from + i - 1
+        new_state[idx] = xor(droplet.flip[i], new_state[idx])
+    end
+    
+    new_state
+end
+
 # function update_droplets
 # end
 

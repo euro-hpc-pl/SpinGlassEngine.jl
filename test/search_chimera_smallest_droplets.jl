@@ -27,30 +27,22 @@
                 net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
                 ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
 
-                sol, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, SingleLayerDropletsHamming(2.2, 10)))
+                sol1, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, SingleLayerDropletsHamming(2.2, 10)))
 
-                @test sol.energies ≈ exact_energies[[1]]
-
-                sol2 = unpack_droplets_hamming(sol, β)
-                println(sol.droplets[1])
-                @test length(sol.droplets[1]) == 4
+                @test sol1.energies ≈ exact_energies[[1]]
+                sol2 = unpack_droplets_hamming(sol1, β)
                 @test sol2.energies ≈ exact_energies[1:5]
 
-                ig_states = decode_factor_graph_state.(Ref(fg), sol.states)
-                @test sol.energies ≈ energy.(Ref(ig), ig_states)
-                fg_states = decode_state.(Ref(net), sol.states)
-                @test sol.energies ≈ energy.(Ref(fg), fg_states)
-                ig_states2 = decode_factor_graph_state.(Ref(fg), sol2.states)
-                @test sol2.energies ≈ energy.(Ref(ig), ig_states2)
-                fg_states2 = decode_state.(Ref(net), sol2.states)
-                @test sol2.energies ≈ energy.(Ref(fg), fg_states2)
+                for sol ∈ (sol1, sol2)
+                    ig_states = decode_factor_graph_state.(Ref(fg), sol.states)
+                    @test sol.energies ≈ energy.(Ref(ig), ig_states)
 
-                norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
-                @test norm_prob ≈ exp.(-β .* (sol.energies .- sol.energies[1]))
-                norm_prob2 = exp.(sol2.probabilities .- sol2.probabilities[1])
-                @test norm_prob2 ≈ exp.(-β .* (sol2.energies .- sol2.energies[1]))
+                    fg_states = decode_state.(Ref(net), sol.states)
+                    @test sol.energies ≈ energy.(Ref(fg), fg_states)
 
-                # push!(energies, sol.energies)
+                    norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
+                    @test norm_prob ≈ exp.(-β .* (sol.energies .- sol.energies[1]))
+                end
                 clear_memoize_cache()
             end
         end

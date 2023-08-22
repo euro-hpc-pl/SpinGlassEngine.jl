@@ -23,7 +23,7 @@ struct SearchParameters
 end
 
 struct NoDroplets end
-
+# Base.iterate(drop::NoDroplets) = nothing ???
 
 struct SingleLayerDroplets
     max_energy :: Real
@@ -167,12 +167,12 @@ function (method::SingleLayerDroplets)(best_idx::Int, energies::Vector{<:Real}, 
         deng = energies[ind] - benergy
 
         droplet = Droplet(deng, first, last, flip, NoDroplets())
-        ndroplets = my_push!(ndroplets, droplet, deng, method)
-        
+        ndroplets = my_push!(ndroplets, droplet, method)
+
         if typeof(droplets[ind]) != NoDroplets
             for subdroplet ∈ droplets[ind]
                 new_droplet = droplet_xor_simple(droplet, subdroplet)
-                ndroplets = my_push!(ndroplets, new_droplet, new_droplet.denergy, method)
+                ndroplets = my_push!(ndroplets, new_droplet, method)
             end
         end
     end
@@ -186,18 +186,18 @@ function (method::SingleLayerDropletsHamming)(best_idx::Int, energies::Vector{<:
     benergy = energies[best_idx]
 
     for ind ∈ (1 : best_idx - 1..., best_idx + 1 : length(energies)...)
-        flip = states[ind] #xor.(bstate, states[ind])
-        first = findall(bstate.!=states[ind])[begin] #findfirst(x -> x != 0, flip)
-        last = findall(bstate.!=states[ind])[end] #findlast(x -> x != 0, flip)
+        flip = states[ind]
+        first = findfirst(bstate .!= states[ind])
+        last = findlast(bstate .!= states[ind])
         flip = flip[first:last]
         deng = energies[ind] - benergy
         droplet = Droplet(deng, first, last, flip, NoDroplets())
-        ndroplets = my_push!(ndroplets, droplet, deng, method)
-        
+        ndroplets = my_push!(ndroplets, droplet, method)
+
         if typeof(droplets[ind]) != NoDroplets
             for subdroplet ∈ droplets[ind]
                 new_droplet = droplet_hamming_simple(droplet, subdroplet)
-                ndroplets = my_push!(ndroplets, new_droplet, new_droplet.denergy, method)
+                ndroplets = my_push!(ndroplets, new_droplet, method)
             end
         end
     end
@@ -205,9 +205,8 @@ function (method::SingleLayerDropletsHamming)(best_idx::Int, energies::Vector{<:
 end
 
 
-function my_push!(ndroplets::Droplets, droplet::Droplet, deng::Real, method)
-
-    if deng <= method.max_energy #&& hamming_distance(ndroplets.flip, droplet.flip) < method.min_size
+function my_push!(ndroplets::Droplets, droplet::Droplet, method)
+    if droplet.denergy <= method.max_energy #&& hamming_distance(ndroplets.flip, droplet.flip) < method.min_size
         if typeof(ndroplets) == NoDroplets
             ndroplets = Droplet[]
         end
@@ -220,7 +219,7 @@ function hamming_distance(s1::Vector{Int}, s2::Vector{Int})
     if length(s1) != length(s2)
         throw(ArgumentError("Undefined for sequences of unequal length."))
     end
-    
+
     distance = sum(el1 != el2 for (el1, el2) in zip(s1, s2))
     return distance
 end

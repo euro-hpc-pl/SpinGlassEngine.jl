@@ -29,6 +29,7 @@ push!(my_tests,
     # "search_square2_basic.jl",
     # "search_squarestar2_basic.jl",
     # "chimera_overlap_python.jl",
+    "hamming.jl",
     "search_chimera_smallest_droplets.jl",
 
 

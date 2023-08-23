@@ -1,20 +1,8 @@
 using Test
 
-# Define the function to test
-function vector_to_integer(vector::Vector{Int})
-    int_repr = sum(2^(i-1) * vector[i] for i in 1:length(vector))
-    return int_repr
-end
 
 function hamming_distance(dstate::Vector{Int})
     sum(count_ones(st) for st in dstate)
-end
-
-@testset "Vector to Integer Conversion" begin
-    @test vector_to_integer([0, 0, 0, 0]) == 0
-    @test vector_to_integer([1, 0, 0, 0]) == 1
-    @test vector_to_integer([0, 1, 0, 1]) == 10
-    @test vector_to_integer([1, 1, 1, 1]) == 15
 end
 
 @testset "count_ones() method" begin

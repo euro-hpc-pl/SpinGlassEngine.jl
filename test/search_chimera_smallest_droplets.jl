@@ -28,18 +28,18 @@
                 ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
 
                 sol1, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, SingleLayerDropletsHamming(2.2, 10)))
-
+                
                 @test sol1.energies ≈ exact_energies[[1]]
                 sol2 = unpack_droplets_hamming(sol1, β)
                 @test sol2.energies ≈ exact_energies[1:5]
                 println(sol2.states)
 
                 for sol ∈ (sol1, sol2)
-                    # ig_states = decode_factor_graph_state.(Ref(fg), sol.states)
-                    # @test sol.energies ≈ energy.(Ref(ig), ig_states)
+                    ig_states = decode_factor_graph_state.(Ref(fg), sol.states)
+                    @test sol.energies ≈ energy.(Ref(ig), ig_states)
 
-                    # fg_states = decode_state.(Ref(net), sol.states)
-                    # @test sol.energies ≈ energy.(Ref(fg), fg_states)
+                    fg_states = decode_state.(Ref(net), sol.states)
+                    @test sol.energies ≈ energy.(Ref(fg), fg_states)
 
                     norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
                     @test norm_prob ≈ exp.(-β .* (sol.energies .- sol.energies[1]))

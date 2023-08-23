@@ -9,7 +9,8 @@ export
        SingleLayerDroplets,
        unpack_droplets,
        SingleLayerDropletsHamming,
-       unpack_droplets_hamming
+       unpack_droplets_hamming,
+       decode_to_spin
 """
 $(TYPEDSIGNATURES)
 """
@@ -43,6 +44,7 @@ mutable struct Droplet
     from :: Int  # site where droplet starts
     to :: Int  # site where droplet ends
     flip :: Vector{Int}  # Int  # switch to key in pool_of_flips ? or can we have some immutable type
+    state_xor :: Vector{Int}
     droplets :: Union{NoDroplets, Vector{Droplet}}  # droplets on top of the current droplet; can be empty
 end
 
@@ -167,7 +169,7 @@ function (method::SingleLayerDroplets)(ctr::MpsContractor{T}, best_idx::Int, ene
         flip = flip[first:last]
         deng = energies[ind] - benergy
 
-        droplet = Droplet(deng, first, last, flip, NoDroplets())
+        droplet = Droplet(deng, first, last, flip, [], NoDroplets())
         ndroplets = my_push!(ndroplets, droplet, method)
 
         for subdroplet ∈ droplets[ind]
@@ -181,34 +183,36 @@ end
 function (method::SingleLayerDropletsHamming)(ctr::MpsContractor{T}, best_idx::Int, energies::Vector{<:Real}, states::Vector{Vector{Int}}, droplets::Vector{Droplets}) where T
     ndroplets = deepcopy(droplets[best_idx])
 
-    bstate  = vector_to_integer(states[best_idx])
+    bstate  = states[best_idx]
     benergy = energies[best_idx]
-
+    spin_states = decode_to_spin(ctr, states)
     for ind ∈ (1 : best_idx - 1..., best_idx + 1 : length(energies)...)
-        state = vector_to_integer(states[ind])
-        flip = [bstate ⊻ state]
-        first = findfirst(x -> x != 0, flip)
-        last = findlast(x -> x != 0, flip)
+        flip = states[ind]
+        first = findfirst(bstate .!= states[ind])
+        last = findlast(bstate .!= states[ind])
         flip = flip[first:last]
         deng = energies[ind] - benergy
-        droplet = Droplet(deng, first, last, flip, NoDroplets())
+        state_xor = spin_states[best_idx] .⊻ spin_states[ind]
+        state_xor = state_xor[first:last]
+        droplet = Droplet(deng, first, last, flip, state_xor, NoDroplets())
         ndroplets = my_push!(ndroplets, droplet, method)
 
         for subdroplet ∈ droplets[ind]
-            new_droplet = droplet_xor_simple(droplet, subdroplet)
+            new_droplet = droplet_hamming_simple(droplet, subdroplet)
             ndroplets = my_push!(ndroplets, new_droplet, method)
         end
     end
     ndroplets
 end
 
-function vector_to_integer(vector::Vector{Int})
-    int_repr = sum(2^(i-1) * vector[i] for i in 1:length(vector))
-    return int_repr
+function decode_to_spin(ctr::MpsContractor{T}, states::Vector{Vector{Int}}) where T
+    fg = ctr.peps.factor_graph
+    nodes = ctr.peps.vertex_map.(nodes_search_order_Mps(ctr.peps)[1])
+    [[get_prop(fg, v, :spectrum).states_int[i] for (i, v) in zip(st, nodes)] for st in states]
 end
 
 function my_push!(ndroplets::Droplets, droplet::Droplet, method)
-    if droplet.denergy <= method.max_energy && hamming_distance(droplet.flip) < method.min_size
+    if droplet.denergy <= method.max_energy && hamming_distance(droplet.state_xor) < method.min_size
         if typeof(ndroplets) == NoDroplets
             ndroplets = Droplet[]
         end
@@ -229,7 +233,7 @@ function droplet_xor_simple(drop1, drop2)
     flip = zeros(Int, last - first + 1)
     flip[drop1.from - first + 1 : drop1.to - last + 1] .⊻= drop1.flip
     flip[drop2.from - first + 1 : drop2.to - last + 1] .⊻= drop2.flip
-    Droplet(denergy, first, last, flip, NoDroplets())
+    Droplet(denergy, first, last, flip, [], NoDroplets())
 end
 
 function droplet_hamming_simple(drop1, drop2)
@@ -237,6 +241,9 @@ function droplet_hamming_simple(drop1, drop2)
     first = min(drop1.from, drop2.from)
     last = max(drop1.to, drop2.to)
     flip = zeros(last - first + 1)
+    state_xor = zeros(Int, last - first + 1)
+    state_xor[drop1.from - first + 1 : drop1.to - last + 1] .⊻= drop1.state_xor
+    state_xor[drop2.from - first + 1 : drop2.to - last + 1] .⊻= drop2.state_xor
      for i in 1:length(flip)
          idx_drop1 = first - drop1.from + i
          idx_drop2 = first - drop2.from + i
@@ -250,7 +257,7 @@ function droplet_hamming_simple(drop1, drop2)
              flip[i] = 0  # Default value if both flips are out of bounds
          end
      end
-    Droplet(denergy, first, last, flip, NoDroplets())
+    Droplet(denergy, first, last, flip, state_xor, NoDroplets())
 end
 
 function flip_state(state::Vector{Int}, droplet::Droplet)

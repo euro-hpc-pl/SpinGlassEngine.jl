@@ -198,7 +198,7 @@ function (method::SingleLayerDropletsHamming)(ctr::MpsContractor{T}, best_idx::I
         ndroplets = my_push!(ndroplets, droplet, method)
 
         for subdroplet ∈ droplets[ind]
-            new_droplet = droplet_hamming_simple(droplet, subdroplet)
+            new_droplet = droplet_hamming_simple(droplet, subdroplet, states[ind])
             ndroplets = my_push!(ndroplets, new_droplet, method)
         end
     end
@@ -231,32 +231,28 @@ function droplet_xor_simple(drop1, drop2)
     first = min(drop1.from, drop2.from)
     last = max(drop1.to, drop2.to)
     flip = zeros(Int, last - first + 1)
-    flip[drop1.from - first + 1 : drop1.to - last + 1] .⊻= drop1.flip
-    flip[drop2.from - first + 1 : drop2.to - last + 1] .⊻= drop2.flip
+    flip[drop1.from - first + 1 : drop1.to - first + 1] .⊻= drop1.flip
+    flip[drop2.from - first + 1 : drop2.to - first + 1] .⊻= drop2.flip
     Droplet(denergy, first, last, flip, [], NoDroplets())
 end
 
-function droplet_hamming_simple(drop1, drop2)
+function droplet_hamming_simple(drop1, drop2, states)
     denergy = drop1.denergy + drop2.denergy
     first = min(drop1.from, drop2.from)
     last = max(drop1.to, drop2.to)
-    flip = zeros(last - first + 1)
+    flip = states[first:last] #zeros(last - first + 1)
     state_xor = zeros(Int, last - first + 1)
-    state_xor[drop1.from - first + 1 : drop1.to - last + 1] .⊻= drop1.state_xor
-    state_xor[drop2.from - first + 1 : drop2.to - last + 1] .⊻= drop2.state_xor
-     for i in 1:length(flip)
-         idx_drop1 = first - drop1.from + i
-         idx_drop2 = first - drop2.from + i
-         if 1 <= idx_drop1 <= length(drop1.flip) && 1 <= idx_drop2 <= length(drop2.flip)
-             flip[i] = drop2.flip[idx_drop2]
-         elseif 1 <= idx_drop1 <= length(drop1.flip)
-             flip[i] = drop1.flip[idx_drop1]
-         elseif 1 <= idx_drop2 <= length(drop2.flip)
-             flip[i] = drop2.flip[idx_drop2]
-         else
-             flip[i] = 0  # Default value if both flips are out of bounds
-         end
-     end
+    state_xor[drop1.from - first + 1 : drop1.to - first + 1] .⊻= drop1.state_xor
+    state_xor[drop2.from - first + 1 : drop2.to - first + 1] .⊻= drop2.state_xor
+    for i in 1:length(flip)
+        idx_drop1 = first - drop1.from + i
+        idx_drop2 = first - drop2.from + i
+        if 1 <= idx_drop1 <= length(drop1.flip)
+            flip[i] = drop1.flip[idx_drop1]
+        elseif 1 <= idx_drop2 <= length(drop2.flip)
+            flip[i] = drop2.flip[idx_drop2]
+        end
+    end
     Droplet(denergy, first, last, flip, state_xor, NoDroplets())
 end
 

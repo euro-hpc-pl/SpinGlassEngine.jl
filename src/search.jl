@@ -8,8 +8,6 @@ export
        NoDroplets,
        SingleLayerDroplets,
        unpack_droplets,
-       SingleLayerDropletsHamming,
-       unpack_droplets_hamming,
        decode_to_spin
 """
 $(TYPEDSIGNATURES)
@@ -26,6 +24,7 @@ end
 struct NoDroplets end
 
 Base.iterate(drop::NoDroplets) = nothing
+Base.copy(s::NoDroplets) = s
 
 struct SingleLayerDroplets
     max_energy :: Real
@@ -33,26 +32,23 @@ struct SingleLayerDroplets
     SingleLayerDroplets(max_energy = 1.0, min_size = 1) = new(max_energy, min_size)
 end
 
-struct SingleLayerDropletsHamming
-    max_energy :: Real
-    min_size :: Int
-    SingleLayerDropletsHamming(max_energy = 1.0, min_size = 1) = new(max_energy, min_size)
+struct Flip
+    support :: Vector{Int}
+    state :: Vector{Int}
+    spinxor :: Vector{Int}
 end
 
 mutable struct Droplet
     denergy :: Real  # excitation energy
-    from :: Int  # site where droplet starts
-    to :: Int  # site where droplet ends
-    flip :: Vector{Int}  # Int  # switch to key in pool_of_flips ? or can we have some immutable type
-    state_xor :: Vector{Int}
-    droplets :: Union{NoDroplets, Vector{Droplet}}  # droplets on top of the current droplet; can be empty
+    first :: Int  # site where droplet starts
+    last :: Int  # site where droplet ends
+    flip :: Flip  # states of nodes flipped by droplet
+    droplets :: Union{NoDroplets, Vector{Droplet}}  # subdroplets on top of the current droplet; can be empty
 end
 
 Droplets = Union{NoDroplets, Vector{Droplet}}  # Can't be defined before Droplet struct
 
 Base.getindex(s::NoDroplets, ::Any) = NoDroplets()
-
-
 """
 $(TYPEDSIGNATURES)
 """
@@ -63,7 +59,6 @@ struct Solution
     degeneracy::Vector{Int}
     largest_discarded_probability::Real
     droplets::Vector{Droplets}
-    # pool_of_flips::Dict
 end
 
 """
@@ -157,48 +152,25 @@ $(TYPEDSIGNATURES)
 (method::NoDroplets)(ctr::MpsContractor{T}, best_idx::Int, energies::Vector{<:Real},  states::Vector{Vector{Int}}, droplets::Vector{Droplets}) where T= NoDroplets()
 
 function (method::SingleLayerDroplets)(ctr::MpsContractor{T}, best_idx::Int, energies::Vector{<:Real}, states::Vector{Vector{Int}}, droplets::Vector{Droplets}) where T
-    ndroplets = deepcopy(droplets[best_idx])
+    ndroplets = copy(droplets[best_idx])
+
+    spins = decode_to_spin(ctr, states)
 
     bstate  = states[best_idx]
     benergy = energies[best_idx]
+    bspin = spins[best_idx]
 
     for ind ∈ (1 : best_idx - 1..., best_idx + 1 : length(energies)...)
-        flip = xor.(bstate, states[ind])
-        first = findfirst(x -> x != 0, flip)
-        last = findlast(x -> x != 0, flip)
-        flip = flip[first:last]
-        deng = energies[ind] - benergy
 
-        droplet = Droplet(deng, first, last, flip, [], NoDroplets())
+        flip_support = findall(bstate .!= states[ind])
+        flip_state = states[ind][flip_support]
+        flip_spinxor = bspin[flip_support] .⊻ spins[ind][flip_support]
+        flip = Flip(flip_support, flip_state, flip_spinxor)
+        denergy = energies[ind] - benergy
+        droplet = Droplet(denergy, flip_support[1], length(bstate), flip, NoDroplets())
         ndroplets = my_push!(ndroplets, droplet, method)
-
         for subdroplet ∈ droplets[ind]
-            new_droplet = droplet_xor_simple(droplet, subdroplet)
-            ndroplets = my_push!(ndroplets, new_droplet, method)
-        end
-    end
-    ndroplets
-end
-
-function (method::SingleLayerDropletsHamming)(ctr::MpsContractor{T}, best_idx::Int, energies::Vector{<:Real}, states::Vector{Vector{Int}}, droplets::Vector{Droplets}) where T
-    ndroplets = deepcopy(droplets[best_idx])
-
-    bstate  = states[best_idx]
-    benergy = energies[best_idx]
-    spin_states = decode_to_spin(ctr, states)
-    for ind ∈ (1 : best_idx - 1..., best_idx + 1 : length(energies)...)
-        flip = states[ind]
-        first = findfirst(bstate .!= states[ind])
-        last = findlast(bstate .!= states[ind])
-        flip = flip[first:last]
-        deng = energies[ind] - benergy
-        state_xor = spin_states[best_idx] .⊻ spin_states[ind]
-        state_xor = state_xor[first:last]
-        droplet = Droplet(deng, first, last, flip, state_xor, NoDroplets())
-        ndroplets = my_push!(ndroplets, droplet, method)
-
-        for subdroplet ∈ droplets[ind]
-            new_droplet = droplet_hamming_simple(droplet, subdroplet, states[ind])
+            new_droplet = merge_droplets(method, droplet, subdroplet)
             ndroplets = my_push!(ndroplets, new_droplet, method)
         end
     end
@@ -212,7 +184,7 @@ function decode_to_spin(ctr::MpsContractor{T}, states::Vector{Vector{Int}}) wher
 end
 
 function my_push!(ndroplets::Droplets, droplet::Droplet, method)
-    if droplet.denergy <= method.max_energy && hamming_distance(droplet.state_xor) < method.min_size
+    if droplet.denergy <= method.max_energy && hamming_distance(droplet.flip) >= method.min_size
         if typeof(ndroplets) == NoDroplets
             ndroplets = Droplet[]
         end
@@ -221,44 +193,75 @@ function my_push!(ndroplets::Droplets, droplet::Droplet, method)
     ndroplets
 end
 
-function hamming_distance(dstate::Vector{Int})
-    sum(count_ones(st) for st in dstate)
+function hamming_distance(flip::Flip)
+    sum(count_ones(st) for st ∈ flip.spinxor)
 end
 
+# function hamming_distance(flip1::Flip, flip2::Flip)
+#     # TODO
+#     # sum(count_ones(st) for st ∈ flip.spinxor)
+# end
 
-function droplet_xor_simple(drop1, drop2)
-    denergy = drop1.denergy + drop2.denergy
-    first = min(drop1.from, drop2.from)
-    last = max(drop1.to, drop2.to)
-    flip = zeros(Int, last - first + 1)
-    flip[drop1.from - first + 1 : drop1.to - first + 1] .⊻= drop1.flip
-    flip[drop2.from - first + 1 : drop2.to - first + 1] .⊻= drop2.flip
-    Droplet(denergy, first, last, flip, [], NoDroplets())
-end
 
-function droplet_hamming_simple(drop1, drop2, states)
-    denergy = drop1.denergy + drop2.denergy
-    first = min(drop1.from, drop2.from)
-    last = max(drop1.to, drop2.to)
-    flip = states[first:last] #zeros(last - first + 1)
-    state_xor = zeros(Int, last - first + 1)
-    state_xor[drop1.from - first + 1 : drop1.to - first + 1] .⊻= drop1.state_xor
-    state_xor[drop2.from - first + 1 : drop2.to - first + 1] .⊻= drop2.state_xor
-    for i in 1:length(flip)
-        idx_drop1 = first - drop1.from + i
-        idx_drop2 = first - drop2.from + i
-        if 1 <= idx_drop1 <= length(drop1.flip)
-            flip[i] = drop1.flip[idx_drop1]
-        elseif 1 <= idx_drop2 <= length(drop2.flip)
-            flip[i] = drop2.flip[idx_drop2]
+function merge_droplets(method::SingleLayerDroplets, droplet::Droplet, subdroplet::Droplet)
+    denergy = droplet.denergy + subdroplet.denergy
+    first = min(droplet.first, subdroplet.first)
+    last = max(droplet.last, subdroplet.last)
+
+    flip = droplet.flip
+    subflip = subdroplet.flip
+
+    i1, i2, i3 = 1, 1, 1
+    ln = length(union(flip.support, subflip.support))
+
+    new_support = zeros(Int, ln)
+    new_state = zeros(Int, ln)
+    new_spinxor = zeros(Int, ln)
+
+    while i1 <= length(flip.support) &&  i2 <= length(subflip.support)
+        if flip.support[i1] == subflip.support[i2]
+            new_support[i3] = flip.support[i1]
+            new_state[i3] = subflip.state[i2]
+            new_spinxor[i3] = flip.spinxor[i1] ⊻ subflip.spinxor[i2]
+            i1 += 1
+            i2 += 1
+            i3 += 1
+        elseif flip.support[i1] < subflip.support[i2]
+            new_support[i3] = flip.support[i1]
+            new_state[i3] = flip.state[i1]
+            new_spinxor[i3] = flip.spinxor[i1]
+            i1 += 1
+            i3 += 1
+        else # flip.support[i1] > subflip.support[i2]
+            new_support[i3] = subflip.support[i2]
+            new_state[i3] = subflip.state[i2]
+            new_spinxor[i3] = subflip.spinxor[i2]
+            i2 += 1
+            i3 += 1
         end
     end
-    Droplet(denergy, first, last, flip, state_xor, NoDroplets())
+    while i1 <= length(flip.support)
+        new_support[i3] = flip.support[i1]
+        new_state[i3] = flip.state[i1]
+        new_spinxor[i3] = flip.spinxor[i1]
+        i1 += 1
+        i3 += 1
+    end
+    while i2 <= length(subflip.support)
+        new_support[i3] = subflip.support[i2]
+        new_state[i3] = subflip.state[i2]
+        new_spinxor[i3] = subflip.spinxor[i2]
+        i2 += 1
+        i3 += 1
+    end
+    flip = Flip(new_support, new_state, new_spinxor)
+    Droplet(denergy, first, last, flip, NoDroplets())
 end
 
-function flip_state(state::Vector{Int}, droplet::Droplet)
+
+function flip_state(state::Vector{Int}, flip::Flip)
     new_state = copy(state)
-    new_state[droplet.from:droplet.to] .⊻= droplet.flip
+    new_state[flip.support] .= flip.state
     new_state
 end
 
@@ -278,40 +281,7 @@ function unpack_droplets(sol, β)  # have β in sol ?
 
         for droplet in sol.droplets[i]
             push!(energies, sol.energies[i] + droplet.denergy)
-            push!(states, flip_state(sol.states[i], droplet))
-            push!(probs, sol.probabilities[i] - β * droplet.denergy)
-            push!(degeneracy, 1)
-            push!(droplets, NoDroplets())
-        end
-    end
-
-    inds = sortperm(energies)
-    Solution(energies[inds], states[inds], probs[inds], degeneracy[inds], sol.largest_discarded_probability, droplets[inds])
-end
-
-function flip_state2(state::Vector{Int}, droplet::Droplet)
-    new_state = copy(state)
-    new_state[droplet.from:droplet.to] .= droplet.flip
-    new_state
-end
-
-function unpack_droplets_hamming(sol, β)  # have β in sol ?
-    energies = typeof(sol.energies[begin])[]
-    states = typeof(sol.states[begin])[]
-    probs = typeof(sol.probabilities[begin])[]
-    degeneracy = typeof(sol.degeneracy[begin])[]
-    droplets = Droplets[]
-
-    for i in 1:length(sol.energies)
-        push!(energies, sol.energies[i])
-        push!(states, sol.states[i])
-        push!(probs, sol.probabilities[i])
-        push!(degeneracy, 1)
-        push!(droplets, NoDroplets())
-
-        for droplet in sol.droplets[i]
-            push!(energies, sol.energies[i] + droplet.denergy)
-            push!(states, flip_state2(sol.states[i], droplet))
+            push!(states, flip_state(sol.states[i], droplet.flip))
             push!(probs, sol.probabilities[i] - β * droplet.denergy)
             push!(degeneracy, 1)
             push!(droplets, NoDroplets())
@@ -627,28 +597,3 @@ function gibbs_sampling(
     )
     sol
 end
-
-
-# function (method::SingleLayerDropletsHamming)(best_idx::Int, energies::Vector{<:Real}, states::Vector{Vector{Int}}, droplets::Vector{Droplets})
-#     ndroplets = deepcopy(droplets[best_idx])
-
-#     bstate  = states[best_idx]
-#     benergy = energies[best_idx]
-
-#     for ind ∈ (1 : best_idx - 1..., best_idx + 1 : length(energies)...)
-#         flip = states[ind]
-#         first = findfirst(bstate .!= states[ind])
-#         last = findlast(bstate .!= states[ind])
-#         flip = flip[first:last]
-#         deng = energies[ind] - benergy
-#         droplet = Droplet(deng, first, last, flip, NoDroplets())
-#         ndroplets = my_push!(ndroplets, droplet, method)
-
-#         for subdroplet ∈ droplets[ind]
-#             new_droplet = droplet_hamming_simple(droplet, subdroplet)
-#             ndroplets = my_push!(ndroplets, new_droplet, method)
-#         end
-#     end
-#     ndroplets
-# end
-

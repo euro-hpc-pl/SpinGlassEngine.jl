@@ -31,7 +31,7 @@ push!(my_tests,
     # "chimera_overlap_python.jl",
     # "hamming.jl",
     "search_chimera_smallest_droplets.jl",
-    # "search_chimera_pathological_droplets.jl",
+    "search_chimera_pathological_droplets.jl",
 
 
 # to fix in Tensor

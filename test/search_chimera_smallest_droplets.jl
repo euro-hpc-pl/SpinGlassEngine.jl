@@ -27,10 +27,10 @@
                 net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
                 ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
 
-                sol1, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, SingleLayerDropletsHamming(2.2, 10)))
-                
+                sol1, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, SingleLayerDroplets(2.2, 1)))
+
                 @test sol1.energies ≈ exact_energies[[1]]
-                sol2 = unpack_droplets_hamming(sol1, β)
+                sol2 = unpack_droplets(sol1, β)
                 @test sol2.energies ≈ exact_energies[1:5]
                 println(sol2.states)
 

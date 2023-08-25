@@ -29,7 +29,8 @@ Base.copy(s::NoDroplets) = s
 struct SingleLayerDroplets
     max_energy :: Real
     min_size :: Int
-    SingleLayerDroplets(max_energy = 1.0, min_size = 1) = new(max_energy, min_size)
+    metric :: Symbol 
+    SingleLayerDroplets(max_energy = 1.0, min_size = 1, metric = :no_metric) = new(max_energy, min_size, metric)
 end
 
 struct Flip
@@ -41,7 +42,7 @@ end
 mutable struct Droplet
     denergy :: Real  # excitation energy
     first :: Int  # site where droplet starts
-    last :: Int  # site where droplet ends
+    last :: Int  
     flip :: Flip  # states of nodes flipped by droplet
     droplets :: Union{NoDroplets, Vector{Droplet}}  # subdroplets on top of the current droplet; can be empty
 end
@@ -160,6 +161,16 @@ function (method::SingleLayerDroplets)(ctr::MpsContractor{T}, best_idx::Int, ene
     benergy = energies[best_idx]
     bspin = spins[best_idx]
 
+    if method.metric == :energy
+        cutoff = method.max_energy
+    elseif method.metric == :hamming
+        cutoff = method.min_size
+    # elseif method.metric == :max_clique
+    #     cutoff = 
+    else #method.metric == :no_metric
+        cutoff = -Inf
+    end
+
     for ind ∈ (1 : best_idx - 1..., best_idx + 1 : length(energies)...)
 
         flip_support = findall(bstate .!= states[ind])
@@ -171,7 +182,16 @@ function (method::SingleLayerDroplets)(ctr::MpsContractor{T}, best_idx::Int, ene
         ndroplets = my_push!(ndroplets, droplet, method)
         for subdroplet ∈ droplets[ind]
             new_droplet = merge_droplets(method, droplet, subdroplet)
-            ndroplets = my_push!(ndroplets, new_droplet, method)
+            should_push = true
+            for existing_drop ∈ ndroplets
+                if diversity_metric(existing_drop, new_droplet, method.metric) < cutoff
+                    should_push = false
+                    break
+                end
+            end
+            if should_push 
+                ndroplets = my_push!(ndroplets, new_droplet, method) 
+            end
         end
     end
     ndroplets
@@ -193,14 +213,50 @@ function my_push!(ndroplets::Droplets, droplet::Droplet, method)
     ndroplets
 end
 
+function diversity_metric(drop1::Droplet, drop2::Droplet, metric::Symbol)
+    if metric == :energy 
+        d = abs(drop1.denergy - drop2.denergy)
+    elseif metric == :hamming
+        d = hamming_distance(drop1.flip, drop2.flip)
+    # elseif metric == :max_clique
+    #     d = 
+    else 
+        d = Inf
+    end
+    d
+end
+
 function hamming_distance(flip::Flip)
     sum(count_ones(st) for st ∈ flip.spinxor)
 end
 
-# function hamming_distance(flip1::Flip, flip2::Flip)
-#     # TODO
-#     # sum(count_ones(st) for st ∈ flip.spinxor)
-# end
+function hamming_distance(flip1::Flip, flip2::Flip)
+    n1, n2, hd = 1, 1, 0
+    l1, l2 = length(flip1.support), length(flip2.support)
+    while (n1 < l1) && (n2 < l2)
+        if flip1.support[n1] == flip2.support[n2]
+            if flip1.state[n1] != flip2.state[n2]
+                hd += 1
+            end
+            n1 += 1
+            n2 += 1
+        elseif flip1.support[n1] < flip2.support[n2]
+            n1 += 1
+            hd += 1
+        else
+            n2 += 1
+            hd += 1
+        end
+    end
+    if n1 < l1
+        hd += l1 - n1
+    elseif n2 < l2
+        hd += l2 - n2
+    end
+    hd
+    # TODO
+    # sum(count_ones(st) for st ∈ flip.spinxor)
+end
 
 
 function merge_droplets(method::SingleLayerDroplets, droplet::Droplet, subdroplet::Droplet)

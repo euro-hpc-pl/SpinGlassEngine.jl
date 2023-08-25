@@ -6,6 +6,7 @@ export
        bound_solution,
        gibbs_sampling,
        NoDroplets,
+       Droplet,
        SingleLayerDroplets,
        unpack_droplets,
        decode_to_spin

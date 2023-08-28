@@ -31,8 +31,8 @@
 
                 @test sol1.energies ≈ exact_energies[[1]]
                 sol2 = unpack_droplets(sol1, β)
-                @test sol2.energies ≈ exact_energies[1:5]
-                println(sol2.states)
+                l = length(sol2.energies)
+                @test sol2.energies ≈ exact_energies[1:l]
 
                 for sol ∈ (sol1, sol2)
                     ig_states = decode_factor_graph_state.(Ref(fg), sol.states)

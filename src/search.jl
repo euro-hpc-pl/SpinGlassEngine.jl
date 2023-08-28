@@ -153,24 +153,59 @@ $(TYPEDSIGNATURES)
 
 (method::NoDroplets)(ctr::MpsContractor{T}, best_idx::Int, energies::Vector{<:Real},  states::Vector{Vector{Int}}, droplets::Vector{Droplets}) where T= NoDroplets()
 
+# function (method::SingleLayerDroplets)(ctr::MpsContractor{T}, best_idx::Int, energies::Vector{<:Real}, states::Vector{Vector{Int}}, droplets::Vector{Droplets}) where T
+#     ndroplets = copy(droplets[best_idx])
+
+#     spins = decode_to_spin(ctr, states)
+
+#     bstate  = states[best_idx]
+#     benergy = energies[best_idx]
+#     bspin = spins[best_idx]
+
+#     if method.metric == :energy
+#         cutoff = method.max_energy
+#     elseif method.metric == :hamming
+#         cutoff = method.min_size
+#     # elseif method.metric == :max_clique
+#     #     cutoff = 
+#     else #method.metric == :no_metric
+#         cutoff = -Inf
+#     end
+
+#     for ind ∈ (1 : best_idx - 1..., best_idx + 1 : length(energies)...)
+
+#         flip_support = findall(bstate .!= states[ind])
+#         flip_state = states[ind][flip_support]
+#         flip_spinxor = bspin[flip_support] .⊻ spins[ind][flip_support]
+#         flip = Flip(flip_support, flip_state, flip_spinxor)
+#         denergy = energies[ind] - benergy
+#         droplet = Droplet(denergy, flip_support[1], length(bstate), flip, NoDroplets())
+#         ndroplets = my_push!(ndroplets, droplet, method)
+#         for subdroplet ∈ droplets[ind]
+#             new_droplet = merge_droplets(method, droplet, subdroplet)
+#             should_push = true
+#             for existing_drop ∈ ndroplets
+#                 if diversity_metric(existing_drop, new_droplet, method.metric) < cutoff
+#                     should_push = false
+#                     break
+#                 end
+#             end
+#             if should_push 
+#                 ndroplets = my_push!(ndroplets, new_droplet, method) 
+#             end
+#         end
+#     end
+#     ndroplets
+# end
+
+
 function (method::SingleLayerDroplets)(ctr::MpsContractor{T}, best_idx::Int, energies::Vector{<:Real}, states::Vector{Vector{Int}}, droplets::Vector{Droplets}) where T
     ndroplets = copy(droplets[best_idx])
-
     spins = decode_to_spin(ctr, states)
 
     bstate  = states[best_idx]
     benergy = energies[best_idx]
     bspin = spins[best_idx]
-
-    if method.metric == :energy
-        cutoff = method.max_energy
-    elseif method.metric == :hamming
-        cutoff = method.min_size
-    # elseif method.metric == :max_clique
-    #     cutoff = 
-    else #method.metric == :no_metric
-        cutoff = -Inf
-    end
 
     for ind ∈ (1 : best_idx - 1..., best_idx + 1 : length(energies)...)
 
@@ -180,22 +215,46 @@ function (method::SingleLayerDroplets)(ctr::MpsContractor{T}, best_idx::Int, ene
         flip = Flip(flip_support, flip_state, flip_spinxor)
         denergy = energies[ind] - benergy
         droplet = Droplet(denergy, flip_support[1], length(bstate), flip, NoDroplets())
-        ndroplets = my_push!(ndroplets, droplet, method)
+        if droplet.denergy <= method.max_energy && hamming_distance(droplet.flip) >= method.min_size
+            ndroplets = my_push!(ndroplets, droplet, method)
+        end
         for subdroplet ∈ droplets[ind]
             new_droplet = merge_droplets(method, droplet, subdroplet)
-            should_push = true
-            for existing_drop ∈ ndroplets
-                if diversity_metric(existing_drop, new_droplet, method.metric) < cutoff
-                    should_push = false
-                    break
-                end
-            end
-            if should_push 
-                ndroplets = my_push!(ndroplets, new_droplet, method) 
-            end
+            ndroplets = my_push!(ndroplets, new_droplet, method)
         end
     end
-    ndroplets
+    if typeof(ndroplets) == NoDroplets
+        return ndroplets
+    else
+        return filter_droplets(ndroplets, method)
+    end
+end
+
+function filter_droplets(all_droplets::Vector{Droplet}, method::SingleLayerDroplets)
+    sorted_droplets = sort(all_droplets, by = droplet -> (droplet.denergy))
+    if method.metric == :hamming
+        cutoff = method.min_size
+    # elseif method.metric == :max_clique
+    #     cutoff = 
+    else #method.metric == :no_metric
+        cutoff = -Inf
+    end
+    
+    filtered_droplets = Droplet[]
+    for droplet in sorted_droplets
+        should_push = true
+        for existing_drop in filtered_droplets
+            if diversity_metric(existing_drop, droplet, method.metric) < cutoff
+                should_push = false
+                break
+            end
+        end
+        if should_push
+            push!(filtered_droplets, droplet)
+        end
+    end
+    
+    filtered_droplets
 end
 
 function decode_to_spin(ctr::MpsContractor{T}, states::Vector{Vector{Int}}) where T
@@ -205,19 +264,25 @@ function decode_to_spin(ctr::MpsContractor{T}, states::Vector{Vector{Int}}) wher
 end
 
 function my_push!(ndroplets::Droplets, droplet::Droplet, method)
-    if droplet.denergy <= method.max_energy && hamming_distance(droplet.flip) >= method.min_size
-        if typeof(ndroplets) == NoDroplets
-            ndroplets = Droplet[]
-        end
-        push!(ndroplets, droplet)
+    if typeof(ndroplets) == NoDroplets
+        ndroplets = Droplet[]
     end
+    push!(ndroplets, droplet)
     ndroplets
 end
 
+# function my_push!(ndroplets::Droplets, droplet::Droplet, method)
+#     if droplet.denergy <= method.max_energy && hamming_distance(droplet.flip) >= method.min_size
+#         if typeof(ndroplets) == NoDroplets
+#             ndroplets = Droplet[]
+#         end
+#         push!(ndroplets, droplet)
+#     end
+#     ndroplets
+# end
+
 function diversity_metric(drop1::Droplet, drop2::Droplet, metric::Symbol)
-    if metric == :energy 
-        d = abs(drop1.denergy - drop2.denergy)
-    elseif metric == :hamming
+    if metric == :hamming
         d = hamming_distance(drop1.flip, drop2.flip)
     # elseif metric == :max_clique
     #     d = 
@@ -234,31 +299,31 @@ end
 function hamming_distance(flip1::Flip, flip2::Flip)
     n1, n2, hd = 1, 1, 0
     l1, l2 = length(flip1.support), length(flip2.support)
-    while (n1 < l1) && (n2 < l2)
+    while (n1 <= l1) && (n2 <= l2)
         if flip1.support[n1] == flip2.support[n2]
             if flip1.state[n1] != flip2.state[n2]
-                hd += 1
+                hd += count_ones(flip1.spinxor[n1] ⊻ flip2.spinxor[n2])
             end
             n1 += 1
             n2 += 1
         elseif flip1.support[n1] < flip2.support[n2]
+            hd += count_ones(flip1.spinxor[n1])
             n1 += 1
-            hd += 1
         else
+            hd += count_ones(flip2.spinxor[n2])
             n2 += 1
-            hd += 1
         end
     end
-    if n1 < l1
-        hd += l1 - n1
-    elseif n2 < l2
-        hd += l2 - n2
+    while n1 <= l1
+        hd += count_ones(flip1.spinxor[n1])
+        n1 += 1
     end
+    while n2 <= l2
+        hd += count_ones(flip2.spinxor[n2])
+        n2 += 1
+        end
     hd
-    # TODO
-    # sum(count_ones(st) for st ∈ flip.spinxor)
 end
-
 
 function merge_droplets(method::SingleLayerDroplets, droplet::Droplet, subdroplet::Droplet)
     denergy = droplet.denergy + subdroplet.denergy

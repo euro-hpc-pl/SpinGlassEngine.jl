@@ -29,10 +29,11 @@ push!(my_tests,
     # "search_square2_basic.jl",
     # "search_squarestar2_basic.jl",
     # "chimera_overlap_python.jl",
-    # "hamming.jl",
+    "hamming.jl",
     "search_chimera_smallest_droplets.jl",
     "search_chimera_pathological_droplets.jl",
-
+    # "search_chimera_droplets.jl",
+    # "search_pegasus_droplets.jl",
 
 # to fix in Tensor
     #"search_chimera_pathological_gauge.jl",
@@ -50,7 +51,7 @@ push!(my_tests,
     # "experimental/truncate.jl",
     # "experimental/truncate_small.jl",
     # "experimental/mpo_size.jl",
-    #"experimental/squarestar2_pegasus.jl",
+    # "experimental/squarestar2_pegasus.jl",
     # "experimental/squarestar2_zephyr.jl",
     # "experimental/gauges_cuda.jl",
     # "experimental/sampling.jl"

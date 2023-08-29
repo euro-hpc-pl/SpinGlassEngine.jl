@@ -8,8 +8,10 @@ export
        NoDroplets,
        Droplet,
        SingleLayerDroplets,
+       Flip,
        unpack_droplets,
-       decode_to_spin
+       decode_to_spin,
+       hamming_distance
 """
 $(TYPEDSIGNATURES)
 """
@@ -220,7 +222,9 @@ function (method::SingleLayerDroplets)(ctr::MpsContractor{T}, best_idx::Int, ene
         end
         for subdroplet ∈ droplets[ind]
             new_droplet = merge_droplets(method, droplet, subdroplet)
-            ndroplets = my_push!(ndroplets, new_droplet, method)
+            if new_droplet.denergy <= method.max_energy && hamming_distance(new_droplet.flip) >= method.min_size
+                ndroplets = my_push!(ndroplets, new_droplet, method)
+            end
         end
     end
     if typeof(ndroplets) == NoDroplets
@@ -270,16 +274,6 @@ function my_push!(ndroplets::Droplets, droplet::Droplet, method)
     push!(ndroplets, droplet)
     ndroplets
 end
-
-# function my_push!(ndroplets::Droplets, droplet::Droplet, method)
-#     if droplet.denergy <= method.max_energy && hamming_distance(droplet.flip) >= method.min_size
-#         if typeof(ndroplets) == NoDroplets
-#             ndroplets = Droplet[]
-#         end
-#         push!(ndroplets, droplet)
-#     end
-#     ndroplets
-# end
 
 function diversity_metric(drop1::Droplet, drop2::Droplet, metric::Symbol)
     if metric == :hamming

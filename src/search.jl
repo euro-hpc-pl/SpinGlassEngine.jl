@@ -155,52 +155,6 @@ $(TYPEDSIGNATURES)
 
 (method::NoDroplets)(ctr::MpsContractor{T}, best_idx::Int, energies::Vector{<:Real},  states::Vector{Vector{Int}}, droplets::Vector{Droplets}) where T= NoDroplets()
 
-# function (method::SingleLayerDroplets)(ctr::MpsContractor{T}, best_idx::Int, energies::Vector{<:Real}, states::Vector{Vector{Int}}, droplets::Vector{Droplets}) where T
-#     ndroplets = copy(droplets[best_idx])
-
-#     spins = decode_to_spin(ctr, states)
-
-#     bstate  = states[best_idx]
-#     benergy = energies[best_idx]
-#     bspin = spins[best_idx]
-
-#     if method.metric == :energy
-#         cutoff = method.max_energy
-#     elseif method.metric == :hamming
-#         cutoff = method.min_size
-#     # elseif method.metric == :max_clique
-#     #     cutoff = 
-#     else #method.metric == :no_metric
-#         cutoff = -Inf
-#     end
-
-#     for ind ∈ (1 : best_idx - 1..., best_idx + 1 : length(energies)...)
-
-#         flip_support = findall(bstate .!= states[ind])
-#         flip_state = states[ind][flip_support]
-#         flip_spinxor = bspin[flip_support] .⊻ spins[ind][flip_support]
-#         flip = Flip(flip_support, flip_state, flip_spinxor)
-#         denergy = energies[ind] - benergy
-#         droplet = Droplet(denergy, flip_support[1], length(bstate), flip, NoDroplets())
-#         ndroplets = my_push!(ndroplets, droplet, method)
-#         for subdroplet ∈ droplets[ind]
-#             new_droplet = merge_droplets(method, droplet, subdroplet)
-#             should_push = true
-#             for existing_drop ∈ ndroplets
-#                 if diversity_metric(existing_drop, new_droplet, method.metric) < cutoff
-#                     should_push = false
-#                     break
-#                 end
-#             end
-#             if should_push 
-#                 ndroplets = my_push!(ndroplets, new_droplet, method) 
-#             end
-#         end
-#     end
-#     ndroplets
-# end
-
-
 function (method::SingleLayerDroplets)(ctr::MpsContractor{T}, best_idx::Int, energies::Vector{<:Real}, states::Vector{Vector{Int}}, droplets::Vector{Droplets}) where T
     ndroplets = copy(droplets[best_idx])
     spins = decode_to_spin(ctr, states)
@@ -637,6 +591,9 @@ function low_energy_spectrum(
         ctr.peps.factor_graph.reverse_label_map[idx]
         for idx ∈ ctr.peps.vertex_map.(ctr.nodes_search_order)
     ])
+    
+    inner_perm_inv = zeros(Int, length(inner_perm))
+    inner_perm_inv[inner_perm] = collect(1:length(inner_perm))
 
     # Sort using energies as keys
     outer_perm = sortperm(sol.energies)
@@ -646,7 +603,7 @@ function low_energy_spectrum(
         sol.probabilities[outer_perm],
         sol.degeneracy[outer_perm],
         sol.largest_discarded_probability,
-        sol.droplets[outer_perm] #,
+        [perm_droplet(drop, inner_perm_inv) for drop in sol.droplets[outer_perm] ]#,
         # sol.pool_of_flips # TODO
     )
 
@@ -655,6 +612,20 @@ function low_energy_spectrum(
         Ref(ctr.peps.factor_graph), decode_state.(Ref(ctr.peps), sol.states)
     )
     sol, s
+end
+
+perm_droplet(drop::NoDroplets, perm::Vector{Int}) = drop
+
+function perm_droplet(drops::Vector{Droplet}, perm::Vector{Int})
+   [perm_droplet(drop, perm) for drop in drops]
+end 
+
+function perm_droplet(drop::Droplet, perm::Vector{Int})
+    flip = drop.flip
+    support = perm[flip.support]
+    ind = sortperm(support)
+    flip = Flip(support[ind], flip.state[ind], flip.spinxor[ind])
+    Droplet(drop.denergy, drop.first, drop.last, flip, perm_droplet(drop.droplets, perm))
 end
 
 """

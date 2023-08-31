@@ -1,3 +1,16 @@
+function hamming_distance_test(dict1::Dict, dict2::Dict)
+    # Initialize a counter for different occurrences
+    different_count = 0
+
+    # Iterate through the keys and compare values
+    for (key, value1) in dict1
+        value2 = dict2[key]
+        if value1 != value2
+            different_count += 1
+        end
+    end
+    different_count
+end 
 @testset "Chimera-like (pathological) instance has the correct energy spectrum for all heuristics" begin
     m, n, t = 3, 4, 3
 
@@ -67,20 +80,17 @@
     Gauge = NoUpdate
 
     energies = Vector{Float64}[]
-    # for Strategy ∈ (SVDTruncate, MPSAnnealing, Zipper), Sparsity ∈ (Dense, Sparse)
-    #     for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
-    #         for Lattice ∈ (Square, SquareStar), transform ∈ all_lattice_transformations
-    for Strategy ∈ (Zipper,), Sparsity ∈ (Dense,)
-        for Layout ∈ (EnergyGauges,)
-            for transform ∈ all_lattice_transformations[[1]]
+    for Strategy ∈ (SVDTruncate, MPSAnnealing, Zipper), Sparsity ∈ (Dense, Sparse)
+        for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
+            for Lattice ∈ (Square, SquareStar), transform ∈ all_lattice_transformations
 
                 net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
                 ctr = MpsContractor{Strategy, Gauge}(net, [β/8., β/4., β/2., β], :graduate_truncate, params; onGPU=onGPU)
                 sol1, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, SingleLayerDroplets(1.01, 10, :hamming)))
                 @test sol1.energies ≈ [exact_energies[1]]
                 sol2 = unpack_droplets(sol1, β)
-                println(sol1.droplets)
-                @test hamming_distance(Flip([1, 2, 3, 5, 6, 10, 11], [2, 5, 2, 1, 3, 5, 3], [1, 7, 5, 1, 3, 7, 3]), Flip([],[],[])) == 14
+                (dict1, dict2) = decode_factor_graph_state.(Ref(fg), sol2.states)
+                @test hamming_distance(sol1.droplets[1][1].flip, Flip([],[],[])) == hamming_distance_test(dict1, dict2)
 
                 clear_memoize_cache()
             end

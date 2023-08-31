@@ -18,9 +18,9 @@ MPI.Init()
 size = MPI.Comm_size(MPI.COMM_WORLD)
 rank = MPI.Comm_rank(MPI.COMM_WORLD)
 
-M, N, T = 7, 7, 3
-INSTANCE_DIR = "$(@__DIR__)/../test/instances/pegasus_random/P8/CBFM-P/SpinGlass/single"
-OUTPUT_DIR = "$(@__DIR__)/results/pegasus_random/P8/CBFM-P/BP/P8_truncate2site_2_12_i1-10_iter1"
+M, N, T = 3, 3, 3
+INSTANCE_DIR = "$(@__DIR__)/../test/instances/pegasus_random/P4/RCO/SpinGlass/single"
+OUTPUT_DIR = "$(@__DIR__)/results/pegasus_random/P4/RCO/diversity/P4_droplets"
 
 if !Base.Filesystem.isdir(OUTPUT_DIR)
     Base.Filesystem.mkpath(OUTPUT_DIR)
@@ -39,8 +39,8 @@ INDβ = [3,] #[1, 2, 3]
 MAX_STATES = 128
 BOND_DIM = [8, ]
 DE = 16.0
-cs = 2^12
-iter = 1
+# cs = 2^12
+# iter = 1
 
 MAX_SWEEPS = [0,]
 VAR_TOL = 1E-16
@@ -50,43 +50,47 @@ ITERS_VAR = 1
 DTEMP_MULT = 2
 METHOD = :psvd_sparse
 I = [1,]
+eng = [0.01, 1.01] #collect(0.01:1:1.01)
 disable_logging(LogLevel(1))
 BLAS.set_num_threads(1)
 
-function pegasus_sim(inst, trans, β, Layout, bd, ms)
+function pegasus_sim(inst, trans, β, Layout, bd, ms, eng)
     δp = 1E-5*exp(-β * DE)
 
     fg = factor_graph(
         ising_graph(INSTANCE_DIR * "/" * inst),
-        spectrum=full_spectrum,
+        spectrum=brute_force_gpu,
         cluster_assignment_rule=pegasus_lattice((M, N, T))
         )
         
-    new_fg = factor_graph_2site(fg, β)
-    beliefs = belief_propagation(new_fg, β; tol=1e-6, iter=iter)
-    fg = truncate_factor_graph_2site_BP(fg, beliefs, cs; beta=β)
+    # new_fg = factor_graph_2site(fg, β)
+    # beliefs = belief_propagation(new_fg, β; tol=1e-6, iter=iter)
+    # fg = truncate_factor_graph_2site_BP(fg, beliefs, cs; beta=β)
 
     params = MpsParameters(bd, VAR_TOL, ms, TOL_SVD, ITERS_SVD, ITERS_VAR, DTEMP_MULT, METHOD)
     search_params = SearchParameters(MAX_STATES, δp)
 
     net = PEPSNetwork{SquareStar2{Layout}, SPARSITY}(M, N, fg, trans)
     ctr = MpsContractor{STRATEGY, GAUGE}(net, [β/6, β/3, β/2, β], graduate_truncation, params)
-    sol, schmidts = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+    sol1, schmidts = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, SingleLayerDroplets(eng, 20, :hamming)))
 
+    sol2 = unpack_droplets(sol1, β)
+
+    ldrop = length(sol2.states)
     cRAM = round(Base.summarysize(Memoization.caches) * 1E-9; sigdigits=2)
     clear_memoize_cache()
-    sol, ctr, cRAM, schmidts
+    sol1, ctr, cRAM, schmidts, ldrop, sol2
 end
 
-function run_bench(inst::String, β::Real, t, l, bd, ms, i)
-    hash_name = hash(string(inst, β, t, l, bd, ms, i))
+function run_bench(inst::String, β::Real, t, l, bd, ms, eng, i)
+    hash_name = hash(string(inst, β, t, l, bd, ms, eng, i))
     out_path = string(OUTPUT_DIR, "/", hash_name, ".csv")
 
     if isfile(out_path)
-        println("Skipping for $β, $t, $l, $bd, $ms.")
+        println("Skipping for $β, $t, $l, $bd, $eng, $ms.")
     else
         data = try
-            tic_toc = @elapsed sol, ctr, cRAM, schmidts = pegasus_sim(inst, t, β, l, bd, ms)
+            tic_toc = @elapsed sol, ctr, cRAM, schmidts, ldrop, droplets = pegasus_sim(inst, t, β, l, bd, ms, eng)
         
             data = DataFrame(
                 :instance => inst,
@@ -101,7 +105,10 @@ function run_bench(inst::String, β::Real, t, l, bd, ms, i)
                 :bond_dim => bd,
                 :de => DE,
                 :max_sweeps => ms,
-                :cl_states => cs,
+                :eng => eng,
+                :droplets => droplets,
+                :drop_number => ldrop,
+                # :cl_states => cs,
                 :iters_svd => ITERS_SVD,
                 :iters_var => ITERS_VAR,
                 :dtemp_mult => DTEMP_MULT,
@@ -117,7 +124,10 @@ function run_bench(inst::String, β::Real, t, l, bd, ms, i)
                 :Layout => l,
                 :transform => t,
                 :max_states => MAX_STATES,
-                :cl_states => cs,
+                # :cl_states => cs,
+                :eng => eng,
+                :droplets => droplets,
+                :drop_number => ldrop,
                 :iters_svd => ITERS_SVD,
                 :iters_var => ITERS_VAR,
                 :dtemp_mult => DTEMP_MULT,
@@ -135,7 +145,7 @@ end
 
 all_params = collect(
     Iterators.product(
-        readdir(INSTANCE_DIR, join=false), BETAS, TRANSFORM, LAYOUT, BOND_DIM, MAX_SWEEPS, I)
+        readdir(INSTANCE_DIR, join=false), BETAS, TRANSFORM, LAYOUT, BOND_DIM, MAX_SWEEPS, eng, I)
 )
 
 for i ∈ (1+rank):size:length(all_params)

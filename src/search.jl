@@ -192,8 +192,6 @@ function filter_droplets(all_droplets::Vector{Droplet}, method::SingleLayerDropl
     sorted_droplets = sort(all_droplets, by = droplet -> (droplet.denergy))
     if method.metric == :hamming
         cutoff = method.min_size
-    # elseif method.metric == :max_clique
-    #     cutoff = 
     else #method.metric == :no_metric
         cutoff = -Inf
     end
@@ -232,8 +230,6 @@ end
 function diversity_metric(drop1::Droplet, drop2::Droplet, metric::Symbol)
     if metric == :hamming
         d = hamming_distance(drop1.flip, drop2.flip)
-    # elseif metric == :max_clique
-    #     d = 
     else 
         d = Inf
     end
@@ -362,8 +358,6 @@ function unpack_droplets(sol, β)  # have β in sol ?
     Solution(energies[inds], states[inds], probs[inds], degeneracy[inds], sol.largest_discarded_probability, droplets[inds])
 end
 
-# function update_droplets
-# end
 
 """
 $(TYPEDSIGNATURES)

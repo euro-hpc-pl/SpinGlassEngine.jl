@@ -525,7 +525,7 @@ end
 $(TYPEDSIGNATURES)
 """
 function low_energy_spectrum(
-    ctr::T, sparams::SearchParameters, merge_strategy=no_merge; no_cache=false,
+    ctr::T, sparams::SearchParameters, merge_strategy=no_merge, symmetry::Symbol=:noZ2; no_cache=false,
 ) where T <: AbstractContractor
     # Build all boundary mps
     CUDA.allowscalar(false)
@@ -573,6 +573,11 @@ function low_energy_spectrum(
             empty!(ctr.peps.lp, :GPU)
         end
         sol = branch_solution(sol, ctr)
+        if symmetry == :Z2 && length(sol.states[1]) == 1
+            fg = ctr.peps.factor_graph
+            st_int = get_prop(fg, node, :spectrum).states_int
+            sol = Solution(sol, findall(p -> isodd(p), st_int))
+        end
         sol = bound_solution(sol, sparams.max_states, sparams.cut_off_prob, merge_strategy)
         Memoization.empty_cache!(precompute_conditional)
         if no_cache Memoization.empty_all_caches!() end

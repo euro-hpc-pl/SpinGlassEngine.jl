@@ -32,9 +32,9 @@ push!(my_tests,
     # "hamming.jl",
     # "search_chimera_smallest_droplets.jl",
     # "search_chimera_pathological_droplets.jl",
-    "search_chimera_pathological_hamming.jl",
+    # "search_chimera_pathological_hamming.jl",
     # "search_chimera_droplets.jl",
-    # "search_pegasus_droplets.jl",
+    "search_pegasus_droplets.jl",
 
 # to fix in Tensor
     #"search_chimera_pathological_gauge.jl",

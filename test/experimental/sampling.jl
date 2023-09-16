@@ -19,7 +19,7 @@ bond_dim = 2
 num_states = 7 #22
 
 ig = ising_graph("$(@__DIR__)/../instances/square_gauss/S12/001.txt")
-fg = factor_graph(
+cl_h = clustered_hamiltonian(
     ig,
     spectrum=my_brute_force,
     cluster_assignment_rule=super_square_lattice((m, n, t))
@@ -35,7 +35,7 @@ Layout = EnergyGauges
 Lattice = Square
 transform = rotation(0)
 
-net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform)
+net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, cl_h, transform)
 ctr = MpsContractor{Strategy, Gauge}(net, [β/8., β/4., β/2., β], :graduate_truncate, params; onGPU=onGPU)
 sol = gibbs_sampling(ctr, search_params)
 

@@ -59,14 +59,14 @@ function run_test(instance, m, n, t)
             println("===============")
             println("Transform ", tran)
 
-            fg = factor_graph(
+            cl_h = clustered_hamiltonian(
                 ig,
                 spectrum=full_spectrum, #_gpu, # rm _gpu to use CPU
                 cluster_assignment_rule=pegasus_lattice((m, n, t))
             )
-            fg = truncate_factor_graph_2site_energy(fg, cl)
+            cl_h = truncate_clustered_hamiltonian_2site_energy(cl_h, cl)
 
-            net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, tran)
+            net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, cl_h, tran)
 
             ctr = MpsContractor{Strategy, Gauge}(net, βs, :graduate_truncate, params; onGPU=onGPU)
 

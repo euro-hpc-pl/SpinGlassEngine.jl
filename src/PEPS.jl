@@ -24,7 +24,7 @@ $(TYPEDSIGNATURES)
 mutable struct PEPSNetwork{
     T <: AbstractGeometry, S <: AbstractSparsity
 } <: AbstractGibbsNetwork{Node, PEPSNode}
-    factor_graph::LabelledGraph
+    clustered_hamiltonian::LabelledGraph
     vertex_map::Function
     lp::PoolOfProjectors
     m::Int
@@ -37,15 +37,15 @@ mutable struct PEPSNetwork{
     function PEPSNetwork{T, S}(
         m::Int,
         n::Int,
-        factor_graph::LabelledGraph,
+        clustered_hamiltonian::LabelledGraph,
         transformation::LatticeTransformation,
         gauge_type::Symbol=:id
     ) where {T <: AbstractGeometry, S <: AbstractSparsity}
         lp = PoolOfProjectors{Int}()
-        net = new(factor_graph, vertex_map(transformation, m, n), lp, m, n)
+        net = new(clustered_hamiltonian, vertex_map(transformation, m, n), lp, m, n)
         net.nrows, net.ncols = transformation.flips_dimensions ? (n, m) : (m, n)
 
-        if !is_compatible(net.factor_graph, T.name.wrapper(m, n))
+        if !is_compatible(net.clustered_hamiltonian, T.name.wrapper(m, n))
             throw(ArgumentError("Factor graph not compatible with given network."))
         end
 
@@ -75,15 +75,15 @@ ones_like(x::AbstractArray) = ones(eltype(x), size(x))
 $(TYPEDSIGNATURES)
 """
 function bond_energy(net::AbstractGibbsNetwork{T, S}, u::Node, v::Node, σ::Int) where {T, S}
-    fg_u, fg_v = net.vertex_map(u), net.vertex_map(v)
-    if has_edge(net.factor_graph, fg_u, fg_v)
+    cl_h_u, cl_h_v = net.vertex_map(u), net.vertex_map(v)
+    if has_edge(net.clustered_hamiltonian, cl_h_u, cl_h_v)
         pu, en, pv = get_prop.(
-                        Ref(net.factor_graph), Ref(fg_u), Ref(fg_v), (:pl, :en, :pr)
+                        Ref(net.clustered_hamiltonian), Ref(cl_h_u), Ref(cl_h_v), (:pl, :en, :pr)
                     )
         @inbounds energies = en[pu, pv[σ]]
-    elseif has_edge(net.factor_graph, fg_v, fg_u)
+    elseif has_edge(net.clustered_hamiltonian, cl_h_v, cl_h_u)
         pv, en, pu = get_prop.(
-                        Ref(net.factor_graph), Ref(fg_v), Ref(fg_u), (:pl, :en, :pr)
+                        Ref(net.clustered_hamiltonian), Ref(cl_h_v), Ref(cl_h_u), (:pl, :en, :pr)
                     )
         @inbounds energies = en[pv[σ], pu]
     else
@@ -96,14 +96,14 @@ end
 $(TYPEDSIGNATURES)
 """
 function projector(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
-    fg = network.factor_graph
-    fg_v, fg_w = network.vertex_map(v), network.vertex_map(w)
-    if has_edge(fg, fg_w, fg_v)
-        p = get_prop(fg, fg_w, fg_v, :pr)
-    elseif has_edge(fg, fg_v, fg_w)
-        p = get_prop(fg, fg_v, fg_w, :pl)
+    cl_h = network.clustered_hamiltonian
+    cl_h_v, cl_h_w = network.vertex_map(v), network.vertex_map(w)
+    if has_edge(cl_h, cl_h_w, cl_h_v)
+        p = get_prop(cl_h, cl_h_w, cl_h_v, :pr)
+    elseif has_edge(cl_h, cl_h_v, cl_h_w)
+        p = get_prop(cl_h, cl_h_v, cl_h_w, :pl)
     else
-        p = ones(Int, fg_v ∈ vertices(fg) ? cluster_size(network, v) : 1)
+        p = ones(Int, cl_h_v ∈ vertices(cl_h) ? cluster_size(network, v) : 1)
     end
 end
 
@@ -137,7 +137,7 @@ end
 $(TYPEDSIGNATURES)
 """
 function spectrum(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T}
-    get_prop(network.factor_graph, network.vertex_map(vertex), :spectrum)
+    get_prop(network.clustered_hamiltonian, network.vertex_map(vertex), :spectrum)
 end
 
 """
@@ -158,12 +158,12 @@ end
 $(TYPEDSIGNATURES)
 """
 function interaction_energy(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
-    fg = network.factor_graph
-    fg_v, fg_w = network.vertex_map(v), network.vertex_map(w)
-    if has_edge(fg, fg_w, fg_v)
-        get_prop(fg, fg_w, fg_v, :en)'
-    elseif has_edge(fg, fg_v, fg_w)
-        get_prop(fg, fg_v, fg_w, :en)
+    cl_h = network.clustered_hamiltonian
+    cl_h_v, cl_h_w = network.vertex_map(v), network.vertex_map(w)
+    if has_edge(cl_h, cl_h_w, cl_h_v)
+        get_prop(cl_h, cl_h_w, cl_h_v, :en)'
+    elseif has_edge(cl_h, cl_h_v, cl_h_w)
+        get_prop(cl_h, cl_h_v, cl_h_w, :en)
     else
         zeros(1, 1)
     end
@@ -172,8 +172,8 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function is_compatible(factor_graph::LabelledGraph, network_graph::LabelledGraph)
-    all(has_edge(network_graph, src(edge), dst(edge)) for edge ∈ edges(factor_graph))
+function is_compatible(clustered_hamiltonian::LabelledGraph, network_graph::LabelledGraph)
+    all(has_edge(network_graph, src(edge), dst(edge)) for edge ∈ edges(clustered_hamiltonian))
 end
 
 """
@@ -211,8 +211,8 @@ end
 $(TYPEDSIGNATURES)
 """
 function decode_state(
-    peps::AbstractGibbsNetwork{S, T}, σ::Vector{Int}, fg_order::Bool=false
+    peps::AbstractGibbsNetwork{S, T}, σ::Vector{Int}, cl_h_order::Bool=false
 ) where {S, T}
-    nodes = fg_order ? peps.vertex_map.(nodes_search_order_Mps(peps)) : vertices(peps.factor_graph)
+    nodes = cl_h_order ? peps.vertex_map.(nodes_search_order_Mps(peps)) : vertices(peps.clustered_hamiltonian)
     Dict(nodes[1:length(σ)] .=> σ)
 end

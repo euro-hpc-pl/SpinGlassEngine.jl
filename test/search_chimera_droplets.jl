@@ -22,7 +22,7 @@ function bench(instance::String)
     num_states = 500
     all_betas = [β/8, β/4, β/2, β]
 
-    fg = factor_graph(
+    cl_h = clustered_hamiltonian(
         ising_graph(instance),
         max_cl_states,
         spectrum=my_brute_force,
@@ -35,7 +35,7 @@ function bench(instance::String)
     for Strategy ∈ (Zipper, ), Sparsity ∈ (Dense, )
         for Gauge ∈ (NoUpdate, )
             for Layout ∈ (GaugesEnergy,), transform ∈ all_lattice_transformations[[1]]
-                net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
+                net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, cl_h, transform)
                 ctr = MpsContractor{Strategy, Gauge}(net, all_betas, :graduate_truncate, params; onGPU=onGPU)
                 # sol1, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, NoDroplets()))
                 sol1, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, SingleLayerDroplets(1.0, 1000, :hamming)))
@@ -47,11 +47,11 @@ function bench(instance::String)
                 push!(energies, sol1.energies)
 
                 for sol ∈ (sol1, sol2)
-                    ig_states = decode_factor_graph_state.(Ref(fg), sol.states)
+                    ig_states = decode_clustered_hamiltonian_state.(Ref(cl_h), sol.states)
                     @test sol.energies ≈ energy.(Ref(ising_graph(instance)), ig_states)
 
-                    fg_states = decode_state.(Ref(net), sol.states)
-                    @test sol.energies ≈ energy.(Ref(fg), fg_states)
+                    cl_h_states = decode_state.(Ref(net), sol.states)
+                    @test sol.energies ≈ energy.(Ref(cl_h), cl_h_states)
 
                     norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
                     @test norm_prob ≈ exp.(-β .* (sol.energies .- sol.energies[1]))

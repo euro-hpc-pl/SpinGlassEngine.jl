@@ -8,20 +8,24 @@ m = 6 # for Z3
 n = 6
 t = 4
 
-β = 0.25
+β = 0.5
 DE = 16.0
 bond_dim = 5
 δp = 1E-5*exp(-β * DE)
 num_states = 128
-
+iter = 1
+cs = 2^10
 ig = ising_graph("$(@__DIR__)/../instances/zephyr_random/Z3/RAU/SpinGlass/001_sg.txt")
 
-fg = factor_graph(
+cl_h = clustered_hamiltonian(
     ig,
     # max_cl_states,
     spectrum = full_spectrum,  #brute_force_gpu, # rm _gpu to use CPU
     cluster_assignment_rule = zephyr_lattice((m, n, t))
 )
+new_cl_h = clustered_hamiltonian_2site(cl_h, β)
+beliefs = belief_propagation(new_cl_h, β; tol=1e-6, iter=iter)
+cl_h = truncate_clustered_hamiltonian_2site_BP(cl_h, beliefs, cs; beta=β)
 
 params = MpsParameters(bond_dim, 1E-8, 10, 1E-16)
 search_params = SearchParameters(num_states, δp)
@@ -34,7 +38,7 @@ tran =  LatticeTransformation((4, 1, 2, 3), true)
 Layout = GaugesEnergy
 Gauge = NoUpdate
 
-net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, tran)
+net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, cl_h, tran)
 ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)
 
 # for i in 1//2 : 1//2 : m

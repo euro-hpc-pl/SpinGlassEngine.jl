@@ -38,20 +38,20 @@ DE = 16.0
 
 ig = ising_graph("$(@__DIR__)/../instances/pegasus_random/P4/CBFM-P/SpinGlass/001_sg.txt")
 
-# fg = factor_graph(
+# cl_h = clustered_hamiltonian(
 #     ig,
 #     100,
 #     spectrum=my_brute_force, #rm _gpu to use CPU
 #     cluster_assignment_rule=pegasus_lattice((m, n, t))
 # )
 
-fg = factor_graph(
+cl_h = clustered_hamiltonian(
     ig,
     spectrum=full_spectrum, #rm _gpu to use CPU
     cluster_assignment_rule=pegasus_lattice((m, n, t))
 )
 
-fg = truncate_factor_graph_1site_BP(fg, 1)
+cl_h = truncate_clustered_hamiltonian_1site_BP(cl_h, 1)
 
 params = MpsParameters(Dcut, tolV, max_sweeps, tolS, ITERS_SVD, ITERS_VAR, DTEMP_MULT, METHOD)
 search_params = SearchParameters(MAX_STATES, δp)
@@ -65,7 +65,7 @@ indβ = 1
 
 for s in Strategy
     for tran ∈ all_lattice_transformations #3,4,5,6,8
-        net = PEPSNetwork{SquareStar2{Layout}, Sparse}(m, n, fg, tran)
+        net = PEPSNetwork{SquareStar2{Layout}, Sparse}(m, n, cl_h, tran)
 
         ctr = MpsContractor{s, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)
         sol, schmidts = low_energy_spectrum(ctr, search_params, merge_branches(ctr))

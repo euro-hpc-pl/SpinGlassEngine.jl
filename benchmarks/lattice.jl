@@ -16,7 +16,7 @@ all_betas = [β/8, β/4, β/2, β]
 
 instance = 
 
-fg = factor_graph(
+cl_h = clustered_hamiltonian(
     ising_graph(instance),
     max_cl_states,
     spectrum=my_brute_force,
@@ -28,6 +28,6 @@ transform = rotation(0)
 Gauge = GaugeStrategy
 Layout = GaugesEnergy
 
-net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
+net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, cl_h, transform)
 ctr = MpsContractor{Strategy, Gauge}(net, all_betas, :graduate_truncate, params; onGPU=onGPU)
 sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit))

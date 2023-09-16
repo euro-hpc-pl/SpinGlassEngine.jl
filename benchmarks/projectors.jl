@@ -26,7 +26,7 @@ num_states = 128
 ig = ising_graph("$(@__DIR__)/../test/instances/pegasus_random/P8/RCO/SpinGlass/001_sg.txt")
 #ig = ising_graph("$(@__DIR__)/../test/instances/zephyr_random/Z2/RCO/SpinGlass/001_sg.txt")
 
-fg = factor_graph(
+cl_h = clustered_hamiltonian(
     ig,
     spectrum= full_spectrum, #brute_force_gpu, #rm _gpu to use CPU
     #spectrum= full_spectrum, #for zephyr
@@ -45,7 +45,7 @@ Layout = EnergyGauges
 Gauge = NoUpdate
 indβ = 3
 
-net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, tran)
+net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, cl_h, tran)
 ctr = MpsContractor{Strategy, Gauge}(net, [β/4, β/2, β], :graduate_truncate, params)
 P = Set()
 S = Set()

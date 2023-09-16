@@ -13,7 +13,7 @@
         -15.6, -15.6, -15.4, -15.4
     ]
 
-    # degenerate fg solutions
+    # degenerate cl_h solutions
     exact_states =
     [   # E =-16.4
         [
@@ -56,7 +56,7 @@
     )
 
     ig = ising_graph("$(@__DIR__)/instances/pathological/chim_$(m)_$(n)_$(t).txt")
-    fg = factor_graph(
+    cl_h = clustered_hamiltonian(
         ig,
         spectrum=full_spectrum,
         cluster_assignment_rule=super_square_lattice((m, n, t))
@@ -70,17 +70,17 @@
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
             for Lattice ∈ (Square, SquareStar), transform ∈ all_lattice_transformations
 
-                net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, fg, transform)
+                net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, cl_h, transform)
                 ctr = MpsContractor{Strategy, Gauge}(net, [β/8., β/4., β/2., β], :graduate_truncate, params; onGPU=onGPU)
                 sol, s = low_energy_spectrum(ctr, search_params)
 
                 @test sol.energies ≈ exact_energies
 
-                ig_states = decode_factor_graph_state.(Ref(fg), sol.states)
+                ig_states = decode_clustered_hamiltonian_state.(Ref(cl_h), sol.states)
                 @test sol.energies ≈ energy.(Ref(ig), ig_states)
 
-                fg_states = decode_state.(Ref(net), sol.states)
-                @test sol.energies ≈ energy.(Ref(fg), fg_states)
+                cl_h_states = decode_state.(Ref(net), sol.states)
+                @test sol.energies ≈ energy.(Ref(cl_h), cl_h_states)
 
                 for (i, σ) ∈ enumerate(sol.states) @test σ ∈ exact_states[deg[i]] end
 

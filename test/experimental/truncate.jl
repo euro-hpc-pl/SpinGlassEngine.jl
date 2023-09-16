@@ -38,7 +38,7 @@ DE = 16.0
 ig = ising_graph("$(@__DIR__)/../instances/pegasus_random/P4/CBFM-P/SpinGlass/001_sg.txt")
 # ig = ising_graph("$(@__DIR__)/../instances/pegasus_random/P2/P2_CBFM-P_sg.txt")
 
-# fg = factor_graph(
+# cl_h = clustered_hamiltonian(
 #     ig,
 #     spectrum=my_brute_force, #rm _gpu to use CPU
 #     cluster_assignment_rule=pegasus_lattice((m, n, t))
@@ -63,22 +63,22 @@ for cs ∈ cl_states
         println("===============")
         println("Transform ", tran)
 
-        fg = factor_graph(
+        cl_h = clustered_hamiltonian(
             ig,
             spectrum= full_spectrum, #rm _gpu to use CPU
             cluster_assignment_rule=pegasus_lattice((m, n, t))
         )
 
         println("Truncate iter ", iter)
-        #@time fg = truncate_factor_graph_2site_energy(fg, cs)
-        new_fg = factor_graph_2site(fg, β)
-        beliefs = belief_propagation(new_fg, β; tol=1e-6, iter=iter)
-        @time fg = truncate_factor_graph_2site_BP(fg, beliefs, cs; beta = β)
-        for v ∈ vertices(fg)
-            println(v, " -> ", length(get_prop(fg, v, :spectrum).energies))
+        #@time cl_h = truncate_clustered_hamiltonian_2site_energy(cl_h, cs)
+        new_cl_h = clustered_hamiltonian_2site(cl_h, β)
+        beliefs = belief_propagation(new_cl_h, β; tol=1e-6, iter=iter)
+        @time cl_h = truncate_clustered_hamiltonian_2site_BP(cl_h, beliefs, cs; beta = β)
+        for v ∈ vertices(cl_h)
+            println(v, " -> ", length(get_prop(cl_h, v, :spectrum).energies))
         end
 
-        net = PEPSNetwork{SquareStar2{Layout}, Sparse}(m, n, fg, tran)
+        net = PEPSNetwork{SquareStar2{Layout}, Sparse}(m, n, cl_h, tran)
         ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)
         sol, schmidts = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
         println("sol ", sol)

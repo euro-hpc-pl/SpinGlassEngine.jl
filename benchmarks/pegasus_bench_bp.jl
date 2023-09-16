@@ -52,26 +52,26 @@ I = [1,]
 disable_logging(LogLevel(1))
 BLAS.set_num_threads(1)
 
-function create_fg(inst, β, ibp)
+function create_cl_h(inst, β, ibp)
     tol = 1e-6
-    fg = factor_graph(
+    cl_h = clustered_hamiltonian(
         ising_graph(INSTANCE_DIR * "/" * inst),
         spectrum=full_spectrum,
         cluster_assignment_rule=pegasus_lattice((M, N, T))
         )
-    new_fg = factor_graph_2site(fg, β)
-    belief_propagation(new_fg, β; tol=tol, iter=ibp), fg
+    new_cl_h = clustered_hamiltonian_2site(cl_h, β)
+    belief_propagation(new_cl_h, β; tol=tol, iter=ibp), cl_h
 end
 
-function pegasus_sim(inst, fg, beliefs, trans, β, Layout, bd, ms, cs, ibp)
+function pegasus_sim(inst, cl_h, beliefs, trans, β, Layout, bd, ms, cs, ibp)
     δp = 1E-5*exp(-β * DE)
 
-    fg = truncate_factor_graph_2site_BP(fg, beliefs, cs; beta=β)
+    cl_h = truncate_clustered_hamiltonian_2site_BP(cl_h, beliefs, cs; beta=β)
 
     params = MpsParameters(bd, VAR_TOL, ms, TOL_SVD, ITERS_SVD, ITERS_VAR, DTEMP_MULT, METHOD)
     search_params = SearchParameters(MAX_STATES, δp)
 
-    net = PEPSNetwork{SquareStar2{Layout}, SPARSITY}(M, N, fg, trans)
+    net = PEPSNetwork{SquareStar2{Layout}, SPARSITY}(M, N, cl_h, trans)
     ctr = MpsContractor{STRATEGY, GAUGE}(net, [β/6, β/3, β/2, β], graduate_truncation, params)
     sol, schmidts = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 
@@ -80,7 +80,7 @@ function pegasus_sim(inst, fg, beliefs, trans, β, Layout, bd, ms, cs, ibp)
     sol, ctr, cRAM, schmidts
 end
 
-function run_bench(inst::String, β::Real, t, l, bd, ms, cs, ibp, i, fg, beliefs)
+function run_bench(inst::String, β::Real, t, l, bd, ms, cs, ibp, i, cl_h, beliefs)
     hash_name = hash(string(inst, β, t, l, bd, ms, cs, ibp, i))
     out_path = string(OUTPUT_DIR, "/", hash_name, ".csv")
 
@@ -88,7 +88,7 @@ function run_bench(inst::String, β::Real, t, l, bd, ms, cs, ibp, i, fg, beliefs
         println("Skipping for $β, $t, $l, $bd, $ms, $cs, $ibp.")
     else
         data = try  
-            tic_toc = @elapsed sol, ctr, cRAM, schmidts = pegasus_sim(inst, fg, beliefs, t, β, l, bd, ms, cs, ibp)
+            tic_toc = @elapsed sol, ctr, cRAM, schmidts = pegasus_sim(inst, cl_h, beliefs, t, β, l, bd, ms, cs, ibp)
             data = DataFrame(
                 :instance => inst,
                 :β => β,
@@ -143,9 +143,9 @@ all_params = collect(
 
 for ii ∈ (1+rank):size:length(all_params)
     inst, β, t, l, bd, ms, ibp, i = all_params[ii]
-    beliefs, fg = create_fg(inst, β, ibp)
+    beliefs, cl_h = create_cl_h(inst, β, ibp)
     for cs in CL_STATES
-        run_bench(inst, β, t, l, bd, ms, cs, ibp, i, fg, beliefs)
+        run_bench(inst, β, t, l, bd, ms, cs, ibp, i, cl_h, beliefs)
         GC.gc()
     end
 end

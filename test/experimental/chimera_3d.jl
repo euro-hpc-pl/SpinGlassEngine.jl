@@ -15,7 +15,7 @@ function run_test(instance, m, n, t, tran)
     for β in BETAS
         ig = ising_graph(instance)
 
-        fg = factor_graph(
+        cl_h = clustered_hamiltonian(
             ig,
             spectrum=full_spectrum, #_gpu, # rm _gpu to use CPU
             #cluster_assignment_rule=pegasus_lattice((m, n, t))
@@ -33,17 +33,17 @@ function run_test(instance, m, n, t, tran)
         Layout = EnergyGauges
         Gauge = NoUpdate
 
-        #net = PEPSNetwork{Square2{Layout}, Sparsity}(m, n, fg, tran)
-        net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, tran)
+        #net = PEPSNetwork{Square2{Layout}, Sparsity}(m, n, cl_h, tran)
+        net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, cl_h, tran)
     
         ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
 
         sol, s = low_energy_spectrum(ctr, search_params , merge_branches(ctr))
 
-        ig_states = decode_factor_graph_state.(Ref(fg), sol.states)
+        ig_states = decode_clustered_hamiltonian_state.(Ref(cl_h), sol.states)
         @test sol.energies ≈ energy.(Ref(ig), ig_states)
-        fg_states = decode_state.(Ref(net), sol.states)
-        @test sol.energies ≈ energy.(Ref(fg), fg_states)
+        cl_h_states = decode_state.(Ref(net), sol.states)
+        @test sol.energies ≈ energy.(Ref(cl_h), cl_h_states)
 
         norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
         exct_prob = exp.(-β .* (sol.energies .- sol.energies[1]))

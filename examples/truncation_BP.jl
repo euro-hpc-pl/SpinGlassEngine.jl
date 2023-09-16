@@ -56,22 +56,22 @@ for cs ∈ cl_states
         println("Transform ", tran)
         println("Iter ", iter)
 
-        fg = factor_graph(
+        cl_h = clustered_hamiltonian(
             ig,
             spectrum= full_spectrum, #rm _gpu to use CPU
             cluster_assignment_rule=pegasus_lattice((m, n, t))
         )
 
-        new_fg = factor_graph_2site(fg, β)
-        beliefs = belief_propagation(new_fg, β; iter=iter)
+        new_cl_h = clustered_hamiltonian_2site(cl_h, β)
+        beliefs = belief_propagation(new_cl_h, β; iter=iter)
         # println(beliefs)
-        @time fg = truncate_factor_graph_2site_BP(fg, cs; beta = β, iter=iter)
-        # @time fg = truncate_factor_graph_2site_energy(fg, cs)
+        @time cl_h = truncate_clustered_hamiltonian_2site_BP(cl_h, cs; beta = β, iter=iter)
+        # @time cl_h = truncate_clustered_hamiltonian_2site_energy(cl_h, cs)
 
-        for v in vertices(fg)
-            println(length(get_prop(fg, v, :spectrum).states))
+        for v in vertices(cl_h)
+            println(length(get_prop(cl_h, v, :spectrum).states))
         end
-        # net = PEPSNetwork{SquareStar2{Layout}, Sparse}(m, n, fg, tran)
+        # net = PEPSNetwork{SquareStar2{Layout}, Sparse}(m, n, cl_h, tran)
         # ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)
         # sol, schmidts = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
         # println("sol ", sol)

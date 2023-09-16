@@ -20,7 +20,7 @@ num_states = 1000
 
 instance = "$(@__DIR__)/../test/instances/pathological/chim_$(m)_$(n)_$(t).txt"
 
-fg = factor_graph(
+cl_h = clustered_hamiltonian(
     ising_graph(instance),
     max_cl_states,
     spectrum=brute_force,
@@ -33,7 +33,7 @@ search_params = SearchParameters(num_states, δp)
 Strategy = SVDTruncate
 
 for Layout ∈ (GaugesEnergy, ), transform ∈ rotation.([0])
-    net = PEPSNetwork{Square{Layout}, Dense}(m, n, fg, transform, :rand)
+    net = PEPSNetwork{Square{Layout}, Dense}(m, n, cl_h, transform, :rand)
     ctr = MpsContractor{Strategy}(net, [β/8, β/4, β/2, β], :graduate_truncate, params)
 
     indβ = 3

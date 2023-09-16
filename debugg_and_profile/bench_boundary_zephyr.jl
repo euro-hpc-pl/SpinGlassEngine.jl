@@ -30,14 +30,14 @@ function bench()
 
     @time begin
         println("factor graph")
-        fg = factor_graph(
+        cl_h = clustered_hamiltonian(
             ig,
             # max_cl_states,
             spectrum = full_spectrum,  #brute_force_gpu, # rm _gpu to use CPU
             cluster_assignment_rule = zephyr_lattice((m, n, t))
         )
     end
-    println("Factor graph memory = ", format_bytes.(Base.summarysize(fg)))
+    println("Factor graph memory = ", format_bytes.(Base.summarysize(cl_h)))
 
     params = MpsParameters(Dcut, tolV, max_sweeps)
     Strategy = MPSAnnealing # SVDTruncate
@@ -47,7 +47,7 @@ function bench()
     Layout = GaugesEnergy
     Gauge = NoUpdate
 
-    net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, tran)
+    net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, cl_h, tran)
     ctr = MpsContractor{Strategy, Gauge}(net, [β], :graduate_truncate, params)
 
     i = div(m, 2)

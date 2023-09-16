@@ -9,6 +9,7 @@ using Logging
 using CSV
 using DataFrames
 using Memoization
+using JSON3
 
 function brute_force_gpu(ig::IsingGraph; num_states::Int)
     brute_force(ig, :GPU, num_states=num_states)
@@ -18,17 +19,17 @@ MPI.Init()
 size = MPI.Comm_size(MPI.COMM_WORLD)
 rank = MPI.Comm_rank(MPI.COMM_WORLD)
 
-M, N, T = 6, 6, 4
-INSTANCE_DIR = "$(@__DIR__)/../test/instances/zephyr_random/Z3/RAU/SpinGlass/single"
-OUTPUT_DIR = "$(@__DIR__)/results/zephyr_random/Z3/RAU/truncation/Z3_beta1_notruncation_bond8"
+M, N, T = 3, 3, 3
+INSTANCE_DIR = "$(@__DIR__)/../test/instances/pegasus_random/P4/RAU/SpinGlass/single"
+OUTPUT_DIR = "$(@__DIR__)/results/pegasus_random/P4/RAU/diversity/P4_droplets_new_i10-30"
 
 if !Base.Filesystem.isdir(OUTPUT_DIR)
     Base.Filesystem.mkpath(OUTPUT_DIR)
 end
 
-BETAS = [1.0,]#collect(1.2:0.2:2.0)
+BETAS = [0.5,] #collect(0.2:0.1:1.0)
 LAYOUT = (GaugesEnergy,)
-TRANSFORM = all_lattice_transformations
+TRANSFORM = all_lattice_transformations 
 
 GAUGE =  NoUpdate
 STRATEGY = Zipper #MPSAnnealing #SVDTruncate
@@ -39,7 +40,7 @@ INDβ = [3,] #[1, 2, 3]
 MAX_STATES = 128
 BOND_DIM = [8, ]
 DE = 16.0
-# cs = 2^14
+# cs = 2^12
 # iter = 1
 
 MAX_SWEEPS = [0,]
@@ -50,18 +51,20 @@ ITERS_VAR = 1
 DTEMP_MULT = 2
 METHOD = :psvd_sparse
 I = [1,]
+eng = [2.01,] #collect(0.01:1:1.01)
+hamming_dist = 10
 disable_logging(LogLevel(1))
 BLAS.set_num_threads(1)
 
-function pegasus_sim(inst, trans, β, Layout, bd, ms)
+function pegasus_sim(inst, trans, β, Layout, bd, ms, eng, hamming_dist)
     δp = 1E-5*exp(-β * DE)
 
     cl_h = clustered_hamiltonian(
         ising_graph(INSTANCE_DIR * "/" * inst),
-        spectrum=full_spectrum,
-        cluster_assignment_rule=zephyr_lattice((M, N, T))
+        spectrum=brute_force_gpu,
+        cluster_assignment_rule=pegasus_lattice((M, N, T))
         )
-    
+        
     # new_cl_h = clustered_hamiltonian_2site(cl_h, β)
     # beliefs = belief_propagation(new_cl_h, β; tol=1e-6, iter=iter)
     # cl_h = truncate_clustered_hamiltonian_2site_BP(cl_h, beliefs, cs; beta=β)
@@ -71,22 +74,26 @@ function pegasus_sim(inst, trans, β, Layout, bd, ms)
 
     net = PEPSNetwork{SquareStar2{Layout}, SPARSITY}(M, N, cl_h, trans)
     ctr = MpsContractor{STRATEGY, GAUGE}(net, [β/6, β/3, β/2, β], graduate_truncation, params)
-    sol, schmidts = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+    sol1, schmidts = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, SingleLayerDroplets(eng, hamming_dist, :hamming)))
 
+    sol2 = unpack_droplets(sol1, β)
+    ig_states = decode_clustered_hamiltonian_state.(Ref(cl_h), sol2.states)
+
+    ldrop = length(sol2.states)
     cRAM = round(Base.summarysize(Memoization.caches) * 1E-9; sigdigits=2)
     clear_memoize_cache()
-    sol, ctr, cRAM, schmidts
+    sol1, ctr, cRAM, schmidts, ldrop, sol2, ig_states
 end
 
-function run_bench(inst::String, β::Real, t, l, bd, ms, i)
-    hash_name = hash(string(inst, β, t, l, bd, ms, i))
-    out_path = string(OUTPUT_DIR, "/", hash_name, ".csv")
+function run_bench(inst::String, β::Real, t, l, bd, ms, eng, hamming_dist, i)
+    hash_name = hash(string(inst, β, t, l, bd, ms, eng, hamming_dist, i))
+    out_path = string(OUTPUT_DIR, "/", hash_name, ".json")
 
     if isfile(out_path)
-        println("Skipping for $β, $t, $l, $bd, $ms.")
+        println("Skipping for $β, $t, $l, $bd, $eng, $hamming_dist, $ms.")
     else
         data = try
-            tic_toc = @elapsed sol, ctr, cRAM, schmidts = pegasus_sim(inst, t, β, l, bd, ms)
+            tic_toc = @elapsed sol, ctr, cRAM, schmidts, ldrop, droplets, ig_states = pegasus_sim(inst, t, β, l, bd, ms, eng, hamming_dist)
         
             data = DataFrame(
                 :instance => inst,
@@ -101,6 +108,15 @@ function run_bench(inst::String, β::Real, t, l, bd, ms, i)
                 :bond_dim => bd,
                 :de => DE,
                 :max_sweeps => ms,
+                :eng => eng,
+                :hamming_dist => hamming_dist,
+                :drop_eng => [droplets.energies],
+                :drop_states => [droplets.states],
+                :ig_states => [ig_states],
+                :drop_prob => [droplets.probabilities],
+                :drop_degeneracy => [droplets.degeneracy],
+                :drop_ldp => [droplets.largest_discarded_probability],
+                :drop_number => ldrop,
                 # :cl_states => cs,
                 :iters_svd => ITERS_SVD,
                 :iters_var => ITERS_VAR,
@@ -117,8 +133,17 @@ function run_bench(inst::String, β::Real, t, l, bd, ms, i)
                 :Layout => l,
                 :transform => t,
                 :max_states => MAX_STATES,
-                # 
-                :cl_states => cs,
+                # :cl_states => cs,
+                :eng => eng,
+                :hamming_dist => hamming_dist,
+                :droplets => droplets,
+                :drop_eng => [droplets.energies],
+                :drop_states => [droplets.states],
+                :ig_states => [ig_states],
+                :drop_prob => [droplets.probabilities],
+                :drop_degeneracy => [droplets.degeneracy],
+                :drop_ldp => [droplets.largest_discarded_probability],
+                :drop_number => ldrop,
                 :iters_svd => ITERS_SVD,
                 :iters_var => ITERS_VAR,
                 :dtemp_mult => DTEMP_MULT,
@@ -129,14 +154,21 @@ function run_bench(inst::String, β::Real, t, l, bd, ms, i)
                 :error => err
             )
         end
-        println(data)
-        CSV.write(out_path, data, delim = ';', append = false)
+        # println(data)
+        # CSV.write(out_path, data, delim = ';', append = false)
+
+        json_data = JSON3.write(data)
+        # Write the JSON data to a file
+        open(out_path, "w") do io
+            print(io, json_data)
+        end
+
     end #if
 end
 
 all_params = collect(
     Iterators.product(
-        readdir(INSTANCE_DIR, join=false), BETAS, TRANSFORM, LAYOUT, BOND_DIM, MAX_SWEEPS, I)
+        readdir(INSTANCE_DIR, join=false), BETAS, TRANSFORM, LAYOUT, BOND_DIM, MAX_SWEEPS, eng, hamming_dist, I)
 )
 
 for i ∈ (1+rank):size:length(all_params)

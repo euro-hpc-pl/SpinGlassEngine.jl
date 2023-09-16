@@ -22,7 +22,7 @@ function bench(instance::String)
     δp = 1E-5 * exp(-β * DE)
     num_states = 1000
 
-    fg = factor_graph(
+    cl_h = clustered_hamiltonian(
         ising_graph(instance),
         max_cl_states,
         spectrum=brute_force,
@@ -32,7 +32,7 @@ function bench(instance::String)
     params = MpsParameters(bond_dim, 1E-8, 10)
     search_params = SearchParameters(num_states, δp)
 
-    net = PEPSNetwork{Square{EnergyGauges}, Dense}(m, n, fg, rotation(0))
+    net = PEPSNetwork{Square{EnergyGauges}, Dense}(m, n, cl_h, rotation(0))
     ctr = MpsContractor{SVDTruncate, NoUpdate}(net, [β/8, β/4, β/2, β], :graduate_truncate, params)
     sol, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 

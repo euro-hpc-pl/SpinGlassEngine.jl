@@ -13,12 +13,12 @@ function run_test(instance, m, n, t)
 
     ig = ising_graph(instance)
 
-    fg = factor_graph(
+    cl_h = clustered_hamiltonian(
         ig,
         spectrum=full_spectrum, #_gpu, # rm _gpu to use CPU
         cluster_assignment_rule=pegasus_lattice((m, n, t))
     )
-    fg2 = factor_graph(
+    cl_h2 = clustered_hamiltonian(
         ig,
         spectrum=full_spectrum, #_gpu, # rm _gpu to use CPU
         cluster_assignment_rule=super_square_lattice((m, n, 8))
@@ -33,8 +33,8 @@ function run_test(instance, m, n, t)
         for Layout ∈ (EnergyGauges, GaugesEnergy)
             for tran ∈ all_lattice_transformations
 
-                net = PEPSNetwork{Square2{Layout}, Sparsity}(m, n, fg, tran)
-                net2 = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg2, tran)
+                net = PEPSNetwork{Square2{Layout}, Sparsity}(m, n, cl_h, tran)
+                net2 = PEPSNetwork{Square{Layout}, Sparsity}(m, n, cl_h2, tran)
 
                 ctr = MpsContractor{Strategy, Gauge}(net, βs, :graduate_truncate, params; onGPU=onGPU)
                 ctr2 = MpsContractor{Strategy, Gauge}(net2, βs, :graduate_truncate, params; onGPU=onGPU)
@@ -42,10 +42,10 @@ function run_test(instance, m, n, t)
                 sol, s = low_energy_spectrum(ctr, search_params) #, merge_branches(ctr))
                 sol2, s = low_energy_spectrum(ctr2, search_params) # , merge_branches(ctr2))
 
-                # ig_states = decode_factor_graph_state.(Ref(fg), sol.states)
+                # ig_states = decode_clustered_hamiltonian_state.(Ref(cl_h), sol.states)
                 # @test sol.energies ≈ energy.(Ref(ig), ig_states)
-                # fg_states = decode_state.(Ref(net), sol.states)
-                # @test sol.energies ≈ energy.(Ref(fg), fg_states)
+                # cl_h_states = decode_state.(Ref(net), sol.states)
+                # @test sol.energies ≈ energy.(Ref(cl_h), cl_h_states)
 
                 #@test sol.energies ≈ sol2.energies
                 @test sol.energies[1: div(num_states, 8)] ≈ sol2.energies[1: div(num_states, 8)]

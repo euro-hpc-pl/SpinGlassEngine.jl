@@ -49,20 +49,20 @@ for cl_states in cluster_states
     println("====================")
 
     println("cluster states: ", cl_states)
-    # fg = factor_graph(
+    # cl_h = clustered_hamiltonian(
     #     ig,
     #     cl_states,
     #     spectrum=my_brute_force, #rm _gpu to use CPU
     #     cluster_assignment_rule=pegasus_lattice((m, n, t))
     # )
 
-    fg = factor_graph(
+    cl_h = clustered_hamiltonian(
     ig,
     spectrum=full_spectrum, #rm _gpu to use CPU
     cluster_assignment_rule=pegasus_lattice((m, n, t))
     )
 
-    fg = truncate_factor_graph_2site_energy(fg, cl_states)
+    cl_h = truncate_clustered_hamiltonian_2site_energy(cl_h, cl_states)
 
     params = MpsParameters(Dcut, tolV, max_sweeps, tolS, ITERS_SVD, ITERS_VAR, DTEMP_MULT, METHOD)
     search_params = SearchParameters(MAX_STATES, δp)
@@ -75,7 +75,7 @@ for cl_states in cluster_states
     i = div(m, 2)
     indβ = 1
 
-    net = PEPSNetwork{SquareStar2{Layout}, Sparse}(m, n, fg, tran)
+    net = PEPSNetwork{SquareStar2{Layout}, Sparse}(m, n, cl_h, tran)
     ctr = MpsContractor{Strategy, Gauge}(net, [β], :graduate_truncate, params; onGPU=onGPU)
     Ws = SpinGlassEngine.mpo(ctr, ctr.layers.main, i, indβ)
     # println(" Ws -> ", which_device(Ws), " ", format_bytes.(measure_memory(Ws)))

@@ -30,7 +30,7 @@ METHOD = :psvd_sparse #:psvd_sparse #:svd
 DE = 16.0
 δp = 1E-5*exp(-β * DE)
 
-# fg = factor_graph(
+# cl_h = clustered_hamiltonian(
 #     ig,
 #     spectrum=my_brute_force, #rm _gpu to use CPU
 #     cluster_assignment_rule=pegasus_lattice((m, n, t))
@@ -61,17 +61,17 @@ function bench(instance::String)
 
     @time begin
     ig = ising_graph(instance)
-    fg = factor_graph(
+    cl_h = clustered_hamiltonian(
         ig,
         spectrum=full_spectrum,  # brute_force_gpu, # rm _gpu to use CPU
         cluster_assignment_rule = pegasus_lattice((m, n, t))
     )
     end
-    new_fg = factor_graph_2site(fg, β)
-    beliefs = belief_propagation(new_fg, β; tol=1e-6, iter=iter)
-    @time fg = truncate_factor_graph_2site_BP(fg, beliefs, cs; beta = β)
+    new_cl_h = clustered_hamiltonian_2site(cl_h, β)
+    beliefs = belief_propagation(new_cl_h, β; tol=1e-6, iter=iter)
+    @time cl_h = truncate_clustered_hamiltonian_2site_BP(cl_h, beliefs, cs; beta = β)
 
-    net = PEPSNetwork{SquareStar2{Layout}, Sparse}(m, n, fg, tran)
+    net = PEPSNetwork{SquareStar2{Layout}, Sparse}(m, n, cl_h, tran)
     ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)
     @time sol, schmidts = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
     println("sol ", sol)

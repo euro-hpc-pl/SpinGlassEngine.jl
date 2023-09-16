@@ -49,7 +49,7 @@ function chimera_sim(inst, trans, β, Layout)
     max_cl_states = 2 ^ T
     δp = 1E-5*exp(-β * DE)
 
-    fg = factor_graph(
+    cl_h = clustered_hamiltonian(
         ising_graph(INSTANCE_DIR * "/" * inst),
         max_cl_states,
         spectrum=brute_force,
@@ -58,7 +58,7 @@ function chimera_sim(inst, trans, β, Layout)
     params = MpsParameters(BOND_DIM, VAR_TOL, MAX_SWEEPS, TOL_SVD)
     search_params = SearchParameters(MAX_STATES, δp)
 
-    net = PEPSNetwork{Square{Layout}, SPARSITY}(M, N, fg, trans)
+    net = PEPSNetwork{Square{Layout}, SPARSITY}(M, N, cl_h, trans)
     ctr = MpsContractor{STRATEGY, GAUGE}(net, [β/6, β/3, β/2, β], graduate_truncation, params)
     
     

@@ -32,7 +32,7 @@ function bench(instance_dir::String, out_path::String)
 
     for (i, instance) ∈ enumerate(readdir(instance_dir, join=false))
 
-        fg = factor_graph(
+        cl_h = clustered_hamiltonian(
         ising_graph(instance_dir * "/" * instance),
         max_cl_states,
         spectrum=brute_force,
@@ -49,7 +49,7 @@ function bench(instance_dir::String, out_path::String)
 
                 data = try
 
-                    net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, fg, transform)
+                    net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, cl_h, transform)
                     ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params)
                     times = @elapsed sol, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 

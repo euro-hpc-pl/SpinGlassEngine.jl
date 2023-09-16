@@ -56,7 +56,7 @@ BLAS.set_num_threads(1)
 function pegasus_sim(inst, trans, β, Layout, bd, ms, st)
     δp = 1E-5*exp(-β * DE)
 
-    fg = factor_graph(
+    cl_h = clustered_hamiltonian(
         ising_graph(INSTANCE_DIR * "/" * inst),
         50,
         spectrum=brute_force_gpu,
@@ -65,7 +65,7 @@ function pegasus_sim(inst, trans, β, Layout, bd, ms, st)
     params = MpsParameters(bd, VAR_TOL, ms, TOL_SVD, ITERS_SVD, ITERS_VAR, DTEMP_MULT, METHOD)
     search_params = SearchParameters(MAX_STATES, δp)
 
-    net = PEPSNetwork{SquareStar2{Layout}, SPARSITY}(M, N, fg, trans)
+    net = PEPSNetwork{SquareStar2{Layout}, SPARSITY}(M, N, cl_h, trans)
     ctr = MpsContractor{st, GAUGE}(net, [β/6, β/3, β/2, β], graduate_truncation, params)
     sol, schmidts = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 

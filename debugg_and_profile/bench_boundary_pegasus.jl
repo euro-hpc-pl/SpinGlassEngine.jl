@@ -29,14 +29,14 @@ function bench()
     ig = ising_graph("$(@__DIR__)/../test/instances/pegasus_random/P8/RAU/SpinGlass/001_sg.txt")
 
     @time begin
-        println("factor_graph")
-        fg = factor_graph(
+        println("clustered_hamiltonian")
+        cl_h = clustered_hamiltonian(
             ig,
             spectrum= brute_force_gpu, #rm _gpu to use CPU
             cluster_assignment_rule=pegasus_lattice((m, n, t))
         )
     end
-    println("Factor graph memory = ", format_bytes.(Base.summarysize(fg)))
+    println("Factor graph memory = ", format_bytes.(Base.summarysize(cl_h)))
 
     params = MpsParameters(Dcut, tolV, max_sweeps)
     Strategy = MPSAnnealing # SVDTruncate
@@ -46,7 +46,7 @@ function bench()
     Layout = GaugesEnergy
     Gauge = NoUpdate
 
-    net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, fg, tran)
+    net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, cl_h, tran)
     ctr = MpsContractor{Strategy, Gauge}(net, [β], :graduate_truncate, params)
 
     i = 4

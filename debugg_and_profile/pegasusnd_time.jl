@@ -27,7 +27,7 @@ function bench(instance::String)
     @time begin
     ig = ising_graph(instance)
 
-    fg = factor_graph(
+    cl_h = clustered_hamiltonian(
     ig,
     spectrum=brute_force_gpu, # rm _gpu to use CPU
     cluster_assignment_rule=pegasus_lattice((m, n, t))
@@ -45,7 +45,7 @@ function bench(instance::String)
     Gauge = NoUpdate
     println("creating network and contractor")
     @time begin
-    net = PEPSNetwork{PegasusSquare, Sparsity}(m, n, fg, tran)
+    net = PEPSNetwork{PegasusSquare, Sparsity}(m, n, cl_h, tran)
     ctr = MpsContractor{Strategy, Gauge}(net, [β], :graduate_truncate, params)
     end
     println("solving")

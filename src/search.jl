@@ -214,9 +214,9 @@ function filter_droplets(all_droplets::Vector{Droplet}, method::SingleLayerDropl
 end
 
 function decode_to_spin(ctr::MpsContractor{T}, states::Vector{Vector{Int}}) where T
-    fg = ctr.peps.factor_graph
+    cl_h = ctr.peps.clustered_hamiltonian
     nodes = ctr.peps.vertex_map.(nodes_search_order_Mps(ctr.peps)[1])
-    [[get_prop(fg, v, :spectrum).states_int[i] for (i, v) in zip(st, nodes)] for st in states]
+    [[get_prop(cl_h, v, :spectrum).states_int[i] for (i, v) in zip(st, nodes)] for st in states]
 end
 
 function my_push!(ndroplets::Droplets, droplet::Droplet, method)
@@ -574,8 +574,8 @@ function low_energy_spectrum(
         end
         sol = branch_solution(sol, ctr)
         if symmetry == :Z2 && length(sol.states[1]) == 1
-            fg = ctr.peps.factor_graph
-            st_int = get_prop(fg, node, :spectrum).states_int
+            cl_h = ctr.peps.clustered_hamiltonian
+            st_int = get_prop(cl_h, node, :spectrum).states_int
             sol = Solution(sol, findall(p -> isodd(p), st_int))
         end
         sol = bound_solution(sol, sparams.max_states, sparams.cut_off_prob, merge_strategy)
@@ -587,7 +587,7 @@ function low_energy_spectrum(
 
     # Translate variable order (network --> factor graph)
     inner_perm = sortperm([
-        ctr.peps.factor_graph.reverse_label_map[idx]
+        ctr.peps.clustered_hamiltonian.reverse_label_map[idx]
         for idx ∈ ctr.peps.vertex_map.(ctr.nodes_search_order)
     ])
     
@@ -608,7 +608,7 @@ function low_energy_spectrum(
 
     # Final check if states correspond energies
     @assert sol.energies ≈ energy.(
-        Ref(ctr.peps.factor_graph), decode_state.(Ref(ctr.peps), sol.states)
+        Ref(ctr.peps.clustered_hamiltonian), decode_state.(Ref(ctr.peps), sol.states)
     )
     sol, s
 end
@@ -661,7 +661,7 @@ function gibbs_sampling(
 
     # Translate variable order (network --> factor graph)
     inner_perm = sortperm([
-        ctr.peps.factor_graph.reverse_label_map[idx]
+        ctr.peps.clustered_hamiltonian.reverse_label_map[idx]
         for idx ∈ ctr.peps.vertex_map.(ctr.nodes_search_order)
     ])
 
@@ -679,7 +679,7 @@ function gibbs_sampling(
 
     # Final check if states correspond energies
     @assert sol.energies ≈ energy.(
-        Ref(ctr.peps.factor_graph), decode_state.(Ref(ctr.peps), sol.states)
+        Ref(ctr.peps.clustered_hamiltonian), decode_state.(Ref(ctr.peps), sol.states)
     )
     sol
 end

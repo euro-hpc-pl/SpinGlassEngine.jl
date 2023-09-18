@@ -63,12 +63,13 @@ struct Solution
     degeneracy::Vector{Int}
     largest_discarded_probability::Real
     droplets::Vector{Droplets}
+    spins::Vector{Vector{Int}}
 end
 
 """
 $(TYPEDSIGNATURES)
 """
-@inline empty_solution(n::Int=1) = Solution(zeros(n), fill(Vector{Int}[], n), zeros(n), ones(Int, n), -Inf, repeat([NoDroplets()], n)) #, Dict())
+@inline empty_solution(n::Int=1) = Solution(zeros(n), fill(Vector{Int}[], n), zeros(n), ones(Int, n), -Inf, repeat([NoDroplets()], n), fill(Vector{Int}[], n)) #, Dict())
 """
 $(TYPEDSIGNATURES)
 """
@@ -81,7 +82,8 @@ function Solution(
         sol.probabilities[idx],
         sol.degeneracy[idx],
         ldp,
-        sol.droplets[idx]#,
+        sol.droplets[idx],#,
+        sol.spins[idx]
         #sol.pool_of_flips
     )
 end
@@ -144,7 +146,8 @@ function branch_solution(psol::Solution, ctr::T) where T <: AbstractContractor
         reduce(vcat, branch_probability.(Ref(ctr), zip(psol.probabilities, boundaries))),
         repeat(psol.degeneracy, inner=num_states),
         psol.largest_discarded_probability,
-        repeat(psol.droplets, inner=num_states)#,
+        repeat(psol.droplets, inner=num_states),#,
+        fill(Vector{Int}[], num_states)
         #psol.pool_of_flips
     )
 end
@@ -153,14 +156,15 @@ end
 $(TYPEDSIGNATURES)
 """
 
-(method::NoDroplets)(ctr::MpsContractor{T}, best_idx::Int, energies::Vector{<:Real},  states::Vector{Vector{Int}}, droplets::Vector{Droplets}) where T= NoDroplets()
+(method::NoDroplets)(ctr::MpsContractor{T}, best_idx::Int, energies::Vector{<:Real},  states::Vector{Vector{Int}}, droplets::Vector{Droplets}, spins::Vector{Vector{Int}}) where T= NoDroplets()
 
-function (method::SingleLayerDroplets)(ctr::MpsContractor{T}, best_idx::Int, energies::Vector{<:Real}, states::Vector{Vector{Int}}, droplets::Vector{Droplets}) where T
+function (method::SingleLayerDroplets)(ctr::MpsContractor{T}, best_idx::Int, energies::Vector{<:Real}, states::Vector{Vector{Int}}, droplets::Vector{Droplets}, spins::Vector{Vector{Int}}) where T
     ndroplets = copy(droplets[best_idx])
     spins = decode_to_spin(ctr, states)
 
     bstate  = states[best_idx]
     benergy = energies[best_idx]
+    # bspin = spins[best_idx]
     bspin = spins[best_idx]
 
     for ind ∈ (1 : best_idx - 1..., best_idx + 1 : length(energies)...)
@@ -337,6 +341,7 @@ function unpack_droplets(sol, β)  # have β in sol ?
     probs = typeof(sol.probabilities[begin])[]
     degeneracy = typeof(sol.degeneracy[begin])[]
     droplets = Droplets[]
+    spins = typeof(sol.spins[begin])[]
 
     for i in 1:length(sol.energies)
         push!(energies, sol.energies[i])
@@ -344,6 +349,7 @@ function unpack_droplets(sol, β)  # have β in sol ?
         push!(probs, sol.probabilities[i])
         push!(degeneracy, 1)
         push!(droplets, NoDroplets())
+        push!(spins, sol.spins[i])
 
         for droplet in sol.droplets[i]
             push!(energies, sol.energies[i] + droplet.denergy)
@@ -351,11 +357,12 @@ function unpack_droplets(sol, β)  # have β in sol ?
             push!(probs, sol.probabilities[i] - β * droplet.denergy)
             push!(degeneracy, 1)
             push!(droplets, NoDroplets())
+            push!(spins, sol.spins[i])
         end
     end
 
     inds = sortperm(energies)
-    Solution(energies[inds], states[inds], probs[inds], degeneracy[inds], sol.largest_discarded_probability, droplets[inds])
+    Solution(energies[inds], states[inds], probs[inds], degeneracy[inds], sol.largest_discarded_probability, droplets[inds], sol.spins)
 end
 
 
@@ -373,6 +380,7 @@ function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit, update
         nsol = Solution(psol, Vector{Int}(sorting_idx)) #TODO Vector{Int} should be rm
         energies = typeof(nsol.energies[begin])[]
         states = typeof(nsol.states[begin])[]
+        spins = typeof(nsol.spins[begin])[]
         probs = typeof(nsol.probabilities[begin])[]
         degeneracy = typeof(nsol.degeneracy[begin])[]
         droplets = Droplets[]
@@ -410,15 +418,16 @@ function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit, update
 
             ## states with unique boundary => we take the one with best energy
             ## treat other states with the same boundary as droplets on top of the best one
-            excitation = update_droplets(ctr, best_idx_bnd, nsol.energies[start:stop], nsol.states[start:stop], nsol.droplets[start:stop])
+            excitation = update_droplets(ctr, best_idx_bnd, nsol.energies[start:stop], nsol.states[start:stop], nsol.droplets[start:stop], nsol.spins[start:stop])
             push!(droplets, excitation)
 
             push!(energies, nsol.energies[best_idx])
             push!(states, nsol.states[best_idx])
             push!(degeneracy, new_degeneracy)
+            push!(spins, nsol.spins[best_idx])
             start = stop + 1
         end
-        Solution(energies, states, probs, degeneracy, psol.largest_discarded_probability, droplets) #, psol.pool_of_flips)
+        Solution(energies, states, probs, degeneracy, psol.largest_discarded_probability, droplets, spins) #, psol.pool_of_flips)
     end
     _merge
 end
@@ -578,6 +587,9 @@ function low_energy_spectrum(
             st_int = get_prop(cl_h, node, :spectrum).states_int
             sol = Solution(sol, findall(p -> isodd(p), st_int))
         end
+        spins = decode_to_spin(ctr, sol.states)
+        sol = Solution(sol.energies, sol.states, sol.probabilities, sol.degeneracy, sol.largest_discarded_probability, sol.droplets, spins)
+        
         sol = bound_solution(sol, sparams.max_states, sparams.cut_off_prob, merge_strategy)
         Memoization.empty_cache!(precompute_conditional)
         if no_cache Memoization.empty_all_caches!() end
@@ -602,7 +614,8 @@ function low_energy_spectrum(
         sol.probabilities[outer_perm],
         sol.degeneracy[outer_perm],
         sol.largest_discarded_probability,
-        [perm_droplet(drop, inner_perm_inv) for drop in sol.droplets[outer_perm] ]#,
+        [perm_droplet(drop, inner_perm_inv) for drop in sol.droplets[outer_perm] ],#,
+        sol.spins[outer_perm]
         # sol.pool_of_flips # TODO
     )
 

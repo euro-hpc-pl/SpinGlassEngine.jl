@@ -4,7 +4,8 @@ const example_solution_short = Solution(
     [0.25, 0.1, 0.2],
     [1, 1, 1],
     0.666,
-    [Droplet[], Droplet[], Droplet[]]
+    [Droplet[], Droplet[], Droplet[]],
+    [[0], [0], [0]]
 )
 
 const example_degenerate_solution = Solution(
@@ -13,7 +14,8 @@ const example_degenerate_solution = Solution(
     [0.23, 0.1, 0.23, 0.25, 0.05],
     [1, 1, 1, 1, 1],
     0.22,
-    [Droplet[], Droplet[], Droplet[], Droplet[], Droplet[]]
+    [Droplet[], Droplet[], Droplet[], Droplet[], Droplet[]],
+    [[0], [0], [0], [0], [0]]
 )
 
 @testset "Bounding solution of size ≥ max_states gives solution of max_states length" begin

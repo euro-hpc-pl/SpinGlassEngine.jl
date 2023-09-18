@@ -147,6 +147,7 @@ function local_energy(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, 
     spectrum(network, vertex).energies
 end
 
+
 """
 $(TYPEDSIGNATURES)
 """

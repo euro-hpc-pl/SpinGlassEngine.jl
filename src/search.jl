@@ -102,13 +102,26 @@ $(TYPEDSIGNATURES)
     reduce(vcat, branch_energy.(Ref(ctr), zip(psol.energies, psol.states)))
 end
 
+# """
+# $(TYPEDSIGNATURES)
+# """
+# function branch_states(num_states::Int, vec_states::Vector{Vector{Int}})
+#     states = reduce(hcat, vec_states)
+#     lstate, nstates = size(states)
+#     local_basis = collect(1:num_states)
+#     ns = Array{Int}(undef, lstate+1, num_states, nstates)
+#     ns[1:lstate, :, :] .= reshape(states, lstate, 1, nstates)
+#     ns[lstate+1, :, :] .= reshape(local_basis, num_states, 1, 1)
+#     collect(eachcol(reshape(ns, lstate+1, nstates * num_states)))
+# end
+
 """
 $(TYPEDSIGNATURES)
 """
-function branch_states(num_states::Int, vec_states::Vector{Vector{Int}})
+function branch_states(local_basis::Vector{Int}, vec_states::Vector{Vector{Int}})
     states = reduce(hcat, vec_states)
+    num_states = length(local_basis)
     lstate, nstates = size(states)
-    local_basis = collect(1:num_states)
     ns = Array{Int}(undef, lstate+1, num_states, nstates)
     ns[1:lstate, :, :] .= reshape(states, lstate, 1, nstates)
     ns[lstate+1, :, :] .= reshape(local_basis, num_states, 1, 1)
@@ -136,18 +149,27 @@ end
 """
 $(TYPEDSIGNATURES)
 """
+function local_spins(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T}
+    spectrum(network, vertex).states_int
+end
+
+"""
+$(TYPEDSIGNATURES)
+"""
 function branch_solution(psol::Solution, ctr::T) where T <: AbstractContractor
     num_states = cluster_size(ctr.peps, ctr.current_node)
+    basis_states = collect(1:num_states)
+    basis_spins = local_spins(ctr.peps, ctr.current_node)
     boundaries = boundary_states(ctr, psol.states, ctr.current_node)
     Solution(
         #reduce(vcat, branch_energy.(Ref(ctr), zip(psol.energies, psol.states))),
         branch_energies(ctr, psol),
-        branch_states(num_states, psol.states),
+        branch_states(basis_states, psol.states),
         reduce(vcat, branch_probability.(Ref(ctr), zip(psol.probabilities, boundaries))),
         repeat(psol.degeneracy, inner=num_states),
         psol.largest_discarded_probability,
         repeat(psol.droplets, inner=num_states),#,
-        fill(Vector{Int}[], num_states)
+        branch_states(basis_spins, psol.spins)
         #psol.pool_of_flips
     )
 end
@@ -160,15 +182,11 @@ $(TYPEDSIGNATURES)
 
 function (method::SingleLayerDroplets)(ctr::MpsContractor{T}, best_idx::Int, energies::Vector{<:Real}, states::Vector{Vector{Int}}, droplets::Vector{Droplets}, spins::Vector{Vector{Int}}) where T
     ndroplets = copy(droplets[best_idx])
-    spins = decode_to_spin(ctr, states)
-
     bstate  = states[best_idx]
     benergy = energies[best_idx]
-    # bspin = spins[best_idx]
     bspin = spins[best_idx]
 
     for ind ∈ (1 : best_idx - 1..., best_idx + 1 : length(energies)...)
-
         flip_support = findall(bstate .!= states[ind])
         flip_state = states[ind][flip_support]
         flip_spinxor = bspin[flip_support] .⊻ spins[ind][flip_support]
@@ -215,12 +233,6 @@ function filter_droplets(all_droplets::Vector{Droplet}, method::SingleLayerDropl
     end
     
     filtered_droplets
-end
-
-function decode_to_spin(ctr::MpsContractor{T}, states::Vector{Vector{Int}}) where T
-    cl_h = ctr.peps.clustered_hamiltonian
-    nodes = ctr.peps.vertex_map.(nodes_search_order_Mps(ctr.peps)[1])
-    [[get_prop(cl_h, v, :spectrum).states_int[i] for (i, v) in zip(st, nodes)] for st in states]
 end
 
 function my_push!(ndroplets::Droplets, droplet::Droplet, method)
@@ -362,7 +374,7 @@ function unpack_droplets(sol, β)  # have β in sol ?
     end
 
     inds = sortperm(energies)
-    Solution(energies[inds], states[inds], probs[inds], degeneracy[inds], sol.largest_discarded_probability, droplets[inds], sol.spins)
+    Solution(energies[inds], states[inds], probs[inds], degeneracy[inds], sol.largest_discarded_probability, droplets[inds], spins[inds])
 end
 
 
@@ -432,64 +444,6 @@ function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit, update
     _merge
 end
 
-
-
-# """
-# $(TYPEDSIGNATURES)
-# """
-# function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit) where {T}
-#     function _merge(psol::Solution)
-#         node = get(ctr.nodes_search_order, length(psol.states[1])+1, ctr.node_outside)
-#         boundaries = boundary_states(ctr, psol.states, node)
-#         _, bnd_types = SpinGlassNetworks.unique_dims(boundaries, 1)
-
-#         sorting_idx = sortperm(bnd_types)
-#         sorted_bnd_types = bnd_types[sorting_idx]
-#         nsol = Solution(psol, Vector{Int}(sorting_idx)) #TODO Vector{Int} should be rm
-#         energies = typeof(nsol.energies[begin])[]
-#         states = typeof(nsol.states[begin])[]
-#         probs = typeof(nsol.probabilities[begin])[]
-#         degeneracy = typeof(nsol.degeneracy[begin])[]
-
-#         start = 1
-#         bsize = size(boundaries, 1)
-#         while start <= bsize
-#             stop = start
-#             while stop + 1 <= bsize && sorted_bnd_types[start] == sorted_bnd_types[stop+1]
-#                 stop = stop + 1
-#             end
-#             best_idx = argmin(@view nsol.energies[start:stop]) + start - 1
-
-#             new_degeneracy = 0
-#             ind_deg = []
-#             for i in start:stop
-#                 if nsol.energies[i] <= nsol.energies[best_idx] + 1E-12 # this is hack for now
-#                     new_degeneracy += nsol.degeneracy[i]
-#                     push!(ind_deg, i)
-#                 end
-#             end
-
-#             if merge_type == :fit
-#                 c = Statistics.median(
-#                     ctr.betas[end] .* nsol.energies[start:stop] .+ nsol.probabilities[start:stop]
-#                 )
-#                 new_prob = -ctr.betas[end] .* nsol.energies[best_idx] .+ c
-#                 push!(probs, new_prob)
-#             elseif merge_type == :nofit
-#                 push!(probs, nsol.probabilities[best_idx])
-#             elseif merge_type == :python
-#                 push!(probs, Statistics.mean(nsol.probabilities[ind_deg]))
-#             end
-
-#             push!(energies, nsol.energies[best_idx])
-#             push!(states, nsol.states[best_idx])
-#             push!(degeneracy, new_degeneracy)
-#             start = stop + 1
-#         end
-#         Solution(energies, states, probs, degeneracy, psol.largest_discarded_probability)
-#     end
-#     _merge
-# end
 """
 $(TYPEDSIGNATURES)
 """
@@ -587,9 +541,6 @@ function low_energy_spectrum(
             st_int = get_prop(cl_h, node, :spectrum).states_int
             sol = Solution(sol, findall(p -> isodd(p), st_int))
         end
-        spins = decode_to_spin(ctr, sol.states)
-        sol = Solution(sol.energies, sol.states, sol.probabilities, sol.degeneracy, sol.largest_discarded_probability, sol.droplets, spins)
-        
         sol = bound_solution(sol, sparams.max_states, sparams.cut_off_prob, merge_strategy)
         Memoization.empty_cache!(precompute_conditional)
         if no_cache Memoization.empty_all_caches!() end

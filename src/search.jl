@@ -82,9 +82,8 @@ function Solution(
         sol.probabilities[idx],
         sol.degeneracy[idx],
         ldp,
-        sol.droplets[idx],#,
+        sol.droplets[idx],
         sol.spins[idx]
-        #sol.pool_of_flips
     )
 end
 
@@ -101,19 +100,6 @@ $(TYPEDSIGNATURES)
 @inline function branch_energies(ctr::MpsContractor{T}, psol::Solution) where T
     reduce(vcat, branch_energy.(Ref(ctr), zip(psol.energies, psol.states)))
 end
-
-# """
-# $(TYPEDSIGNATURES)
-# """
-# function branch_states(num_states::Int, vec_states::Vector{Vector{Int}})
-#     states = reduce(hcat, vec_states)
-#     lstate, nstates = size(states)
-#     local_basis = collect(1:num_states)
-#     ns = Array{Int}(undef, lstate+1, num_states, nstates)
-#     ns[1:lstate, :, :] .= reshape(states, lstate, 1, nstates)
-#     ns[lstate+1, :, :] .= reshape(local_basis, num_states, 1, 1)
-#     collect(eachcol(reshape(ns, lstate+1, nstates * num_states)))
-# end
 
 """
 $(TYPEDSIGNATURES)
@@ -162,7 +148,6 @@ function branch_solution(psol::Solution, ctr::T) where T <: AbstractContractor
     basis_spins = local_spins(ctr.peps, ctr.current_node)
     boundaries = boundary_states(ctr, psol.states, ctr.current_node)
     Solution(
-        #reduce(vcat, branch_energy.(Ref(ctr), zip(psol.energies, psol.states))),
         branch_energies(ctr, psol),
         branch_states(basis_states, psol.states),
         reduce(vcat, branch_probability.(Ref(ctr), zip(psol.probabilities, boundaries))),
@@ -170,7 +155,6 @@ function branch_solution(psol::Solution, ctr::T) where T <: AbstractContractor
         psol.largest_discarded_probability,
         repeat(psol.droplets, inner=num_states),#,
         branch_states(basis_spins, psol.spins)
-        #psol.pool_of_flips
     )
 end
 

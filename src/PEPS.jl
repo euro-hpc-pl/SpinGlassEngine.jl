@@ -76,19 +76,7 @@ $(TYPEDSIGNATURES)
 """
 function bond_energy(net::AbstractGibbsNetwork{T, S}, u::Node, v::Node, σ::Int) where {T, S}
     cl_h_u, cl_h_v = net.vertex_map(u), net.vertex_map(v)
-    if has_edge(net.clustered_hamiltonian, cl_h_u, cl_h_v)
-        pu, en, pv = get_prop.(
-                        Ref(net.clustered_hamiltonian), Ref(cl_h_u), Ref(cl_h_v), (:pl, :en, :pr)
-                    )
-        @inbounds energies = en[pu, pv[σ]]
-    elseif has_edge(net.clustered_hamiltonian, cl_h_v, cl_h_u)
-        pv, en, pu = get_prop.(
-                        Ref(net.clustered_hamiltonian), Ref(cl_h_v), Ref(cl_h_u), (:pl, :en, :pr)
-                    )
-        @inbounds energies = en[pv[σ], pu]
-    else
-        energies = zeros(cluster_size(net, u))
-    end
+    energies = SpinGlassNetworks.bond_energy(net.clustered_hamiltonian, cl_h_u, cl_h_v, σ)
     vec(energies)
 end
 
@@ -98,13 +86,7 @@ $(TYPEDSIGNATURES)
 function projector(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
     cl_h = network.clustered_hamiltonian
     cl_h_v, cl_h_w = network.vertex_map(v), network.vertex_map(w)
-    if has_edge(cl_h, cl_h_w, cl_h_v)
-        p = get_prop(cl_h, cl_h_w, cl_h_v, :pr)
-    elseif has_edge(cl_h, cl_h_v, cl_h_w)
-        p = get_prop(cl_h, cl_h_v, cl_h_w, :pl)
-    else
-        p = ones(Int, cl_h_v ∈ vertices(cl_h) ? cluster_size(network, v) : 1)
-    end
+    SpinGlassNetworks.projector(cl_h, cl_h_v, cl_h_w)
 end
 
 """

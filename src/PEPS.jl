@@ -41,7 +41,7 @@ mutable struct PEPSNetwork{
         transformation::LatticeTransformation,
         gauge_type::Symbol=:id
     ) where {T <: AbstractGeometry, S <: AbstractSparsity}
-        lp = PoolOfProjectors{Int}()
+        lp = get_prop(clustered_hamiltonian, :pool_of_projectors) #PoolOfProjectors{Int}()
         net = new(clustered_hamiltonian, vertex_map(transformation, m, n), lp, m, n)
         net.nrows, net.ncols = transformation.flips_dimensions ? (n, m) : (m, n)
 

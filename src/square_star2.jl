@@ -463,7 +463,7 @@ function tensor(
     net::PEPSNetwork{T, Dense}, node::PEPSNode, β::Real, ::Val{:virtual2}
 ) where{T <: AbstractGeometry}
     sp = tensor(net, node, β, Val(:sparse_virtual2))
-    p_lb, p_l, p_lt, p_rb, p_r, p_rt = (get_projector!(sp.lp, x) for x in sp.projs)
+    p_lb, p_l, p_lt, p_rb, p_r, p_rt = (get_projector!(net.lp, x) for x in sp.projs)
     dense_con = dense_central_tensor(sp.con)
 
     A = zeros(

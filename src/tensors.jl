@@ -49,7 +49,7 @@ function tensor(
     net::PEPSNetwork{T, Dense}, v::PEPSNode, β::Real, ::Val{:site}
 ) where T <: AbstractGeometry
     sp = tensor(net, v, β, Val(:sparse_site))
-    projs = Tuple(get_projector!(sp.lp, x) for x in sp.projs)
+    projs = Tuple(get_projector!(net.lp, x) for x in sp.projs)
     A = zeros(maximum.(projs))
     for (σ, lexp) ∈ enumerate(sp.loc_exp)
         @inbounds A[getindex.(projs, Ref(σ))...] += lexp

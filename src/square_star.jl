@@ -317,7 +317,7 @@ function tensor(
     net::PEPSNetwork{SquareStar{T}, Dense}, node::PEPSNode, β::Real, ::Val{:virtual}
 ) where T <: AbstractTensorsLayout
     sp = tensor(net, node, β, Val(:sparse_virtual))
-    p_lb, p_l, p_lt, p_rb, p_r, p_rt = (get_projector!(sp.lp, x) for x in sp.projs)
+    p_lb, p_l, p_lt, p_rb, p_r, p_rt = (get_projector!(net.lp, x) for x in sp.projs)
 
     A = zeros(
         eltype(sp.con),

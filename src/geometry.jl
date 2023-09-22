@@ -33,7 +33,7 @@ $(TYPEDSIGNATURES)
 """
 $(TYPEDSIGNATURES)
 
-Node for the Square and SquareStar.
+Node for the SquareSingleNode and SquareCrossSingleNode.
 """
 struct PEPSNode
     i::Site

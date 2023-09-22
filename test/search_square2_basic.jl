@@ -33,8 +33,8 @@ function run_test(instance, m, n, t)
         for Layout ∈ (EnergyGauges, GaugesEnergy)
             for tran ∈ all_lattice_transformations
 
-                net = PEPSNetwork{Square2{Layout}, Sparsity}(m, n, cl_h, tran)
-                net2 = PEPSNetwork{Square{Layout}, Sparsity}(m, n, cl_h2, tran)
+                net = PEPSNetwork{SquareDoubleNode{Layout}, Sparsity}(m, n, cl_h, tran)
+                net2 = PEPSNetwork{SquareSingleNode{Layout}, Sparsity}(m, n, cl_h2, tran)
 
                 ctr = MpsContractor{Strategy, Gauge}(net, βs, :graduate_truncate, params; onGPU=onGPU)
                 ctr2 = MpsContractor{Strategy, Gauge}(net2, βs, :graduate_truncate, params; onGPU=onGPU)

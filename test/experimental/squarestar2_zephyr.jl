@@ -38,7 +38,7 @@ tran =  LatticeTransformation((4, 1, 2, 3), true)
 Layout = GaugesEnergy
 Gauge = NoUpdate
 
-net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, cl_h, tran)
+net = PEPSNetwork{SquareCrossDoubleNode{Layout}, Sparsity}(m, n, cl_h, tran)
 ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)
 
 # for i in 1//2 : 1//2 : m

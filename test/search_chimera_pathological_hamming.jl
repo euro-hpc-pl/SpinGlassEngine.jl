@@ -82,9 +82,9 @@ end
     energies = Vector{Float64}[]
     for Strategy ∈ (SVDTruncate, MPSAnnealing, Zipper), Sparsity ∈ (Dense, Sparse)
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
-            for Lattice ∈ (Square, SquareStar), transform ∈ all_lattice_transformations
+            for Lattice ∈ (SquareSingleNode, SquareCrossSingleNode), transform ∈ all_lattice_transformations
 
-                net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, cl_h, transform)
+                net = PEPSNetwork{SquareSingleNode{Layout}, Sparsity}(m, n, cl_h, transform)
                 ctr = MpsContractor{Strategy, Gauge}(net, [β/8., β/4., β/2., β], :graduate_truncate, params; onGPU=onGPU)
                 sol1, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, SingleLayerDroplets(1.01, 10, :hamming)))
                 @test sol1.energies ≈ [exact_energies[1]]

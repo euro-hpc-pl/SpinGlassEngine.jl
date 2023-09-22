@@ -21,7 +21,7 @@
     for Strategy ∈ (SVDTruncate, MPSAnnealing, Zipper), Sparsity ∈ (Dense, Sparse)
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
             for transform ∈ all_lattice_transformations
-                net = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, cl_h, transform)
+                net = PEPSNetwork{SquareCrossSingleNode{Layout}, Sparsity}(m, n, cl_h, transform)
                 ctr = MpsContractor{Strategy, NoUpdate}(net, [β/8., β/4., β/2., β], :graduate_truncate, params; onGPU=onGPU)
                 sol, s = low_energy_spectrum(ctr, search_params)
 

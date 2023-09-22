@@ -33,7 +33,7 @@ search_params = SearchParameters(num_states, δp)
 Strategy = SVDTruncate
 
 for Layout ∈ (GaugesEnergy, ), transform ∈ rotation.([0])
-    net = PEPSNetwork{Square{Layout}, Dense}(m, n, cl_h, transform, :rand)
+    net = PEPSNetwork{SquareSingleNode{Layout}, Dense}(m, n, cl_h, transform, :rand)
     ctr = MpsContractor{Strategy}(net, [β/8, β/4, β/2, β], :graduate_truncate, params)
 
     indβ = 3

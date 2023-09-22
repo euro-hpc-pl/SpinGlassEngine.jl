@@ -49,7 +49,7 @@ function bench(instance::String)
     Gauge = NoUpdate
     println("creating network and contractor")
     @time begin
-        net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, cl_h, tran)
+        net = PEPSNetwork{SquareCrossDoubleNode{Layout}, Sparsity}(m, n, cl_h, tran)
         ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)
         println("Memory lp = ", format_bytes.(measure_memory(net.lp)), " elements = ", length(net.lp))
     end

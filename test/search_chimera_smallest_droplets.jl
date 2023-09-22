@@ -24,7 +24,7 @@
     for Strategy ∈ (Zipper,), Sparsity ∈ (Dense,)
         for Layout ∈ (EnergyGauges,)
             for transform ∈ all_lattice_transformations
-                net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, cl_h, transform)
+                net = PEPSNetwork{SquareSingleNode{Layout}, Sparsity}(m, n, cl_h, transform)
                 ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
 
                 sol1, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, SingleLayerDroplets(2.2, 1, :hamming)))

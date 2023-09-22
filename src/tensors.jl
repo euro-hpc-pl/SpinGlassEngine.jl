@@ -62,7 +62,7 @@ $(TYPEDSIGNATURES)
 
 """
 function Base.size(
-    network::PEPSNetwork{T, S}, v::PEPSNode, ::Union{Val{:site}, Val{:sparse_site}, Val{:sparse_site_square2}}
+    network::PEPSNetwork{T, S}, v::PEPSNode, ::Union{Val{:site}, Val{:sparse_site}, Val{:sparse_site_square_double_node}}
 ) where {T <: AbstractGeometry, S  <: AbstractSparsity}
     maximum.(projectors_site_tensor(network, Node(v)))
 end
@@ -74,7 +74,7 @@ $(TYPEDSIGNATURES)
 
 """
 function tensor(
-    net::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, β::Real, ::Val{:central_v}
+    net::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, β::Real, ::Val{:central_v_single_node}
 )
     i = floor(Int, node.i)
     connecting_tensor(net, (i, node.j), (i+1, node.j), β)
@@ -85,7 +85,7 @@ $(TYPEDSIGNATURES)
 
 """
 function Base.size(
-    network::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, ::Val{:central_v}
+    network::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, ::Val{:central_v_single_node}
 )
     i = floor(Int, node.i)
     size(interaction_energy(network, (i, node.j), (i+1, node.j)))
@@ -96,7 +96,7 @@ $(TYPEDSIGNATURES)
 
 """
 function tensor(
-    net::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, β::Real, ::Val{:central_h}
+    net::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, β::Real, ::Val{:central_h_single_node}
 )
     j = floor(Int, node.j)
     connecting_tensor(net, (node.i, j), (node.i, j+1), β)
@@ -107,7 +107,7 @@ $(TYPEDSIGNATURES)
 
 """
 function Base.size(
-    network::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, ::Val{:central_h}
+    network::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, ::Val{:central_h_single_node}
 )
     j = floor(Int, node.j)
     size(interaction_energy(network, (node.i, j), (node.i, j+1)))
@@ -232,7 +232,7 @@ $(TYPEDSIGNATURES)
 function tensor(
     network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, β::Real, ::Val{:sqrt_up_d}
 )
-    U, Σ, _ = svd(tensor(network, v, β, Val(:central_d)))
+    U, Σ, _ = svd(tensor(network, v, β, Val(:central_d_single_node)))
     U * Diagonal(sqrt.(Σ))
 end
 
@@ -256,7 +256,7 @@ $(TYPEDSIGNATURES)
 function tensor(
     network::AbstractGibbsNetwork{Node, PEPSNode}, v::PEPSNode, β::Real, ::Val{:sqrt_down_d}
 )
-    _, Σ, V = svd(tensor(network, v, β, Val(:central_d)))
+    _, Σ, V = svd(tensor(network, v, β, Val(:central_d_single_node)))
     Diagonal(sqrt.(Σ)) * V'
 end
 

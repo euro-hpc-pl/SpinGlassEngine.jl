@@ -47,7 +47,7 @@ function bench()
     Layout = GaugesEnergy
     Gauge = NoUpdate
 
-    net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, cl_h, tran)
+    net = PEPSNetwork{SquareCrossDoubleNode{Layout}, Sparsity}(m, n, cl_h, tran)
     ctr = MpsContractor{Strategy, Gauge}(net, [β], :graduate_truncate, params)
 
     i = div(m, 2)

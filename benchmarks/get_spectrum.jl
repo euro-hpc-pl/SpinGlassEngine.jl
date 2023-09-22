@@ -32,7 +32,7 @@ Gauge = GaugeStrategy
 Layout = GaugesEnergy
 transform = rotation(0)
 
-net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, cl_h, transform)
+net = PEPSNetwork{SquareSingleNode{Layout}, Sparsity}(m, n, cl_h, transform)
 ctr = MpsContractor{Strategy, Gauge}(net, all_betas, :graduate_truncate, params; onGPU=onGPU)
 sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit))
 

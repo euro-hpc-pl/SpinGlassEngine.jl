@@ -162,12 +162,6 @@ function conditional_probability(
         le = reshape(en[1], (:, 1)) .+ en12[p12, p21] .+ reshape(en[2], (1, :))
         ele = exp.(-β .* (le .- minimum(le)))
 
-        # @cast LM3[s1, s2, x] := LM[(s1, s2), x] (s2 ∈ 1:maximum(pd2))
-        # R = permutedims(R, (2, 1))
-        # @cast R3[s1, s2, x] := R[(s1, s2), x] (s2 ∈ 1:maximum(pr2))
-
-        # LR = dropdims(sum(LM3[pd1, pd2, :] .* R3[pr1, pr2, :], dims=3), dims=3)
-
         @cast LM3[x, s1, s2] := LM[x, (s1, s2)] (s2 ∈ 1:maximum(pd2))
         @cast R3[x, s1, s2] := R[x, (s1, s2)] (s2 ∈ 1:maximum(pr2))
         LR = dropdims(sum(LM3[:, pd1, pd2] .* R3[:, pr1, pr2], dims=1), dims=1)
@@ -197,13 +191,6 @@ function conditional_probability(
 
         pr2 = projector(ctr.peps, (i, j, 2), ((i, j+1, 1), (i, j+1, 2)))
         pd2 = projector(ctr.peps, (i, j, 2), ((i+1, j, 1), (i+1, j, 2)))
-
-        # R = permutedims(R, (2, 1))
-        # @cast R3[p1, p2, x] := R[(p1, p2), x] (p2 ∈ 1:maximum(pr2))
-        # R2 = R3[∂v[j + 5], :, :]
-        # @cast LM3[p1, p2, x] := LM[(p1, p2), x] (p2 ∈ 1:maximum(pd2))
-        # LM2 = LM3[∂v[j + 6], :, :]
-        # LR = dropdims(sum(R2[pr2, :] .* LM2[pd2, :], dims=2), dims=2)
 
         @cast R3[x, p1, p2] := R[x, (p1, p2)] (p2 ∈ 1:maximum(pr2))
         R2 = R3[:, ∂v[j + 5], :]

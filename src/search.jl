@@ -69,7 +69,8 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-@inline empty_solution(n::Int=1) = Solution(zeros(n), fill(Vector{Int}[], n), zeros(n), ones(Int, n), -Inf, repeat([NoDroplets()], n), fill(Vector{Int}[], n)) #, Dict())
+@inline empty_solution(n::Int=1) = Solution(zeros(n), fill(Vector{Int}[], n), zeros(n), ones(Int, n),
+                                            -Inf, repeat([NoDroplets()], n), fill(Vector{Int}[], n))
 """
 $(TYPEDSIGNATURES)
 """
@@ -162,9 +163,23 @@ end
 $(TYPEDSIGNATURES)
 """
 
-(method::NoDroplets)(ctr::MpsContractor{T}, best_idx::Int, energies::Vector{<:Real},  states::Vector{Vector{Int}}, droplets::Vector{Droplets}, spins::Vector{Vector{Int}}) where T= NoDroplets()
+(method::NoDroplets)(
+    ctr::MpsContractor{T}, 
+    best_idx::Int, 
+    energies::Vector{<:Real},  
+    states::Vector{Vector{Int}}, 
+    droplets::Vector{Droplets}, 
+    spins::Vector{Vector{Int}}
+    ) where T= NoDroplets()
 
-function (method::SingleLayerDroplets)(ctr::MpsContractor{T}, best_idx::Int, energies::Vector{<:Real}, states::Vector{Vector{Int}}, droplets::Vector{Droplets}, spins::Vector{Vector{Int}}) where T
+function (method::SingleLayerDroplets)(
+    ctr::MpsContractor{T}, 
+    best_idx::Int, 
+    energies::Vector{<:Real}, 
+    states::Vector{Vector{Int}}, 
+    droplets::Vector{Droplets}, 
+    spins::Vector{Vector{Int}}
+    ) where T
     ndroplets = copy(droplets[best_idx])
     bstate  = states[best_idx]
     benergy = energies[best_idx]
@@ -358,14 +373,22 @@ function unpack_droplets(sol, β)  # have β in sol ?
     end
 
     inds = sortperm(energies)
-    Solution(energies[inds], states[inds], probs[inds], degeneracy[inds], sol.largest_discarded_probability, droplets[inds], spins[inds])
+    Solution(
+        energies[inds], 
+        states[inds], 
+        probs[inds], 
+        degeneracy[inds], 
+        sol.largest_discarded_probability, 
+        droplets[inds], 
+        spins[inds]
+        )
 end
 
 
 """
 $(TYPEDSIGNATURES)
 """
-function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit, update_droplets=NoDroplets()) where {T}  # update_droplets=no_droplets
+function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit, update_droplets=NoDroplets()) where {T}
     function _merge(psol::Solution)
         node = get(ctr.nodes_search_order, length(psol.states[1])+1, ctr.node_outside)
         boundaries = boundary_states(ctr, psol.states, node)
@@ -414,7 +437,8 @@ function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit, update
 
             ## states with unique boundary => we take the one with best energy
             ## treat other states with the same boundary as droplets on top of the best one
-            excitation = update_droplets(ctr, best_idx_bnd, nsol.energies[start:stop], nsol.states[start:stop], nsol.droplets[start:stop], nsol.spins[start:stop])
+            excitation = update_droplets(ctr, best_idx_bnd, nsol.energies[start:stop], nsol.states[start:stop],
+                                        nsol.droplets[start:stop], nsol.spins[start:stop])
             push!(droplets, excitation)
 
             push!(energies, nsol.energies[best_idx])
@@ -423,7 +447,7 @@ function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit, update
             push!(spins, nsol.spins[best_idx])
             start = stop + 1
         end
-        Solution(energies, states, probs, degeneracy, psol.largest_discarded_probability, droplets, spins) #, psol.pool_of_flips)
+        Solution(energies, states, probs, degeneracy, psol.largest_discarded_probability, droplets, spins)
     end
     _merge
 end
@@ -553,7 +577,7 @@ function low_energy_spectrum(
         sol.probabilities[outer_perm],
         sol.degeneracy[outer_perm],
         sol.largest_discarded_probability,
-        [perm_droplet(drop, inner_perm_inv) for drop in sol.droplets[outer_perm] ],#,
+        [perm_droplet(drop, inner_perm_inv) for drop in sol.droplets[outer_perm] ],
         sol.spins[outer_perm]
         # sol.pool_of_flips # TODO
     )

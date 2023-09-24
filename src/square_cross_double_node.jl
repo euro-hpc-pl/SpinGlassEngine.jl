@@ -124,8 +124,12 @@ end
 
         plb1 = projector(ctr.peps, (i, j, 1), ((i+1, j-1, 1), (i+1, j-1, 2)))
         plb2 = projector(ctr.peps, (i, j, 2), ((i+1, j-1, 1), (i+1, j-1, 2)))
-        prf1 = projector(ctr.peps, (i, j, 1), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2)))
-        prf2 = projector(ctr.peps, (i, j, 2), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2)))
+        prf1 = projector(
+            ctr.peps, (i, j, 1), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2))
+            )
+        prf2 = projector(
+            ctr.peps, (i, j, 2), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2))
+            )
         pd1 = projector(ctr.peps, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
         pd2 = projector(ctr.peps, (i, j, 2), ((i+1, j, 1), (i+1, j, 2)))
 
@@ -185,7 +189,9 @@ end
 
         plb1 = projector(ctr.peps, (i, j, 1), ((i+1, j-1, 1), (i+1, j-1, 2)))
         plb2 = projector(ctr.peps, (i, j, 2), ((i+1, j-1, 1), (i+1, j-1, 2)))
-        prf2 = projector(ctr.peps, (i, j, 2), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2)))
+        prf2 = projector(
+            ctr.peps, (i, j, 2), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2))
+            )
         pd2 = projector(ctr.peps, (i, j, 2), ((i+1, j, 1), (i+1, j, 2)))
 
         splb1, splb2, sprf2, spd2 = maximum.((plb1, plb2, prf2, pd2))
@@ -233,7 +239,10 @@ function conditional_probability(
         eng_l = [@view eng_l[k, m][:, ∂v[2 * j - 1 + k + (m - 1) * 2]] for k ∈ 1:2, m ∈ 1:2]
         eng_lu = [@view eng_lu[k, m][:, ∂v[2 * j + 3 + k + (m - 1) * 2]] for k ∈ 1:2, m ∈ 1:2]
         eng_u = [@view eng_u[k, m][:, ∂v[2 * j + 7 + k + (m - 1) * 2]] for k ∈ 1:2, m ∈ 1:2]
-        en = [eng_loc[k] .+ eng_l[k, 1] .+ eng_l[k, 2] .+ eng_lu[k, 1] .+ eng_lu[k, 2] .+ eng_u[k, 1] .+ eng_u[k, 2] for k ∈ 1:2]
+        en = [
+            eng_loc[k] .+ eng_l[k, 1] .+ eng_l[k, 2] .+ eng_lu[k, 1] .+ 
+            eng_lu[k, 2] .+ eng_u[k, 1] .+ eng_u[k, 2] for k ∈ 1:2
+            ]
         en = [exp.(-β .* (en[k] .- minimum(en[k]))) for k ∈ 1:2]
         tele = reshape(en[1], (:, 1)) .* ele .* reshape(en[2], (1, :))
 
@@ -269,7 +278,7 @@ function conditional_probability(
             R = CuArray(R)
         end
     
-        eng_loc, eng_l, eng_lu, eng_u, eng_12, plb2, prf2, pd2, splb1, splb2, sprf2, spd2 = precompute_conditional(T, ctr, ctr.current_node)
+        eng_loc, eng_l, eng_lu, eng_u, eng_12, plb2, prf2, pd2, splb1, splb2, sprf2, spd2 = precompute_conditional(T, ctr, ctr.current_node) #TODO split the line
 
         eng_l = [@view eng_l[m][:, ∂v[2 * j - 1 + m]] for m ∈ 1:2]
         eng_lu = [@view eng_lu[m][:, ∂v[2 * j + 1 + m]] for m ∈ 1:2]
@@ -373,27 +382,15 @@ function update_energy(
     i, j, k = ctr.current_node
 
     en = local_energy(net, (i, j, k))
-    for v ∈ ((i, j-1, 1), (i, j-1, 2), (i-1, j, 1), (i-1, j, 2), (i-1, j-1, 1), (i-1, j-1, 2), (i-1, j+1, 1), (i-1, j+1, 2))
+    for v ∈ (
+        (i, j-1, 1), (i, j-1, 2), (i-1, j, 1), (i-1, j, 2), (i-1, j-1, 1), (i-1, j-1, 2), (i-1, j+1, 1), (i-1, j+1, 2)
+        )
         en += bond_energy(net, (i, j, k), v, local_state_for_node(ctr, σ, v))
     end
     if k != 2 return en end
     en += bond_energy(net, (i, j, k), (i, j, 1), local_state_for_node(ctr, σ, (i, j, 1)))  # here k=2
     en
 end
-
-# """
-# $(TYPEDSIGNATURES)
-# """
-# function tensor(
-#     net::PEPSNetwork{T, Dense}, node::PEPSNode, β::Real, ::Val{:central_d_double_node}
-# ) where {T <: AbstractGeometry}
-#     i, j = floor(Int, node.i), floor(Int, node.j)
-#     T_NW_SE = dense_central_tensor(CentralTensor(net, β, (i, j), (i+1, j+1)))
-#     T_NE_SW = dense_central_tensor(CentralTensor(net, β, (i, j+1), (i+1, j)))
-#     @cast A[(u, uu), (dd, d)] := T_NW_SE[u, d] * T_NE_SW[uu, dd]
-#     A
-# end
-
 
 """
 $(TYPEDSIGNATURES)
@@ -485,9 +482,17 @@ function projectors_site_tensor(
     net::PEPSNetwork{T, S}, vertex::Node
 ) where {T <: SquareCrossDoubleNode, S}
     i, j = vertex
-    plf = outer_projector((projector(net, (i, j, k), ((i+1, j-1, 1), (i+1, j-1, 2), (i, j-1, 1), (i, j-1, 2), (i-1, j-1, 1), (i-1, j-1, 2))) for k ∈ 1:2)...)
+    plf = outer_projector(
+        (projector(
+            net, (i, j, k), ((i+1, j-1, 1), (i+1, j-1, 2), (i, j-1, 1), (i, j-1, 2), (i-1, j-1, 1), (i-1, j-1, 2))
+            ) for k ∈ 1:2)...
+        )
     pt = outer_projector((projector(net, (i, j, k), ((i-1, j, 1), (i-1, j, 2))) for k ∈ 1:2)...)
-    prf = outer_projector((projector(net, (i, j, k), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2))) for k ∈ 1:2)...)
+    prf = outer_projector(
+        (projector(
+            net, (i, j, k), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2))
+            ) for k ∈ 1:2)...
+        )
     pb = outer_projector((projector(net, (i, j, k), ((i+1, j, 1), (i+1, j, 2))) for k ∈ 1:2)...)
     (plf, pt, prf, pb)
 end
@@ -495,7 +500,9 @@ end
 
 
 function Base.size(
-    net::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, ::Union{Val{:virtual_double_node}, Val{:sparse_virtual_double_node}}
+    net::AbstractGibbsNetwork{Node, PEPSNode}, 
+    node::PEPSNode, 
+    ::Union{Val{:virtual_double_node}, Val{:sparse_virtual_double_node}}
 )
     v = Node(node)
     i, j = node.i, floor(Int, node.j)

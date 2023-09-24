@@ -328,14 +328,4 @@ function tensor(
     end
     @cast B[l, (uu, u), r, (dd, d)] := A[l, uu, u, r, dd, d]
     B
-
-    # A = zeros(
-    #     eltype(sp.con),
-    #     length(p_l), maximum.((p_rt, p_lt))..., length(p_r), maximum.((p_lb, p_rb))...
-    # )
-    # for l ∈ 1:length(p_l), r ∈ 1:length(p_r)
-    #     @inbounds A[l, p_rt[r], p_lt[l], r, p_lb[l], p_rb[r]] = sp.con[p_l[l], p_r[r]]
-    # end
-    # @cast B[l, (uu, u), r, (dd, d)] := A[l, uu, u, r, dd, d]
-    # B
 end

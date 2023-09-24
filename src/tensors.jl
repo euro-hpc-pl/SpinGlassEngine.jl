@@ -62,7 +62,9 @@ $(TYPEDSIGNATURES)
 
 """
 function Base.size(
-    network::PEPSNetwork{T, S}, v::PEPSNode, ::Union{Val{:site}, Val{:sparse_site}, Val{:sparse_site_square_double_node}}
+    network::PEPSNetwork{T, S}, 
+    v::PEPSNode, 
+    ::Union{Val{:site}, Val{:sparse_site}, Val{:sparse_site_square_double_node}}
 ) where {T <: AbstractGeometry, S  <: AbstractSparsity}
     maximum.(projectors_site_tensor(network, Node(v)))
 end

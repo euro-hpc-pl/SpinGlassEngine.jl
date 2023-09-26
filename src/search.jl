@@ -640,6 +640,9 @@ function gibbs_sampling(
         ctr.peps.clustered_hamiltonian.reverse_label_map[idx]
         for idx ∈ ctr.peps.vertex_map.(ctr.nodes_search_order)
     ])
+    
+    inner_perm_inv = zeros(Int, length(inner_perm))
+    inner_perm_inv[inner_perm] = collect(1:length(inner_perm))
 
     # Sort using energies as keys
     outer_perm = sortperm(sol.energies)
@@ -649,8 +652,8 @@ function gibbs_sampling(
         sol.probabilities[outer_perm],
         sol.degeneracy[outer_perm],
         sol.largest_discarded_probability,
-        sol.droplets[outer_perm]# ,  # TODO add sort
-        #sol.pool_of_flips
+        [perm_droplet(drop, inner_perm_inv) for drop in sol.droplets[outer_perm]],
+        sol.spins[outer_perm]
     )
 
     # Final check if states correspond energies

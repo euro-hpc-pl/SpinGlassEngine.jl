@@ -36,9 +36,6 @@ push!(my_tests,
     # "search_chimera_droplets.jl",
     # "search_pegasus_droplets.jl",
 
-# to fix in Tensor
-    #"search_chimera_pathological_gauge.jl",
-
 # time consuming tests:
     # "search_chimera_full.jl",
     # "search_chimera_gauge.jl",
@@ -50,7 +47,7 @@ push!(my_tests,
 push!(my_tests,
     # "experimental/zipper.jl",
     # "experimental/truncate.jl",
-    # "experimental/truncate_small.jl", # does not work!
+    # "experimental/truncate_small.jl",
     # "experimental/mpo_size.jl",
     # "experimental/squarestar2_pegasus.jl",
     # "experimental/squarestar2_zephyr.jl",

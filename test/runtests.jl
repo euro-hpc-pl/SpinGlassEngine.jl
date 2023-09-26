@@ -35,6 +35,7 @@ push!(my_tests,
     "search_chimera_pathological_hamming.jl",
     # "search_chimera_droplets.jl",
     # "search_pegasus_droplets.jl",
+    # "search_chimera_pathological_Z2.jl"
 
 # time consuming tests:
     # "search_chimera_full.jl",

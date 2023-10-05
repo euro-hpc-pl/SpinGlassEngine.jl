@@ -8,9 +8,11 @@ export
        Dense,
        Sparse,
        Gauges,
+       GaugeInfo,
        GaugesEnergy,
        EnergyGauges,
-       EngGaugesEng
+       EngGaugesEng,
+       SuperPEPSNode
 
 abstract type AbstractGeometry end
 abstract type AbstractSparsity end
@@ -25,9 +27,9 @@ struct EngGaugesEng{T} <: AbstractTensorsLayout end
 
 const Node = NTuple{N, Int} where N
 
-"""
-$(TYPEDSIGNATURES)
-"""
+# """
+# $(TYPEDSIGNATURES)
+# """
 @inline site(i::Site) = denominator(i) == 1 ? numerator(i) : i
 
 """

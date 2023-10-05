@@ -28,7 +28,9 @@ export
        boundary_indices,
        layout,
        sparsity,
-       strategy
+       strategy,
+       left_env,
+       right_env
 
 abstract type AbstractContractor end
 abstract type AbstractStrategy end

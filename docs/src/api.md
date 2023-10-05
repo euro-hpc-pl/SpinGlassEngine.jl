@@ -2,6 +2,22 @@
 
 ---
 
+## Search
+```@docs
+SearchParameters
+Solution
+empty_solution
+low_energy_spectrum
+gibbs_sampling
+bound_solution
+no_merge
+merge_branches
+branch_energy
+SingleLayerDroplets
+Flip
+Droplet
+```
+
 ## Core 
 ```@docs
 error_measure
@@ -12,7 +28,6 @@ local_state_for_node
 boundary_indices
 sweep_gauges!
 update_gauges!
-clear_memoize_cache
 Gauges
 GaugeInfo
 PEPSNode

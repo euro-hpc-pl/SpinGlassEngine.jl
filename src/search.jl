@@ -584,29 +584,19 @@ function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit, update
 end
 
 
-function merge_branches_blur(ctr::MpsContractor{T}, hamming_dist::Int, merge_type::Symbol=:nofit, update_droplets=NoDroplets()) where {T}
+function merge_branches_blur(ctr::MpsContractor{T}, hamming_cutoff::Int, merge_type::Symbol=:nofit, update_droplets=NoDroplets()) where {T}
     function _merge_blur(psol::Solution)
         psol = merge_branches(ctr, merge_type, update_droplets)(psol)
         node = get(ctr.nodes_search_order, length(psol.states[1])+1, ctr.node_outside)
         boundaries = boundary_states(ctr, psol.states, node)
-        # println("===============")
-        # println(boundaries)
-        # println("-------")
-        # println(get_prop(ctr.peps.clustered_hamiltonian, node, :spectrum).states)
         sorted_indices = sortperm(psol.probabilities, rev=true)
         sorted_boundaries = boundaries[sorted_indices]
         nsol = Solution(psol, Vector{Int}(sorted_indices)) #TODO Vector{Int} should be rm
-        selected_states = [] #Vector{Vector{Int}}()
+        selected_boundaries = []
         selected_idx = []
-        if isempty(selected_states)
-            push!(selected_states, sorted_boundaries[1])
-            push!(selected_idx, 1)
-        end
-        for i in 2:length(sorted_boundaries)
-            state = sorted_boundaries[i]
-            hamming_distances = [hamming_distance(state, s) for s in selected_states]
-            if all(hd >= hamming_dist for hd in hamming_distances)
-                push!(selected_states, state)
+        for (i, state) in enumerate(sorted_boundaries)
+            if all(hamming_distance(state, s) >= hamming_cutoff for s in selected_boundaries)
+                push!(selected_boundaries, state)
                 push!(selected_idx, i)
             end
         end
@@ -615,7 +605,9 @@ function merge_branches_blur(ctr::MpsContractor{T}, hamming_dist::Int, merge_typ
     _merge_blur
 end
 
-hamming_distance(state1, state2) = state1 == state2 ? 0 : 1
+hamming_distance(state1, state2) = sum(state1 .!== state2)
+
+# hamming_distance(state1, state2) = sum(count_ones(st) for st ∈ state1 .⊻ state2)
 
 """
 $(TYPEDSIGNATURES)

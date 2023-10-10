@@ -4,6 +4,7 @@
     β = 1.0
     bond_dim = 16
     num_states = 2^8
+    hamming_dist = 1
 
     # energies
     exact_energies =
@@ -75,7 +76,9 @@
 
                 net = PEPSNetwork{SquareSingleNode{Layout}, Sparsity}(m, n, cl_h, transform)
                 ctr = MpsContractor{Strategy, Gauge}(net, [β/8., β/4., β/2., β], :graduate_truncate, params; onGPU=onGPU)
-                sol1, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, SingleLayerDroplets(1.01, 1, :hamming)))
+                sol1, s = low_energy_spectrum(ctr, search_params, merge_branches_blur(ctr, hamming_dist, :nofit, SingleLayerDroplets(1.01, 1, :hamming)))
+                # sol1, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, SingleLayerDroplets(1.01, 1, :hamming)))
+
                 @test sol1.energies ≈ [exact_energies[1]]
                 sol2 = unpack_droplets(sol1, β)
                 println("How many droplets we found: ", length(sol2.states))

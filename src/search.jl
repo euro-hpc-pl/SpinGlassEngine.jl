@@ -589,27 +589,22 @@ function merge_branches_blur(ctr::MpsContractor{T}, hamming_dist::Int, merge_typ
         psol = merge_branches(ctr, merge_type, update_droplets)(psol)
         node = get(ctr.nodes_search_order, length(psol.states[1])+1, ctr.node_outside)
         boundaries = boundary_states(ctr, psol.states, node)
-        # Get the indices that would sort the probabilities in descending order
+        # println("===============")
+        # println(boundaries)
+        # println("-------")
+        # println(get_prop(ctr.peps.clustered_hamiltonian, node, :spectrum).states)
         sorted_indices = sortperm(psol.probabilities, rev=true)
-        # Use the sorted indices to reorder the boundary states and their probabilities
         sorted_boundaries = boundaries[sorted_indices]
         nsol = Solution(psol, Vector{Int}(sorted_indices)) #TODO Vector{Int} should be rm
-        # Initialize an empty list for selected states
         selected_states = [] #Vector{Vector{Int}}()
         selected_idx = []
-        # If sorted_boundaries is not empty, push the first state into selected_states
         if isempty(selected_states)
             push!(selected_states, sorted_boundaries[1])
             push!(selected_idx, 1)
         end
-
         for i in 2:length(sorted_boundaries)
             state = sorted_boundaries[i]
-
-            # Check Hamming distance with existing selected states
             hamming_distances = [hamming_distance(state, s) for s in selected_states]
-            # If no selected state has a Hamming distance greater than hamming_dist,
-            # add the state to the selected_states list
             if all(hd >= hamming_dist for hd in hamming_distances)
                 push!(selected_states, state)
                 push!(selected_idx, i)

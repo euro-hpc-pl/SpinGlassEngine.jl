@@ -66,7 +66,7 @@ function run_test(instance, m, n, t)
             )
             cl_h = truncate_clustered_hamiltonian_2site_energy(cl_h, cl)
 
-            net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, cl_h, tran)
+            net = PEPSNetwork{SquareCrossDoubleNode{Layout}, Sparsity}(m, n, cl_h, tran)
 
             ctr = MpsContractor{Strategy, Gauge}(net, βs, :graduate_truncate, params; onGPU=onGPU)
 

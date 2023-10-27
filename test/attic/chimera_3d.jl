@@ -33,8 +33,8 @@ function run_test(instance, m, n, t, tran)
         Layout = EnergyGauges
         Gauge = NoUpdate
 
-        #net = PEPSNetwork{Square2{Layout}, Sparsity}(m, n, cl_h, tran)
-        net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, cl_h, tran)
+        #net = PEPSNetwork{SquareDoubleNode{Layout}, Sparsity}(m, n, cl_h, tran)
+        net = PEPSNetwork{SquareSingleNode{Layout}, Sparsity}(m, n, cl_h, tran)
     
         ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
 

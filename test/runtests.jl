@@ -23,11 +23,11 @@ push!(my_tests,
     "search_chimera_pathological.jl",
     "search_chimera_smallest.jl",
     "search_cross_square_star.jl",
-    "search_smallest_cross_square_star.jl",
-    "search_pegasus_square_star.jl",
-    "search_pegasus_nodiag_square_star.jl",
-    "search_square2_basic.jl",
-    "search_squarestar2_basic.jl",
+    "search_smallest_cross_square_cross.jl",
+    "search_pegasus_square_cross.jl",
+    "search_pegasus_nodiag_square_cross.jl",
+    "search_square_double_node_basic.jl",
+    "search_squarecross_double_node_basic.jl",
     "chimera_overlap_python.jl",
     "hamming.jl",
     "search_chimera_smallest_droplets.jl",
@@ -35,9 +35,7 @@ push!(my_tests,
     "search_chimera_pathological_hamming.jl",
     # "search_chimera_droplets.jl",
     # "search_pegasus_droplets.jl",
-
-# to fix in Tensor
-    #"search_chimera_pathological_gauge.jl",
+    # "search_chimera_pathological_Z2.jl"
 
 # time consuming tests:
     # "search_chimera_full.jl",
@@ -52,8 +50,8 @@ push!(my_tests,
     # "experimental/truncate.jl",
     # "experimental/truncate_small.jl",
     # "experimental/mpo_size.jl",
-    # "experimental/squarestar2_pegasus.jl",
-    # "experimental/squarestar2_zephyr.jl",
+    # "experimental/squarestar_double_node_pegasus.jl",
+    # "experimental/squarestar_double_node_zephyr.jl",
     # "experimental/gauges_cuda.jl",
     # "experimental/sampling.jl"
 )

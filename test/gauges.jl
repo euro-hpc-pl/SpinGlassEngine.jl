@@ -30,7 +30,7 @@ params = MpsParameters(bond_dim, 1E-8, 10)
 search_params = SearchParameters(num_states, δp)
 
 @testset "Overlaps calculated differently are the same." begin
-for Lattice ∈ (Square, SquareStar) 
+for Lattice ∈ (SquareSingleNode, SquareCrossSingleNode) 
     for Sparsity ∈ (Dense, Sparse), transform ∈ all_lattice_transformations[[1]]
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
             net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, cl_h, transform, :id)
@@ -74,7 +74,7 @@ end
 for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, Sparse) 
     for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
         for Gauge ∈ (GaugeStrategy, )
-            for Lattice ∈ (Square, SquareStar), transform ∈ all_lattice_transformations
+            for Lattice ∈ (SquareSingleNode, SquareCrossSingleNode), transform ∈ all_lattice_transformations
                 net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, cl_h, transform, :id)
                 ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
 

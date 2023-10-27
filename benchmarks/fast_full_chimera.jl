@@ -23,7 +23,7 @@ function bench(instance::String, size::NTuple{3, Int})
     params = MpsParameters(bond_dim, var_epsilon, max_sweeps)
     search_params = SearchParameters(num_states, δp)
 
-    net = PEPSNetwork{Square{EnergyGauges}, Dense}(m, n, cl_h, rotation(0))
+    net = PEPSNetwork{SquareSingleNode{EnergyGauges}, Dense}(m, n, cl_h, rotation(0))
     ctr = MpsContractor{MPSAnnealing}(net, [β], :graduate_truncate, params)
     @time sol, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
     sol.energies[begin]

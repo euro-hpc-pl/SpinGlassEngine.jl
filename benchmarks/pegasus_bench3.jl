@@ -70,7 +70,7 @@ function pegasus_sim(inst, trans, β, Layout, bd, ms, eng)
     params = MpsParameters(bd, VAR_TOL, ms, TOL_SVD, ITERS_SVD, ITERS_VAR, DTEMP_MULT, METHOD)
     search_params = SearchParameters(MAX_STATES, δp)
 
-    net = PEPSNetwork{SquareStar2{Layout}, SPARSITY}(M, N, cl_h, trans)
+    net = PEPSNetwork{SquareCrossDoubleNode{Layout}, SPARSITY}(M, N, cl_h, trans)
     ctr = MpsContractor{STRATEGY, GAUGE}(net, [β/6, β/3, β/2, β], graduate_truncation, params)
     sol1, schmidts = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, SingleLayerDroplets(eng, 20, :hamming)))
 

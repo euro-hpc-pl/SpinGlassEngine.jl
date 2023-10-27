@@ -1,14 +1,14 @@
-export Square2, tensor, site2
+export SquareDoubleNode, tensor, site_double_node
 
 """
 $(TYPEDSIGNATURES)
 """
-struct Square2{T <: AbstractTensorsLayout} <: AbstractGeometry end
+struct SquareDoubleNode{T <: AbstractTensorsLayout} <: AbstractGeometry end
 
 """
 $(TYPEDSIGNATURES)
 """
-function Square2(m::Int, n::Int)
+function SquareDoubleNode(m::Int, n::Int)
     labels = [(i, j, k) for j ∈ 1:n for i ∈ 1:m for k ∈ 1:2]
     lg = LabelledGraph(labels)
     for i ∈ 1:m, j ∈ 1:n add_edge!(lg, (i, j, 1), (i, j, 2)) end
@@ -33,25 +33,25 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-site2(::Type{Dense}) = :site_square2
+site_double_node(::Type{Dense}) = :site_square_double_node
 
 """
 $(TYPEDSIGNATURES)
 """
-site2(::Type{Sparse}) = :sparse_site_square2
+site_double_node(::Type{Sparse}) = :sparse_site_square_double_node
 
 """
 $(TYPEDSIGNATURES)
 """
 function tensor_map(
-    ::Type{Square2{T}}, ::Type{S}, nrows::Int, ncols::Int
+    ::Type{SquareDoubleNode{T}}, ::Type{S}, nrows::Int, ncols::Int
 ) where {T <: Union{GaugesEnergy, EnergyGauges}, S <: AbstractSparsity}
     map = Dict{PEPSNode, Symbol}()
 
     for i ∈ 1:nrows, j ∈ 1:ncols
-        push!(map, PEPSNode(i, j) => site2(S))
-        if j < ncols push!(map, PEPSNode(i, j + 1//2) => :central_h2) end
-        if i < nrows push!(map, PEPSNode(i + 1//2, j) => :central_v2) end
+        push!(map, PEPSNode(i, j) => site_double_node(S))
+        if j < ncols push!(map, PEPSNode(i, j + 1//2) => :central_h_double_node) end
+        if i < nrows push!(map, PEPSNode(i + 1//2, j) => :central_v_double_node) end
     end
     map
 end
@@ -61,7 +61,7 @@ end
 $(TYPEDSIGNATURES)
 Assigns gauges and corresponding information to GaugeInfo structure for a given Layout.
 """
-function gauges_list(::Type{Square2{T}}, nrows::Int, ncols::Int) where T <: GaugesEnergy
+function gauges_list(::Type{SquareDoubleNode{T}}, nrows::Int, ncols::Int) where T <: GaugesEnergy
     [
         GaugeInfo(
             (PEPSNode(i + 1//6, j), PEPSNode(i + 2//6, j)),
@@ -77,7 +77,7 @@ end
 $(TYPEDSIGNATURES)
 Assigns gauges and corresponding information to GaugeInfo structure for a given Layout.
 """
-function gauges_list(::Type{Square2{T}}, nrows::Int, ncols::Int) where T <: EnergyGauges
+function gauges_list(::Type{SquareDoubleNode{T}}, nrows::Int, ncols::Int) where T <: EnergyGauges
     [
         GaugeInfo(
             (PEPSNode(i + 4//6, j), PEPSNode(i + 5//6, j)),
@@ -91,9 +91,9 @@ end
 
 """
 $(TYPEDSIGNATURES)
-Defines the MPO layers for the Square geometry with the EnergyGauges layout.
+Defines the MPO layers for the SquareSingleNode geometry with the EnergyGauges layout.
 """
-function MpoLayers(::Type{T}, ncols::Int) where T <: Square2{EnergyGauges}
+function MpoLayers(::Type{T}, ncols::Int) where T <: SquareDoubleNode{EnergyGauges}
     main = Dict{Site, Sites}(i => (-1//6, 0, 3//6, 4//6) for i ∈ 1:ncols)
     #main = Dict{Site, Sites}(i => (0, 3//6) for i ∈ 1:ncols)
     for i ∈ 1:ncols - 1 push!(main, i + 1//2 => (0,)) end
@@ -108,9 +108,9 @@ end
 
 """
 $(TYPEDSIGNATURES)
-Defines the MPO layers for the Square geometry with the GaugesEnergy layout.
+Defines the MPO layers for the SquareSingleNode geometry with the GaugesEnergy layout.
 """
-function MpoLayers(::Type{T}, ncols::Int) where T <: Square2{GaugesEnergy}
+function MpoLayers(::Type{T}, ncols::Int) where T <: SquareDoubleNode{GaugesEnergy}
     main = Dict{Site, Sites}(i => (-4//6, -1//2, 0, 1//6) for i ∈ 1:ncols)
     for i ∈ 1:ncols - 1 push!(main, i + 1//2 => (0,)) end
 
@@ -125,7 +125,7 @@ $(TYPEDSIGNATURES)
 """
 function conditional_probability(
     ::Type{T}, ctr::MpsContractor{S}, ∂v::Vector{Int}
-) where {T <: Square2, S}
+) where {T <: SquareDoubleNode, S}
     indβ, β = length(ctr.betas), last(ctr.betas)
     i, j, k = ctr.current_node
 
@@ -162,12 +162,6 @@ function conditional_probability(
         le = reshape(en[1], (:, 1)) .+ en12[p12, p21] .+ reshape(en[2], (1, :))
         ele = exp.(-β .* (le .- minimum(le)))
 
-        # @cast LM3[s1, s2, x] := LM[(s1, s2), x] (s2 ∈ 1:maximum(pd2))
-        # R = permutedims(R, (2, 1))
-        # @cast R3[s1, s2, x] := R[(s1, s2), x] (s2 ∈ 1:maximum(pr2))
-
-        # LR = dropdims(sum(LM3[pd1, pd2, :] .* R3[pr1, pr2, :], dims=3), dims=3)
-
         @cast LM3[x, s1, s2] := LM[x, (s1, s2)] (s2 ∈ 1:maximum(pd2))
         @cast R3[x, s1, s2] := R[x, (s1, s2)] (s2 ∈ 1:maximum(pr2))
         LR = dropdims(sum(LM3[:, pd1, pd2] .* R3[:, pr1, pr2], dims=1), dims=1)
@@ -198,13 +192,6 @@ function conditional_probability(
         pr2 = projector(ctr.peps, (i, j, 2), ((i, j+1, 1), (i, j+1, 2)))
         pd2 = projector(ctr.peps, (i, j, 2), ((i+1, j, 1), (i+1, j, 2)))
 
-        # R = permutedims(R, (2, 1))
-        # @cast R3[p1, p2, x] := R[(p1, p2), x] (p2 ∈ 1:maximum(pr2))
-        # R2 = R3[∂v[j + 5], :, :]
-        # @cast LM3[p1, p2, x] := LM[(p1, p2), x] (p2 ∈ 1:maximum(pd2))
-        # LM2 = LM3[∂v[j + 6], :, :]
-        # LR = dropdims(sum(R2[pr2, :] .* LM2[pd2, :], dims=2), dims=2)
-
         @cast R3[x, p1, p2] := R[x, (p1, p2)] (p2 ∈ 1:maximum(pr2))
         R2 = R3[:, ∂v[j + 5], :]
         @cast LM3[x, p1, p2] := LM[x, (p1, p2)] (p2 ∈ 1:maximum(pd2))
@@ -221,14 +208,14 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: Square2, S}
+function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: SquareDoubleNode, S}
     ([(i, j, k) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols for k ∈ 1:2], (peps.nrows+1, 1, 1))
 end
 
 """
 $(TYPEDSIGNATURES)
 """
-function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: Square2, S}  # TODO
+function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: SquareDoubleNode, S}  # TODO
     i, j, k = node
     if k == 1
         bnd = vcat(
@@ -263,7 +250,7 @@ end
 $(TYPEDSIGNATURES)
 """
 function update_energy(
-    ::Type{T}, ctr::MpsContractor{S}, σ::Vector{Int}) where {T <: Square2, S}
+    ::Type{T}, ctr::MpsContractor{S}, σ::Vector{Int}) where {T <: SquareDoubleNode, S}
     net = ctr.peps
     i, j, k = ctr.current_node
 
@@ -280,7 +267,7 @@ end
 $(TYPEDSIGNATURES)
 """
 function tensor(
-    net::PEPSNetwork{T, S}, node::PEPSNode, β::Real, ::Val{:sparse_site_square2}
+    net::PEPSNetwork{T, S}, node::PEPSNode, β::Real, ::Val{:sparse_site_square_double_node}
 ) where {T <: AbstractGeometry, S}
     @nexprs 2 k->(
         v_k = (node.i, node.j, k);
@@ -300,9 +287,9 @@ end
 $(TYPEDSIGNATURES)
 """
 function tensor(
-    net::PEPSNetwork{T, S}, node::PEPSNode, β::Real, ::Val{:site_square2}
+    net::PEPSNetwork{T, S}, node::PEPSNode, β::Real, ::Val{:site_square_double_node}
 ) where {T <: AbstractGeometry, S}
-    sp = tensor(net, node, β, Val(:sparse_site_square2))
+    sp = tensor(net, node, β, Val(:sparse_site_square_double_node))
     projs = Tuple(get_projector!(net.lp, x) for x in sp.projs)
     A = zeros(maximum.(projs))
     for (σ, lexp) ∈ enumerate(sp.loc_exp)
@@ -315,7 +302,7 @@ end
 $(TYPEDSIGNATURES)
 """
 function tensor(
-    network::PEPSNetwork{T, Sparse}, node::PEPSNode, β::Real, ::Val{:central_h2}
+    network::PEPSNetwork{T, Sparse}, node::PEPSNode, β::Real, ::Val{:central_h_double_node}
 ) where {T <: AbstractGeometry}
     i, j = node.i, floor(Int, node.j)
     CentralTensor(network, β, (i, j), (i, j+1))
@@ -325,7 +312,7 @@ end
 $(TYPEDSIGNATURES)
 """
 function tensor(
-    network::PEPSNetwork{T, Dense}, node::PEPSNode, β::Real, ::Val{:central_h2}
+    network::PEPSNetwork{T, Dense}, node::PEPSNode, β::Real, ::Val{:central_h_double_node}
 ) where {T <: AbstractGeometry}
     i, j = node.i, floor(Int, node.j)
     dense_central(CentralTensor(network, β, (i, j), (i, j+1)))
@@ -335,7 +322,7 @@ end
 $(TYPEDSIGNATURES)
 """
 function tensor(
-    network::PEPSNetwork{T, Sparse}, node::PEPSNode, β::Real, ::Val{:central_v2}
+    network::PEPSNetwork{T, Sparse}, node::PEPSNode, β::Real, ::Val{:central_v_double_node}
 ) where {T <: AbstractGeometry}
     i, j = floor(Int, node.i), node.j
     CentralTensor(network, β, (i, j), (i+1, j))
@@ -345,7 +332,7 @@ end
 $(TYPEDSIGNATURES)
 """
 function tensor(
-    network::PEPSNetwork{T, Dense}, node::PEPSNode, β::Real, ::Val{:central_v2}
+    network::PEPSNetwork{T, Dense}, node::PEPSNode, β::Real, ::Val{:central_v_double_node}
 ) where {T <: AbstractGeometry}
     i, j = floor(Int, node.i), node.j
     dense_central(CentralTensor(network, β, (i, j), (i+1, j)))
@@ -423,14 +410,14 @@ function CentralTensor_size(network::PEPSNetwork{T, S}, node1::NTuple{2, Int64},
 end
 
 function Base.size(
-    network::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, ::Val{:central_v2}
+    network::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, ::Val{:central_v_double_node}
 )
     i, j = floor(Int, node.i), node.j
     CentralTensor_size(network, (i, j), (i+1, j))
 end
 
 function Base.size(
-    network::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, ::Val{:central_h2}
+    network::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, ::Val{:central_h_double_node}
 )
     i, j = node.i, floor(Int, node.j)
     CentralTensor_size(network, (i, j), (i, j+1))
@@ -440,7 +427,7 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function projectors_site_tensor(net::PEPSNetwork{T, S}, vertex::Node) where {T <: Square2, S}
+function projectors_site_tensor(net::PEPSNetwork{T, S}, vertex::Node) where {T <: SquareDoubleNode, S}
     i, j = vertex
     (
         outer_projector(

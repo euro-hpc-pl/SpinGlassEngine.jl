@@ -19,9 +19,9 @@ MPI.Init()
 size = MPI.Comm_size(MPI.COMM_WORLD)
 rank = MPI.Comm_rank(MPI.COMM_WORLD)
 
-M, N, T = 3, 3, 3
-INSTANCE_DIR = "$(@__DIR__)/../test/instances/pegasus_random/P4/RAU/SpinGlass/single"
-OUTPUT_DIR = "$(@__DIR__)/results/pegasus_random/P4/RAU/diversity/P4_droplets_new_i10-30"
+M, N, T = 7, 7, 3
+INSTANCE_DIR = "$(@__DIR__)/../test/instances/pegasus_random/P8/CBFM-P/SpinGlass/single"
+OUTPUT_DIR = "$(@__DIR__)/results/pegasus_random/P8/CBFM-P/droplets/P8_droplets_boundary_brute_force"
 
 if !Base.Filesystem.isdir(OUTPUT_DIR)
     Base.Filesystem.mkpath(OUTPUT_DIR)
@@ -37,9 +37,8 @@ SPARSITY = Sparse
 graduate_truncation = :graduate_truncate
 
 INDβ = [3,] #[1, 2, 3]
-MAX_STATES = 128
-BOND_DIM = [8, ]
-DE = 16.0
+MAX_STATES = 100
+BOND_DIM = [4,]
 # cs = 2^12
 # iter = 1
 
@@ -51,13 +50,14 @@ ITERS_VAR = 1
 DTEMP_MULT = 2
 METHOD = :psvd_sparse
 I = [1,]
-eng = [2.01,] #collect(0.01:1:1.01)
-hamming_dist = 10
+eng = [60, ] #collect(0.01:1:1.01)
+hamming_dist = 100
+hamming_cutoff = 3
 disable_logging(LogLevel(1))
 BLAS.set_num_threads(1)
 
 function pegasus_sim(inst, trans, β, Layout, bd, ms, eng, hamming_dist)
-    δp = 1E-5*exp(-β * DE)
+    δp = 0.0
 
     cl_h = clustered_hamiltonian(
         ising_graph(INSTANCE_DIR * "/" * inst),
@@ -72,9 +72,9 @@ function pegasus_sim(inst, trans, β, Layout, bd, ms, eng, hamming_dist)
     params = MpsParameters(bd, VAR_TOL, ms, TOL_SVD, ITERS_SVD, ITERS_VAR, DTEMP_MULT, METHOD)
     search_params = SearchParameters(MAX_STATES, δp)
 
-    net = PEPSNetwork{SquareStar2{Layout}, SPARSITY}(M, N, cl_h, trans)
+    net = PEPSNetwork{SquareCrossDoubleNode{Layout}, SPARSITY}(M, N, cl_h, trans)
     ctr = MpsContractor{STRATEGY, GAUGE}(net, [β/6, β/3, β/2, β], graduate_truncation, params)
-    sol1, schmidts = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, SingleLayerDroplets(eng, hamming_dist, :hamming)))
+    sol1, schmidts = low_energy_spectrum(ctr, search_params, merge_branches_blur(ctr, hamming_cutoff, :fit, SingleLayerDroplets(eng, hamming_dist, :hamming)))
 
     sol2 = unpack_droplets(sol1, β)
     ig_states = decode_clustered_hamiltonian_state.(Ref(cl_h), sol2.states)
@@ -106,7 +106,6 @@ function run_bench(inst::String, β::Real, t, l, bd, ms, eng, hamming_dist, i)
                 :statistic => minimum(values(ctr.statistics)),
                 :max_states => MAX_STATES,
                 :bond_dim => bd,
-                :de => DE,
                 :max_sweeps => ms,
                 :eng => eng,
                 :hamming_dist => hamming_dist,
@@ -148,7 +147,6 @@ function run_bench(inst::String, β::Real, t, l, bd, ms, eng, hamming_dist, i)
                 :iters_var => ITERS_VAR,
                 :dtemp_mult => DTEMP_MULT,
                 :bond_dim => bd,
-                :de => DE,
                 :max_sweeps => ms,
                 :var_tol => VAR_TOL,
                 :error => err

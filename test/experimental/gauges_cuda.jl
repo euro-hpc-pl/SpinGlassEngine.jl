@@ -34,7 +34,7 @@ end
     energies = Vector{Float64}[]
 
     for transform ∈ all_lattice_transformations
-        net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, cl_h, transform)
+        net = PEPSNetwork{SquareCrossDoubleNode{Layout}, Sparsity}(m, n, cl_h, transform)
         ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)
         update_gauges!(ctr, m, INDβ, Val(:up))
         sol, s = low_energy_spectrum(ctr, search_params)

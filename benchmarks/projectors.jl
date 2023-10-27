@@ -45,7 +45,7 @@ Layout = EnergyGauges
 Gauge = NoUpdate
 indβ = 3
 
-net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, cl_h, tran)
+net = PEPSNetwork{SquareCrossDoubleNode{Layout}, Sparsity}(m, n, cl_h, tran)
 ctr = MpsContractor{Strategy, Gauge}(net, [β/4, β/2, β], :graduate_truncate, params)
 P = Set()
 S = Set()

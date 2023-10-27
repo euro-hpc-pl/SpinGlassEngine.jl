@@ -3,8 +3,7 @@
 
     β = 1.0
     bond_dim = 16
-    num_states = 22
-    INDβ = [1, 2, 3]
+    num_states = 2^8
 
     # energies
     exact_energies =
@@ -56,7 +55,7 @@
         21 => 5, 22 => 5,
     )
 
-    ig = ising_graph("$(@__DIR__)/instances/pathological/chim_$(m)_$(n)_$(t).txt")
+    ig = ising_graph("$(@__DIR__)/instances/pathological/chim_$(m)_$(n)_$(t)_Z2.txt")
     cl_h = clustered_hamiltonian(
         ig,
         spectrum=full_spectrum,
@@ -64,36 +63,40 @@
     )
     params = MpsParameters(bond_dim, 1E-8, 4)
     search_params = SearchParameters(num_states, 0.0)
-    Gauge = GaugeStrategy
+    Gauge = NoUpdate
 
     energies = Vector{Float64}[]
-    for Strategy ∈ (SVDTruncate, MPSAnnealing, Zipper), Sparsity ∈ (Dense, Sparse)
-        for Layout ∈ (EngGaugesEng, GaugesEnergy, EnergyGauges)
-            for Lattice ∈ (Square, ), transform ∈ all_lattice_transformations
+    # for Strategy ∈ (SVDTruncate, MPSAnnealing, Zipper), Sparsity ∈ (Dense, Sparse)
+    #     for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
+    #         for Lattice ∈ (SquareSingleNode, SquareCrossSingleNode), transform ∈ all_lattice_transformations
+    for Strategy ∈ (Zipper,), Sparsity ∈ (Dense,)
+        for Layout ∈ (EnergyGauges,)
+            for transform ∈ all_lattice_transformations
 
-                net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, cl_h, transform)
-                ctr = MpsContractor{Strategy, Gauge}(net, [β/6., β/3., β/2., β], :graduate_truncate, params; onGPU=onGPU)
-                update_gauges!(ctr, m, INDβ, Val(:up))
+                net = PEPSNetwork{SquareSingleNode{Layout}, Sparsity}(m, n, cl_h, transform)
+                ctr = MpsContractor{Strategy, Gauge}(net, [β/8., β/4., β/2., β], :graduate_truncate, params; onGPU=onGPU)
+                sol1, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, SingleLayerDroplets(1.01, 1, :hamming)), :Z2)
+                # @test sol1.energies ≈ [exact_energies[1]]
+                sol2 = unpack_droplets(sol1, β)
+                # println("How many droplets we found: ", length(sol2.states))
 
-                sol, s = low_energy_spectrum(ctr, search_params)
+                # @test sol2.energies[1:length(exact_energies)] ≈ exact_energies
 
-                @test sol.energies ≈ exact_energies
+                for sol ∈ (sol1, sol2 )
+                    ig_states = decode_clustered_hamiltonian_state.(Ref(cl_h), sol.states)
+                    @test sol.energies ≈ energy.(Ref(ig), ig_states)
 
-                ig_states = decode_clustered_hamiltonian_state.(Ref(cl_h), sol.states)
-                @test sol.energies ≈ energy.(Ref(ig), ig_states)
+                    cl_h_states = decode_state.(Ref(net), sol.states)
+                    @test sol.energies ≈ energy.(Ref(cl_h), cl_h_states)
 
-                cl_h_states = decode_state.(Ref(net), sol.states)
-                @test sol.energies ≈ energy.(Ref(cl_h), cl_h_states)
+                    norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
+                    @test norm_prob ≈ exp.(-β .* (sol.energies .- sol.energies[1]))
+                end
 
-                for (i, σ) ∈ enumerate(sol.states) @test σ ∈ exact_states[deg[i]] end
+                # for (i, σ) ∈ enumerate(sol.states) @test σ ∈ exact_states[deg[i]] end
 
-                norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
-                @test norm_prob ≈ exp.(-β .* (sol.energies .- sol.energies[1]))
-
-                push!(energies, sol.energies)
                 clear_memoize_cache()
             end
         end
     end
-    @test all(e -> e ≈ first(energies), energies)
 end

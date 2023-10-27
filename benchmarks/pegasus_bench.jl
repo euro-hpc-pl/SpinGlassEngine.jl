@@ -54,7 +54,7 @@ function pegasus_sim(inst, trans, β, Layout)
     params = MpsParameters(BOND_DIM, VAR_TOL, MAX_SWEEPS, TOL_SVD)
     search_params = SearchParameters(MAX_STATES, δp)
   
-    net = PEPSNetwork{SquareStar2{Layout}, SPARSITY}(M, N, cl_h, trans)
+    net = PEPSNetwork{SquareCrossDoubleNode{Layout}, SPARSITY}(M, N, cl_h, trans)
     ctr = MpsContractor{STRATEGY, GAUGE}(net, [β/6, β/3, β/2, β], graduate_truncation, params)
     sol, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 

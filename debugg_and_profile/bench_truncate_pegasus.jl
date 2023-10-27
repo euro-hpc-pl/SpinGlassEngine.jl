@@ -71,7 +71,7 @@ function bench(instance::String)
     beliefs = belief_propagation(new_cl_h, β; tol=1e-6, iter=iter)
     @time cl_h = truncate_clustered_hamiltonian_2site_BP(cl_h, beliefs, cs; beta = β)
 
-    net = PEPSNetwork{SquareStar2{Layout}, Sparse}(m, n, cl_h, tran)
+    net = PEPSNetwork{SquareCrossDoubleNode{Layout}, Sparse}(m, n, cl_h, tran)
     ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)
     @time sol, schmidts = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
     println("sol ", sol)

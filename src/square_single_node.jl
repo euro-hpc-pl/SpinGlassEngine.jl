@@ -1,7 +1,7 @@
 
 export
        site,
-       Square,
+       SquareSingleNode,
        tensor_map,
        gauges_list,
        MpoLayers,
@@ -16,16 +16,16 @@ export
 """
 $(TYPEDSIGNATURES)
 
-Defines Square geometry with a given layout.
+Defines SquareSingleNode geometry with a given layout.
 """
-struct Square{T <: AbstractTensorsLayout} <: AbstractGeometry end
+struct SquareSingleNode{T <: AbstractTensorsLayout} <: AbstractGeometry end
 
 """
 $(TYPEDSIGNATURES)
 
-Creates Square geometry as a LabelledGraph.
+Creates SquareSingleNode geometry as a LabelledGraph.
 """
-function Square(m::Int, n::Int)
+function SquareSingleNode(m::Int, n::Int)
     labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]
     LabelledGraph(labels, grid((m, n)))
 end
@@ -46,14 +46,14 @@ $(TYPEDSIGNATURES)
 Assigns type of tensor to a PEPS node coordinates for a given Layout and Sparsity.
 """
 function tensor_map(
-    ::Type{Square{T}}, ::Type{S}, nrows::Int, ncols::Int
+    ::Type{SquareSingleNode{T}}, ::Type{S}, nrows::Int, ncols::Int
 ) where {T <: Union{GaugesEnergy, EnergyGauges}, S <: AbstractSparsity}
     map = Dict{PEPSNode, Symbol}()
 
     for i ∈ 1:nrows, j ∈ 1:ncols
         push!(map, PEPSNode(i, j) => site(S))
-        if j < ncols push!(map, PEPSNode(i, j + 1//2) => :central_h) end
-        if i < nrows push!(map, PEPSNode(i + 1//2, j) => :central_v) end
+        if j < ncols push!(map, PEPSNode(i, j + 1//2) => :central_h_single_node) end
+        if i < nrows push!(map, PEPSNode(i + 1//2, j) => :central_v_single_node) end
     end
     map
 end
@@ -64,13 +64,13 @@ $(TYPEDSIGNATURES)
 Assigns type of tensor to a PEPS node coordinates for a given Layout and Sparsity.
 """
 function tensor_map(
-    ::Type{Square{T}}, ::Type{S}, nrows::Int, ncols::Int
+    ::Type{SquareSingleNode{T}}, ::Type{S}, nrows::Int, ncols::Int
 ) where {T <: EngGaugesEng, S <: AbstractSparsity}
     map = Dict{PEPSNode, Symbol}()
 
     for i ∈ 1:nrows, j ∈ 1:ncols
         push!(map, PEPSNode(i, j) => site(S))
-        if j < ncols push!(map, PEPSNode(i, j + 1//2) => :central_h) end
+        if j < ncols push!(map, PEPSNode(i, j + 1//2) => :central_h_single_node) end
         if i < nrows
             push!(
                 map,
@@ -87,7 +87,7 @@ $(TYPEDSIGNATURES)
 
 Assigns gauges and corresponding information to GaugeInfo structure for a given Layout.
 """
-function gauges_list(::Type{Square{T}}, nrows::Int, ncols::Int) where T <: GaugesEnergy
+function gauges_list(::Type{SquareSingleNode{T}}, nrows::Int, ncols::Int) where T <: GaugesEnergy
     [
         GaugeInfo(
             (PEPSNode(i + 1//6, j), PEPSNode(i + 2//6, j)),
@@ -104,7 +104,7 @@ $(TYPEDSIGNATURES)
 
 Assigns gauges and corresponding information to GaugeInfo structure for a given Layout.
 """
-function gauges_list(::Type{Square{T}}, nrows::Int, ncols::Int) where T <: EnergyGauges
+function gauges_list(::Type{SquareSingleNode{T}}, nrows::Int, ncols::Int) where T <: EnergyGauges
     [
         GaugeInfo(
             (PEPSNode(i + 4//6, j), PEPSNode(i + 5//6, j)),
@@ -121,7 +121,7 @@ $(TYPEDSIGNATURES)
 
 "Assigns gauges and corresponding information to GaugeInfo structure for a given Layout.
 """
-function gauges_list(::Type{Square{T}}, nrows::Int, ncols::Int) where T <: EngGaugesEng
+function gauges_list(::Type{SquareSingleNode{T}}, nrows::Int, ncols::Int) where T <: EngGaugesEng
     [
         GaugeInfo(
             (PEPSNode(i + 2//5, j), PEPSNode(i + 3//5, j)),
@@ -136,9 +136,9 @@ end
 """
 $(TYPEDSIGNATURES)
 
-Defines the MPO layers for the Square geometry with the EnergyGauges layout.
+Defines the MPO layers for the SquareSingleNode geometry with the EnergyGauges layout.
 """
-function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EnergyGauges}
+function MpoLayers(::Type{T}, ncols::Int) where T <: SquareSingleNode{EnergyGauges}
     main = Dict{Site, Sites}(i => (-1//6, 0, 3//6, 4//6) for i ∈ 1:ncols)
     for i ∈ 1:ncols - 1 push!(main, i + 1//2 => (0,)) end
 
@@ -151,9 +151,9 @@ end
 """
 $(TYPEDSIGNATURES)
 
-Defines the MPO layers for the Square geometry with the GaugesEnergy layout.
+Defines the MPO layers for the SquareSingleNode geometry with the GaugesEnergy layout.
 """
-function MpoLayers(::Type{T}, ncols::Int) where T <: Square{GaugesEnergy}
+function MpoLayers(::Type{T}, ncols::Int) where T <: SquareSingleNode{GaugesEnergy}
     main = Dict{Site, Sites}(i => (-4//6, -1//2, 0, 1//6) for i ∈ 1:ncols)
     for i ∈ 1:ncols - 1 push!(main, i + 1//2 => (0,)) end
 
@@ -166,9 +166,9 @@ end
 """
 $(TYPEDSIGNATURES)
 
-Defines the MPO layers for the Square geometry with the EngGaugesEng layout.
+Defines the MPO layers for the SquareSingleNode geometry with the EngGaugesEng layout.
 """
-function MpoLayers(::Type{T}, ncols::Int) where T <: Square{EngGaugesEng}
+function MpoLayers(::Type{T}, ncols::Int) where T <: SquareSingleNode{EngGaugesEng}
     main = Dict{Site, Sites}(i => (-2//5, -1//5, 0, 1//5, 2//5) for i ∈ 1:ncols)
     for i ∈ 1:ncols - 1 push!(main, i + 1//2 => (0,)) end
 
@@ -196,11 +196,11 @@ end
 """
 $(TYPEDSIGNATURES)
 
-Calculates conditional probability for a Square Layout.
+Calculates conditional probability for a SquareSingleNode Layout.
 """
 function conditional_probability(
     ::Type{T}, ctr::MpsContractor{S}, ∂v::Vector{Int}
-) where {T <: Square, S}
+) where {T <: SquareSingleNode, S}
     indβ, β = length(ctr.betas), last(ctr.betas)
     i, j = ctr.current_node
 
@@ -232,7 +232,7 @@ end
 $(TYPEDSIGNATURES)
 
 """
-function projectors_site_tensor(network::PEPSNetwork{T, S}, vertex::Node) where {T <: Square, S}
+function projectors_site_tensor(network::PEPSNetwork{T, S}, vertex::Node) where {T <: SquareSingleNode, S}
     i, j = vertex
     projector.(Ref(network), Ref(vertex), ((i, j-1), (i-1, j), (i, j+1), (i+1, j)))
 end
@@ -241,7 +241,7 @@ end
 $(TYPEDSIGNATURES)
 
 """
-function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: Square, S}
+function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: SquareSingleNode, S}
     ([(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols], (peps.nrows+1, 1))
 end
 
@@ -249,7 +249,7 @@ end
 $(TYPEDSIGNATURES)
 
 """
-function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: Square, S}
+function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: SquareSingleNode, S}
     i, j = node
     vcat(
         [((i, k), (i+1, k)) for k ∈ 1:j-1]...,
@@ -264,7 +264,7 @@ $(TYPEDSIGNATURES)
 """
 function update_energy(
     ::Type{T}, ctr::MpsContractor{S}, σ::Vector{Int},
-) where {T <: Square, S}
+) where {T <: SquareSingleNode, S}
     net = ctr.peps
     i, j = ctr.current_node
     en = local_energy(net, (i, j))

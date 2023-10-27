@@ -32,7 +32,7 @@ energies = Vector{Float64}[]
 Strategy = Zipper
 Sparsity = Sparse
 Layout = EnergyGauges
-Lattice = Square
+Lattice = SquareSingleNode
 transform = rotation(0)
 
 net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, cl_h, transform)

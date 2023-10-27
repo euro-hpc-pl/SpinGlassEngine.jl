@@ -1,12 +1,12 @@
-export SquareStar2
+export SquareCrossDoubleNode
 
-struct SquareStar2{T <: AbstractTensorsLayout} <: AbstractGeometry end
+struct SquareCrossDoubleNode{T <: AbstractTensorsLayout} <: AbstractGeometry end
 
 """
 $(TYPEDSIGNATURES)
 """
-function SquareStar2(m::Int, n::Int)
-    lg = Square2(m, n)
+function SquareCrossDoubleNode(m::Int, n::Int)
+    lg = SquareDoubleNode(m, n)
     for i ∈ 1:m-1, j ∈ 1:n-1
         add_edge!(lg, (i, j, 1), (i+1, j+1, 1))
         add_edge!(lg, (i, j, 1), (i+1, j+1, 2))
@@ -23,32 +23,32 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-Virtual2(::Type{Dense}) = :virtual2
+VirtualDoubleNode(::Type{Dense}) = :virtual_double_node
 
 """
 $(TYPEDSIGNATURES)
 """
-Virtual2(::Type{Sparse}) = :sparse_virtual2
+VirtualDoubleNode(::Type{Sparse}) = :sparse_virtual_double_node
 
 """
 $(TYPEDSIGNATURES)
 """
 function tensor_map(
-    ::Type{SquareStar2{T}}, ::Type{S}, nrows::Int, ncols::Int
+    ::Type{SquareCrossDoubleNode{T}}, ::Type{S}, nrows::Int, ncols::Int
 ) where {T <: Union{EnergyGauges, GaugesEnergy}, S <: AbstractSparsity}
     map = Dict{PEPSNode, Symbol}()
 
     for i ∈ 1:nrows, j ∈ 1:ncols
         push!(
             map,
-            PEPSNode(i, j) => site2(S),
-            PEPSNode(i, j - 1//2) => Virtual2(S),
-            PEPSNode(i + 1//2, j) => :central_v2
+            PEPSNode(i, j) => site_double_node(S),
+            PEPSNode(i, j - 1//2) => VirtualDoubleNode(S),
+            PEPSNode(i + 1//2, j) => :central_v_double_node
         )
     end
 
     for i ∈ 1:nrows-1, j ∈ 0:ncols-1   # why from 0?
-        push!(map, PEPSNode(i + 1//2, j + 1//2) => :central_d2)
+        push!(map, PEPSNode(i + 1//2, j + 1//2) => :central_d_double_node)
     end
     map
 end
@@ -57,7 +57,7 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function gauges_list(::Type{SquareStar2{T}}, nrows::Int, ncols::Int) where T <: GaugesEnergy
+function gauges_list(::Type{SquareCrossDoubleNode{T}}, nrows::Int, ncols::Int) where T <: GaugesEnergy
     [
         GaugeInfo(
             (PEPSNode(i + 1//6, j), PEPSNode(i + 2//6, j)),
@@ -72,7 +72,7 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function gauges_list(::Type{SquareStar2{T}}, nrows::Int, ncols::Int) where T <: EnergyGauges
+function gauges_list(::Type{SquareCrossDoubleNode{T}}, nrows::Int, ncols::Int) where T <: EnergyGauges
     [
         GaugeInfo(
             (PEPSNode(i + 4//6, j), PEPSNode(i + 5//6, j)),
@@ -88,9 +88,9 @@ end
 """
 $(TYPEDSIGNATURES)
 
-Defines the MPO layers for the SquareStar2 geometry with the EnergyGauges layout.
+Defines the MPO layers for the SquareCrossDoubleNode geometry with the EnergyGauges layout.
 """
-function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar2{EnergyGauges}
+function MpoLayers(::Type{T}, ncols::Int) where T <: SquareCrossDoubleNode{EnergyGauges}
     MpoLayers(
         Dict(site(i) => (-1//6, 0, 3//6, 4//6) for i ∈ 1//2:1//2:ncols),
         Dict(site(i) => (3//6, 4//6) for i ∈ 1//2:1//2:ncols),
@@ -101,9 +101,9 @@ end
 """
 $(TYPEDSIGNATURES)
 
-Defines the MPO layers for the SquareStar2 geometry with the GaugesEnergy layout.
+Defines the MPO layers for the SquareCrossDoubleNode geometry with the GaugesEnergy layout.
 """
-function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar2{GaugesEnergy}
+function MpoLayers(::Type{T}, ncols::Int) where T <: SquareCrossDoubleNode{GaugesEnergy}
     MpoLayers(
         Dict(site(i) => (-4//6, -1//2, 0, 1//6) for i ∈ 1//2:1//2:ncols),
         Dict(site(i) => (1//6,) for i ∈ 1//2:1//2:ncols),
@@ -114,7 +114,7 @@ end
 
 @memoize Dict function precompute_conditional(
     ::Type{T}, ctr::MpsContractor{S}, current_node
-) where {T <: SquareStar2, S}
+) where {T <: SquareCrossDoubleNode, S}
     i, j, k = current_node
     β = last(ctr.betas)
     if k == 1
@@ -124,8 +124,12 @@ end
 
         plb1 = projector(ctr.peps, (i, j, 1), ((i+1, j-1, 1), (i+1, j-1, 2)))
         plb2 = projector(ctr.peps, (i, j, 2), ((i+1, j-1, 1), (i+1, j-1, 2)))
-        prf1 = projector(ctr.peps, (i, j, 1), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2)))
-        prf2 = projector(ctr.peps, (i, j, 2), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2)))
+        prf1 = projector(
+            ctr.peps, (i, j, 1), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2))
+            )
+        prf2 = projector(
+            ctr.peps, (i, j, 2), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2))
+            )
         pd1 = projector(ctr.peps, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
         pd2 = projector(ctr.peps, (i, j, 2), ((i+1, j, 1), (i+1, j, 2)))
 
@@ -185,7 +189,9 @@ end
 
         plb1 = projector(ctr.peps, (i, j, 1), ((i+1, j-1, 1), (i+1, j-1, 2)))
         plb2 = projector(ctr.peps, (i, j, 2), ((i+1, j-1, 1), (i+1, j-1, 2)))
-        prf2 = projector(ctr.peps, (i, j, 2), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2)))
+        prf2 = projector(
+            ctr.peps, (i, j, 2), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2))
+            )
         pd2 = projector(ctr.peps, (i, j, 2), ((i+1, j, 1), (i+1, j, 2)))
 
         splb1, splb2, sprf2, spd2 = maximum.((plb1, plb2, prf2, pd2))
@@ -213,7 +219,7 @@ $(TYPEDSIGNATURES)
 """
 function conditional_probability(
     ::Type{T}, ctr::MpsContractor{S}, ∂v::Vector{Int}
-) where {T <: SquareStar2, S}
+) where {T <: SquareCrossDoubleNode, S}
     indβ, β = length(ctr.betas), last(ctr.betas)
     i, j, k = ctr.current_node
 
@@ -233,7 +239,10 @@ function conditional_probability(
         eng_l = [@view eng_l[k, m][:, ∂v[2 * j - 1 + k + (m - 1) * 2]] for k ∈ 1:2, m ∈ 1:2]
         eng_lu = [@view eng_lu[k, m][:, ∂v[2 * j + 3 + k + (m - 1) * 2]] for k ∈ 1:2, m ∈ 1:2]
         eng_u = [@view eng_u[k, m][:, ∂v[2 * j + 7 + k + (m - 1) * 2]] for k ∈ 1:2, m ∈ 1:2]
-        en = [eng_loc[k] .+ eng_l[k, 1] .+ eng_l[k, 2] .+ eng_lu[k, 1] .+ eng_lu[k, 2] .+ eng_u[k, 1] .+ eng_u[k, 2] for k ∈ 1:2]
+        en = [
+            eng_loc[k] .+ eng_l[k, 1] .+ eng_l[k, 2] .+ eng_lu[k, 1] .+
+            eng_lu[k, 2] .+ eng_u[k, 1] .+ eng_u[k, 2] for k ∈ 1:2
+            ]
         en = [exp.(-β .* (en[k] .- minimum(en[k]))) for k ∈ 1:2]
         tele = reshape(en[1], (:, 1)) .* ele .* reshape(en[2], (1, :))
 
@@ -269,7 +278,7 @@ function conditional_probability(
             R = CuArray(R)
         end
 
-        eng_loc, eng_l, eng_lu, eng_u, eng_12, plb2, prf2, pd2, splb1, splb2, sprf2, spd2 = precompute_conditional(T, ctr, ctr.current_node)
+        eng_loc, eng_l, eng_lu, eng_u, eng_12, plb2, prf2, pd2, splb1, splb2, sprf2, spd2 = precompute_conditional(T, ctr, ctr.current_node) #TODO split the line
 
         eng_l = [@view eng_l[m][:, ∂v[2 * j - 1 + m]] for m ∈ 1:2]
         eng_lu = [@view eng_lu[m][:, ∂v[2 * j + 1 + m]] for m ∈ 1:2]
@@ -296,14 +305,14 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: SquareStar2, S}
+function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: SquareCrossDoubleNode, S}
     ([(i, j, k) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols for k ∈ 1:2], (peps.nrows+1, 1, 1))
 end
 
 """
 $(TYPEDSIGNATURES)
 """
-function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: SquareStar2, S}
+function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: SquareCrossDoubleNode, S}
     i, j, k = node  # todo
     if k == 1
         bnd = vcat(
@@ -368,12 +377,14 @@ $(TYPEDSIGNATURES)
 """
 function update_energy(
     ::Type{T}, ctr::MpsContractor{S}, σ::Vector{Int}
-) where {T <: SquareStar2, S}
+) where {T <: SquareCrossDoubleNode, S}
     net = ctr.peps
     i, j, k = ctr.current_node
 
     en = local_energy(net, (i, j, k))
-    for v ∈ ((i, j-1, 1), (i, j-1, 2), (i-1, j, 1), (i-1, j, 2), (i-1, j-1, 1), (i-1, j-1, 2), (i-1, j+1, 1), (i-1, j+1, 2))
+    for v ∈ (
+        (i, j-1, 1), (i, j-1, 2), (i-1, j, 1), (i-1, j, 2), (i-1, j-1, 1), (i-1, j-1, 2), (i-1, j+1, 1), (i-1, j+1, 2)
+        )
         en += bond_energy(net, (i, j, k), v, local_state_for_node(ctr, σ, v))
     end
     if k != 2 return en end
@@ -381,25 +392,11 @@ function update_energy(
     en
 end
 
-# """
-# $(TYPEDSIGNATURES)
-# """
-# function tensor(
-#     net::PEPSNetwork{T, Dense}, node::PEPSNode, β::Real, ::Val{:central_d2}
-# ) where {T <: AbstractGeometry}
-#     i, j = floor(Int, node.i), floor(Int, node.j)
-#     T_NW_SE = dense_central_tensor(CentralTensor(net, β, (i, j), (i+1, j+1)))
-#     T_NE_SW = dense_central_tensor(CentralTensor(net, β, (i, j+1), (i+1, j)))
-#     @cast A[(u, uu), (dd, d)] := T_NW_SE[u, d] * T_NE_SW[uu, dd]
-#     A
-# end
-
-
 """
 $(TYPEDSIGNATURES)
 """
 function tensor(
-    net::PEPSNetwork{T, Sparse}, node::PEPSNode, β::Real, ::Val{:central_d2}
+    net::PEPSNetwork{T, Sparse}, node::PEPSNode, β::Real, ::Val{:central_d_double_node}
 ) where {T <: AbstractGeometry}
     i, j = floor(Int, node.i), floor(Int, node.j)
     T_NW_SE = CentralTensor(net, β, (i, j), (i+1, j+1))
@@ -411,7 +408,7 @@ end
 $(TYPEDSIGNATURES)
 """
 function Base.size(
-    net::PEPSNetwork{SquareStar2{T}, S}, node::PEPSNode, ::Val{:central_d2}
+    net::PEPSNetwork{SquareCrossDoubleNode{T}, S}, node::PEPSNode, ::Val{:central_d_double_node}
 ) where {T <: AbstractTensorsLayout, S <: AbstractSparsity}
     i, j = floor(Int, node.i), floor(Int, node.j)
     s_1 =  CentralTensor_size(net, (i, j), (i+1, j+1))
@@ -423,7 +420,7 @@ end
 $(TYPEDSIGNATURES)
 """
 function tensor(  #TODO
-    net::PEPSNetwork{SquareStar2{T}, S}, node::PEPSNode, β::Real, ::Val{:sparse_virtual2}
+    net::PEPSNetwork{SquareCrossDoubleNode{T}, S}, node::PEPSNode, β::Real, ::Val{:sparse_virtual_double_node}
 ) where {T <: AbstractTensorsLayout, S <: Union{Sparse, Dense}}
     v = Node(node)
     i, j = node.i, floor(Int, node.j)
@@ -460,9 +457,9 @@ end
 $(TYPEDSIGNATURES)
 """
 function tensor(
-    net::PEPSNetwork{T, Dense}, node::PEPSNode, β::Real, ::Val{:virtual2}
+    net::PEPSNetwork{T, Dense}, node::PEPSNode, β::Real, ::Val{:virtual_double_node}
 ) where{T <: AbstractGeometry}
-    sp = tensor(net, node, β, Val(:sparse_virtual2))
+    sp = tensor(net, node, β, Val(:sparse_virtual_double_node))
     p_lb, p_l, p_lt, p_rb, p_r, p_rt = (get_projector!(net.lp, x) for x in sp.projs)
     dense_con = dense_central_tensor(sp.con)
 
@@ -483,11 +480,19 @@ $(TYPEDSIGNATURES)
 """
 function projectors_site_tensor(
     net::PEPSNetwork{T, S}, vertex::Node
-) where {T <: SquareStar2, S}
+) where {T <: SquareCrossDoubleNode, S}
     i, j = vertex
-    plf = outer_projector((projector(net, (i, j, k), ((i+1, j-1, 1), (i+1, j-1, 2), (i, j-1, 1), (i, j-1, 2), (i-1, j-1, 1), (i-1, j-1, 2))) for k ∈ 1:2)...)
+    plf = outer_projector(
+        (projector(
+            net, (i, j, k), ((i+1, j-1, 1), (i+1, j-1, 2), (i, j-1, 1), (i, j-1, 2), (i-1, j-1, 1), (i-1, j-1, 2))
+            ) for k ∈ 1:2)...
+        )
     pt = outer_projector((projector(net, (i, j, k), ((i-1, j, 1), (i-1, j, 2))) for k ∈ 1:2)...)
-    prf = outer_projector((projector(net, (i, j, k), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2))) for k ∈ 1:2)...)
+    prf = outer_projector(
+        (projector(
+            net, (i, j, k), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2))
+            ) for k ∈ 1:2)...
+        )
     pb = outer_projector((projector(net, (i, j, k), ((i+1, j, 1), (i+1, j, 2))) for k ∈ 1:2)...)
     (plf, pt, prf, pb)
 end
@@ -495,7 +500,9 @@ end
 
 
 function Base.size(
-    net::AbstractGibbsNetwork{Node, PEPSNode}, node::PEPSNode, ::Union{Val{:virtual2}, Val{:sparse_virtual2}}
+    net::AbstractGibbsNetwork{Node, PEPSNode},
+    node::PEPSNode,
+    ::Union{Val{:virtual_double_node}, Val{:sparse_virtual_double_node}}
 )
     v = Node(node)
     i, j = node.i, floor(Int, node.j)

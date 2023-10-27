@@ -22,7 +22,7 @@
     energies = Vector{Float64}[]
     for Strategy ∈ (MPSAnnealing, Zipper, SVDTruncate), Sparsity ∈ (Dense, Sparse)
         for Layout ∈ (GaugesEnergy, EngGaugesEng, EnergyGauges,)  #
-            for transform ∈ all_lattice_transformations, Lattice ∈ (SquareStar, )
+            for transform ∈ all_lattice_transformations, Lattice ∈ (SquareCrossSingleNode, )
                 net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, cl_h, transform)
                 ctr = MpsContractor{Strategy, Gauge}(net, [β/2, β], :graduate_truncate, params; onGPU=onGPU)
                 sol, s = low_energy_spectrum(ctr, search_params)

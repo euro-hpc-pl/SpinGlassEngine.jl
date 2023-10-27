@@ -1,12 +1,12 @@
-export SquareStar
+export SquareCrossSingleNode
 
-struct SquareStar{T <: AbstractTensorsLayout} <: AbstractGeometry end
+struct SquareCrossSingleNode{T <: AbstractTensorsLayout} <: AbstractGeometry end
 
 """
 $(TYPEDSIGNATURES)
 """
-function SquareStar(m::Int, n::Int)
-    lg = Square(m, n)
+function SquareCrossSingleNode(m::Int, n::Int)
+    lg = SquareSingleNode(m, n)
     for i ∈ 1:m-1, j ∈ 1:n-1
         add_edge!(lg, (i, j), (i+1, j+1))
         add_edge!(lg, (i+1, j), (i, j+1))
@@ -17,18 +17,18 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-Virtual(::Type{Dense}) = :virtual
+VirtualSingleNode(::Type{Dense}) = :virtual_single_node
 
 """
 $(TYPEDSIGNATURES)
 """
-Virtual(::Type{Sparse}) = :sparse_virtual
+VirtualSingleNode(::Type{Sparse}) = :sparse_virtual_single_node
 
 """
 $(TYPEDSIGNATURES)
 """
 function tensor_map(
-    ::Type{SquareStar{T}}, ::Type{S}, nrows::Int, ncols::Int
+    ::Type{SquareCrossSingleNode{T}}, ::Type{S}, nrows::Int, ncols::Int
 ) where {T <: Union{EnergyGauges, GaugesEnergy}, S <: AbstractSparsity}
     map = Dict{PEPSNode, Symbol}()
 
@@ -36,13 +36,13 @@ function tensor_map(
         push!(
             map,
             PEPSNode(i, j) => site(S),
-            PEPSNode(i, j - 1//2) => Virtual(S),
-            PEPSNode(i + 1//2, j) => :central_v
+            PEPSNode(i, j - 1//2) => VirtualSingleNode(S),
+            PEPSNode(i + 1//2, j) => :central_v_single_node
         )
     end
 
     for i ∈ 1:nrows-1, j ∈ 0:ncols-1
-        push!(map, PEPSNode(i + 1//2, j + 1//2) => :central_d)
+        push!(map, PEPSNode(i + 1//2, j + 1//2) => :central_d_single_node)
     end
     map
 end
@@ -51,7 +51,7 @@ end
 $(TYPEDSIGNATURES)
 """
 function tensor_map(
-    ::Type{SquareStar{T}}, ::Type{S}, nrows::Int, ncols::Int
+    ::Type{SquareCrossSingleNode{T}}, ::Type{S}, nrows::Int, ncols::Int
 ) where {T <: EngGaugesEng, S <: AbstractSparsity}
     map = Dict{PEPSNode, Symbol}()
 
@@ -59,7 +59,7 @@ function tensor_map(
         push!(
             map,
             PEPSNode(i, j) => site(S),
-            PEPSNode(i, j - 1//2) => Virtual(S),
+            PEPSNode(i, j - 1//2) => VirtualSingleNode(S),
             PEPSNode(i + 1//5, j) => :sqrt_up,
             PEPSNode(i + 4//5, j) => :sqrt_down
         )
@@ -78,7 +78,7 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function gauges_list(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T <: GaugesEnergy
+function gauges_list(::Type{SquareCrossSingleNode{T}}, nrows::Int, ncols::Int) where T <: GaugesEnergy
     [
         GaugeInfo(
             (PEPSNode(i + 1//6, j), PEPSNode(i + 2//6, j)),
@@ -93,7 +93,7 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function gauges_list(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T <: EnergyGauges
+function gauges_list(::Type{SquareCrossSingleNode{T}}, nrows::Int, ncols::Int) where T <: EnergyGauges
     [
         GaugeInfo(
             (PEPSNode(i + 4//6, j), PEPSNode(i + 5//6, j)),
@@ -108,7 +108,7 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function gauges_list(::Type{SquareStar{T}}, nrows::Int, ncols::Int) where T <: EngGaugesEng
+function gauges_list(::Type{SquareCrossSingleNode{T}}, nrows::Int, ncols::Int) where T <: EngGaugesEng
     [
         GaugeInfo(
             (PEPSNode(i + 2//5, j), PEPSNode(i + 3//5, j)),
@@ -123,9 +123,9 @@ end
 """
 $(TYPEDSIGNATURES)
 
-Defines the MPO layers for the SquareStar geometry with the EnergyGauges layout.
+Defines the MPO layers for the SquareCrossSingleNode geometry with the EnergyGauges layout.
 """
-function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EnergyGauges}
+function MpoLayers(::Type{T}, ncols::Int) where T <: SquareCrossSingleNode{EnergyGauges}
     MpoLayers(
         Dict(site(i) => (-1//6, 0, 3//6, 4//6) for i ∈ 1//2:1//2:ncols),
         Dict(site(i) => (3//6, 4//6) for i ∈ 1//2:1//2:ncols),
@@ -136,9 +136,9 @@ end
 """
 $(TYPEDSIGNATURES)
 
-Defines the MPO layers for the SquareStar geometry with the GaugesEnergy layout.
+Defines the MPO layers for the SquareCrossSingleNode geometry with the GaugesEnergy layout.
 """
-function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{GaugesEnergy}
+function MpoLayers(::Type{T}, ncols::Int) where T <: SquareCrossSingleNode{GaugesEnergy}
     MpoLayers(
         Dict(site(i) => (-4//6, -1//2, 0, 1//6) for i ∈ 1//2:1//2:ncols),
         Dict(site(i) => (1//6,) for i ∈ 1//2:1//2:ncols),
@@ -149,9 +149,9 @@ end
 """
 $(TYPEDSIGNATURES)
 
-Defines the MPO layers for the SquareStar geometry with the EngGaugesEng layout.
+Defines the MPO layers for the SquareCrossSingleNode geometry with the EngGaugesEng layout.
 """
-function MpoLayers(::Type{T}, ncols::Int) where T <: SquareStar{EngGaugesEng}
+function MpoLayers(::Type{T}, ncols::Int) where T <: SquareCrossSingleNode{EngGaugesEng}
     MpoLayers(
         Dict(site(i) => (-2//5, -1//5, 0, 1//5, 2//5) for i ∈ 1//2:1//2:ncols),
         Dict(site(i) => (1//5, 2//5) for i ∈ 1//2:1//2:ncols),
@@ -165,7 +165,7 @@ $(TYPEDSIGNATURES)
 # TODO: rewrite this using brodcasting if possible
 function conditional_probability(
     ::Type{T}, ctr::MpsContractor{S}, ∂v::Vector{Int}
-) where {T <: SquareStar, S}
+) where {T <: SquareCrossSingleNode, S}
     indβ, β = length(ctr.betas), last(ctr.betas)
     i, j = ctr.current_node
 
@@ -212,7 +212,7 @@ $(TYPEDSIGNATURES)
 """
 function projectors_site_tensor(
     network::PEPSNetwork{T, S}, vertex::Node
-) where {T <: SquareStar, S}
+) where {T <: SquareCrossSingleNode, S}
     i, j = vertex
     nbrs = (
         (@ntuple 3 k -> (i+2-k, j-1)), (i-1, j), (@ntuple 3 k -> (i+2-k, j+1)), (i+1, j)
@@ -223,14 +223,14 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: SquareStar, S}
+function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: SquareCrossSingleNode, S}
     ([(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols], (peps.nrows+1, 1))
 end
 
 """
 $(TYPEDSIGNATURES)
 """
-function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: SquareStar, S}
+function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: SquareCrossSingleNode, S}
     i, j = node
     vcat(
         [
@@ -253,7 +253,7 @@ $(TYPEDSIGNATURES)
 """
 function update_energy(
     ::Type{T}, ctr::MpsContractor{S}, σ::Vector{Int}
-) where {T <: SquareStar, S}
+) where {T <: SquareCrossSingleNode, S}
     net = ctr.peps
     i, j = ctr.current_node
     en = local_energy(net, (i, j))
@@ -267,7 +267,7 @@ end
 $(TYPEDSIGNATURES)
 """
 function tensor(
-    net::PEPSNetwork{SquareStar{T}, S}, node::PEPSNode, β::Real, ::Val{:central_d}
+    net::PEPSNetwork{SquareCrossSingleNode{T}, S}, node::PEPSNode, β::Real, ::Val{:central_d_single_node}
 ) where {T <: AbstractTensorsLayout, S <: AbstractSparsity}
     i, j = floor(Int, node.i), floor(Int, node.j)
     T_NW_SE = connecting_tensor(net, (i, j), (i+1, j+1), β)
@@ -280,7 +280,7 @@ end
 $(TYPEDSIGNATURES)
 """
 function Base.size(
-    network::PEPSNetwork{SquareStar{T}, S}, node::PEPSNode, ::Val{:central_d}
+    network::PEPSNetwork{SquareCrossSingleNode{T}, S}, node::PEPSNode, ::Val{:central_d_single_node}
 ) where {T <: AbstractTensorsLayout, S <: AbstractSparsity}
     i, j = floor(Int, node.i), floor(Int, node.j)
     s_NW_SE = size(interaction_energy(network, (i, j), (i+1, j+1)))
@@ -292,7 +292,7 @@ end
 $(TYPEDSIGNATURES)
 """
 function tensor(
-    net::PEPSNetwork{SquareStar{T}, S}, node::PEPSNode, β::Real, ::Val{:sparse_virtual}
+    net::PEPSNetwork{SquareCrossSingleNode{T}, S}, node::PEPSNode, β::Real, ::Val{:sparse_virtual_single_node}
 ) where {T <: AbstractTensorsLayout, S <: Union{Sparse, Dense}}
     v = Node(node)
     i, j = node.i, floor(Int, node.j)
@@ -314,9 +314,9 @@ end
 $(TYPEDSIGNATURES)
 """
 function tensor(
-    net::PEPSNetwork{SquareStar{T}, Dense}, node::PEPSNode, β::Real, ::Val{:virtual}
+    net::PEPSNetwork{SquareCrossSingleNode{T}, Dense}, node::PEPSNode, β::Real, ::Val{:virtual_single_node}
 ) where T <: AbstractTensorsLayout
-    sp = tensor(net, node, β, Val(:sparse_virtual))
+    sp = tensor(net, node, β, Val(:sparse_virtual_single_node))
     p_lb, p_l, p_lt, p_rb, p_r, p_rt = (get_projector!(net.lp, x) for x in sp.projs)
 
     A = zeros(
@@ -328,14 +328,4 @@ function tensor(
     end
     @cast B[l, (uu, u), r, (dd, d)] := A[l, uu, u, r, dd, d]
     B
-
-    # A = zeros(
-    #     eltype(sp.con),
-    #     length(p_l), maximum.((p_rt, p_lt))..., length(p_r), maximum.((p_lb, p_rb))...
-    # )
-    # for l ∈ 1:length(p_l), r ∈ 1:length(p_r)
-    #     @inbounds A[l, p_rt[r], p_lt[l], r, p_lb[l], p_rb[r]] = sp.con[p_l[l], p_r[r]]
-    # end
-    # @cast B[l, (uu, u), r, (dd, d)] := A[l, uu, u, r, dd, d]
-    # B
 end

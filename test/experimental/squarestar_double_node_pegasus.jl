@@ -50,7 +50,7 @@ for tran ∈ all_lattice_transformations #[LatticeTransformation((4, 3, 2, 1), f
     println(" ==================== ")
     println(tran)
 
-    net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, cl_h, tran)
+    net = PEPSNetwork{SquareCrossDoubleNode{Layout}, Sparsity}(m, n, cl_h, tran)
     ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)
 
     sol, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))

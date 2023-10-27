@@ -33,7 +33,7 @@ function bench(instance::String)
     for Strategy ∈ (SVDTruncate, Zipper), Sparsity ∈ (Dense, )
         for Gauge ∈ (NoUpdate, GaugeStrategy, GaugeStrategyWithBalancing)
             for Layout ∈ (GaugesEnergy,), transform ∈ all_lattice_transformations
-                net = PEPSNetwork{Square{Layout}, Sparsity}(m, n, cl_h, transform)
+                net = PEPSNetwork{SquareSingleNode{Layout}, Sparsity}(m, n, cl_h, transform)
                 ctr = MpsContractor{Strategy, Gauge}(net, all_betas, :graduate_truncate, params; onGPU=onGPU)
                 sol, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit))
 

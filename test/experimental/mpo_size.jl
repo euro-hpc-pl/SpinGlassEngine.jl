@@ -75,7 +75,7 @@ for cl_states in cluster_states
     i = div(m, 2)
     indβ = 1
 
-    net = PEPSNetwork{SquareStar2{Layout}, Sparse}(m, n, cl_h, tran)
+    net = PEPSNetwork{SquareCrossDoubleNode{Layout}, Sparse}(m, n, cl_h, tran)
     ctr = MpsContractor{Strategy, Gauge}(net, [β], :graduate_truncate, params; onGPU=onGPU)
     Ws = SpinGlassEngine.mpo(ctr, ctr.layers.main, i, indβ)
     # println(" Ws -> ", which_device(Ws), " ", format_bytes.(measure_memory(Ws)))

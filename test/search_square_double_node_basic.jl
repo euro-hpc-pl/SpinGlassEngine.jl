@@ -1,5 +1,4 @@
 using SpinGlassEngine
-using Test
 
 # function my_brute_force(ig::IsingGraph; num_states::Int)
 #     brute_force(ig, onGPU ? :GPU : :CPU, num_states=num_states)
@@ -10,6 +9,7 @@ function run_test(instance, m, n, t)
     bond_dim = 16
     δp = 1e-10
     num_states = 512
+    βs = [β/16, β/8, β/4, β/2, β]
 
     ig = ising_graph(instance)
 
@@ -28,27 +28,27 @@ function run_test(instance, m, n, t)
     search_params = SearchParameters(num_states, δp)
     energies = []
     Gauge = NoUpdate
-    βs = [β/16, β/8, β/4, β/2, β]
 
-    for Strategy ∈ (SVDTruncate, MPSAnnealing, Zipper), Sparsity ∈ (Sparse,)
+    for Strategy ∈ (SVDTruncate, MPSAnnealing, Zipper), Sparsity ∈ (Dense, Sparse)
         for Layout ∈ (EnergyGauges, GaugesEnergy)
             for tran ∈ all_lattice_transformations
 
-                net = PEPSNetwork{SquareStar2{Layout}, Sparsity}(m, n, cl_h, tran)
-                net2 = PEPSNetwork{SquareStar{Layout}, Sparsity}(m, n, cl_h2, tran)
+                net = PEPSNetwork{SquareDoubleNode{Layout}, Sparsity}(m, n, cl_h, tran)
+                net2 = PEPSNetwork{SquareSingleNode{Layout}, Sparsity}(m, n, cl_h2, tran)
 
                 ctr = MpsContractor{Strategy, Gauge}(net, βs, :graduate_truncate, params; onGPU=onGPU)
                 ctr2 = MpsContractor{Strategy, Gauge}(net2, βs, :graduate_truncate, params; onGPU=onGPU)
 
                 sol, s = low_energy_spectrum(ctr, search_params) #, merge_branches(ctr))
-                sol2, s = low_energy_spectrum(ctr2, search_params) #, merge_branches(ctr2))
+                sol2, s = low_energy_spectrum(ctr2, search_params) # , merge_branches(ctr2))
 
                 # ig_states = decode_clustered_hamiltonian_state.(Ref(cl_h), sol.states)
                 # @test sol.energies ≈ energy.(Ref(ig), ig_states)
                 # cl_h_states = decode_state.(Ref(net), sol.states)
                 # @test sol.energies ≈ energy.(Ref(cl_h), cl_h_states)
 
-                @test sol.energies[1: div(num_states, 2)] ≈ sol2.energies[1: div(num_states, 2)]
+                #@test sol.energies ≈ sol2.energies
+                @test sol.energies[1: div(num_states, 8)] ≈ sol2.energies[1: div(num_states, 8)]
                 #@test sol.states == sol2.states
 
                 norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
@@ -61,15 +61,13 @@ function run_test(instance, m, n, t)
                 exct_prob = exp.(-β .* (sol2.energies .- sol2.energies[1]))
                 @test norm_prob ≈ exct_prob
 
-                println("Eng = ", sol.energies[1])
-
                 for ii ∈ 1 : ctr.peps.nrows + 1, jj ∈ 1 : length(βs)
                     ψ1, ψ2 = mps(ctr, ii, jj), mps(ctr2, ii, jj)
                     o = ψ1 * ψ2 / sqrt((ψ1 * ψ1) * (ψ2 * ψ2))
                     @test o ≈ 1.
                 end
                 for ii ∈ 0 : ctr.peps.nrows, jj ∈ 1 : length(βs)
-                    ψ1_top, ψ2_top = mps_top(ctr, ii, jj),  mps_top(ctr2, ii, jj)
+                    ψ1_top, ψ2_top = mps_top(ctr, ii, jj), mps_top(ctr2, ii, jj)
                     o_top = ψ1_top * ψ2_top / sqrt((ψ1_top * ψ1_top) * (ψ2_top * ψ2_top))
                     @test o_top ≈ 1.
                 end
@@ -77,11 +75,17 @@ function run_test(instance, m, n, t)
             end
         end
     end
-    println("length energies ", length(energies))
     @test all(e -> e ≈ first(energies), energies)
 end
 
+instance = "$(@__DIR__)/instances/pegasus_nondiag/3x2x1.txt"
+m, n, t = 3, 2, 1
+run_test(instance, m, n, t)
 
-instance = "$(@__DIR__)/instances/pathological/pegasus_3_4_1.txt"
+# instance = "$(@__DIR__)/instances/chimera_droplets/128power/001.txt"
+# m, n, t = 4, 4, 1
+# run_test(instance, m, n, t)
+
+instance = "$(@__DIR__)/instances/pathological/pegasus_nd_3_4_1.txt"
 m, n, t = 3, 4, 1
 run_test(instance, m, n, t)

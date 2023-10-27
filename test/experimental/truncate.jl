@@ -78,7 +78,7 @@ for cs ∈ cl_states
             println(v, " -> ", length(get_prop(cl_h, v, :spectrum).energies))
         end
 
-        net = PEPSNetwork{SquareStar2{Layout}, Sparse}(m, n, cl_h, tran)
+        net = PEPSNetwork{SquareCrossDoubleNode{Layout}, Sparse}(m, n, cl_h, tran)
         ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)
         sol, schmidts = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
         println("sol ", sol)

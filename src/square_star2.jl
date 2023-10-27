@@ -227,7 +227,7 @@ function conditional_probability(
         if ctr.onGPU
             R = CuArray(R)
         end
-    
+
         ele, eng_loc, eng_l, eng_lu, eng_u, plb, prf, pd, splb = precompute_conditional(T, ctr, ctr.current_node)
 
         eng_l = [@view eng_l[k, m][:, ∂v[2 * j - 1 + k + (m - 1) * 2]] for k ∈ 1:2, m ∈ 1:2]
@@ -268,7 +268,7 @@ function conditional_probability(
         if ctr.onGPU
             R = CuArray(R)
         end
-    
+
         eng_loc, eng_l, eng_lu, eng_u, eng_12, plb2, prf2, pd2, splb1, splb2, sprf2, spd2 = precompute_conditional(T, ctr, ctr.current_node)
 
         eng_l = [@view eng_l[m][:, ∂v[2 * j - 1 + m]] for m ∈ 1:2]

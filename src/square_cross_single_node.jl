@@ -31,7 +31,6 @@ function tensor_map(
     ::Type{SquareCrossSingleNode{T}}, ::Type{S}, nrows::Int, ncols::Int
 ) where {T <: Union{EnergyGauges, GaugesEnergy}, S <: AbstractSparsity}
     map = Dict{PEPSNode, Symbol}()
-
     for i ∈ 1:nrows, j ∈ 1:ncols
         push!(
             map,
@@ -54,7 +53,6 @@ function tensor_map(
     ::Type{SquareCrossSingleNode{T}}, ::Type{S}, nrows::Int, ncols::Int
 ) where {T <: EngGaugesEng, S <: AbstractSparsity}
     map = Dict{PEPSNode, Symbol}()
-
     for i ∈ 1:nrows, j ∈ 1:ncols
         push!(
             map,
@@ -129,7 +127,7 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: SquareCrossSingleNode{Energ
     MpoLayers(
         Dict(site(i) => (-1//6, 0, 3//6, 4//6) for i ∈ 1//2:1//2:ncols),
         Dict(site(i) => (3//6, 4//6) for i ∈ 1//2:1//2:ncols),
-        Dict(site(i) => (-3//6, 0) for i ∈ 1//2:1//2:ncols)
+        Dict(site(i) => (-3//6, 0) for i ∈ 1//2:1//2:ncols),
     )
 end
 
@@ -142,7 +140,7 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: SquareCrossSingleNode{Gauge
     MpoLayers(
         Dict(site(i) => (-4//6, -1//2, 0, 1//6) for i ∈ 1//2:1//2:ncols),
         Dict(site(i) => (1//6,) for i ∈ 1//2:1//2:ncols),
-        Dict(site(i) => (-3//6, 0) for i ∈ 1//2:1//2:ncols)
+        Dict(site(i) => (-3//6, 0) for i ∈ 1//2:1//2:ncols),
     )
 end
 
@@ -155,7 +153,7 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: SquareCrossSingleNode{EngGa
     MpoLayers(
         Dict(site(i) => (-2//5, -1//5, 0, 1//5, 2//5) for i ∈ 1//2:1//2:ncols),
         Dict(site(i) => (1//5, 2//5) for i ∈ 1//2:1//2:ncols),
-        Dict(site(i) => (-4//5, -1//5, 0) for i ∈ 1//2:1//2:ncols)
+        Dict(site(i) => (-4//5, -1//5, 0) for i ∈ 1//2:1//2:ncols),
     )
 end
 
@@ -204,8 +202,6 @@ function conditional_probability(
     push!(ctr.statistics, ((i, j), ∂v) => error_measure(probs))
     normalize_probability(probs)
 end
-
-
 
 """
 $(TYPEDSIGNATURES)

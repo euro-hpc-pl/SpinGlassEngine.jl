@@ -21,13 +21,13 @@ export
 $(TYPEDSIGNATURES)
 A struct representing search parameters for low-energy spectrum search.
 
-## Fields 
+## Fields
 - `max_states::Int`: The maximum number of states to be considered during the search. Default is 1, indicating a single state search.
 - `cut_off_prob::Real`: The cutoff probability for terminating the search. Default is 0.0, meaning no cutoff based on probability.
-    
-SearchParameters encapsulates parameters that control the behavior of low-energy spectrum search algorithms in the SpinGlassPEPS package. 
+
+SearchParameters encapsulates parameters that control the behavior of low-energy spectrum search algorithms in the SpinGlassPEPS package.
 Users can customize these parameters to adjust the search strategy and resource usage according to their specific needs.
-    
+
 """
 struct SearchParameters
     max_states::Int
@@ -47,51 +47,56 @@ Base.copy(s::NoDroplets) = s
 A data structure representing the properties and criteria for single-layer droplets in the context of the SpinGlassPEPS package.
 
 A `SingleLayerDroplets` object is used to specify the maximum energy, minimum size, and metric for single-layer droplets in the SpinGlassPEPS system.
-    
+
 ## Fields
 - `max_energy::Real`: The maximum allowed excitation energy for single-layer droplets. It is typically a real number.
 - `min_size::Int`: The minimum size (number of sites) required for a single-layer droplet to be considered significant.
-- `metric::Symbol`: The metric used to evaluate the significance of a single-layer droplet. 
+- `metric::Symbol`: The metric used to evaluate the significance of a single-layer droplet.
 This can be `:no_metric` or other custom metrics defined in the package.
-    
+
 ## Constructors
-- `SingleLayerDroplets(max_energy::Real = 1.0, min_size::Int = 1, metric::Symbol = :no_metric)`: Creates a new 
+- `SingleLayerDroplets(max_energy::Real = 1.0, min_size::Int = 1, metric::Symbol = :no_metric)`: Creates a new
 `SingleLayerDroplets` object with the specified maximum energy, minimum size, and metric.
-    
+
 """
 struct SingleLayerDroplets
-    max_energy :: Real
-    min_size :: Int
-    metric :: Symbol 
-    SingleLayerDroplets(max_energy = 1.0, min_size = 1, metric = :no_metric) = new(max_energy, min_size, metric)
+    max_energy::Real
+    min_size::Int
+    metric::Symbol
+
+    SingleLayerDroplets(
+        max_energy = 1.0,
+        min_size = 1,
+        metric = :no_metric
+    ) = new(max_energy, min_size, metric)
 end
 
 """
 A data structure representing a set of flips or changes in states for nodes in the SpinGlassPEPS package.
 
 A `Flip` object contains information about the support, state changes, and spinxor values for a set of node flips in the SpinGlassPEPS system.
-    
+
 ## Fields
 - `support::Vector{Int}`: An array of integers representing the indices of nodes where flips occur.
 - `state::Vector{Int}`: An array of integers representing the new states for the nodes in the `support`.
 - `spinxor::Vector{Int}`: An array of integers representing the spin-xor values for the nodes in the `support`.
-    
-## Constructors  
-- `Flip(support::Vector{Int}, state::Vector{Int}, spinxor::Vector{Int})`: 
+
+## Constructors
+- `Flip(support::Vector{Int}, state::Vector{Int}, spinxor::Vector{Int})`:
 Creates a new `Flip` object with the specified support, state changes, and spinxor values.
-    
+
 """
 struct Flip
-    support :: Vector{Int}
-    state :: Vector{Int}
-    spinxor :: Vector{Int}
+    support::Vector{Int}
+    state::Vector{Int}
+    spinxor::Vector{Int}
 end
 
 """
 $(TYPEDSIGNATURES)
 A data structure representing a droplet in the context of the SpinGlassPEPS package.
-A `Droplet` represents an excitation in the SpinGlassPEPS system. It contains information about the excitation energy, 
-the site where the droplet starts, the site where it ends, the states of nodes flipped by the droplet, 
+A `Droplet` represents an excitation in the SpinGlassPEPS system. It contains information about the excitation energy,
+the site where the droplet starts, the site where it ends, the states of nodes flipped by the droplet,
 and any sub-droplets on top of the current droplet.
 
 ## Fields
@@ -99,17 +104,17 @@ and any sub-droplets on top of the current droplet.
 - `first::Int`: The site index where the droplet starts.
 - `last::Int`: The site index where the droplet ends.
 - `flip::Flip`: The states of nodes flipped by the droplet, often represented using a `Flip` type.
-- `droplets::Union{NoDroplets, Vector{Droplet}}`: A field that can be either `NoDroplets()` if there are no sub-droplets 
-on top of the current droplet or a vector of `Droplet` objects representing sub-droplets. 
+- `droplets::Union{NoDroplets, Vector{Droplet}}`: A field that can be either `NoDroplets()` if there are no sub-droplets
+on top of the current droplet or a vector of `Droplet` objects representing sub-droplets.
 This field may be used to build a hierarchy of droplets in more complex excitations.
 
 """
 mutable struct Droplet
-    denergy :: Real  # excitation energy
-    first :: Int  # site where droplet starts
-    last :: Int  
-    flip :: Flip  # states of nodes flipped by droplet
-    droplets :: Union{NoDroplets, Vector{Droplet}}  # subdroplets on top of the current droplet; can be empty
+    denergy::Real  # excitation energy
+    first::Int  # site where droplet starts
+    last::Int
+    flip::Flip  # states of nodes flipped by droplet
+    droplets::Union{NoDroplets, Vector{Droplet}}  # subdroplets on top of the current droplet; can be empty
 end
 
 Droplets = Union{NoDroplets, Vector{Droplet}}  # Can't be defined before Droplet struct
@@ -128,10 +133,10 @@ A struct representing a solution obtained from a low-energy spectrum search.
 - `largest_discarded_probability::Real`: The probability of the largest discarded state.
 - `droplets::Vector{Droplets}`: A vector of droplets associated with each state.
 - `spins::Vector{Vector{Int}}`: The spin configurations corresponding to each state.
-    
-The `Solution` struct holds information about the results of a low-energy spectrum search, including the energy levels, 
-state configurations, probabilities, degeneracy, and additional details such as droplets and spin configurations. 
-Users can access this information to analyze and interpret the search results. 
+
+The `Solution` struct holds information about the results of a low-energy spectrum search, including the energy levels,
+state configurations, probabilities, degeneracy, and additional details such as droplets and spin configurations.
+Users can access this information to analyze and interpret the search results.
 """
 struct Solution
     energies::Vector{<:Real}
@@ -162,14 +167,14 @@ An empty `Solution` object with default field values, ready to store search resu
 $(TYPEDSIGNATURES)
 Create a new `Solution` object by selecting specific states from an existing `Solution`.
 
-This constructor allows you to create a new `Solution` object by selecting specific states from an existing `Solution`. 
-It copies the energies, states, probabilities, degeneracy, droplets, and spins information for the selected states 
+This constructor allows you to create a new `Solution` object by selecting specific states from an existing `Solution`.
+It copies the energies, states, probabilities, degeneracy, droplets, and spins information for the selected states
 while allowing you to set a custom `largest_discarded_probability`.
 
 ## Arguments
 - `sol::Solution`: The original `Solution` object from which states are selected.
 - `idx::Vector{Int}`: A vector of indices specifying the states to be selected from the original `Solution`.
-- `ldp::Real=sol.largest_discarded_probability`: (Optional) The largest discarded probability for the new `Solution`. 
+- `ldp::Real=sol.largest_discarded_probability`: (Optional) The largest discarded probability for the new `Solution`.
 By default, it is set to the largest discarded probability of the original `Solution`.
 
 ## Returns
@@ -193,15 +198,15 @@ end
 $(TYPEDSIGNATURES)
 Calculates the energy contribution of a branch given a base energy and a spin configuration.
 
-This function calculates the energy contribution of a branch in a SpinGlassPEPS calculation. 
-It takes a `MpsContractor` object `ctr` and a tuple `eσ` containing a base energy as the first element 
-and a spin configuration represented as a vector of integers as the second element. 
-The function calculates the branch energy by adding the base energy to the energy contribution 
+This function calculates the energy contribution of a branch in a SpinGlassPEPS calculation.
+It takes a `MpsContractor` object `ctr` and a tuple `eσ` containing a base energy as the first element
+and a spin configuration represented as a vector of integers as the second element.
+The function calculates the branch energy by adding the base energy to the energy contribution
 of the given spin configuration obtained from the `update_energy` function.
 
 ## Arguments
 - `ctr::MpsContractor{T}`: An instance of the `MpsContractor` type parameterized by the strategy type `T`.
-- `eσ::Tuple{<:Real, Vector{Int}}`: A tuple containing the base energy as the first element (a real number) 
+- `eσ::Tuple{<:Real, Vector{Int}}`: A tuple containing the base energy as the first element (a real number)
 and the spin configuration as the second element (a vector of integers).
 
 ## Returns
@@ -280,22 +285,22 @@ end
 # $(TYPEDSIGNATURES)
 # """
 (method::NoDroplets)(
-    ctr::MpsContractor{T}, 
-    best_idx::Int, 
-    energies::Vector{<:Real},  
-    states::Vector{Vector{Int}}, 
-    droplets::Vector{Droplets}, 
+    ctr::MpsContractor{T},
+    best_idx::Int,
+    energies::Vector{<:Real},
+    states::Vector{Vector{Int}},
+    droplets::Vector{Droplets},
     spins::Vector{Vector{Int}}
-    ) where T= NoDroplets()
+) where T = NoDroplets()
 
 function (method::SingleLayerDroplets)(
-    ctr::MpsContractor{T}, 
-    best_idx::Int, 
-    energies::Vector{<:Real}, 
-    states::Vector{Vector{Int}}, 
-    droplets::Vector{Droplets}, 
+    ctr::MpsContractor{T},
+    best_idx::Int,
+    energies::Vector{<:Real},
+    states::Vector{Vector{Int}},
+    droplets::Vector{Droplets},
     spins::Vector{Vector{Int}}
-    ) where T
+) where T
     ndroplets = copy(droplets[best_idx])
     bstate  = states[best_idx]
     benergy = energies[best_idx]
@@ -332,7 +337,7 @@ function filter_droplets(all_droplets::Vector{Droplet}, method::SingleLayerDropl
     else #method.metric == :no_metric
         cutoff = -Inf
     end
-    
+
     filtered_droplets = Droplet[]
     for droplet in sorted_droplets
         should_push = true
@@ -346,7 +351,6 @@ function filter_droplets(all_droplets::Vector{Droplet}, method::SingleLayerDropl
             push!(filtered_droplets, droplet)
         end
     end
-    
     filtered_droplets
 end
 
@@ -361,15 +365,13 @@ end
 function diversity_metric(drop1::Droplet, drop2::Droplet, metric::Symbol)
     if metric == :hamming
         d = hamming_distance(drop1.flip, drop2.flip)
-    else 
+    else
         d = Inf
     end
     d
 end
 
-function hamming_distance(flip::Flip)
-    sum(count_ones(st) for st ∈ flip.spinxor)
-end
+hamming_distance(flip::Flip) = sum(count_ones(st) for st ∈ flip.spinxor)
 
 function hamming_distance(flip1::Flip, flip2::Flip)
     n1, n2, hd = 1, 1, 0
@@ -396,7 +398,7 @@ function hamming_distance(flip1::Flip, flip2::Flip)
     while n2 <= l2
         hd += count_ones(flip2.spinxor[n2])
         n2 += 1
-        end
+    end
     hd
 end
 
@@ -455,7 +457,6 @@ function merge_droplets(method::SingleLayerDroplets, droplet::Droplet, subdrople
     Droplet(denergy, first, last, flip, NoDroplets())
 end
 
-
 function flip_state(state::Vector{Int}, flip::Flip)
     new_state = copy(state)
     new_state[flip.support] .= flip.state
@@ -490,23 +491,22 @@ function unpack_droplets(sol, β)  # have β in sol ?
 
     inds = sortperm(energies)
     Solution(
-        energies[inds], 
-        states[inds], 
-        probs[inds], 
-        degeneracy[inds], 
-        sol.largest_discarded_probability, 
-        droplets[inds], 
+        energies[inds],
+        states[inds],
+        probs[inds],
+        degeneracy[inds],
+        sol.largest_discarded_probability,
+        droplets[inds],
         spins[inds]
-        )
+    )
 end
-
 
 """
 $(TYPEDSIGNATURES)
 Merge branches of a contractor based on specified merge type and droplet update strategy.
 
-This function merges branches of a contractor (`ctr`) based on a specified merge type (`merge_type`) 
-and an optional droplet update strategy (`update_droplets`). 
+This function merges branches of a contractor (`ctr`) based on a specified merge type (`merge_type`)
+and an optional droplet update strategy (`update_droplets`).
 It returns a function `_merge` that can be used to merge branches in a solution.
 
 ## Arguments
@@ -583,7 +583,6 @@ function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit, update
     _merge
 end
 
-
 function merge_branches_blur(ctr::MpsContractor{T}, hamming_cutoff::Int, merge_type::Symbol=:nofit, update_droplets=NoDroplets()) where {T}
     function _merge_blur(psol::Solution)
         psol = merge_branches(ctr, merge_type, update_droplets)(psol)
@@ -613,7 +612,7 @@ hamming_distance(state1, state2) = sum(state1 .!== state2)
 $(TYPEDSIGNATURES)
 No-op merge function that returns the input `partial_sol` as is.
 
-This function is a no-op merge function that takes a `Solution` object `partial_sol` as input and returns it unchanged. 
+This function is a no-op merge function that takes a `Solution` object `partial_sol` as input and returns it unchanged.
 It is used as a merge strategy when you do not want to perform any merging of branches in a solution.
 
 ## Arguments
@@ -628,19 +627,19 @@ no_merge(partial_sol::Solution) = partial_sol
 $(TYPEDSIGNATURES)
 Bound the solution to a specified number of states while discarding low-probability states.
 
-This function takes a `Solution` object `psol`, bounds it to a specified number of states `max_states`, 
-and discards low-probability states based on the probability threshold `δprob`. 
+This function takes a `Solution` object `psol`, bounds it to a specified number of states `max_states`,
+and discards low-probability states based on the probability threshold `δprob`.
 You can specify a `merge_strategy` for merging branches in the `psol` object.
-    
+
 ## Arguments
 - `psol::Solution`: A `Solution` object representing the solution to be bounded.
 - `max_states::Int`: The maximum number of states to retain in the bounded solution.
 - `δprob::Real`: The probability threshold for discarding low-probability states.
 - `merge_strategy=no_merge`: (Optional) Merge strategy for branches. Defaults to `no_merge`.
-    
+
 ## Returns
 A `Solution` object representing the bounded solution with a maximum of `max_states` states.
-    
+
 """
 function bound_solution(
     psol::Solution, max_states::Int, δprob::Real, merge_strategy=no_merge
@@ -655,9 +654,7 @@ end
 # """
 # $(TYPEDSIGNATURES)
 # """
-function sampling(
-    psol::Solution, max_states::Int, δprob::Real, merge_strategy=no_merge
-)
+function sampling(psol::Solution, max_states::Int, δprob::Real, merge_strategy=no_merge)
     prob = exp.(psol.probabilities)
     new_prob = cumsum(reshape(prob, :, max_states), dims = 1)
 
@@ -678,8 +675,8 @@ end
 $(TYPEDSIGNATURES)
 Compute the low-energy spectrum of a spin glass PEPS network using branch-and-bound search.
 
-This function computes the low-energy spectrum of a spin glass PEPS (Projected Entangled Pair State) network using a branch-and-bound search algorithm. 
-It takes as input a `ctr` object representing the PEPS network and the parameters for controlling its contraction, `sparams` specifying search parameters, `merge_strategy` for merging branches, 
+This function computes the low-energy spectrum of a spin glass PEPS (Projected Entangled Pair State) network using a branch-and-bound search algorithm.
+It takes as input a `ctr` object representing the PEPS network and the parameters for controlling its contraction, `sparams` specifying search parameters, `merge_strategy` for merging branches,
 and `symmetry` indicating any symmetry constraints. Optionally, you can disable caching using the `no_cache` flag.
 
 ## Arguments
@@ -764,7 +761,7 @@ function low_energy_spectrum(
         ctr.peps.clustered_hamiltonian.reverse_label_map[idx]
         for idx ∈ ctr.peps.vertex_map.(ctr.nodes_search_order)
     ])
-    
+
     inner_perm_inv = zeros(Int, length(inner_perm))
     inner_perm_inv[inner_perm] = collect(1:length(inner_perm))
 
@@ -792,7 +789,7 @@ perm_droplet(drop::NoDroplets, perm::Vector{Int}) = drop
 
 function perm_droplet(drops::Vector{Droplet}, perm::Vector{Int})
    [perm_droplet(drop, perm) for drop in drops]
-end 
+end
 
 function perm_droplet(drop::Droplet, perm::Vector{Int})
     flip = drop.flip
@@ -853,7 +850,7 @@ function gibbs_sampling(
         ctr.peps.clustered_hamiltonian.reverse_label_map[idx]
         for idx ∈ ctr.peps.vertex_map.(ctr.nodes_search_order)
     ])
-    
+
     inner_perm_inv = zeros(Int, length(inner_perm))
     inner_perm_inv[inner_perm] = collect(1:length(inner_perm))
 

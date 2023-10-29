@@ -11,7 +11,9 @@ $(TYPEDSIGNATURES)
 function SquareDoubleNode(m::Int, n::Int)
     labels = [(i, j, k) for j ∈ 1:n for i ∈ 1:m for k ∈ 1:2]
     lg = LabelledGraph(labels)
-    for i ∈ 1:m, j ∈ 1:n add_edge!(lg, (i, j, 1), (i, j, 2)) end
+    for i ∈ 1:m, j ∈ 1:n
+        add_edge!(lg, (i, j, 1), (i, j, 2))
+    end
 
     for i ∈ 1:m-1, j ∈ 1:n
         add_edge!(lg, (i, j, 1), (i+1, j, 1))
@@ -26,7 +28,6 @@ function SquareDoubleNode(m::Int, n::Int)
         add_edge!(lg, (i, j, 1), (i, j+1, 2))
         add_edge!(lg, (i, j, 1), (i, j+1, 1))
     end
-
     lg
 end
 
@@ -47,7 +48,6 @@ function tensor_map(
     ::Type{SquareDoubleNode{T}}, ::Type{S}, nrows::Int, ncols::Int
 ) where {T <: Union{GaugesEnergy, EnergyGauges}, S <: AbstractSparsity}
     map = Dict{PEPSNode, Symbol}()
-
     for i ∈ 1:nrows, j ∈ 1:ncols
         push!(map, PEPSNode(i, j) => site_double_node(S))
         if j < ncols push!(map, PEPSNode(i, j + 1//2) => :central_h_double_node) end
@@ -95,15 +95,14 @@ Defines the MPO layers for the SquareSingleNode geometry with the EnergyGauges l
 """
 function MpoLayers(::Type{T}, ncols::Int) where T <: SquareDoubleNode{EnergyGauges}
     main = Dict{Site, Sites}(i => (-1//6, 0, 3//6, 4//6) for i ∈ 1:ncols)
-    #main = Dict{Site, Sites}(i => (0, 3//6) for i ∈ 1:ncols)
-    for i ∈ 1:ncols - 1 push!(main, i + 1//2 => (0,)) end
-
+    for i ∈ 1:ncols - 1
+        push!(main, i + 1//2 => (0,))
+    end
     right = Dict{Site, Sites}(i => (-3//6, 0) for i ∈ 1:ncols)
-    for i ∈ 1:ncols - 1 push!(right, i + 1//2 => (0,)) end
-
-    MpoLayers(main, Dict(i => (3//6, 4//6) for i ∈ 1:ncols), right)  # Check if gauge works?
-    #MpoLayers(main, Dict(i => (3//6,) for i ∈ 1:ncols), right)
-
+    for i ∈ 1:ncols - 1
+        push!(right, i + 1//2 => (0,))
+    end
+    MpoLayers(main, Dict(i => (3//6, 4//6) for i ∈ 1:ncols), right)
 end
 
 """
@@ -138,7 +137,7 @@ function conditional_probability(
         if ctr.onGPU
             R = CuArray(R)
         end
-    
+
         eng_loc = [local_energy(ctr.peps, (i, j, k)) for k ∈ 1:2]
         el = [interaction_energy(ctr.peps, (i, j, k), (i, j-1, m)) for k ∈ 1:2, m ∈ 1:2]
         pl = [projector(ctr.peps, (i, j, k), (i, j-1, m)) for k ∈ 1:2, m ∈ 1:2]
@@ -279,7 +278,7 @@ function tensor(
     SiteTensor(
         net.lp,
         exp.(-β .* (eloc12 .- minimum(eloc12))),
-        projectors_site_tensor(net, Node(node))
+        projectors_site_tensor(net, Node(node)),
     )
 end
 
@@ -339,8 +338,9 @@ function tensor(
 end
 
 
-function CentralTensor(network::PEPSNetwork{T, S}, β::Real, node1::NTuple{2, Int64}, node2::NTuple{2, Int64}
-    ) where {T <: AbstractGeometry, S}
+function CentralTensor(
+    network::PEPSNetwork{T, S}, β::Real, node1::NTuple{2, Int64}, node2::NTuple{2, Int64}
+) where {T <: AbstractGeometry, S}
     i1, j1 = node1
     i2, j2 = node2
 
@@ -375,12 +375,7 @@ function CentralTensor(network::PEPSNetwork{T, S}, β::Real, node1::NTuple{2, In
     le12 = exp.(-β .* (e12 .- minimum(e12)))
     le22 = exp.(-β .* (e22 .- minimum(e22)))
 
-    SpinGlassTensors.CentralTensor(
-        le11,
-        le12,
-        le21,
-        le22
-    )
+    SpinGlassTensors.CentralTensor(le11, le12, le21, le22)
 end
 
 function CentralTensor_size(network::PEPSNetwork{T, S}, node1::NTuple{2, Int64}, node2::NTuple{2, Int64}

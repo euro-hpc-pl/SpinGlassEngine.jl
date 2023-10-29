@@ -32,15 +32,6 @@ function tensor(
     )
 end
 
-# TODO: This is how the engine should work
-#=
-function (peps::PEPSNetwork)(::Type{SparseCentralTensor}, v::PEPSNode, β::Real)
-    # ...
-end
-
-ten = peps(SparseCentralTensor, v, β)
-=#
-
 """
 $(TYPEDSIGNATURES)
 
@@ -62,8 +53,8 @@ $(TYPEDSIGNATURES)
 
 """
 function Base.size(
-    network::PEPSNetwork{T, S}, 
-    v::PEPSNode, 
+    network::PEPSNetwork{T, S},
+    v::PEPSNode,
     ::Union{Val{:site}, Val{:sparse_site}, Val{:sparse_site_square_double_node}}
 ) where {T <: AbstractGeometry, S  <: AbstractSparsity}
     maximum.(projectors_site_tensor(network, Node(v)))

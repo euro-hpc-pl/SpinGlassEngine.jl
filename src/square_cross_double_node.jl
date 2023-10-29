@@ -94,7 +94,7 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: SquareCrossDoubleNode{Energ
     MpoLayers(
         Dict(site(i) => (-1//6, 0, 3//6, 4//6) for i ∈ 1//2:1//2:ncols),
         Dict(site(i) => (3//6, 4//6) for i ∈ 1//2:1//2:ncols),
-        Dict(site(i) => (-3//6, 0) for i ∈ 1//2:1//2:ncols)
+        Dict(site(i) => (-3//6, 0) for i ∈ 1//2:1//2:ncols),
     )
 end
 
@@ -110,7 +110,6 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: SquareCrossDoubleNode{Gauge
         Dict(site(i) => (-3//6, 0) for i ∈ 1//2:1//2:ncols)
     )
 end
-
 
 @memoize Dict function precompute_conditional(
     ::Type{T}, ctr::MpsContractor{S}, current_node
@@ -206,13 +205,9 @@ end
             prf2 = CuArray(prf2)
             pd2 = CuArray(pd2)
         end
-
         return (eng_loc, eng_l, eng_lu, eng_u, eng_12, plb2, prf2, pd2, splb1, splb2, sprf2, spd2)
     end
 end
-
-
-
 
 """
 $(TYPEDSIGNATURES)
@@ -300,7 +295,6 @@ function conditional_probability(
     push!(ctr.statistics, ((i, j), ∂v) => error_measure(probs))
     normalize_probability(probs)
 end
-
 
 """
 $(TYPEDSIGNATURES)
@@ -450,7 +444,8 @@ function tensor(  #TODO
     VirtualTensor(
         net.lp,
         CentralTensor(net, β, (i, j), (i, j+1)),
-        (p_lb, p_l, p_lt, p_rb, p_r, p_rt))
+        (p_lb, p_l, p_lt, p_rb, p_r, p_rt),
+    )
 end
 
 """
@@ -473,7 +468,6 @@ function tensor(
     @cast B[l, (uu, u), r, (dd, d)] := A[l, uu, u, r, dd, d]
     B
 end
-
 
 """
 $(TYPEDSIGNATURES)

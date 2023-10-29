@@ -52,7 +52,7 @@ A struct representing different layers of a Matrix Product Operator (MPO) used i
 - `main::Dict{Site, Sites}`: A dictionary mapping sites to the main layers of the MPO.
 - `dress::Dict{Site, Sites}`: A dictionary mapping sites to the dress layers of the MPO.
 - `right::Dict{Site, Sites}`: A dictionary mapping sites to the right layers of the MPO.
-    
+
 The `MpoLayers` struct distinguishes the various layers of an MPO, which is often used in tensor network contraction algorithms. MPOs are commonly employed in quantum many-body physics and condensed matter physics to represent operators acting on quantum states in a factorized form.
 """
 struct MpoLayers
@@ -75,7 +75,7 @@ A struct representing control parameters for the MPO-MPS (Matrix Product Operato
 - `iters_var::Int`: The number of iterations for variational optimization.
 - `Dtemp_multiplier::Int`: A multiplier for the bond dimension when temporary bond dimensions are computed.
 - `method::Symbol`: The contraction method to use (e.g., `:psvd_sparse`).
-    
+
 The `MpsParameters` struct encapsulates various control parameters that influence the behavior and accuracy of the MPO-MPS contraction scheme used for PEPS network calculations.
 """
 struct MpsParameters
@@ -87,7 +87,17 @@ struct MpsParameters
     iters_var::Int
     Dtemp_multiplier::Int
     method::Symbol
-    MpsParameters(bd=typemax(Int), ϵ=1E-8, sw=4, ts=1E-16, is=1, iv=1, dm=2, m=:psvd_sparse) = new(bd, ϵ, sw, ts, is, iv, dm, m) # TODO: split the line
+
+    MpsParameters(
+        bd = typemax(Int),
+        ϵ = 1E-8,
+        sw = 4,
+        ts = 1E-16,
+        is = 1,
+        iv = 1,
+        dm = 2,
+        m = :psvd_sparse
+    ) = new(bd, ϵ, sw, ts, is, iv, dm, m)
 end
 
 """
@@ -96,11 +106,11 @@ A function that provides the layout used to construct the PEPS (Projected Entang
 
 # Arguments
 - `net::PEPSNetwork{T, S}`: The PEPS network for which the layout is provided.
-    
+
 # Returns
 - The layout type `T` used to construct the PEPS network.
-    
-The `layout` function returns the layout type used in the construction of a PEPS network. This layout type specifies the geometric arrangement and sparsity pattern of the tensors in the PEPS network. 
+
+The `layout` function returns the layout type used in the construction of a PEPS network. This layout type specifies the geometric arrangement and sparsity pattern of the tensors in the PEPS network.
 """
 layout(net::PEPSNetwork{T, S}) where {T, S} = T
 
@@ -110,10 +120,10 @@ A function that provides the sparsity used to construct the PEPS (Projected Enta
 
 # Arguments
 - `net::PEPSNetwork{T, S}`: The PEPS network for which the sparsity is provided.
-    
+
 # Returns
 - The sparsity type `S` used to construct the PEPS network.
-    
+
 The `sparsity` function returns the sparsity type used in the construction of a PEPS network. This sparsity type specifies the pattern of zero elements in the tensors of the PEPS network, which can affect the computational efficiency and properties of the network.
 """
 sparsity(net::PEPSNetwork{T, S}) where {T, S} = S
@@ -134,8 +144,8 @@ A mutable struct representing a contractor for contracting a PEPS (Projected Ent
 - `node_search_index::Dict{Node, Int}`: A mapping of nodes to their search indices.
 - `current_node::Node`: The current node being processed during contraction.
 - `onGPU::Bool`: A flag indicating whether the contraction is performed on a GPU.
-    
-The `MpsContractor` struct defines the contractor responsible for contracting a PEPS network using the MPO-MPS scheme. 
+
+The `MpsContractor` struct defines the contractor responsible for contracting a PEPS network using the MPO-MPS scheme.
 It encapsulates various components and settings required for the contraction process.
 """
 mutable struct MpsContractor{T <: AbstractStrategy, R <: AbstractGauge} <: AbstractContractor
@@ -357,7 +367,7 @@ This function constructs the top Matrix Product State (MPS) using the Zipper (tr
     W = transpose(mpo(ctr, ctr.layers.main, i, indβ))
 
     canonise!(ψ, :left)
-    ψ0 = zipper(W, ψ; method=method, Dcut=Dcut, tol=tolS, iters_svd=iters_svd, 
+    ψ0 = zipper(W, ψ; method=method, Dcut=Dcut, tol=tolS, iters_svd=iters_svd,
                 iters_var=iters_var, Dtemp_multiplier = Dtemp_multiplier)
     canonise!(ψ0, :left)
     variational_compress!(ψ0, W, ψ, tolV, max_sweeps)
@@ -396,7 +406,7 @@ This function constructs the (bottom) Matrix Product State (MPS) using the Zippe
         ψ = mps(ctr, i+1, indβ)
         W = mpo(ctr, ctr.layers.main, i, indβ)
         canonise!(ψ, :left)
-        ψ0 = zipper(W, ψ; method=method, Dcut=Dcut, tol=tolS, iters_svd=iters_svd, 
+        ψ0 = zipper(W, ψ; method=method, Dcut=Dcut, tol=tolS, iters_svd=iters_svd,
                     iters_var=iters_var, Dtemp_multiplier=Dtemp_multiplier)
         canonise!(ψ0, :left)
         variational_compress!(ψ0, W, ψ, tolV, max_sweeps)
@@ -633,8 +643,8 @@ end
 $(TYPEDSIGNATURES)
 Clear all memoization caches used by the PEPS network contraction.
 
-This function clears all memoization caches that store previously computed results for various operations and environments in the PEPS network contraction. 
-Memoization is used to optimize the contraction process by avoiding redundant computations. 
+This function clears all memoization caches that store previously computed results for various operations and environments in the PEPS network contraction.
+Memoization is used to optimize the contraction process by avoiding redundant computations.
 Calling this function removes all cached results, which can be useful when you want to free up memory or ensure that the caches are refreshed with updated data.
 """
 function clear_memoize_cache()
@@ -645,8 +655,8 @@ end
 $(TYPEDSIGNATURES)
 
 Clear memoization caches for specific operations after processing a row.
-This function clears the memoization caches for specific operations used in the PEPS network contraction after processing a row. 
-The cleared operations include `left_env`, `right_env`, `mpo`, and `dressed_mps`. Memoization is used to optimize the contraction process by avoiding redundant computations. 
+This function clears the memoization caches for specific operations used in the PEPS network contraction after processing a row.
+The cleared operations include `left_env`, `right_env`, `mpo`, and `dressed_mps`. Memoization is used to optimize the contraction process by avoiding redundant computations.
 Calling this function allows you to clear the caches for these specific operations, which can be useful when you want to free up memory or ensure that the caches are refreshed with updated data after processing a row in the contraction.
 """
 function clear_memoize_cache_after_row()
@@ -657,16 +667,16 @@ end
 $(TYPEDSIGNATURES)
 Clear memoization cache for specific operations for a given row and index beta.
 
-This function clears the memoization cache for specific operations used in the PEPS network contraction for a given row and index beta (indβ). 
-The cleared operations include `mps_top`, `mps`, `mpo`, `dressed_mps`, and related operations. 
-Memoization is used to optimize the contraction process by avoiding redundant computations. 
+This function clears the memoization cache for specific operations used in the PEPS network contraction for a given row and index beta (indβ).
+The cleared operations include `mps_top`, `mps`, `mpo`, `dressed_mps`, and related operations.
+Memoization is used to optimize the contraction process by avoiding redundant computations.
 Calling this function allows you to clear the cache for these specific operations for a particular row and index beta, which can be useful when you want to free up memory or ensure that the cache is refreshed with updated data for a specific computation.
-    
+
 # Arguments
 - `ctr::MpsContractor{T, S}`: The PEPS network contractor object.
 - `row::Site`: The row for which the cache should be cleared.
 - `indβ::Int`: The index beta for which the cache should be cleared.
-    
+
 """
 function clear_memoize_cache(ctr::MpsContractor{T, S}, row::Site, indβ::Int) where {T, S}
     for ind ∈ 1:indβ # indbeta a vector?
@@ -711,7 +721,7 @@ function sweep_gauges!(
 
     ψ_top = deepcopy(ψ_top)
     ψ_bot = deepcopy(ψ_bot)
-    
+
     onGPU = ψ_top.onGPU && ψ_bot.onGPU
 
     gauges = optimize_gauges_for_overlaps!!(ψ_top, ψ_bot, tol, max_sweeps)
@@ -861,8 +871,8 @@ $(TYPEDSIGNATURES)
 boundary index formed from outer product of two projectors
 """
 function boundary_indices(
-    ctr::MpsContractor{T}, 
-    nodes::Union{NTuple{4, S}, Tuple{S, NTuple{2, S}, S, NTuple{2, S}}}, 
+    ctr::MpsContractor{T},
+    nodes::Union{NTuple{4, S}, Tuple{S, NTuple{2, S}, S, NTuple{2, S}}},
     states::Vector{Vector{Int}}
 ) where {S, T}
     v, w, k, l = nodes
@@ -872,10 +882,9 @@ function boundary_indices(
     (j .- 1) .* maximum(pv) .+ i
 end
 
-
 function boundary_indices(
-    ctr::MpsContractor{T}, 
-    nodes::Tuple{S, NTuple{2, S}, S, NTuple{2, S}, S, NTuple{2, S}, S, NTuple{2, S}}, 
+    ctr::MpsContractor{T},
+    nodes::Tuple{S, NTuple{2, S}, S, NTuple{2, S}, S, NTuple{2, S}, S, NTuple{2, S}},
     states::Vector{Vector{Int}}
 ) where {S, T}
     v1, v2, v3, v4, v5, v6, v7, v8 = nodes

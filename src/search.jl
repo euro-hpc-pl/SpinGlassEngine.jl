@@ -295,8 +295,6 @@ function merge_branches_blur(ctr::MpsContractor{T}, hamming_cutoff::Int, merge_t
     _merge_blur
 end
 
-# hamming_distance(state1, state2) = sum(count_ones(st) for st ∈ state1 .⊻ state2)
-
 """
 $(TYPEDSIGNATURES)
 No-op merge function that returns the input `partial_sol` as is.

@@ -26,6 +26,7 @@ include("square_cross_single_node.jl")
 include("square_double_node.jl")
 include("square_cross_double_node.jl")
 include("tensors.jl")
+include("droplets.jl")
 include("search.jl")
 
 end # module

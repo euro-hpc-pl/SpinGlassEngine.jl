@@ -8,7 +8,12 @@ export
     Droplets,
     hamming_distance,
     unpack_droplets,
-    perm_droplet
+    perm_droplet,
+    filter_droplets
+    my_push!
+    diversity_metric
+    merge_droplets
+    flip_state
 
 struct NoDroplets end
 
@@ -92,9 +97,24 @@ end
 
 Droplets = Union{NoDroplets, Vector{Droplet}}  # Can't be defined before Droplet struct
 
-# """
-# $(TYPEDSIGNATURES)
-# """
+"""
+$(TYPEDSIGNATURES)
+
+This is a method used to calculate excitation information for the `NoDroplets` strategy in the context of a SpinGlassPEPS contractor.
+The `NoDroplets` strategy represents a scenario in which no droplets are present in the system, and therefore, no excitation information is calculated.
+    
+## Arguments
+- `method::NoDroplets`: An instance of the `NoDroplets` strategy.
+- `ctr::MpsContractor{T}`: A SpinGlassPEPS contractor of type `T` representing the system.
+- `best_idx::Int`: The index of the best state.
+- `energies::Vector{<:Real}`: A vector of energies associated with different states.
+- `states::Vector{Vector{Int}}`: A vector of states represented as arrays of integers.
+- `droplets::Vector{Droplets}`: A vector of droplets in the system.
+- `spins::Vector{Vector{Int}}`: A vector of spin configurations associated with states.
+
+## Returns
+- `NoDroplets()`: An instance of the `NoDroplets` strategy indicating that no excitation information is calculated in this scenario.
+"""
 (method::NoDroplets)(
     ctr::MpsContractor{T},
     best_idx::Int,
@@ -104,6 +124,25 @@ Droplets = Union{NoDroplets, Vector{Droplet}}  # Can't be defined before Droplet
     spins::Vector{Vector{Int}}
 ) where T = NoDroplets()
 
+"""
+$(TYPEDSIGNATURES)
+
+This method calculates excitation information for the `SingleLayerDroplets` strategy in the context of a SpinGlassPEPS contractor. 
+The `SingleLayerDroplets` strategy represents a scenario in which excitations are calculated for single-layer droplets.
+
+## Arguments 
+- `method::SingleLayerDroplets`: An instance of the `SingleLayerDroplets` strategy.
+- `ctr::MpsContractor{T}`: A SpinGlassPEPS contractor of type `T` representing the system.
+- `best_idx::Int`: The index of the best state.
+- `energies::Vector{<:Real}`: A vector of energies associated with different states.
+- `states::Vector{Vector{Int}}`: A vector of states represented as arrays of integers.
+- `droplets::Vector{Droplets}`: A vector of droplets in the system.
+- `spins::Vector{Vector{Int}}`: A vector of spin configurations associated with states.
+ 
+## Returns
+A new `Droplets` object representing the updated droplets based on the `SingleLayerDroplets` strategy.
+
+"""
 function (method::SingleLayerDroplets)(
     ctr::MpsContractor{T},
     best_idx::Int,
@@ -141,6 +180,18 @@ function (method::SingleLayerDroplets)(
     end
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+Filter a vector of droplets based on specified criteria and strategy parameters.
+
+## Arguments
+- `all_droplets::Vector{Droplet}`: A vector of `Droplet` objects representing the droplets to be filtered.
+- `method::SingleLayerDroplets`: An instance of the `SingleLayerDroplets` strategy used to determine filtering criteria.
+
+## Returns
+- `filtered_droplets::Vector{Droplet}`: A filtered vector of `Droplet` objects based on the specified criteria and strategy parameters.
+"""
 function filter_droplets(all_droplets::Vector{Droplet}, method::SingleLayerDroplets)
     sorted_droplets = sort(all_droplets, by = droplet -> (droplet.denergy))
     if method.metric == :hamming
@@ -165,7 +216,19 @@ function filter_droplets(all_droplets::Vector{Droplet}, method::SingleLayerDropl
     filtered_droplets
 end
 
+"""
+$(TYPEDSIGNATURES)
 
+Push a 'Droplet' object into a vector of droplets ('Droplets') while considering the strategy parameters.
+
+## Arguments
+- `ndroplets::Droplets`: A vector of 'Droplet' objects to which the new 'Droplet' object will be added.
+- `droplet::Droplet`: The 'Droplet' object to be added to the vector.
+- `method`: The strategy parameter that determines whether or not the 'Droplet' object is added based on the defined criteria.
+
+## Returns
+- `ndroplets::Droplets`: The updated vector of 'Droplet' objects after the addition of the new 'Droplet' object.
+"""
 function my_push!(ndroplets::Droplets, droplet::Droplet, method)
     if typeof(ndroplets) == NoDroplets
         ndroplets = Droplet[]
@@ -174,6 +237,18 @@ function my_push!(ndroplets::Droplets, droplet::Droplet, method)
     ndroplets
 end
 
+"""
+$(TYPEDSIGNATURES)
+Calculate the diversity metric between two 'Droplet' objects based on the specified metric.
+
+## Arguments
+- `drop1::Droplet`: The first 'Droplet' object for comparison.
+- `drop2::Droplet`: The second 'Droplet' object for comparison.
+- `metric::Symbol`: A symbol specifying the metric to be used for the diversity calculation. Currently, only the "hamming" metric is supported.
+
+## Returns
+- `d::Real`: The calculated diversity metric value between the two 'Droplet' objects.
+"""
 function diversity_metric(drop1::Droplet, drop2::Droplet, metric::Symbol)
     if metric == :hamming
         d = hamming_distance(drop1.flip, drop2.flip)
@@ -183,9 +258,44 @@ function diversity_metric(drop1::Droplet, drop2::Droplet, metric::Symbol)
     d
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+Calculate the Hamming distance for a 'Flip' object.
+## Arguments
+- `flip::Flip`: The 'Flip' object for which the Hamming distance will be calculated.
+    
+## Returns
+- `d::Int`: The computed Hamming distance.
+"""
 hamming_distance(flip::Flip) = sum(count_ones(st) for st ∈ flip.spinxor)
+
+"""
+$(TYPEDSIGNATURES)
+
+Calculate the Hamming distance between two vectors of states.
+
+## Arguments
+- `state1::Vector{Int}`: The first vector.
+- `state2::Vector{Int}`: The second vector.
+
+## Returns
+- `d::Int`: The computed Hamming distance.
+"""
 hamming_distance(state1, state2) = sum(state1 .!== state2)
 
+"""
+$(TYPEDSIGNATURES)
+
+Calculate the Hamming distance between two Flip objects representing states with support and flip information.
+
+## Arguments
+- `flip1::Flip`: The first Flip object, containing support, state, and spinxor information.
+- `flip2::Flip`: The second Flip object, with support, state, and spinxor information.
+
+## Returns
+- `hd::Int`: The computed Hamming distance between the two Flip objects.
+"""
 function hamming_distance(flip1::Flip, flip2::Flip)
     n1, n2, hd = 1, 1, 0
     l1, l2 = length(flip1.support), length(flip2.support)
@@ -215,6 +325,18 @@ function hamming_distance(flip1::Flip, flip2::Flip)
     hd
 end
 
+"""
+$(TYPEDSIGNATURES)
+Merge two Droplets according to the specified `SingleLayerDroplets` method.
+
+## Arguments
+- `method::SingleLayerDroplets`: The method used to determine whether and how to merge the droplets.
+- `droplet::Droplet`: The main droplet to be merged.
+- `subdroplet::Droplet`: The subdroplet to be merged with the main droplet.
+
+## Returns
+- `merged_droplet::Droplet`: The merged droplet created based on the merging method.
+"""
 function merge_droplets(method::SingleLayerDroplets, droplet::Droplet, subdroplet::Droplet)
     denergy = droplet.denergy + subdroplet.denergy
     first = min(droplet.first, subdroplet.first)
@@ -270,12 +392,36 @@ function merge_droplets(method::SingleLayerDroplets, droplet::Droplet, subdrople
     Droplet(denergy, first, last, flip, NoDroplets())
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+Apply a flip operation to a state.
+
+## Arguments
+- `state::Vector{Int}`: The original state vector.
+- `flip::Flip`: The flip operation to be applied to the state.
+
+## Returns
+- `new_state::Vector{Int}`: The modified state after applying the flip operation.
+"""
 function flip_state(state::Vector{Int}, flip::Flip)
     new_state = copy(state)
     new_state[flip.support] .= flip.state
     new_state
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+Unpack droplets in a solution structure to create a new solution with individual excitations.
+
+## Arguments
+- `sol`: The input solution containing droplets to be unpacked.
+- `β::Real`: The inverse temperature parameter used for probability adjustments.
+
+## Returns
+- `new_sol`: A new solution where droplets are unpacked into individual excitations.
+"""
 function unpack_droplets(sol, β)  # have β in sol ?
     energies = typeof(sol.energies[begin])[]
     states = typeof(sol.states[begin])[]
@@ -314,12 +460,46 @@ function unpack_droplets(sol, β)  # have β in sol ?
     )
 end
 
+"""
+$(TYPEDSIGNATURES)
+Apply a permutation to a 'NoDroplets' object, resulting in an unchanged 'NoDroplets'.
+
+## Arguments
+- `drop::NoDroplets`: The 'NoDroplets' object that remains unchanged.
+- `perm::Vector{Int}`: A permutation vector that is applied to indices.
+
+## Returns
+- `result::NoDroplets`: The 'NoDroplets' object, which remains the same.
+"""
 perm_droplet(drop::NoDroplets, perm::Vector{Int}) = drop
 
+"""
+$(TYPEDSIGNATURES)
+Apply a permutation to a collection of 'Droplet' objects.
+
+## Arguments
+- `drops::Vector{Droplet}`: A vector of 'Droplet' objects to which the permutation is applied.
+- `perm::Vector{Int}`: A permutation vector that is applied to indices.
+
+## Returns
+- `result::Vector{Droplet}`: A vector of 'Droplet' objects after applying the permutation.
+
+"""
 function perm_droplet(drops::Vector{Droplet}, perm::Vector{Int})
    [perm_droplet(drop, perm) for drop in drops]
 end
 
+"""
+$(TYPEDSIGNATURES)
+Apply a permutation to a 'Droplet' object.
+
+## Arguments
+- `drop::Droplet`: A 'Droplet' object to which the permutation is applied.
+- `perm::Vector{Int}`: A permutation vector that is applied to indices.
+
+## Returns
+- `result::Droplet`: A 'Droplet' object after applying the permutation.
+"""
 function perm_droplet(drop::Droplet, perm::Vector{Int})
     flip = drop.flip
     support = perm[flip.support]

@@ -2,7 +2,7 @@ export
     exact_marginal_probability,
     exact_conditional_probability,
     conditional_probability,
-    update_energy
+    update_energy,
     error_measure
 
 """

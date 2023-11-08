@@ -13,9 +13,6 @@ bound_solution
 no_merge
 merge_branches
 branch_energy
-SingleLayerDroplets
-Flip
-Droplet
 ```
 
 ## Core 
@@ -62,4 +59,21 @@ reflection
 all_lattice_transformations
 vertex_map
 check_bounds
+```
+
+## Droplets
+```@docs
+SingleLayerDroplets
+Flip
+Droplet
+NoDroplets
+hamming_distance
+unpack_droplets
+perm_droplet
+filter_droplets
+my_push!
+diversity_metric
+merge_droplets
+flip_state
+
 ```

@@ -9,10 +9,10 @@ export
     hamming_distance,
     unpack_droplets,
     perm_droplet,
-    filter_droplets
-    my_push!
-    diversity_metric
-    merge_droplets
+    filter_droplets,
+    my_push!,
+    diversity_metric,
+    merge_droplets,
     flip_state
 
 struct NoDroplets end

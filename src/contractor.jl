@@ -699,15 +699,6 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function error_measure(probs)
-    if maximum(probs) <= 0 return 2.0 end
-    if minimum(probs) < 0 return abs(minimum(probs)) / maximum(abs.(probs)) end
-    return 0.0
-end
-
-"""
-$(TYPEDSIGNATURES)
-"""
 function sweep_gauges!(
     ctr::MpsContractor{T, GaugeStrategy},
     row::Site,
@@ -805,20 +796,6 @@ function update_gauges!(
     for j ∈ indβ, i ∈ row-1:-1:1
         sweep_gauges!(ctr, i, j)
     end
-end
-
-"""
-$(TYPEDSIGNATURES)
-"""
-function conditional_probability(ctr::MpsContractor{S}, w::Vector{Int}) where S
-    conditional_probability(layout(ctr.peps), ctr, w)
-end
-
-"""
-$(TYPEDSIGNATURES)
-"""
-function update_energy(ctr::MpsContractor{S}, w::Vector{Int}) where S
-    update_energy(layout(ctr.peps), ctr, w)
 end
 
 function boundary_states(

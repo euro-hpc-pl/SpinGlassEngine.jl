@@ -282,7 +282,8 @@ Calculate the Hamming distance between two vectors of states.
 ## Returns
 - `d::Int`: The computed Hamming distance.
 """
-hamming_distance(state1, state2) = sum(state1 .!== state2)
+hamming_distance(state1, state2) = sum(count_ones(st) for st ∈ state1 .⊻ state2)
+# hamming_distance(state1, state2) = sum(state1 .!== state2)
 
 """
 $(TYPEDSIGNATURES)

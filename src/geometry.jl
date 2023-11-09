@@ -1,3 +1,6 @@
+# geometry.jl: This file provides basic stuctures and types needed for constructing PEPS tensor 
+#              network.
+
 export
        site,
        Node,

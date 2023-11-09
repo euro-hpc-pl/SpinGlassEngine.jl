@@ -1,3 +1,5 @@
+# PEPS.jl: This file provides all tools needed to build PEPS tensor network.
+
 using LabelledGraphs
 
 export

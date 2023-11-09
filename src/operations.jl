@@ -1,3 +1,6 @@
+# operations.jl: This file profides functions and structs for perfoming operations
+#                on the whole PEPS tensor network ("lattice").
+
 export
        LatticeTransformation,
        rotation,

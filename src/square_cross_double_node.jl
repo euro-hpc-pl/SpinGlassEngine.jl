@@ -1,9 +1,33 @@
 export SquareCrossDoubleNode
 
+"""
+A geometry type representing a double unit cell square lattice with diagonal next-nearest neighbor interaction.
+
+## Type Parameters
+- `T <: AbstractTensorsLayout`: The layout of tensors associated with the geometry.
+
+## Description
+`SquareCrossDoubleNode` is a geometry type that models a double unit cell square lattice with next-nearest neighbor interaction. 
+This geometry is suitable for systems with tensors laid out according to the specified `AbstractTensorsLayout`.
+"""
 struct SquareCrossDoubleNode{T <: AbstractTensorsLayout} <: AbstractGeometry end
 
 """
 $(TYPEDSIGNATURES)
+Create a graph representing a double unit cell square lattice with diagonal interactions.
+
+## Arguments
+- `m::Int`: The number of rows in the lattice.
+- `n::Int`: The number of columns in the lattice.
+
+## Returns
+- `AbstractGraph`: A graph representing the double unit cell square lattice with diagonal interactions.
+
+## Description
+The `SquareCrossDoubleNode` function creates a graph representing a double unit cell square lattice 
+where each lattice site interacts with its nearest neighbor and next nearest neighbor. 
+The lattice is specified by the number of rows (`m`) and columns (`n`). 
+The resulting graph is suitable for systems with tensors laid out according to the specified geometry.
 """
 function SquareCrossDoubleNode(m::Int, n::Int)
     lg = SquareDoubleNode(m, n)
@@ -22,16 +46,53 @@ end
 
 """
 $(TYPEDSIGNATURES)
+Create a symbol representing a virtual double node for a dense tensor layout.
+
+## Arguments
+- `::Type{Dense}`: The `Dense` tensor layout type.
+    
+## Returns
+- `Symbol`: A symbol representing the virtual double node.
+    
+## Description
+The `VirtualDoubleNode` function generates a symbol (`:virtual_double_node`) that represents a virtual double node in the context of a dense tensor layout. 
+This symbol is often used to indicate the presence of a virtual double node when working with certain tensors.
 """
 VirtualDoubleNode(::Type{Dense}) = :virtual_double_node
 
 """
 $(TYPEDSIGNATURES)
+Create a symbol representing a virtual double node for a sparse tensor layout.
+
+## Arguments
+- `::Type{Sparse}`: The `Sparse` tensor layout type.
+        
+## Returns
+- `Symbol`: A symbol representing the virtual double node.
+        
+## Description
+The `VirtualDoubleNode` function generates a symbol (`:virtual_double_node`) that represents a virtual double node in the context of a sparse tensor layout. 
+This symbol is often used to indicate the presence of a virtual double node when working with certain tensors.    
 """
 VirtualDoubleNode(::Type{Sparse}) = :sparse_virtual_double_node
 
 """
 $(TYPEDSIGNATURES)
+
+Create a mapping of tensor network nodes for a square cross double node geometry.
+
+## Arguments
+- `::Type{SquareCrossDoubleNode{T}}`: Type representing a square cross double node geometry.
+- `::Type{S}`: Type representing sparsity in the tensor network.
+- `nrows::Int`: Number of rows in the tensor network.
+- `ncols::Int`: Number of columns in the tensor network.
+    
+## Returns 
+- `Dict{PEPSNode, Symbol}`: A dictionary mapping PEPS nodes to symbols representing their corresponding tensor network nodes.
+    
+## Description
+The `tensor_map` function generates a mapping of tensor network nodes for a square cross double node geometry. 
+The mapping includes different types of nodes, such as site double nodes, virtual double nodes, central vertical double nodes, and central diagonal double nodes.
 """
 function tensor_map(
     ::Type{SquareCrossDoubleNode{T}}, ::Type{S}, nrows::Int, ncols::Int
@@ -56,6 +117,19 @@ end
 
 """
 $(TYPEDSIGNATURES)
+Create a list of gauge information for a square cross double node geometry and GaugesEnergy Layout.
+
+## Arguments
+- `::Type{SquareCrossDoubleNode{T}}`: Type representing a square cross double node geometry.
+- `nrows::Int`: Number of rows in the tensor network.
+- `ncols::Int`: Number of columns in the tensor network.
+    
+## Returns
+- `Vector{GaugeInfo}`: A vector of `GaugeInfo` objects representing gauge information for the specified geometry.
+    
+## Description
+The `gauges_list` function generates a list of `GaugeInfo` objects for a square cross double node geometry. 
+Each `GaugeInfo` object contains information about the positions of gauge links, the position of the attached tensor, the leg index, and the type of gauge.
 """
 function gauges_list(::Type{SquareCrossDoubleNode{T}}, nrows::Int, ncols::Int) where T <: GaugesEnergy
     [
@@ -71,6 +145,19 @@ end
 
 """
 $(TYPEDSIGNATURES)
+Create a list of gauge information for a square cross double node geometry and EnergyGauges Layout.
+
+## Arguments
+- `::Type{SquareCrossDoubleNode{T}}`: Type representing a square cross double node geometry.
+- `nrows::Int`: Number of rows in the tensor network.
+- `ncols::Int`: Number of columns in the tensor network.
+        
+## Returns
+- `Vector{GaugeInfo}`: A vector of `GaugeInfo` objects representing gauge information for the specified geometry.
+        
+## Description
+The `gauges_list` function generates a list of `GaugeInfo` objects for a square cross double node geometry. 
+Each `GaugeInfo` object contains information about the positions of gauge links, the position of the attached tensor, the leg index, and the type of gauge.        
 """
 function gauges_list(::Type{SquareCrossDoubleNode{T}}, nrows::Int, ncols::Int) where T <: EnergyGauges
     [
@@ -111,6 +198,26 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: SquareCrossDoubleNode{Gauge
     )
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+Precompute conditional probabilities and energies for a square cross double node tensor contraction.
+
+## Arguments
+- `::Type{T}`: Type representing a square cross double node tensor network.
+- `ctr::MpsContractor{S}`: Tensor contractor for the tensor network.
+- `current_node`: Current node position in the tensor network.
+    
+## Returns
+- Tuple: A tuple containing precomputed conditional probabilities and energies.
+    
+## Description
+The `precompute_conditional` function computes and returns precomputed conditional probabilities and energies for the specified square cross double node tensor contraction. 
+It takes into account the geometry of the tensor network, interaction energies, and projectors. 
+The precomputed values are used during the tensor contraction process to speed up the computation.
+The function is specialized for the `SquareCrossDoubleNode` tensor network type and is parametrized by the layout type `S` of the contractor.
+    
+"""
 @memoize Dict function precompute_conditional(
     ::Type{T}, ctr::MpsContractor{S}, current_node
 ) where {T <: SquareCrossDoubleNode, S}
@@ -211,6 +318,21 @@ end
 
 """
 $(TYPEDSIGNATURES)
+Compute the conditional probability of states for a square cross double node tensor geometry.
+
+## Arguments
+- `::Type{T}`: Type representing a square cross double node tensor network.
+- `ctr::MpsContractor{S}`: Tensor contractor for the tensor network.
+- `∂v::Vector{Int}`: Vector of indices representing the contracted environment indices.
+    
+## Returns
+- Vector{Float64}: Conditional probabilities for different states.
+    
+## Description
+The `conditional_probability` function computes the conditional probabilities of different states for a specified square cross double node tensor geometry. 
+It takes into account the geometry of the tensor network, interaction energies, and precomputed values. 
+The function supports both left and right environments, and the resulting probabilities are normalized.
+The function is specialized for the `SquareCrossDoubleNode` tensor network type and is parametrized by the layout type `S` of the contractor.
 """
 function conditional_probability(
     ::Type{T}, ctr::MpsContractor{S}, ∂v::Vector{Int}
@@ -298,6 +420,19 @@ end
 
 """
 $(TYPEDSIGNATURES)
+Generate the search order of nodes for a matrix product states (MPS).
+
+## Arguments
+- `peps::PEPSNetwork{T, S}`: PEPS tensor network with a specific tensor layout.
+    
+## Returns
+- Tuple{Vector{Tuple{Int, Int, Int}}, Tuple{Int, Int, Int}}: Tuple containing the list of node coordinates and the size of the tensor network.
+    
+## Description
+The `nodes_search_order_Mps` function generates the search order of nodes for a matrix product states (MPS). 
+It creates a list of node coordinates `(i, j, k)` representing rows, columns, and index of group of spins, respectively. 
+The resulting order is suitable for traversing the nodes in the tensor network during contraction.
+The function is specialized for the `SquareCrossDoubleNode` tensor network type and is parametrized by the layout type `S`.
 """
 function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: SquareCrossDoubleNode, S}
     ([(i, j, k) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols for k ∈ 1:2], (peps.nrows+1, 1, 1))
@@ -305,6 +440,21 @@ end
 
 """
 $(TYPEDSIGNATURES)
+Compute the boundary states for a specific node in a matrix product states (MPS).
+
+## Arguments 
+- `T::Type`: Tensor network type, specialized for `SquareCrossDoubleNode`.
+- `ctr::MpsContractor{S}`: MPS tensor network contractor containing relevant information.
+- `node::Node`: Tuple representing the coordinates of the node in the tensor network.
+    
+## Returns
+- Vector{Tuple{Tuple, Tuple}}: Vector of tuples representing the boundary states for the given node. 
+Each tuple contains pairs of indices representing connected sites in the tensor network.
+    
+## Description
+The `boundary` function computes the boundary states for a specific node in a matrix product states (MPS). 
+The boundary states are determined by analyzing the connections between the current node and its neighboring nodes, considering different physical indices.
+The function is specialized for the `SquareCrossDoubleNode` tensor network type and is parametrized by the layout type `S`.
 """
 function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: SquareCrossDoubleNode, S}
     i, j, k = node  # todo
@@ -368,6 +518,20 @@ end
 
 """
 $(TYPEDSIGNATURES)
+Update the energy of a specific tensor node in a matrix product states (MPS).
+
+## Arguments
+- `T::Type`: Tensor network type, specialized for `SquareCrossDoubleNode`.
+- `ctr::MpsContractor{S}`: MPS tensor network contractor containing relevant information for contraction.
+- `σ::Vector{Int}`: State vector representing the current configuration of the tensor network.
+
+## Returns
+- Real: Updated energy value for the specified tensor node.
+
+## Description
+The `update_energy` function calculates the energy contribution of a specific tensor node in a matrix product states (MPS). 
+The energy is computed based on the local energy at the node and the interaction energies with its neighboring nodes, considering the provided state vector `σ`.
+The function is specialized for the `SquareCrossDoubleNode` tensor network type and is parametrized by the layout type `S`.
 """
 function update_energy(
     ::Type{T}, ctr::MpsContractor{S}, σ::Vector{Int}
@@ -388,6 +552,21 @@ end
 
 """
 $(TYPEDSIGNATURES)
+Generate the tensor for a central double node in a projected entangled pair states (PEPS) tensor network.
+
+## Arguments
+- `net::PEPSNetwork{T, Sparse}`: PEPS tensor network.
+- `node::PEPSNode`: Node representing the position of the central double node.
+- `β::Real`: Inverse temperature parameter.
+- `::Val{:central_d_double_node}`: symbol to indicate the central double node.
+    
+## Returns
+- `DiagonalTensor`: Tensor representing the central double node.
+    
+## Description
+The `tensor` function generates the tensor for a central double node in a PEPS tensor network. 
+It uses the inverse temperature parameter `β` to construct the central tensor based on the geometry of the tensor network.
+The function is specialized for PEPS tensor networks with sparse tensors (`Sparse`) and is parametrized by the abstract geometry type `T`.
 """
 function tensor(
     net::PEPSNetwork{T, Sparse}, node::PEPSNode, β::Real, ::Val{:central_d_double_node}
@@ -400,6 +579,20 @@ end
 
 """
 $(TYPEDSIGNATURES)
+Determine the size of the tensor corresponding to a central double node in a projected entangled pair states (PEPS) tensor network.
+
+## Arguments
+- `net::PEPSNetwork{SquareCrossDoubleNode{T}, S}`: PEPS tensor network with square cross double nodes.
+- `node::PEPSNode`: Node representing the position of the central double node.
+- `::Val{:central_d_double_node}`: symbol to indicate the central double node.
+
+## Returns
+- `Tuple{Int, Int}`: Tuple representing the size of the tensor for the central double node.
+
+## Description
+The `Base.size` function is used to determine the size of the tensor corresponding to a central double node in a PEPS tensor network. 
+It calculates the size by considering the sizes of the two central tensors associated with neighboring positions.
+The function is parametrized by the abstract tensors layout type `T` and the abstract sparsity type `S`.
 """
 function Base.size(
     net::PEPSNetwork{SquareCrossDoubleNode{T}, S}, node::PEPSNode, ::Val{:central_d_double_node}
@@ -412,6 +605,22 @@ end
 
 """
 $(TYPEDSIGNATURES)
+Create a sparse virtual double node tensor in a projected entangled pair states (PEPS) tensor network.
+
+## Arguments
+- `net::PEPSNetwork{SquareCrossDoubleNode{T}, S}`: PEPS tensor network with square cross double nodes.
+- `node::PEPSNode`: Node representing the position of the virtual double node.
+- `β::Real`: Inverse temperature parameter.
+- `::Val{:sparse_virtual_double_node}`: symbol to indicate the creation of a sparse virtual double node tensor.
+
+## Returns
+- `VirtualTensor{T, S}`: Sparse virtual double node tensor.
+
+## Description
+The `tensor` function is used to create a sparse virtual double node tensor in a PEPS tensor network. 
+It constructs the tensor by incorporating information about the central tensor and surrounding projectors associated with the specified position.
+The function is parametrized by the abstract tensors layout type `T`, and the abstract sparsity type `S`, which can be either `Sparse` or `Dense`.
+
 """
 function tensor(  #TODO
     net::PEPSNetwork{SquareCrossDoubleNode{T}, S}, node::PEPSNode, β::Real, ::Val{:sparse_virtual_double_node}
@@ -450,6 +659,22 @@ end
 
 """
 $(TYPEDSIGNATURES)
+
+Create a dense virtual double node tensor in a projected entangled pair states (PEPS) tensor network.
+
+## Arguments
+- `net::PEPSNetwork{T, Dense}`: PEPS tensor network with nodes of type `T` and dense tensors.
+- `node::PEPSNode`: Node representing the position of the virtual double node.
+- `β::Real`: Inverse temperature parameter.
+- `::Val{:virtual_double_node}`: symbol to indicate the creation of a dense virtual double node tensor.
+
+## Returns
+- `Tensor{T}`: Dense virtual double node tensor.
+
+## Description
+The `tensor` function is used to create a dense virtual double node tensor in a PEPS tensor network. 
+It constructs the tensor by combining information from the sparse virtual double node tensor, including projectors and the dense central tensor associated with the specified position.
+The function is parametrized by the abstract geometry type `T`.
 """
 function tensor(
     net::PEPSNetwork{T, Dense}, node::PEPSNode, β::Real, ::Val{:virtual_double_node}
@@ -471,6 +696,20 @@ end
 
 """
 $(TYPEDSIGNATURES)
+
+Construct the set of projectors associated with a site tensor in a projected entangled pair states (PEPS) tensor network.
+
+## Arguments
+- `net::PEPSNetwork{T, S}`: PEPS tensor network with nodes of type `T` and tensors of sparsity type `S`.
+- `vertex::Node`: Node representing the position of the site tensor.
+
+## Returns
+- `(plf, pt, prf, pb)`: Tuple of projectors associated with the site tensor, corresponding to the left (plf), top (pt), right (prf), and bottom (pb) directions.
+
+## Description
+The `projectors_site_tensor` function constructs the set of projectors associated with a site tensor at the specified position in a PEPS tensor network. 
+The projectors are created based on the neighboring tensors and directions in the network.
+The function is parametrized by the abstract node type `T` and the abstract sparsity type `S`.
 """
 function projectors_site_tensor(
     net::PEPSNetwork{T, S}, vertex::Node
@@ -491,8 +730,24 @@ function projectors_site_tensor(
     (plf, pt, prf, pb)
 end
 
+"""
+$(TYPEDSIGNATURES)
 
+Determine the size of the virtual tensor associated with a virtual double node in a tensor network.
 
+## Arguments
+- `net::AbstractGibbsNetwork{Node, PEPSNode}`: Abstract Gibbs PEPS tensor network with nodes and virtual tensors.
+- `node::PEPSNode`: PEPS node representing the position of the virtual double node.
+- `::Union{Val{:virtual_double_node}, Val{:sparse_virtual_double_node}}`: Tag indicating whether the virtual tensor is dense or sparse.
+
+## Returns
+- Tuple `(s1, s2, s3, s4)`: Size information for the virtual tensor.
+
+## Description
+The `size` function determines the size of the virtual tensor associated with a virtual double node in an Abstract Gibbs PEPS tensor network. 
+The size is specified by the dimensions along the left, top, right, and bottom directions.
+The function is parametrized by the types of nodes (`Node` and `PEPSNode`) and the tag indicating whether the virtual tensor is dense or sparse.
+"""
 function Base.size(
     net::AbstractGibbsNetwork{Node, PEPSNode},
     node::PEPSNode,

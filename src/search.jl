@@ -21,7 +21,6 @@ A struct representing search parameters for low-energy spectrum search.
 
 SearchParameters encapsulates parameters that control the behavior of low-energy spectrum search algorithms in the SpinGlassPEPS package.
 Users can customize these parameters to adjust the search strategy and resource usage according to their specific needs.
-
 """
 struct SearchParameters
     max_states::Int
@@ -122,22 +121,47 @@ and the spin configuration as the second element (a vector of integers).
 
 ## Returns
 The branch energy, which is the sum of the base energy and the energy contribution of the spin configuration.
-
 """
 @inline function branch_energy(ctr::MpsContractor{T}, eσ::Tuple{<:Real, Vector{Int}}) where T
     eσ[begin] .+ update_energy(ctr, eσ[end])
 end
 
-# """
-# $(TYPEDSIGNATURES)
-# """
+"""
+$(TYPEDSIGNATURES)
+Compute and branch the energies from different branches in a solution.
+
+## Arguments
+- `ctr::MpsContractor{T}`: The MPS contractor.
+- `psol::Solution`: The partial solution.
+
+## Returns
+- `Vector{<:Real}`: A vector containing the energies of individual branches.
+
+## Description
+This function computes the energies of branches in a solution by applying the `branch_energy` function 
+to each pair of energy and state in the given partial solution. 
+The result is a vector of energies corresponding to the branches.
+"""
 @inline function branch_energies(ctr::MpsContractor{T}, psol::Solution) where T
     reduce(vcat, branch_energy.(Ref(ctr), zip(psol.energies, psol.states)))
 end
 
-# """
-# $(TYPEDSIGNATURES)
-# """
+"""
+$(TYPEDSIGNATURES)
+Constructs branch states based on a local basis and vectorized states.
+
+## Arguments
+- `local_basis::Vector{Int}`: The local basis states.
+- `vec_states::Vector{Vector{Int}}`: Vectorized states for each branch.
+
+## Returns
+- `Vector{Vector{Int}}`: A vector containing the constructed branch states.
+
+## Description
+This function constructs branch states by combining a local basis with vectorized states. 
+The local basis provides the unique states for each branch, and the vectorized states represent the state configuration for each branch. 
+The resulting vector contains the constructed branch states.
+"""
 function branch_states(local_basis::Vector{Int}, vec_states::Vector{Vector{Int}})
     states = reduce(hcat, vec_states)
     num_states = length(local_basis)
@@ -148,16 +172,45 @@ function branch_states(local_basis::Vector{Int}, vec_states::Vector{Vector{Int}}
     collect(eachcol(reshape(ns, lstate+1, nstates * num_states)))
 end
 
-# """
-# $(TYPEDSIGNATURES)
-# """
+"""
+$(TYPEDSIGNATURES)
+Calculates the branch probability for a given state.
+
+## Arguments
+- `ctr::MpsContractor{T}`: The MPS contractor object.
+- `pσ::Tuple{<:Real, Vector{Int}}`: Tuple containing the energy and state configuration.
+    
+## Returns
+- `Real`: The calculated branch probability.
+    
+## Description
+This function calculates the branch probability for a specific state configuration using the conditional probability 
+provided by the MPS contractor.
+The branch probability is computed as the logarithm of the conditional probability of the given state. 
+The conditional probability is obtained from the MPS contractor. 
+"""
 function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T
     pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
 end
 
-# """
-# $(TYPEDSIGNATURES)
-# """
+"""
+$(TYPEDSIGNATURES)
+Discards low-probability states from the given solution.
+
+## Arguments
+- `psol::Solution`: The input solution containing states and their probabilities.
+- `cut_off_prob::Real`: The cutoff probability below which states will be discarded.
+
+## Returns
+- `Solution`: A new solution with low-probability states discarded.
+
+## Description
+This function removes states from the solution `psol` whose probabilities are below the specified `cut_off_prob`. 
+It calculates a cutoff probability (`pcut`) based on the maximum probability in `psol` and the provided `cut_off_prob`. 
+States with probabilities lower than `pcut` are considered discarded.
+The largest discarded probability (`ldp`) in the resulting solution is updated based on the 
+maximum discarded probability among the removed states and the existing `ldp` in `psol`.
+"""
 function discard_probabilities!(psol::Solution, cut_off_prob::Real)
     pcut = maximum(psol.probabilities) + log(cut_off_prob)
     if minimum(psol.probabilities) >= pcut return psol end
@@ -166,16 +219,41 @@ function discard_probabilities!(psol::Solution, cut_off_prob::Real)
     Solution(psol, findall(p -> p >= pcut, psol.probabilities), ldp)
 end
 
-# """
-# $(TYPEDSIGNATURES)
-# """
+"""
+$(TYPEDSIGNATURES)
+Retrieve the local spin configurations associated with a vertex in the Gibbs network.
+
+## Arguments
+- `network::AbstractGibbsNetwork{S, T}`: The Gibbs network.
+- `vertex::S`: The vertex for which local spins are requested.
+
+## Returns
+- `Vector{Int}`: An array representing the local spin configurations.
+
+## Description
+This function retrieves the local spin configurations associated with a given vertex in the Gibbs network. 
+The local spins are extracted from the spectrum of the clustered Hamiltonian associated with the vertex.
+"""
 function local_spins(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T}
     spectrum(network, vertex).states_int
 end
 
-# """
-# $(TYPEDSIGNATURES)
-# """
+"""
+$(TYPEDSIGNATURES)
+Generate a new solution by branching the given partial solution in a contracting Gibbs network.
+
+## Arguments
+- `psol::Solution`: The partial solution.
+- `ctr::T`: The contractor representing the contracting Gibbs network.
+
+## Returns
+- `Solution`: A new solution obtained by branching the partial solution in the contracting network.
+
+## Description
+This function generates a new solution by branching the given partial solution in a contracting Gibbs network. 
+It computes the energies, states, probabilities, degeneracies, discarded probabilities, droplets, and spins for the resulting solution. 
+The branching process involves considering the current node in the contractor and updating the solution accordingly.
+"""
 function branch_solution(psol::Solution, ctr::T) where T <: AbstractContractor
     num_states = cluster_size(ctr.peps, ctr.current_node)
     basis_states = collect(1:num_states)
@@ -274,6 +352,26 @@ function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit, update
     _merge
 end
 
+"""
+$(TYPEDSIGNATURES)
+Generate a function for merging branches in a Gibbs network with hamming distance blur.
+
+## Arguments
+- `ctr::MpsContractor{T}`: The contractor representing the contracting Gibbs network.
+- `hamming_cutoff::Int`: The hamming distance cutoff for blur.
+- `merge_type::Symbol=:nofit`: The merging strategy, defaults to `:nofit`.
+- `update_droplets=NoDroplets()`: Droplet update method, defaults to `NoDroplets()`.
+    
+## Returns
+- `Function`: A function for merging branches with hamming distance blur.
+    
+## Description
+This function generates a function for merging branches in a Gibbs network with hamming distance blur. 
+The resulting function takes a partial solution as input and performs the merging process, considering hamming distance constraints. 
+It returns a new solution with the merged branches.
+The hamming distance blur helps in selecting diverse states during the merging process. 
+States with hamming distances greater than or equal to the specified cutoff are considered distinct.
+"""
 function merge_branches_blur(ctr::MpsContractor{T}, hamming_cutoff::Int, merge_type::Symbol=:nofit, update_droplets=NoDroplets()) where {T}
     function _merge_blur(psol::Solution)
         psol = merge_branches(ctr, merge_type, update_droplets)(psol)
@@ -338,9 +436,27 @@ function bound_solution(
     Solution(psol, idx[1:max_states], ldp)
 end
 
-# """
-# $(TYPEDSIGNATURES)
-# """
+"""
+$(TYPEDSIGNATURES)
+Generate a new solution by sampling states based on their probabilities.
+
+## Arguments
+- `psol::Solution`: The partial solution from which to sample states.
+- `max_states::Int`: The maximum number of states to sample.
+- `δprob::Real`: The probability threshold for discarding states.
+- `merge_strategy=no_merge`: The merging strategy, defaults to `no_merge`.
+
+## Returns
+- `Solution`: A new solution obtained by sampling states.
+
+## Description
+This function generates a new solution by sampling states from the given partial solution. 
+The sampling is performed based on the probabilities associated with each state. 
+The number of sampled states is determined by the `max_states` argument. 
+Additionally, states with probabilities below the threshold `δprob` are discarded.
+The optional argument `merge_strategy` specifies the merging strategy to be used during the sampling process. 
+It defaults to `no_merge`, indicating no merging.
+"""
 function sampling(psol::Solution, max_states::Int, δprob::Real, merge_strategy=no_merge)
     prob = exp.(psol.probabilities)
     new_prob = cumsum(reshape(prob, :, max_states), dims = 1)

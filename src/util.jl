@@ -3,7 +3,8 @@ export
     exact_conditional_probability,
     conditional_probability,
     update_energy,
-    error_measure
+    error_measure,
+    exact_spectrum
 
 """
 $(TYPEDSIGNATURES)

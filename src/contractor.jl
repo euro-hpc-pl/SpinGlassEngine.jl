@@ -696,9 +696,7 @@ function clear_memoize_cache(ctr::MpsContractor{T, S}, row::Site, indβ::Int) wh
     end
 end
 
-"""
-$(TYPEDSIGNATURES)
-"""
+
 function sweep_gauges!(
     ctr::MpsContractor{T, GaugeStrategy},
     row::Site,
@@ -733,9 +731,7 @@ function sweep_gauges!(
     clear_memoize_cache(ctr, row, indβ)
 end
 
-"""
-$(TYPEDSIGNATURES)
-"""
+
 function sweep_gauges!(
     ctr::MpsContractor{T, GaugeStrategyWithBalancing},
     row::Site,
@@ -757,9 +753,7 @@ function sweep_gauges!(
     ψ_top * ψ_bot
 end
 
-"""
-$(TYPEDSIGNATURES)
-"""
+
 function sweep_gauges!(
     ctr::MpsContractor{T, NoUpdate},
     row::Site,
@@ -770,9 +764,7 @@ function sweep_gauges!(
 
 end
 
-"""
-$(TYPEDSIGNATURES)
-"""
+
 function update_gauges!(
     ctr::MpsContractor{T, S},
     row::Site,
@@ -784,9 +776,7 @@ function update_gauges!(
     end
 end
 
-"""
-$(TYPEDSIGNATURES)
-"""
+
 function update_gauges!(
     ctr::MpsContractor{T, S},
     row::Site,
@@ -809,16 +799,12 @@ function boundary_states(
     [res[r, :] for r ∈ 1:size(res, 1)]
 end
 
-"""
-$(TYPEDSIGNATURES)
-"""
+
 function boundary(ctr::MpsContractor{T}, node::Node) where T
     boundary(layout(ctr.peps), ctr, node)
 end
 
-"""
-$(TYPEDSIGNATURES)
-"""
+
 function local_state_for_node(
     ctr::MpsContractor{T}, σ::Vector{Int}, w::S
 ) where {T, S}
@@ -826,9 +812,7 @@ function local_state_for_node(
     0 < k <= length(σ) ? σ[k] : 1
 end
 
-"""
-$(TYPEDSIGNATURES)
-"""
+
 function boundary_indices(
     ctr::MpsContractor{T},
     nodes::Union{NTuple{2, S}, Tuple{S, NTuple{N, S}}},

@@ -4,14 +4,11 @@
 
 ## Search
 ```@docs
-SearchParameters
 Solution
 empty_solution
-low_energy_spectrum
 gibbs_sampling
 bound_solution
 no_merge
-merge_branches
 branch_energy
 ```
 
@@ -21,10 +18,7 @@ error_measure
 conditional_probability
 update_energy
 boundary
-local_state_for_node
 boundary_indices
-sweep_gauges!
-update_gauges!
 Gauges
 GaugeInfo
 PEPSNode
@@ -34,9 +28,6 @@ SuperPEPSNode
 ## Contractor
 ```@docs
 MpoLayers
-MpsParameters
-MpsContractor
-PEPSNetwork
 layout
 sparsity
 strategy
@@ -53,10 +44,6 @@ clear_memoize_cache_after_row
 
 ## Operations
 ```@docs
-LatticeTransformation
-rotation
-reflection
-all_lattice_transformations
 vertex_map
 check_bounds
 ```
@@ -76,4 +63,43 @@ diversity_metric
 merge_droplets
 flip_state
 
+```
+
+## PEPS
+```@docs
+SpinGlassEngine.local_energy
+SpinGlassEngine.interaction_energy
+normalize_probability
+initialize_gauges!
+decode_state
+SpinGlassEngine.bond_energy
+SpinGlassEngine.projector
+spectrum
+is_compatible
+ones_like
+tensor_map
+size
+exact_spectrum
+discard_probabilities!
+mod_wo_zero
+exact_marginal_probability
+_normalize
+projectors_site_tensor
+branch_probability
+exact_conditional_probability
+branch_solution
+gauges_list
+SquareCrossDoubleNode
+SquareSingleNode
+branch_energies
+_equalize
+nodes_search_order_Mps
+sampling
+VirtualDoubleNode
+merge_branches_blur
+fuse_projectors
+local_spins
+tensor
+branch_states
+precompute_conditional
 ```

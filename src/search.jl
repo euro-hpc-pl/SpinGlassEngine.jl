@@ -9,7 +9,12 @@ export
        decode_to_spin,
        empty_solution,
        branch_energy,
-       no_merge
+       no_merge,
+       sampling,
+       branch_probability,
+       discard_probabilities!,
+       branch_energies,
+       branch_states
 
 """
 $(TYPEDSIGNATURES)

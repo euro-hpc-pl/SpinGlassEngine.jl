@@ -2,9 +2,7 @@ export SquareCrossSingleNode
 
 struct SquareCrossSingleNode{T <: AbstractTensorsLayout} <: AbstractGeometry end
 
-"""
-$(TYPEDSIGNATURES)
-"""
+
 function SquareCrossSingleNode(m::Int, n::Int)
     lg = SquareSingleNode(m, n)
     for i ∈ 1:m-1, j ∈ 1:n-1
@@ -14,19 +12,13 @@ function SquareCrossSingleNode(m::Int, n::Int)
     lg
 end
 
-"""
-$(TYPEDSIGNATURES)
-"""
+
 VirtualSingleNode(::Type{Dense}) = :virtual_single_node
 
-"""
-$(TYPEDSIGNATURES)
-"""
+
 VirtualSingleNode(::Type{Sparse}) = :sparse_virtual_single_node
 
-"""
-$(TYPEDSIGNATURES)
-"""
+
 function tensor_map(
     ::Type{SquareCrossSingleNode{T}}, ::Type{S}, nrows::Int, ncols::Int
 ) where {T <: Union{EnergyGauges, GaugesEnergy}, S <: AbstractSparsity}
@@ -46,9 +38,7 @@ function tensor_map(
     map
 end
 
-"""
-$(TYPEDSIGNATURES)
-"""
+
 function tensor_map(
     ::Type{SquareCrossSingleNode{T}}, ::Type{S}, nrows::Int, ncols::Int
 ) where {T <: EngGaugesEng, S <: AbstractSparsity}
@@ -73,9 +63,7 @@ function tensor_map(
     map
 end
 
-"""
-$(TYPEDSIGNATURES)
-"""
+
 function gauges_list(::Type{SquareCrossSingleNode{T}}, nrows::Int, ncols::Int) where T <: GaugesEnergy
     [
         GaugeInfo(
@@ -88,9 +76,7 @@ function gauges_list(::Type{SquareCrossSingleNode{T}}, nrows::Int, ncols::Int) w
     ]
 end
 
-"""
-$(TYPEDSIGNATURES)
-"""
+
 function gauges_list(::Type{SquareCrossSingleNode{T}}, nrows::Int, ncols::Int) where T <: EnergyGauges
     [
         GaugeInfo(
@@ -103,9 +89,7 @@ function gauges_list(::Type{SquareCrossSingleNode{T}}, nrows::Int, ncols::Int) w
     ]
 end
 
-"""
-$(TYPEDSIGNATURES)
-"""
+
 function gauges_list(::Type{SquareCrossSingleNode{T}}, nrows::Int, ncols::Int) where T <: EngGaugesEng
     [
         GaugeInfo(
@@ -157,9 +141,7 @@ function MpoLayers(::Type{T}, ncols::Int) where T <: SquareCrossSingleNode{EngGa
     )
 end
 
-"""
-$(TYPEDSIGNATURES)
-"""
+
 # TODO: rewrite this using brodcasting if possible
 function conditional_probability(
     ::Type{T}, ctr::MpsContractor{S}, ∂v::Vector{Int}
@@ -203,9 +185,7 @@ function conditional_probability(
     normalize_probability(probs)
 end
 
-"""
-$(TYPEDSIGNATURES)
-"""
+
 function projectors_site_tensor(
     network::PEPSNetwork{T, S}, vertex::Node
 ) where {T <: SquareCrossSingleNode, S}
@@ -216,16 +196,12 @@ function projectors_site_tensor(
     projector.(Ref(network), Ref(vertex), nbrs)
 end
 
-"""
-$(TYPEDSIGNATURES)
-"""
+
 function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: SquareCrossSingleNode, S}
     ([(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols], (peps.nrows+1, 1))
 end
 
-"""
-$(TYPEDSIGNATURES)
-"""
+
 function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: SquareCrossSingleNode, S}
     i, j = node
     vcat(
@@ -244,9 +220,7 @@ function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: Squa
     )
 end
 
-"""
-$(TYPEDSIGNATURES)
-"""
+
 function update_energy(
     ::Type{T}, ctr::MpsContractor{S}, σ::Vector{Int}
 ) where {T <: SquareCrossSingleNode, S}
@@ -259,9 +233,7 @@ function update_energy(
     en
 end
 
-"""
-$(TYPEDSIGNATURES)
-"""
+
 function tensor(
     net::PEPSNetwork{SquareCrossSingleNode{T}, S}, node::PEPSNode, β::Real, ::Val{:central_d_single_node}
 ) where {T <: AbstractTensorsLayout, S <: AbstractSparsity}
@@ -272,9 +244,7 @@ function tensor(
     A
 end
 
-"""
-$(TYPEDSIGNATURES)
-"""
+
 function Base.size(
     network::PEPSNetwork{SquareCrossSingleNode{T}, S}, node::PEPSNode, ::Val{:central_d_single_node}
 ) where {T <: AbstractTensorsLayout, S <: AbstractSparsity}
@@ -284,9 +254,7 @@ function Base.size(
     (s_NW_SE[1] * s_NE_SW[1], s_NW_SE[2] * s_NE_SW[2])
 end
 
-"""
-$(TYPEDSIGNATURES)
-"""
+
 function tensor(
     net::PEPSNetwork{SquareCrossSingleNode{T}, S}, node::PEPSNode, β::Real, ::Val{:sparse_virtual_single_node}
 ) where {T <: AbstractTensorsLayout, S <: Union{Sparse, Dense}}
@@ -306,9 +274,7 @@ function tensor(
     )
 end
 
-"""
-$(TYPEDSIGNATURES)
-"""
+
 function tensor(
     net::PEPSNetwork{SquareCrossSingleNode{T}, Dense}, node::PEPSNode, β::Real, ::Val{:virtual_single_node}
 ) where T <: AbstractTensorsLayout

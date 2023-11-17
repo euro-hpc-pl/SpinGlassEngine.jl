@@ -30,14 +30,10 @@ function SquareSingleNode(m::Int, n::Int)
     LabelledGraph(labels, grid((m, n)))
 end
 
-"""
-$(TYPEDSIGNATURES)
-"""
+
 site(::Type{Dense}) = :site
 
-"""
-$(TYPEDSIGNATURES)
-"""
+
 site(::Type{Sparse}) = :sparse_site
 
 """
@@ -119,7 +115,7 @@ end
 """
 $(TYPEDSIGNATURES)
 
-"Assigns gauges and corresponding information to GaugeInfo structure for a given Layout.
+Assigns gauges and corresponding information to GaugeInfo structure for a given Layout.
 """
 function gauges_list(::Type{SquareSingleNode{T}}, nrows::Int, ncols::Int) where T <: EngGaugesEng
     [
@@ -228,27 +224,18 @@ function conditional_probability(
 end
 
 
-"""
-$(TYPEDSIGNATURES)
 
-"""
 function projectors_site_tensor(network::PEPSNetwork{T, S}, vertex::Node) where {T <: SquareSingleNode, S}
     i, j = vertex
     projector.(Ref(network), Ref(vertex), ((i, j-1), (i-1, j), (i, j+1), (i+1, j)))
 end
 
-"""
-$(TYPEDSIGNATURES)
 
-"""
 function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: SquareSingleNode, S}
     ([(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols], (peps.nrows+1, 1))
 end
 
-"""
-$(TYPEDSIGNATURES)
 
-"""
 function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: SquareSingleNode, S}
     i, j = node
     vcat(
@@ -258,10 +245,7 @@ function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: Squa
     )
 end
 
-"""
-$(TYPEDSIGNATURES)
 
-"""
 function update_energy(
     ::Type{T}, ctr::MpsContractor{S}, σ::Vector{Int},
 ) where {T <: SquareSingleNode, S}

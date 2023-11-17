@@ -1,0 +1,22 @@
+@testset "Example image is correcly loaded and computed" begin
+    instance_dir = "$(@__DIR__)/instances/rmf/penguin-small.h5"
+    onGPU = true
+    x, y = 240, 320
+    β = 1.0
+    bond_dim = 12
+    δp = 1E-4
+    num_states = 20
+    cl_h = clustered_hamiltonian(instance_dir, x, y)
+    params = MpsParameters(bond_dim, 1E-8, 10)
+    search_params = SearchParameters(num_states, δp)
+    Gauge = NoUpdate
+    graduate_truncation = :graduate_truncate
+    energies = Vector{Float64}[]
+    Strategy = Zipper
+    Layout = GaugesEnergy
+    Sparsity = Sparse
+    transform = rotation(0)
+    net = PEPSNetwork{SquareCrossSingleNode{Layout}, Sparsity}(x, y, cl_h, transform)
+    ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], graduate_truncation, params; onGPU=onGPU)
+    sol_peps, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+end

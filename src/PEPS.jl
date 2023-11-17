@@ -4,7 +4,6 @@ using LabelledGraphs
 
 export
        AbstractGibbsNetwork,
-       local_energy,
        interaction_energy,
        connecting_tensor,
        normalize_probability,
@@ -15,11 +14,15 @@ export
        mod_wo_zero,
        bond_energy,
        outer_projector,
-       bond_energy,
        projector,
        spectrum,
-       interaction_energy,
-       is_compatible
+       is_compatible,
+       ones_like,
+       _equalize,
+       _normalize,
+       branch_solution,
+       local_spins,
+       local_energy
 
 # T: type of the vertex of network
 # S: type of the vertex of underlying factor graph

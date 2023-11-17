@@ -124,25 +124,24 @@ The `NoDroplets` strategy represents a scenario in which no droplets are present
     spins::Vector{Vector{Int}}
 ) where T = NoDroplets()
 
-"""
-$(TYPEDSIGNATURES)
+# """
+# $(TYPEDSIGNATURES)
 
-This method calculates excitation information for the `SingleLayerDroplets` strategy in the context of a SpinGlassPEPS contractor. 
-The `SingleLayerDroplets` strategy represents a scenario in which excitations are calculated for single-layer droplets.
+# This method calculates excitation information for the `SingleLayerDroplets` strategy in the context of a SpinGlassPEPS contractor. 
+# The `SingleLayerDroplets` strategy represents a scenario in which excitations are calculated for single-layer droplets.
 
-## Arguments 
-- `method::SingleLayerDroplets`: An instance of the `SingleLayerDroplets` strategy.
-- `ctr::MpsContractor{T}`: A SpinGlassPEPS contractor of type `T` representing the system.
-- `best_idx::Int`: The index of the best state.
-- `energies::Vector{<:Real}`: A vector of energies associated with different states.
-- `states::Vector{Vector{Int}}`: A vector of states represented as arrays of integers.
-- `droplets::Vector{Droplets}`: A vector of droplets in the system.
-- `spins::Vector{Vector{Int}}`: A vector of spin configurations associated with states.
+# ## Arguments 
+# - `method::SingleLayerDroplets`: An instance of the `SingleLayerDroplets` strategy.
+# - `ctr::MpsContractor{T}`: A SpinGlassPEPS contractor of type `T` representing the system.
+# - `best_idx::Int`: The index of the best state.
+# - `energies::Vector{<:Real}`: A vector of energies associated with different states.
+# - `states::Vector{Vector{Int}}`: A vector of states represented as arrays of integers.
+# - `droplets::Vector{Droplets}`: A vector of droplets in the system.
+# - `spins::Vector{Vector{Int}}`: A vector of spin configurations associated with states.
  
-## Returns
-A new `Droplets` object representing the updated droplets based on the `SingleLayerDroplets` strategy.
-
-"""
+# ## Returns
+# A new `Droplets` object representing the updated droplets based on the `SingleLayerDroplets` strategy
+# """
 function (method::SingleLayerDroplets)(
     ctr::MpsContractor{T},
     best_idx::Int,

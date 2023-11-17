@@ -1,4 +1,8 @@
-export SquareCrossDoubleNode
+export 
+    SquareCrossDoubleNode,
+    precompute_conditional,
+    VirtualDoubleNode
+
 
 """
 A geometry type representing a double unit cell square lattice with diagonal next-nearest neighbor interaction.
@@ -216,7 +220,6 @@ The `precompute_conditional` function computes and returns precomputed condition
 It takes into account the geometry of the tensor network, interaction energies, and projectors. 
 The precomputed values are used during the tensor contraction process to speed up the computation.
 The function is specialized for the `SquareCrossDoubleNode` tensor network type and is parametrized by the layout type `S` of the contractor.
-    
 """
 @memoize Dict function precompute_conditional(
     ::Type{T}, ctr::MpsContractor{S}, current_node

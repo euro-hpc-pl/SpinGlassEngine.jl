@@ -481,17 +481,21 @@ end
 
 """
 $(TYPEDSIGNATURES)
-Compute the low-energy spectrum of a spin glass PEPS network using branch-and-bound search.
+Compute the low-energy spectrum on a quasi-2D graph using branch-and-bound search.
 
-This function computes the low-energy spectrum of a spin glass PEPS (Projected Entangled Pair State) network using a branch-and-bound search algorithm.
-It takes as input a `ctr` object representing the PEPS network and the parameters for controlling its contraction, `sparams` specifying search parameters, `merge_strategy` for merging branches,
+Merge matching configurations during branch-and-bound search going line by line.
+Information about excited states (droplets) is collected during merging,
+which allows reconstructing the low-energy spectrum.
+It takes as input a `ctr` object representing the PEPS network and the parameters for controlling its contraction, 
+`sparams` specifying search parameters, `merge_strategy` for merging branches,
 and `symmetry` indicating any symmetry constraints. Optionally, you can disable caching using the `no_cache` flag.
+Probabilities are kept as log. Results are stored in Solution structure.
 
 ## Arguments
 - `ctr::T`: The contractor object representing the PEPS network, which should be a subtype of `AbstractContractor`.
 - `sparams::SearchParameters`: Parameters for controlling the search, including the maximum number of states and a cutoff probability.
 - `merge_strategy=no_merge`: (Optional) Merge strategy for branches. Defaults to `no_merge`.
-- `symmetry::Symbol=:noZ2`: (Optional) Symmetry constraint. Defaults to `:noZ2`.
+- `symmetry::Symbol=:noZ2`: (Optional) Symmetry constraint. Defaults to `:noZ2`. If Z2 symmetry is present in your system, use `:Z2`.
 - `no_cache=false`: (Optional) If `true`, disables caching. Defaults to `false`.
 
 ## Returns

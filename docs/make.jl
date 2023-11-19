@@ -1,7 +1,6 @@
 using Documenter, SpinGlassEngine
 
 _pages = [
-    "Introduction" => "index.md",
     "User Guide" => "guide.md", 
     "Tensor network"  => "peps.md",
     "Search parameters" => "params.md",

@@ -10,6 +10,7 @@ After creating the clustered Hamiltonian, a visual guide to the problem's struct
 PEPSNetwork
 ```
 
+## Basic example of usage
 
 ```@example
 using SpinGlassEngine, SpinGlassTensors, SpinGlassNetworks, SpinGlassPEPS
@@ -42,5 +43,5 @@ function bench(instance::String)
     end
 end
 
-bench("$(@__DIR__)/../src/instances/square_diagonal/5x5/diagonal.txt")
+bench("$(@__DIR__)/../../src/instances/square_diagonal/5x5/diagonal.txt")
 ```

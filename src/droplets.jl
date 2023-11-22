@@ -41,12 +41,13 @@ struct SingleLayerDroplets
     max_energy::Real
     min_size::Int
     metric::Symbol
-
+    mode::Symbol
     SingleLayerDroplets(
         max_energy = 1.0,
         min_size = 1,
-        metric = :no_metric
-    ) = new(max_energy, min_size, metric)
+        metric = :no_metric,
+        mode = :Ising
+    ) = new(max_energy, min_size, metric, mode)
 end
 
 """
@@ -68,6 +69,7 @@ struct Flip
     support::Vector{Int}
     state::Vector{Int}
     spinxor::Vector{Int}
+    statexor::Vector{Int}
 end
 
 """
@@ -159,15 +161,16 @@ function (method::SingleLayerDroplets)(
         flip_support = findall(bstate .!= states[ind])
         flip_state = states[ind][flip_support]
         flip_spinxor = bspin[flip_support] .⊻ spins[ind][flip_support]
-        flip = Flip(flip_support, flip_state, flip_spinxor)
+        flip_statexor = bstate[flip_support] .⊻ states[ind][flip_support]
+        flip = Flip(flip_support, flip_state, flip_spinxor, flip_statexor)
         denergy = energies[ind] - benergy
         droplet = Droplet(denergy, flip_support[1], length(bstate), flip, NoDroplets())
-        if droplet.denergy <= method.max_energy && hamming_distance(droplet.flip) >= method.min_size
+        if droplet.denergy <= method.max_energy && hamming_distance(droplet.flip, method.mode) >= method.min_size
             ndroplets = my_push!(ndroplets, droplet, method)
         end
         for subdroplet ∈ droplets[ind]
             new_droplet = merge_droplets(method, droplet, subdroplet)
-            if new_droplet.denergy <= method.max_energy && hamming_distance(new_droplet.flip) >= method.min_size
+            if new_droplet.denergy <= method.max_energy && hamming_distance(new_droplet.flip, method.mode) >= method.min_size
                 ndroplets = my_push!(ndroplets, new_droplet, method)
             end
         end
@@ -203,7 +206,7 @@ function filter_droplets(all_droplets::Vector{Droplet}, method::SingleLayerDropl
     for droplet in sorted_droplets
         should_push = true
         for existing_drop in filtered_droplets
-            if diversity_metric(existing_drop, droplet, method.metric) < cutoff
+            if diversity_metric(existing_drop, droplet, method.metric, method.mode) < cutoff
                 should_push = false
                 break
             end
@@ -248,9 +251,9 @@ Calculate the diversity metric between two 'Droplet' objects based on the specif
 ## Returns
 - `d::Real`: The calculated diversity metric value between the two 'Droplet' objects.
 """
-function diversity_metric(drop1::Droplet, drop2::Droplet, metric::Symbol)
+function diversity_metric(drop1::Droplet, drop2::Droplet, metric::Symbol, mode::Symbol)
     if metric == :hamming
-        d = hamming_distance(drop1.flip, drop2.flip)
+        d = hamming_distance(drop1.flip, drop2.flip, mode)
     else
         d = Inf
     end
@@ -267,7 +270,11 @@ Calculate the Hamming distance for a 'Flip' object.
 ## Returns
 - `d::Int`: The computed Hamming distance.
 """
-hamming_distance(flip::Flip) = sum(count_ones(st) for st ∈ flip.spinxor)
+hamming_distance(flip::Flip, s::Symbol) = hamming_distance(flip, Val(s))
+
+hamming_distance(flip::Flip, ::Val{:Ising}) = sum(count_ones(st) for st ∈ flip.spinxor)
+
+hamming_distance(flip::Flip, ::Val{:RMF}) = sum(count_ones(st) for st ∈ flip.statexor)
 
 """
 $(TYPEDSIGNATURES)
@@ -281,8 +288,12 @@ Calculate the Hamming distance between two vectors of states.
 ## Returns
 - `d::Int`: The computed Hamming distance.
 """
-hamming_distance(state1, state2) = sum(count_ones(st) for st ∈ state1 .⊻ state2)
+hamming_distance(state1, state2, s::Symbol) = hamming_distance(state1, state2, Val(s))
+
+hamming_distance(state1, state2, ::Val{:Ising}) = sum(count_ones(st) for st ∈ state1 .⊻ state2)
+
 # hamming_distance(state1, state2) = sum(state1 .!== state2)
+hamming_distance(state1, state2, ::Val{:RMF}) = state1 == state2 ? 0 : 1
 
 """
 $(TYPEDSIGNATURES)
@@ -296,7 +307,9 @@ Calculate the Hamming distance between two Flip objects representing states with
 ## Returns
 - `hd::Int`: The computed Hamming distance between the two Flip objects.
 """
-function hamming_distance(flip1::Flip, flip2::Flip)
+hamming_distance(flip1::Flip, flip2::Flip, s::Symbol) = hamming_distance(flip1, flip2, Val(s))
+
+function hamming_distance(flip1::Flip, flip2::Flip, ::Val{:Ising})
     n1, n2, hd = 1, 1, 0
     l1, l2 = length(flip1.support), length(flip2.support)
     while (n1 <= l1) && (n2 <= l2)
@@ -321,6 +334,32 @@ function hamming_distance(flip1::Flip, flip2::Flip)
     while n2 <= l2
         hd += count_ones(flip2.spinxor[n2])
         n2 += 1
+    end
+    hd
+end
+
+function hamming_distance(flip1::Flip, flip2::Flip, ::Val{:RMF})
+    n1, n2, hd = 1, 1, 0
+    l1, l2 = length(flip1.support), length(flip2.support)
+    while (n1 < l1) && (n2 < l2)
+        if flip1.support[n1] == flip2.support[n2]
+            if flip1.state[n1] != flip2.state[n2]
+                hd += 1
+            end
+            n1 += 1
+            n2 += 1
+        elseif flip1.support[n1] < flip2.support[n2]
+            n1 += 1
+            hd += 1
+        else
+            n2 += 1
+            hd += 1
+        end
+    end
+    if n1 < l1
+        hd += l1 - n1
+    elseif n2 < l2
+        hd += l2 - n2
     end
     hd
 end
@@ -351,12 +390,14 @@ function merge_droplets(method::SingleLayerDroplets, droplet::Droplet, subdrople
     new_support = zeros(Int, ln)
     new_state = zeros(Int, ln)
     new_spinxor = zeros(Int, ln)
+    new_statexor = zeros(Int, ln)
 
     while i1 <= length(flip.support) &&  i2 <= length(subflip.support)
         if flip.support[i1] == subflip.support[i2]
             new_support[i3] = flip.support[i1]
             new_state[i3] = subflip.state[i2]
             new_spinxor[i3] = flip.spinxor[i1] ⊻ subflip.spinxor[i2]
+            new_statexor[i3] = flip.statexor[i1] ⊻ subflip.statexor[i2]
             i1 += 1
             i2 += 1
             i3 += 1
@@ -364,12 +405,14 @@ function merge_droplets(method::SingleLayerDroplets, droplet::Droplet, subdrople
             new_support[i3] = flip.support[i1]
             new_state[i3] = flip.state[i1]
             new_spinxor[i3] = flip.spinxor[i1]
+            new_statexor[i3] = flip.statexor[i1]
             i1 += 1
             i3 += 1
         else # flip.support[i1] > subflip.support[i2]
             new_support[i3] = subflip.support[i2]
             new_state[i3] = subflip.state[i2]
             new_spinxor[i3] = subflip.spinxor[i2]
+            new_statexor[i3] = subflip.statexor[i2]
             i2 += 1
             i3 += 1
         end
@@ -378,6 +421,7 @@ function merge_droplets(method::SingleLayerDroplets, droplet::Droplet, subdrople
         new_support[i3] = flip.support[i1]
         new_state[i3] = flip.state[i1]
         new_spinxor[i3] = flip.spinxor[i1]
+        new_statexor[i3] = flip.statexor[i1]
         i1 += 1
         i3 += 1
     end
@@ -385,10 +429,11 @@ function merge_droplets(method::SingleLayerDroplets, droplet::Droplet, subdrople
         new_support[i3] = subflip.support[i2]
         new_state[i3] = subflip.state[i2]
         new_spinxor[i3] = subflip.spinxor[i2]
+        new_statexor[i3] = subflip.statexor[i2]
         i2 += 1
         i3 += 1
     end
-    flip = Flip(new_support, new_state, new_spinxor)
+    flip = Flip(new_support, new_state, new_spinxor, new_statexor)
     Droplet(denergy, first, last, flip, NoDroplets())
 end
 
@@ -504,6 +549,6 @@ function perm_droplet(drop::Droplet, perm::Vector{Int})
     flip = drop.flip
     support = perm[flip.support]
     ind = sortperm(support)
-    flip = Flip(support[ind], flip.state[ind], flip.spinxor[ind])
+    flip = Flip(support[ind], flip.state[ind], flip.spinxor[ind], flip.statexor[ind])
     Droplet(drop.denergy, drop.first, drop.last, flip, perm_droplet(drop.droplets, perm))
 end

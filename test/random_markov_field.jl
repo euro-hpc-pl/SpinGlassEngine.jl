@@ -1,5 +1,5 @@
 @testset "Example image is correcly loaded and computed" begin
-    instance_dir = "$(@__DIR__)/instances/rmf/n8/penguin-small.h5"
+    instance_dir = "$(@__DIR__)/instances/rmf/n4/penguin-small.h5"
     onGPU = true
     β = 1.0
     bond_dim = 8
@@ -12,13 +12,13 @@
     Gauge = NoUpdate
     graduate_truncation = :graduate_truncate
     energies = Vector{Float64}[]
-    Strategy = SVDTruncate
+    Strategy = Zipper
     Layout = GaugesEnergy
     Sparsity = Sparse
     transform = rotation(0)
     net = PEPSNetwork{SquareCrossSingleNode{Layout}, Sparsity}(Nx, Ny, cl_h, transform)
-    ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], graduate_truncation, params; onGPU=onGPU)
-    # sol_peps, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
-    sol_peps, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, SingleLayerDroplets(100.0, 100, :hamming, :RMF)))
+    ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], graduate_truncation, params; onGPU=onGPU, mode=:RMF)
+    sol_peps, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+    # sol_peps, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, SingleLayerDroplets(100.0, 100, :hamming, :RMF)))
     println(sol_peps.energies[begin])
 end

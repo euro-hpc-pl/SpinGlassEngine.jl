@@ -152,6 +152,7 @@ mutable struct MpsContractor{T <: AbstractStrategy, R <: AbstractGauge} <: Abstr
     peps::PEPSNetwork{T, S} where {T, S}
     betas::Vector{<:Real}
     graduate_truncation::Symbol
+    mode::Symbol
     params::MpsParameters
     layers::MpoLayers
     statistics#::Dict{Vector{Int}, <:Real}
@@ -161,13 +162,13 @@ mutable struct MpsContractor{T <: AbstractStrategy, R <: AbstractGauge} <: Abstr
     current_node::Node
     onGPU::Bool
 
-    function MpsContractor{T, R}(net, βs, graduate_truncation::Symbol, params; onGPU=true) where {T, R}
+    function MpsContractor{T, R}(net, βs, graduate_truncation::Symbol, params; onGPU=true, mode::Symbol=:Ising) where {T, R}
         ml = MpoLayers(layout(net), net.ncols)
         stat = Dict()
         ord, node_out = nodes_search_order_Mps(net)
         enum_ord = Dict(node => i for (i, node) ∈ enumerate(ord))
         node = ord[begin]
-        new(net, βs, graduate_truncation, params, ml, stat, ord, node_out, enum_ord, node, onGPU)
+        new(net, βs, graduate_truncation, mode, params, ml, stat, ord, node_out, enum_ord, node, onGPU)
     end
 end
 
@@ -358,6 +359,7 @@ This function constructs the top Matrix Product State (MPS) using the Zipper (tr
     iters_var = ctr.params.iters_var
     Dtemp_multiplier = ctr.params.Dtemp_multiplier
     method = ctr.params.method
+    mode = ctr.mode
     if i < 1
         W = mpo(ctr, ctr.layers.main, 1, indβ)
         return IdentityQMps(Float64, local_dims(W, :up); onGPU=ctr.onGPU) # F64 for now
@@ -368,7 +370,7 @@ This function constructs the top Matrix Product State (MPS) using the Zipper (tr
 
     canonise!(ψ, :left)
     ψ0 = zipper(W, ψ; method=method, Dcut=Dcut, tol=tolS, iters_svd=iters_svd,
-                iters_var=iters_var, Dtemp_multiplier = Dtemp_multiplier)
+                iters_var=iters_var, Dtemp_multiplier = Dtemp_multiplier, mode=mode)
     canonise!(ψ0, :left)
     variational_compress!(ψ0, W, ψ, tolV, max_sweeps)
     ψ0
@@ -398,6 +400,7 @@ This function constructs the (bottom) Matrix Product State (MPS) using the Zippe
     iters_var = ctr.params.iters_var
     Dtemp_multiplier = ctr.params.Dtemp_multiplier
     method = ctr.params.method
+    mode = ctr.mode
 
     if i > ctr.peps.nrows
         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
@@ -407,7 +410,7 @@ This function constructs the (bottom) Matrix Product State (MPS) using the Zippe
         W = mpo(ctr, ctr.layers.main, i, indβ)
         canonise!(ψ, :left)
         ψ0 = zipper(W, ψ; method=method, Dcut=Dcut, tol=tolS, iters_svd=iters_svd,
-                    iters_var=iters_var, Dtemp_multiplier=Dtemp_multiplier)
+                    iters_var=iters_var, Dtemp_multiplier=Dtemp_multiplier, mode=mode)
         canonise!(ψ0, :left)
         variational_compress!(ψ0, W, ψ, tolV, max_sweeps)
     end

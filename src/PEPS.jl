@@ -30,22 +30,22 @@ abstract type AbstractGibbsNetwork{S, T} end
 
 """
 $(TYPEDSIGNATURES)
-A mutable struct representing a Projected Entangled Pair States (PEPS) network.
 
-# Fields
-- `clustered_hamiltonian::LabelledGraph`: The clustered Hamiltonian associated with the network.
-- `vertex_map::Function`: A function mapping vertex coordinates to a transformed lattice.
-- `lp::PoolOfProjectors`: A pool of projectors used in the network.
-- `m::Int`: The number of rows in the PEPS lattice.
-- `n::Int`: The number of columns in the PEPS lattice.
-- `nrows::Int`: The effective number of rows based on lattice transformations.
-- `ncols::Int`: The effective number of columns based on lattice transformations.
-- `tensors_map::Dict{PEPSNode, Symbol}`: A dictionary mapping PEPS nodes to tensor symbols.
-- `gauges::Gauges{T}`: Gauges used for gauge fixing operations.
-    
-The `PEPSNetwork` struct represents a quantum network based on Projected Entangled Pair States (PEPS). 
-It holds information about the clustered Hamiltonian, lattice transformations, and gauge fixing operations. 
-PEPS networks are commonly used in quantum computing and quantum information theory to represent entangled states of qubits arranged on a lattice.
+Construct a Projected Entangled Pair States (PEPS) network.
+
+# Arguments
+- `m::Int`: Number of rows in the PEPS lattice.
+- `n::Int`: Number of columns in the PEPS lattice.
+- `clustered_hamiltonian::LabelledGraph`: clustered hamiltonian representing the Hamiltonian.
+- `transformation::LatticeTransformation`: Transformation of the PEPS lattice, as it can be rotated or reflected. 
+- `gauge_type::Symbol=:id`: Type of gauge to initialize (default is identity).
+
+# Type Parameters
+- `T <: AbstractGeometry`: Type of geometry for the PEPS lattice. It can be `SquareSingleNode`, `SquareDoubleNode`, `SquareCrossSingleNode`, `SquareCrossDoubleNode`.
+- `S <: AbstractSparsity`: Type of sparsity for the PEPS tensors: `Dense` or `Sparse`.
+
+# Returns
+An instance of PEPSNetwork{T, S}.
 """
 mutable struct PEPSNetwork{
     T <: AbstractGeometry, S <: AbstractSparsity

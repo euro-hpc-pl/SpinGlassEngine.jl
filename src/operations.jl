@@ -18,7 +18,8 @@ A struct representing a lattice transformation.
 - `permutation::NTuple{4, Int}`: A tuple defining a permutation of the vertex labels.
 - `flips_dimensions::Bool`: A boolean indicating whether dimension flips are applied.
 
-The `LatticeTransformation` struct defines a transformation that can be applied to the vertices of a lattice. It specifies a permutation of vertex labels, allowing for rotations and reflections, as well as an option to flip dimensions. This struct is commonly used to describe various symmetry operations on lattice structures.
+The `LatticeTransformation` struct defines a transformation that can be applied to the vertices of a lattice. 
+It specifies a permutation of vertex labels, allowing for rotations and reflections, as well as an option to flip dimensions. 
 """
 struct LatticeTransformation
     permutation::NTuple{4, Int}
@@ -172,7 +173,7 @@ $(TYPEDSIGNATURES)
 A tuple containing all possible lattice transformations.
 
 This constant includes rotations at angles 0, 90, 180, and 270 degrees, as well as reflections across the x-axis, y-axis, diagonal, and antidiagonal axes. 
-These lattice transformations can be applied to vertices of a lattice to achieve various orientations and reflections.
+These lattice transformations can be applied to the PEPS lattice to achieve various orientations and reflections in order to start the search on a different sites of lattice.
 """
 const all_lattice_transformations = (
     rotation.([0, 90, 180, 270])...,

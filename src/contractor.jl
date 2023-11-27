@@ -68,13 +68,13 @@ A struct representing control parameters for the MPO-MPS (Matrix Product Operato
 
 # Fields
 - `bond_dimension::Int`: The maximum bond dimension to be used during contraction.
-- `variational_tol::Real`: The tolerance for the variational solver used in optimization.
-- `max_num_sweeps::Int`: The maximum number of sweeps to perform during contraction.
-- `tol_SVD::Real`: The tolerance used in singular value decomposition (SVD) operations.
-- `iters_svd::Int`: The number of iterations to perform in SVD computations.
-- `iters_var::Int`: The number of iterations for variational optimization.
-- `Dtemp_multiplier::Int`: A multiplier for the bond dimension when temporary bond dimensions are computed.
-- `method::Symbol`: The contraction method to use (e.g., `:psvd_sparse`).
+- `variational_tol::Real`: The tolerance for the variational solver used in MPS optimization. It gives the condition for overlap convergence during one sweep in boundary MPS. Default is 1E-8.
+- `max_num_sweeps::Int`: The maximum number of sweeps to perform during variational compression. Default is 4.
+- `tol_SVD::Real`: The tolerance used in singular value decomposition (SVD) operations. It means that smaller singular values are truncated. Default is 1E-16.
+- `iters_svd::Int`: The number of iterations to perform in SVD computations. Default is 1.
+- `iters_var::Int`: The number of iterations for variational optimization. Default is 1.
+- `Dtemp_multiplier::Int`: A multiplier for the bond dimension when temporary bond dimensions are computed. Default is 2.
+- `method::Symbol`: The type of SVD method to use (e.g., `:psvd_sparse`). Default is `:psvd_sparse`.
 
 The `MpsParameters` struct encapsulates various control parameters that influence the behavior and accuracy of the MPO-MPS contraction scheme used for PEPS network calculations.
 """
@@ -134,18 +134,15 @@ A mutable struct representing a contractor for contracting a PEPS (Projected Ent
 
 # Fields
 - `peps::PEPSNetwork{T, S}`: The PEPS network to be contracted.
-- `betas::Vector{<:Real}`: A vector of inverse temperatures (β) for thermal contraction.
-- `graduate_truncation::Symbol`: The truncation method to use for "graduating" the bond dimensions.
+- `betas::Vector{<:Real}`: A vector of inverse temperatures (β) used during the search. The last one is the target one. This parameter plays a crucial role: a larger β enables a finer focus on low-energy states, although it may compromise the numerical stability of tensor network contraction. Determining the optimal β could be instance-dependent, and experimental exploration might be necessary for different classes of instances.
+- `graduate_truncation::Symbol`: The truncation method to use for gradually truncating MPS bond dimensions.
 - `params::MpsParameters`: Control parameters for the MPO-MPS contraction.
-- `layers::MpoLayers`: The layers of the MPO (Matrix Product Operator).
-- `statistics::Dict{Vector{Int}, <:Real}`: Statistics collected during the contraction process.
-- `nodes_search_order::Vector{Node}`: The order in which nodes are searched during contraction.
-- `node_outside::Node`: A node representing outside connections.
-- `node_search_index::Dict{Node, Int}`: A mapping of nodes to their search indices.
-- `current_node::Node`: The current node being processed during contraction.
-- `onGPU::Bool`: A flag indicating whether the contraction is performed on a GPU.
 
-The `MpsContractor` struct defines the contractor responsible for contracting a PEPS network using the MPO-MPS scheme.
+# Optional Arguments
+- `onGPU::Bool`: A flag indicating whether the contraction is performed on a GPU. Default is `true`.
+- `depth`: An integer specifying the iteration depth for variational sweeps in Zipper algorithm. Default is `0` which means variational sweep is done on all lattice sites. 
+
+The `MpsContractor` function defines the contractor structure responsible for contracting a PEPS network using the MPO-MPS scheme.
 It encapsulates various components and settings required for the contraction process.
 """
 mutable struct MpsContractor{T <: AbstractStrategy, R <: AbstractGauge} <: AbstractContractor

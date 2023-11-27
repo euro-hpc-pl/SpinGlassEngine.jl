@@ -28,13 +28,12 @@ A `SingleLayerDroplets` object is used to specify the maximum energy, minimum si
 
 ## Fields
 - `max_energy::Real`: The maximum allowed excitation energy for single-layer droplets. It is typically a real number.
-- `min_size::Int`: The minimum size (number of sites) required for a single-layer droplet to be considered significant.
-- `metric::Symbol`: The metric used to evaluate the significance of a single-layer droplet.
-This can be `:no_metric` or other custom metrics defined in the package.
+- `min_size::Int`: The minimum size (Hamming cutoff) required for a single-layer droplet to be considered significant. 
+- `metric::Symbol`: The metric used to evaluate the significance of a single-layer droplet. Default is `:no_metric`. `:hamming` treats Hamming distances as matric.
+- `mode::Symbol`: `:Ising` assumes Ising-type representation of the problem. `:RMF` assumes a Random Markov Field type model. Default is `:Ising`.
 
 ## Constructors
-- `SingleLayerDroplets(max_energy::Real = 1.0, min_size::Int = 1, metric::Symbol = :no_metric)`: Creates a new
-`SingleLayerDroplets` object with the specified maximum energy, minimum size, and metric.
+- `SingleLayerDroplets(max_energy::Real = 1.0, min_size::Int = 1, metric::Symbol = :no_metric, mode = :Ising)`: Creates a new `SingleLayerDroplets` object with the specified maximum energy, minimum size, metric and mode.
 
 """
 struct SingleLayerDroplets

@@ -25,7 +25,6 @@ A struct representing search parameters for low-energy spectrum search.
 - `cut_off_prob::Real`: The cutoff probability for terminating the search. Default is 0.0, meaning no cutoff based on probability.
 
 SearchParameters encapsulates parameters that control the behavior of low-energy spectrum search algorithms in the SpinGlassPEPS package.
-Users can customize these parameters to adjust the search strategy and resource usage according to their specific needs.
 """
 struct SearchParameters
     max_states::Int
@@ -45,7 +44,7 @@ A struct representing a solution obtained from a low-energy spectrum search.
 - `states::Vector{Vector{Int}}`: A vector of state configurations corresponding to the energies.
 - `probabilities::Vector{<:Real}`: The probabilities associated with each discovered state.
 - `degeneracy::Vector{Int}`: The degeneracy of each energy level.
-- `largest_discarded_probability::Real`: The probability of the largest discarded state.
+- `largest_discarded_probability::Real`: The largest probability of the largest discarded state.
 - `droplets::Vector{Droplets}`: A vector of droplets associated with each state.
 - `spins::Vector{Vector{Int}}`: The spin configurations corresponding to each state.
 
@@ -359,23 +358,23 @@ end
 
 """
 $(TYPEDSIGNATURES)
-Generate a function for merging branches in a Gibbs network with hamming distance blur.
+Generate a function for merging branches in a Gibbs network with a Hamming distance blur.
 
 ## Arguments
-- `ctr::MpsContractor{T}`: The contractor representing the contracting Gibbs network.
-- `hamming_cutoff::Int`: The hamming distance cutoff for blur.
+- `ctr::MpsContractor{T}`: The contractor representing the contracted Gibbs network.
+- `hamming_cutoff::Int`: The Hamming distance cutoff for blur.
 - `merge_type::Symbol=:nofit`: The merging strategy, defaults to `:nofit`.
 - `update_droplets=NoDroplets()`: Droplet update method, defaults to `NoDroplets()`.
     
 ## Returns
-- `Function`: A function for merging branches with hamming distance blur.
+A function `_merge_blur` that can be used to merge branches with Hamming distance blur in a solution.
     
 ## Description
-This function generates a function for merging branches in a Gibbs network with hamming distance blur. 
-The resulting function takes a partial solution as input and performs the merging process, considering hamming distance constraints. 
+This function generates a function for merging branches in a Gibbs network with Hamming distance blur. 
+The resulting function takes a partial solution as an input and performs the merging process, considering Hamming distance constraints. 
 It returns a new solution with the merged branches.
-The hamming distance blur helps in selecting diverse states during the merging process. 
-States with hamming distances greater than or equal to the specified cutoff are considered distinct.
+The Hamming distance blur helps in selecting diverse states during the merging process. 
+States with Hamming distances greater than or equal to the specified cutoff are considered distinct.
 """
 function merge_branches_blur(ctr::MpsContractor{T}, hamming_cutoff::Int, merge_type::Symbol=:nofit, update_droplets=NoDroplets()) where {T}
     function _merge_blur(psol::Solution)

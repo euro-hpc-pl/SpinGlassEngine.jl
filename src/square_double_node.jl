@@ -1,9 +1,33 @@
 export SquareDoubleNode, tensor, site_double_node
 
+"""
+$(TYPEDSIGNATURES)
 
+A geometric structure representing a 2-layer grid with nodes arranged in rows and columns. 
+Each node is labeled with a tuple (i, j, k), where i is the row index, j is the column index, and k is the layer index (1 or 2).
+
+# Type Parameters
+- `T <: AbstractTensorsLayout`: The layout of decomposition of tensors into MPS. Can be `GaugesEnergy`, `EnergyGauges` or `EngGaugesEng`.
+
+# Constructors
+- `SquareDoubleNode(layout::T)`: Create a `SquareDoubleNode` with the specified tensor layout.
+"""
 struct SquareDoubleNode{T <: AbstractTensorsLayout} <: AbstractGeometry end
 
+"""
+$(TYPEDSIGNATURES)
 
+Create a labeled graph representing a 2-layer grid graph with nodes arranged in an m x n grid. 
+Each node is labeled with a tuple (i, j, k), where i is the row index, j is the column index, and k is the layer index (1 or 2).
+
+# Arguments
+- `m::Int`: The number of rows in the grid.
+- `n::Int`: The number of columns in the grid.
+
+# Returns
+A `LabelledGraph` representing a 2-layer grid graph with nodes arranged in an m x n grid. 
+Each node in layer 1 is connected to the corresponding node in layer 2, and neighboring nodes in both layers are connected.
+"""
 function SquareDoubleNode(m::Int, n::Int)
     labels = [(i, j, k) for j ∈ 1:n for i ∈ 1:m for k ∈ 1:2]
     lg = LabelledGraph(labels)

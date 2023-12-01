@@ -1,5 +1,5 @@
 # Branch and bound search
-Here you find fhe main function of the package, which is an actual solver.
+Here you find the main function of the package, which is an actual solver.
 
 ```@docs
 low_energy_spectrum

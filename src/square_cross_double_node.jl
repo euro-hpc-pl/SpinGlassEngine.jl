@@ -5,14 +5,22 @@ export
 
 
 """
-A geometry type representing a double unit cell square lattice with diagonal next-nearest neighbor interaction.
+$(TYPEDSIGNATURES)
+
+A geometric structure representing a 2-layer grid with nodes arranged in rows and columns, 
+and additional diagonal edges forming a cross pattern between neighboring nodes.
+Each node is labeled with a tuple (i, j, k), where i is the row index, j is the column index, and k is the layer index (1 or 2).
 
 ## Type Parameters
-- `T <: AbstractTensorsLayout`: The layout of tensors associated with the geometry.
+- `T <: AbstractTensorsLayout`: The layout of decomposition of tensors into MPS. Can be `GaugesEnergy`, `EnergyGauges` or `EngGaugesEng`.
+
+# Constructors
+- `SquareCrossSingleNode(layout::T)`: Create a `SquareCrossDoubleNode` with the specified tensor layout.
 
 ## Description
-`SquareCrossDoubleNode` is a geometry type that models a double unit cell square lattice with next-nearest neighbor interaction. 
-This geometry is suitable for systems with tensors laid out according to the specified `AbstractTensorsLayout`.
+`SquareCrossDoubleNode` is a geometry type that models a double unit cell square lattice with diagonal interaction. 
+This geometry is suitable for systems with tensors laid out according to the specified `AbstractTensorsLayout`. 
+It can be used in Pegasus and Zephyr graphs.
 """
 struct SquareCrossDoubleNode{T <: AbstractTensorsLayout} <: AbstractGeometry end
 

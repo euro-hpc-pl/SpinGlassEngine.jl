@@ -1,8 +1,33 @@
 export SquareCrossSingleNode
 
+"""
+$(TYPEDSIGNATURES)
+
+A geometric structure representing a 1-layer grid with nodes arranged in a grid of rows and columns, 
+and additional diagonal edges forming a cross pattern between neighboring nodes.
+
+# Type Parameters
+- `T <: AbstractTensorsLayout`: The layout of decomposition of tensors into MPS. Can be `GaugesEnergy`, `EnergyGauges` or `EngGaugesEng`.
+
+# Constructors
+- `SquareCrossSingleNode(layout::T)`: Create a `SquareCrossSingleNode` with the specified tensor layout.
+"""
 struct SquareCrossSingleNode{T <: AbstractTensorsLayout} <: AbstractGeometry end
 
+"""
+$(TYPEDSIGNATURES)
 
+Create a labeled grid graph with nodes arranged in an m x n grid and additional diagonal 
+edges forming a cross pattern between neighboring nodes.
+
+# Arguments
+- `m::Int`: The number of rows in the grid.
+- `n::Int`: The number of columns in the grid.
+
+# Returns
+A `LabelledGraph` representing a grid graph with nodes arranged in an m x n grid, 
+and additional diagonal edges forming a cross pattern between neighboring nodes.
+"""
 function SquareCrossSingleNode(m::Int, n::Int)
     lg = SquareSingleNode(m, n)
     for i ∈ 1:m-1, j ∈ 1:n-1

@@ -16,7 +16,13 @@ export
 """
 $(TYPEDSIGNATURES)
 
-Defines SquareSingleNode geometry with a given layout.
+A geometric structure representing a 1-layer grid with nodes arranged in a grid of rows and columns. 
+
+# Type Parameters
+- `T <: AbstractTensorsLayout`: The layout of decomposition of tensors into MPS. Can be `GaugesEnergy`, `EnergyGauges` or `EngGaugesEng`.
+
+# Constructors
+- `SquareDoubleNode(layout::T)`: Create a `SquareDoubleNode` with the specified tensor layout.
 """
 struct SquareSingleNode{T <: AbstractTensorsLayout} <: AbstractGeometry end
 
@@ -24,6 +30,15 @@ struct SquareSingleNode{T <: AbstractTensorsLayout} <: AbstractGeometry end
 $(TYPEDSIGNATURES)
 
 Creates SquareSingleNode geometry as a LabelledGraph.
+Create a labelled grid graph with nodes arranged in an m x n grid.
+
+# Arguments
+- `m::Int`: The number of rows in the grid.
+- `n::Int`: The number of columns in the grid.
+
+# Returns
+A `LabelledGraph` representing a grid graph with nodes arranged in an m x n grid. 
+Each node is labeled with its coordinates (m, n), where m is the row index and n is the column index.
 """
 function SquareSingleNode(m::Int, n::Int)
     labels = [(i, j) for j ∈ 1:n for i ∈ 1:m]

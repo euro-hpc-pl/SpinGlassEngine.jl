@@ -20,7 +20,6 @@ export
        update_gauges_with_balancing!,
        boundary_states,
        dressed_mps,
-       error_measure,
        conditional_probability,
        update_energy,
        boundary,

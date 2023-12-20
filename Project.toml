@@ -31,7 +31,7 @@ MetaGraphs = "0.6"
 Statistics = "1.7.0"
 TensorCast = "0.3, 0.4"
 TensorOperations = "3.0.1"
-julia = "1.5, 1.6, 1.7"
+julia = "1.8, 1.9"
 
 [extras]
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"

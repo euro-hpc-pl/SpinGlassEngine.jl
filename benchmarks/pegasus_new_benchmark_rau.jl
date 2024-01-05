@@ -3,16 +3,17 @@ using MKL
 using SpinGlassEngine
 using SpinGlassNetworks
 using SpinGlassTensors
-using SpinGlassExhaustive
+#using SpinGlassExhaustive
 using Logging
 using CSV
 using DataFrames
 using Memoization
 
+#=
 function brute_force_gpu(ig::IsingGraph; num_states::Int)
     brute_force(ig, :GPU, num_states=num_states)
 end
-
+=#
 
 M, N, T = 7, 7, 3
 INSTANCE_DIR = "$(@__DIR__)/../test/instances/pegasus_random/P8/RAU/SpinGlass/single"
@@ -24,10 +25,10 @@ end
 
 BETAS = [0.5,]
 LAYOUT = (GaugesEnergy,)
-TRANSFORM = all_lattice_transformations 
+TRANSFORM = all_lattice_transformations
 
 GAUGE =  NoUpdate
-STRATEGY = Zipper 
+STRATEGY = Zipper
 SPARSITY = Sparse
 graduate_truncation = :graduate_truncate
 
@@ -43,8 +44,8 @@ ITERS_VAR = 1
 DTEMP_MULT = 2
 METHOD = :psvd_sparse
 I = [1,]
-eng = [40, ] 
-hamming_dist = 74 
+eng = [40, ]
+hamming_dist = 74
 disable_logging(LogLevel(1))
 #BLAS.set_num_threads(1)
 
@@ -56,7 +57,7 @@ function pegasus_sim(inst, trans, β, Layout, bd, ms, eng, hamming_dist, mstates
         spectrum=full_spectrum,
         cluster_assignment_rule=pegasus_lattice((M, N, T))
         )
-        
+
     params = MpsParameters(bd, VAR_TOL, ms, TOL_SVD, ITERS_SVD, ITERS_VAR, DTEMP_MULT, METHOD)
     search_params = SearchParameters(mstates, δp)
 
@@ -82,7 +83,7 @@ function run_bench(inst::String, β::Real, t, l, bd, ms, eng, hamming_dist, msta
     else
         data = try
             tic_toc = @elapsed sol, ctr, cRAM, schmidts, ldrop, droplets, ig_states = pegasus_sim(inst, t, β, l, bd, ms, eng, hamming_dist, mstates)
-        
+
             data = DataFrame(
                 :instance => inst,
                 :β => β,
@@ -143,4 +144,3 @@ for i ∈ 1:1:length(all_params)
     run_bench(all_params[i]...)
     GC.gc()
 end
-

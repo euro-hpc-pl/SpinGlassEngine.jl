@@ -139,7 +139,7 @@ all_params = collect(
         readdir(INSTANCE_DIR, join=false), BETAS, TRANSFORM, LAYOUT, BOND_DIM, MAX_SWEEPS, eng, hamming_dist, MAX_STATES, I)
 )
 
-for i ∈ length(all_params)
+for i ∈ 1:1:length(all_params)
     run_bench(all_params[i]...)
     GC.gc()
 end

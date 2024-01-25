@@ -42,7 +42,7 @@ cs = 2^16
 eng=7
 hamming_dist=14
 inst="006"
-ig = ising_graph("$(@__DIR__)/../instances/pegasus_random/P4/RAU/SpinGlass/single/006_sg.txt")
+ig = ising_graph("$(@__DIR__)/../instances/pegasus_random/P4/RAU/SpinGlass/006_sg.txt")
 results_folder = "$(@__DIR__)/../instances/pegasus_random/P4/RAU/SpinGlass/BP_idx"
 if !Base.Filesystem.isdir(results_folder)
     Base.Filesystem.mkpath(results_folder)

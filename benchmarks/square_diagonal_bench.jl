@@ -20,13 +20,13 @@ size = MPI.Comm_size(MPI.COMM_WORLD)
 rank = MPI.Comm_rank(MPI.COMM_WORLD)
 
 M, N, T = 50,50, 1
-INSTANCE_DIR = "$(@__DIR__)/../test/instances/square/50x50x1"
+INSTANCE_DIR = "$(@__DIR__)/../test/instances/square/square_50x50/single"
 OUTPUT_DIR = "$(@__DIR__)/results/square/50x50x1"
 if !Base.Filesystem.isdir(OUTPUT_DIR)
     Base.Filesystem.mkpath(OUTPUT_DIR)
 end
 
-BETAS = collect(2.0:1.0:5.0)
+BETAS = 2.0
 LAYOUT = (GaugesEnergy, )
 TRANSFORM = all_lattice_transformations
 
@@ -36,8 +36,8 @@ SPARSITY = (Sparse, )
 graduate_truncation = :graduate_truncate
 
 INDβ = [3,] #[1, 2, 3]
-MAX_STATES = [256,1024]
-BOND_DIM = [8,10,12]
+MAX_STATES = [256,]
+BOND_DIM = [8,]
 # cs = 2^12
 # iter = 1
 
@@ -48,8 +48,8 @@ ITERS_SVD = 2
 ITERS_VAR = 1
 DTEMP_MULT = 2
 METHOD = :psvd_sparse
-eng = 50
-hamming_dist = 156
+eng = 80
+hamming_dist = 156 #25 #56 #100
 I = [1,]
 
 disable_logging(LogLevel(1))
@@ -71,7 +71,7 @@ function pegasus_sim(inst, trans, β, Layout, st, sp, bd, ms, eng, hamming_dist,
     ctr = MpsContractor{st, GAUGE}(net, [β/6, β/3, β/2, β], graduate_truncation, params)
     clusters = split_into_clusters(ising_graph(INSTANCE_DIR * "/" * inst), super_square_lattice((M, N, T)))
     # sol1, schmidts = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :fit, SingleLayerDroplets(eng, hamming_dist, :hamming)))
-    sol1, schmidts = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :fit, SingleLayerDroplets(eng, hamming_dist, :hamming)))
+    sol1, schmidts = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, SingleLayerDroplets(eng, hamming_dist, :hamming)))
 
     sol2 = unpack_droplets(sol1, β)
     ig_states = decode_clustered_hamiltonian_state.(Ref(cl_h), sol2.states)

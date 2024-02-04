@@ -63,10 +63,6 @@ function pegasus_sim(inst, trans, β, Layout, bd, ms, eng)
         cluster_assignment_rule=pegasus_lattice((M, N, T))
         )
         
-    # new_cl_h = clustered_hamiltonian_2site(cl_h, β)
-    # beliefs = belief_propagation(new_cl_h, β; tol=1e-6, iter=iter)
-    # cl_h = truncate_clustered_hamiltonian_2site_BP(cl_h, beliefs, cs; beta=β)
-
     params = MpsParameters(bd, VAR_TOL, ms, TOL_SVD, ITERS_SVD, ITERS_VAR, DTEMP_MULT, METHOD)
     search_params = SearchParameters(MAX_STATES, δp)
 

@@ -45,6 +45,8 @@ Layout = GaugesEnergy
 Gauge = NoUpdate
 cl_states = [2^10,]
 iter = 1
+inst = "001"
+results_folder = "$(@__DIR__)/../test/instances/pegasus_random/P4/CBFM-P/SpinGlass/BP"
 
 for cs ∈ cl_states
     println("===================================")
@@ -62,12 +64,8 @@ for cs ∈ cl_states
             cluster_assignment_rule=pegasus_lattice((m, n, t))
         )
 
-        new_cl_h = clustered_hamiltonian_2site(cl_h, β)
-        beliefs = belief_propagation(new_cl_h, β; iter=iter)
-        # println(beliefs)
-        @time cl_h = truncate_clustered_hamiltonian_2site_BP(cl_h, cs; beta = β, iter=iter)
+        @time cl_h = truncate_clustered_hamiltonian(cl_h, β, cs, results_folder, inst; tol=1e-6, iter=iter)
         # @time cl_h = truncate_clustered_hamiltonian_2site_energy(cl_h, cs)
-
         for v in vertices(cl_h)
             println(length(get_prop(cl_h, v, :spectrum).states))
         end

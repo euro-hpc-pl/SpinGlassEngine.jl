@@ -58,7 +58,8 @@ function bench(instance::String)
     iter = 1
     println("creating factor graph" )
     cs = 1024
-
+    results_folder = "$(@__DIR__)/../test/instances/pegasus_random/P8/CBFM-P/SpinGlass/BP"
+    inst = "001"
     @time begin
     ig = ising_graph(instance)
     cl_h = clustered_hamiltonian(
@@ -67,9 +68,7 @@ function bench(instance::String)
         cluster_assignment_rule = pegasus_lattice((m, n, t))
     )
     end
-    new_cl_h = clustered_hamiltonian_2site(cl_h, β)
-    beliefs = belief_propagation(new_cl_h, β; tol=1e-6, iter=iter)
-    @time cl_h = truncate_clustered_hamiltonian_2site_BP(cl_h, beliefs, cs; beta = β)
+    @time cl_h = truncate_clustered_hamiltonian(cl_h, β, cs, results_folder, inst; tol=1e-6, iter=iter)
 
     net = PEPSNetwork{SquareCrossDoubleNode{Layout}, Sparse}(m, n, cl_h, tran)
     ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)

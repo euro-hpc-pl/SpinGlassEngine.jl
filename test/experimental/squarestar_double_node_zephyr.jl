@@ -16,16 +16,15 @@ num_states = 128
 iter = 1
 cs = 2^10
 ig = ising_graph("$(@__DIR__)/../instances/zephyr_random/Z3/RAU/SpinGlass/001_sg.txt")
-
+results_folder = "$(@__DIR__)/../instances/zephyr_random/Z3/RAU/SpinGlass/BP"
+inst = "001"
 cl_h = clustered_hamiltonian(
     ig,
     # max_cl_states,
     spectrum = full_spectrum,  #brute_force_gpu, # rm _gpu to use CPU
     cluster_assignment_rule = zephyr_lattice((m, n, t))
 )
-new_cl_h = clustered_hamiltonian_2site(cl_h, β)
-beliefs = belief_propagation(new_cl_h, β; tol=1e-6, iter=iter)
-cl_h = truncate_clustered_hamiltonian_2site_BP(cl_h, beliefs, cs; beta=β)
+@time cl_h = truncate_clustered_hamiltonian(cl_h, β, cs, results_folder, inst; tol=1e-6, iter=iter)
 
 params = MpsParameters(bond_dim, 1E-8, 10, 1E-16)
 search_params = SearchParameters(num_states, δp)

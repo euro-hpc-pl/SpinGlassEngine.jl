@@ -36,15 +36,8 @@ METHOD = :psvd_sparse #:psvd_sparse #:svd
 DE = 16.0
 δp = 1E-5*exp(-β * DE)
 ig = ising_graph("$(@__DIR__)/../instances/pegasus_random/P4/CBFM-P/SpinGlass/001_sg.txt")
-# ig = ising_graph("$(@__DIR__)/../instances/pegasus_random/P2/P2_CBFM-P_sg.txt")
-
-# cl_h = clustered_hamiltonian(
-#     ig,
-#     spectrum=my_brute_force, #rm _gpu to use CPU
-#     cluster_assignment_rule=pegasus_lattice((m, n, t))
-# )
-
-
+results_folder = "$(@__DIR__)/../instances/pegasus_random/P4/CBFM-P/SpinGlass/BP"
+inst = "001"
 params = MpsParameters(Dcut, tolV, max_sweeps, tolS, ITERS_SVD, ITERS_VAR, DTEMP_MULT, METHOD)
 search_params = SearchParameters(MAX_STATES, δp)
 
@@ -71,9 +64,7 @@ for cs ∈ cl_states
 
         println("Truncate iter ", iter)
         #@time cl_h = truncate_clustered_hamiltonian_2site_energy(cl_h, cs)
-        new_cl_h = clustered_hamiltonian_2site(cl_h, β)
-        beliefs = belief_propagation(new_cl_h, β; tol=1e-6, iter=iter)
-        @time cl_h = truncate_clustered_hamiltonian_2site_BP(cl_h, beliefs, cs; beta = β)
+        @time cl_h = truncate_clustered_hamiltonian(cl_h, β, cs, results_folder, inst; tol=1e-6, iter=iter)
         for v ∈ vertices(cl_h)
             println(v, " -> ", length(get_prop(cl_h, v, :spectrum).energies))
         end

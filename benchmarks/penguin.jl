@@ -17,8 +17,8 @@ SPARSITY = Dense
 graduate_truncation = :graduate_truncate
 
 INDβ = [3,]
-MAX_STATES = 10  # [64, 256, 1024]
-BOND_DIM = 2  # [4, 8, ]
+MAX_STATES = 64  # [64, 256, 1024]
+BOND_DIM = 8  # [4, 8, ]
 
 MAX_SWEEPS = 0
 VAR_TOL = 1E-16

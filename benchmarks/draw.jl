@@ -24,7 +24,7 @@ number_to_color = Dict(
     9 => colorant"rgb(132,19,20)",
     10 => colorant"rgb(200,74,83)",
     11 => colorant"rgb(177,13,18)",
-    12 => colorant"rgb(200,74,83)"
+    12 => colorant"rgb(196,36,43)"#"rgb(200,74,83)"
 )
 color_vector = sol.states[1]
 color_vector = map(x -> number_to_color[x], color_vector)

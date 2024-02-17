@@ -19,7 +19,7 @@ Our package offers users the flexibility to choose between three distinct method
 * `SVDTruncate`.
 `Zipper` method combines randomized truncated Singular Value Decomposition (SVD) and a variational scheme.
 ```@raw html
-<img src="../images/zipper.png" width="200%" class="center"/>
+<img src="../images/zipper_final.png" width="200%" class="center"/>
 ```
 With the `SVDTruncate` method, the Matrix Product State (MPS) is systematically constructed row by row, contracted with the Matrix Product Operator (MPO) from the preceding row. The resulting MPS undergoes a Singular Value Decomposition (SVD) to truncate its bond dimension, followed by variational compression. 
 ```@raw html

@@ -1,4 +1,3 @@
-using MPI
 using LinearAlgebra
 using MKL
 using SpinGlassEngine
@@ -11,20 +10,10 @@ using DataFrames
 using Memoization
 using JSON3
 
-#=
-function brute_force_gpu(ig::IsingGraph; num_states::Int)
-    brute_force(ig, :GPU, num_states=num_states)
-end
-=#
+size = 1 #MPI.Comm_size(MPI.COMM_WORLD)
+rank = 0 #MPI.Comm_rank(MPI.COMM_WORLD)
 
-MPI.Init()
-# size = 1 #MPI.Comm_size(MPI.COMM_WORLD)
-# rank = 0 #MPI.Comm_rank(MPI.COMM_WORLD)
-size = MPI.Comm_size(MPI.COMM_WORLD)
-rank = MPI.Comm_rank(MPI.COMM_WORLD)
-
-
-M, N, T = 8, 8, 4
+M, N, T = 7, 7, 3
 INSTANCE_DIR = "$(@__DIR__)/../test/instances/pegasus_random/P8/CBFM-P/SpinGlass/single"
 OUTPUT_DIR = "$(@__DIR__)/results/pegasus_random/P8/CBFM-P/droplets/final_bench"
 

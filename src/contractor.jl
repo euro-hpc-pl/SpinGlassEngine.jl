@@ -535,7 +535,8 @@ Note: The memoization ensures that the dressed MPS is only constructed once for 
 ) where T <: AbstractStrategy
 
     ψ = mps(ctr, i+1, indβ)
-    delete!(Memoization.caches[mps], ((ctr, i+1, indβ), ()))
+    caches = Memoization.find_caches(mps)
+    delete!(caches[mps], ((ctr, i+1, indβ), ()))
     if ctr.onGPU
         ψ = move_to_CUDA!(ψ)
     end

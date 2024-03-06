@@ -11,7 +11,7 @@ using NNlib, NNlibCUDA
 using MetaGraphs
 using Memoization
 using LinearAlgebra, MKL
-using LightGraphs
+using Graphs
 using ProgressMeter
 using Statistics
 using DocStringExtensions

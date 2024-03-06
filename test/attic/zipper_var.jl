@@ -3,7 +3,7 @@ using SpinGlassEngine
 using SpinGlassNetworks
 using SpinGlassTensors
 using Logging
-using LightGraphs
+using Graphs
 using LinearAlgebra
 using TensorCast
 using MetaGraphs

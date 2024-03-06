@@ -1,5 +1,5 @@
 using CPLEX, JuMP
-using SpinGlassNetworks, LightGraphs
+using SpinGlassNetworks, Graphs
 using LinearAlgebra
 using CSV, DataFrames
 

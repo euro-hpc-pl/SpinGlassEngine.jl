@@ -1,6 +1,6 @@
 using LinearAlgebra
 using CPLEX, JuMP
-using SpinGlassNetworks, LightGraphs
+using SpinGlassNetworks, Graphs
 
 function qubo(h::Vector, J::Matrix)
     b = [sum(J[i, :]) + sum(J[:, i]) for i ∈ 1:length(h)]

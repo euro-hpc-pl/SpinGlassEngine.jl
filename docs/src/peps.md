@@ -12,7 +12,7 @@ PEPSNetwork
 using SpinGlassEngine, SpinGlassTensors, SpinGlassNetworks, SpinGlassPEPS
 using SpinGlassExhaustive
 using Logging
-using LightGraphs
+using Graphs
 using LinearAlgebra
 using TensorCast
 using MetaGraphs

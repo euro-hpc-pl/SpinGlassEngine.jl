@@ -2,9 +2,9 @@ module SpinGlassEngine
 
 using Base: Tuple
 using Base.Cartesian
+using CUDA
 using SpinGlassTensors
 using SpinGlassNetworks
-using CUDA
 using TensorOperations
 using TensorCast
 using MetaGraphs

@@ -1,22 +1,22 @@
 using CUDA
 using SparseArrays
 
-a = CUDA.rand(1, 1)
-b = cu(sprand(Float64, 1, 1, 1.))
+dense32 = CUDA.rand(1, 1)
+sparse32csc = cu(sprand(Float32, 1, 1, 1.))
 
-# works
-b * a
-a * b
+dense64 = CUDA.rand(Float64, 1, 1)
+sparse64csc = CUSPARSE.CuSparseMatrixCSC{Float64, Int32}(sparse32csc.colPtr, sparse32csc.rowVal, sparse32csc.nzVal, (1, 1))
 
-# explodes for CUDA driver v12 but works for CUDA driver v11.4, tested on julia 1.9 and 1.10
-c = CUSPARSE.CuSparseMatrixCSC{Float64, Int32}(b.colPtr, b.rowVal, b.nzVal, (1, 1))
-d = CUDA.rand(Float64, 1, 1)
+sparse64csr = CUSPARSE.CuSparseMatrixCSR(dense64)
 
-d * c
-c * d
+sparse32csc * dense32 # ERROR
+dense32 * sparse32csc # NO ERROR
+(sparse32csc' * dense32')' # ERROR
 
-e = CUSPARSE.CuSparseMatrixCSR(c)
-e * d
+sparse64csc * dense64 # ERROR
+dense64 * sparse64csc # NO ERROR
+(dense64' * sparse64csc')' # NO ERROR
 
-# also explodes for CUDA driver v11.4, on both versions of julia
-d * e
+sparse64csr * dense64 # NO ERROR
+dense64 * sparse64csr # ERROR
+(sparse64csr' * dense64')' # NO ERROR

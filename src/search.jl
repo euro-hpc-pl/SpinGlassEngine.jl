@@ -513,7 +513,7 @@ function low_energy_spectrum(
         ψ0 = mps(ctr, i, length(ctr.betas))
         push!(schmidts, i=> measure_spectrum(ψ0))
         clear_memoize_cache_after_row()
-        Memoization.empty_cache!(SpinGlassTensors.SparseCSC)
+        Memoization.empty_cache!(SpinGlassTensors.sparse)
         empty!(ctr.peps.lp, :GPU)
         if i <= ctr.peps.nrows
             ψ0 = mps(ctr, i + 1, length(ctr.betas))

@@ -387,7 +387,7 @@ function merge_branches_blur(ctr::MpsContractor{T}, hamming_cutoff::Int, merge_t
         selected_boundaries = []
         selected_idx = []
         for (i, state) in enumerate(sorted_boundaries)
-            if all(hamming_distance(state, s) >= hamming_cutoff for s in selected_boundaries)
+            if all(hamming_distance(state, s, :Ising) >= hamming_cutoff for s in selected_boundaries) #TODO case with :RMF
                 push!(selected_boundaries, state)
                 push!(selected_idx, i)
             end

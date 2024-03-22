@@ -90,7 +90,7 @@ end
                 @test sol1.energies ≈ [exact_energies[1]]
                 sol2 = unpack_droplets(sol1, β)
                 (dict1, dict2) = decode_clustered_hamiltonian_state.(Ref(cl_h), sol2.states)
-                @test hamming_distance(sol1.droplets[1][1].flip, Flip([],[],[])) == hamming_distance_test(dict1, dict2)
+                @test hamming_distance(sol1.droplets[1][1].flip, Flip([],[],[],[]), :Ising) == hamming_distance_test(dict1, dict2)
 
                 clear_memoize_cache()
             end

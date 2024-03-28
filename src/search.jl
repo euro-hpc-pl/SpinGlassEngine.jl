@@ -552,13 +552,15 @@ function low_energy_spectrum(
         end
         sol = branch_solution(sol, ctr)
         if symmetry == :Z2 && length(sol.states[1]) == 1
-            indices_with_odd_numbers = Int[]
+            indices_with_even_numbers = Int[]
             for (index, vector) in enumerate(sol.spins)
-                if any(isodd, vector)
-                    push!(indices_with_odd_numbers, index)
+                if any(iseven, vector)
+                    push!(indices_with_even_numbers, index)
                 end
             end
-            sol = Solution(sol, indices_with_odd_numbers)
+            # if !isempty(indices_with_odd_numbers)
+            sol = Solution(sol, indices_with_even_numbers)
+            # end
         end
         sol = bound_solution(sol, sparams.max_states, sparams.cut_off_prob, merge_strategy)
         Memoization.empty_cache!(precompute_conditional)

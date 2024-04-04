@@ -2,10 +2,6 @@ using SpinGlassNetworks
 using SpinGlassTensors
 using SpinGlassEngine
 
-function my_brute_force(ig::IsingGraph; num_states::Int)
-    brute_force(ig, onGPU ? :GPU : :CPU, num_states=num_states)
-end
-
 m = 4
 n = 4
 t = 8

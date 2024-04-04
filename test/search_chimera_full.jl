@@ -26,6 +26,7 @@ function bench(instance::String)
     params = MpsParameters(bond_dim, 1E-8, 10, 1E-16)
     search_params = SearchParameters(num_states, δp)
 
+    energies = Vector{Float64}[]
     for Strategy ∈ (SVDTruncate, Zipper), Sparsity ∈ (Dense, Sparse)
         for Gauge ∈ (NoUpdate, GaugeStrategy, GaugeStrategyWithBalancing)
             for Layout ∈ (GaugesEnergy,), transform ∈ all_lattice_transformations

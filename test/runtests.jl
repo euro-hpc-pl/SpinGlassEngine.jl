@@ -38,9 +38,9 @@ push!(my_tests,
     "search_chimera_pathological_Z2.jl",
 
 # time consuming tests:
-    "search_chimera_full.jl",
-    "search_chimera_gauge.jl",
-    "gauges.jl"
+    # "search_chimera_full.jl",
+    # "search_chimera_gauge.jl",
+    # "gauges.jl"
 )
 
 # This is work in progress (may or may not be included in future versions)

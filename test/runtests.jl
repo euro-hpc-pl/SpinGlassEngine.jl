@@ -57,6 +57,10 @@ push!(my_tests,
     # "experimental/gauges.jl"
 )
 
+function my_brute_force(ig::IsingGraph; num_states::Int)
+    brute_force(ig, onGPU ? :GPU : :CPU, num_states=num_states)
+end
+
 @time begin
     for my_test ∈ my_tests
         include(my_test)

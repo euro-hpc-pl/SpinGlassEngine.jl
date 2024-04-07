@@ -1,11 +1,7 @@
 using SpinGlassEngine
 using Test
 
-# function my_brute_force(ig::IsingGraph; num_states::Int)
-#     brute_force(ig, onGPU ? :GPU : :CPU, num_states=num_states)
-# end
-
-function run_test(instance, m, n, t)
+function run_test_squarecross_double_node(instance, m, n, t)
     β = 2
     bond_dim = 16
     δp = 1e-10
@@ -84,4 +80,4 @@ end
 
 instance = "$(@__DIR__)/instances/pathological/pegasus_3_4_1.txt"
 m, n, t = 3, 4, 1
-run_test(instance, m, n, t)
+run_test_squarecross_double_node(instance, m, n, t)

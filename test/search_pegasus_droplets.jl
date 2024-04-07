@@ -4,10 +4,6 @@ using SpinGlassEngine
 
 using SpinGlassExhaustive
 
-function my_brute_force(ig::IsingGraph; num_states::Int)
-    brute_force(ig, onGPU ? :GPU : :CPU, num_states=num_states)
-end
-
 function bench(instance::String)
     m, n, t = 3, 3, 3
 

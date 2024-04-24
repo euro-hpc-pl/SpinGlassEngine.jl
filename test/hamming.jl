@@ -22,11 +22,8 @@ end
     @test 255 ⊻ 85 == xor(255, 85) == 170
     @test 170 ⊻ 85 == xor(170, 85) == 255
 
-    println(bitstring(10))
-    println(bitstring(5))
     binary_string = "1111"
     integer_value = parse(Int, binary_string, base=2)
-    println(integer_value)
     @test 10 ⊻ 5 == xor(10, 5) == 15 
 end
 

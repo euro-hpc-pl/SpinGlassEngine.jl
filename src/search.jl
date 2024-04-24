@@ -535,10 +535,6 @@ function low_energy_spectrum(
     ψ0 = mps(ctr, 2, length(ctr.betas))
     move_to_CPU!(ψ0)
 
-    # println("Memory memoize = ", measure_memory(Memoization.caches))
-    # println("Memory lp = ", format_bytes.(measure_memory(ctr.peps.lp)), " elements = ", length(ctr.peps.lp))
-    # println("Schmidt spectrum : remove those two lines and put it into sol")
-    # println(schmidts)
     # Start branch and bound search
     sol = empty_solution()
     old_row = ctr.nodes_search_order[1][1]

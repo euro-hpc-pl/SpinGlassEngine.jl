@@ -81,7 +81,6 @@
 
                 @test sol1.energies ≈ [exact_energies[1]]
                 sol2 = unpack_droplets(sol1, β)
-                println("How many droplets we found: ", length(sol2.states))
 
                 @test sol2.energies[1:length(exact_energies)] ≈ exact_energies
 

@@ -37,11 +37,8 @@ function bench(instance::String)
                 sol1, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, SingleLayerDroplets(0.01, 20, :hamming)))
 
                 sol2 = unpack_droplets(sol1, β)
-                println(sol2)
                 ig_states = decode_clustered_hamiltonian_state.(Ref(cl_h), sol2.states)
-                println(ig_states)
                 # cl_h_states = decode_state.(Ref(net), sol2.states)
-                # println(cl_h_states)
 
                 # @test sol1.energies[begin] ≈ ground_energy
                 # @test sol2.energies[begin] ≈ ground_energy

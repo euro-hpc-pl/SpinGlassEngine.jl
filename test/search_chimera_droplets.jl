@@ -4,10 +4,6 @@ using SpinGlassEngine
 
 using SpinGlassExhaustive
 
-function my_brute_force(ig::IsingGraph; num_states::Int)
-    brute_force(ig, onGPU ? :GPU : :CPU, num_states=num_states)
-end
-
 function bench(instance::String)
     m, n, t = 16, 16, 8
 
@@ -48,10 +44,10 @@ function bench(instance::String)
 
                 for sol ∈ (sol1, sol2)
                     ig_states = decode_clustered_hamiltonian_state.(Ref(cl_h), sol.states)
-                    @test sol.energies ≈ energy.(Ref(ising_graph(instance)), ig_states)
+                    @test sol.energies ≈ SpinGlassNetworks.energy.(Ref(ising_graph(instance)), ig_states)
 
                     cl_h_states = decode_state.(Ref(net), sol.states)
-                    @test sol.energies ≈ energy.(Ref(cl_h), cl_h_states)
+                    @test sol.energies ≈ SpinGlassNetworks.energy.(Ref(cl_h), cl_h_states)
 
                     norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
                     @test norm_prob ≈ exp.(-β .* (sol.energies .- sol.energies[1]))

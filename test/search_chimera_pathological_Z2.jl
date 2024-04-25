@@ -66,21 +66,14 @@
     Gauge = NoUpdate
 
     energies = Vector{Float64}[]
-    # for Strategy ∈ (SVDTruncate, MPSAnnealing, Zipper), Sparsity ∈ (Dense, Sparse)
-    #     for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
-    #         for Lattice ∈ (SquareSingleNode, SquareCrossSingleNode), transform ∈ all_lattice_transformations
-    for Strategy ∈ (Zipper,), Sparsity ∈ (Dense,)
-        for Layout ∈ (EnergyGauges,)
-            for transform ∈ all_lattice_transformations
+    for Strategy ∈ (SVDTruncate, MPSAnnealing, Zipper), Sparsity ∈ (Dense, Sparse)
+        for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
+            for Lattice ∈ (SquareSingleNode, SquareCrossSingleNode), transform ∈ all_lattice_transformations
 
                 net = PEPSNetwork{SquareSingleNode{Layout}, Sparsity}(m, n, cl_h, transform)
                 ctr = MpsContractor{Strategy, Gauge}(net, [β/8., β/4., β/2., β], :graduate_truncate, params; onGPU=onGPU)
-                sol1, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, SingleLayerDroplets(1.01, 1, :hamming)), :Z2)
-                # @test sol1.energies ≈ [exact_energies[1]]
+                sol1, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, SingleLayerDroplets(10.0, 0, :hamming)), :Z2)
                 sol2 = unpack_droplets(sol1, β)
-                # println("How many droplets we found: ", length(sol2.states))
-
-                # @test sol2.energies[1:length(exact_energies)] ≈ exact_energies
 
                 for sol ∈ (sol1, sol2 )
                     ig_states = decode_clustered_hamiltonian_state.(Ref(cl_h), sol.states)
@@ -92,8 +85,6 @@
                     norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
                     @test norm_prob ≈ exp.(-β .* (sol.energies .- sol.energies[1]))
                 end
-
-                # for (i, σ) ∈ enumerate(sol.states) @test σ ∈ exact_states[deg[i]] end
 
                 clear_memoize_cache()
             end

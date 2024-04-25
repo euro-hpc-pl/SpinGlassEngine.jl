@@ -2,9 +2,9 @@ module SpinGlassEngine
 
 using Base: Tuple
 using Base.Cartesian
+using CUDA
 using SpinGlassTensors
 using SpinGlassNetworks
-using CUDA
 using TensorOperations
 using TensorCast
 using MetaGraphs
@@ -14,7 +14,7 @@ using Graphs
 using ProgressMeter
 using Statistics
 using DocStringExtensions
-#using Infiltrator
+using NNlib
 
 include("operations.jl")
 include("geometry.jl")

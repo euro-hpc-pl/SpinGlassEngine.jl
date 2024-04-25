@@ -22,26 +22,28 @@ end
     @test 255 ⊻ 85 == xor(255, 85) == 170
     @test 170 ⊻ 85 == xor(170, 85) == 255
 
-    println(bitstring(10))
-    println(bitstring(5))
     binary_string = "1111"
     integer_value = parse(Int, binary_string, base=2)
-    println(integer_value)
     @test 10 ⊻ 5 == xor(10, 5) == 15 
 end
 
-flip1 = Flip([1,3,4,5], [2,3,5,6], [1, 1, 0, 1])
-flip2 = Flip([1,3,4,5], [1,2,3,4], [1, 1, 0, 1])
-flip3 = Flip([1,3,4,5], [2,3,5,6], [1, 1, 0, 0])
+flip1 = Flip([1,3,4,5], [2,3,5,6], [1, 1, 0, 1], [1, 1, 0, 1])
+flip2 = Flip([1,3,4,5], [1,2,3,4], [1, 1, 0, 1], [1, 1, 0, 1])
+flip3 = Flip([1,3,4,5], [2,3,5,6], [1, 1, 0, 0], [1, 1, 0, 0])
 
 @testset "Hamming Distance Calculation" begin
-    @test hamming_distance(flip1) == 3
-    @test hamming_distance(flip2) == 3
-    @test hamming_distance(flip3) == 2
+    @test hamming_distance(flip1, :Ising) == 3
+    @test hamming_distance(flip2, :Ising) == 3
+    @test hamming_distance(flip3, :Ising) == 2
+    @test hamming_distance(flip1, :RMF) == 3
+    @test hamming_distance(flip2, :RMF) == 3
+    @test hamming_distance(flip3, :RMF) == 2
 end
 
 @testset "Hamming distance between two droplets" begin
-    @test hamming_distance(flip1, flip2) == 0
-    @test hamming_distance(flip2, flip3) == 1
+    @test hamming_distance(flip1, flip2, :Ising) == 0
+    @test hamming_distance(flip2, flip3, :Ising) == 1
+    @test hamming_distance(flip1, flip2, :RMF) == 3
+    @test hamming_distance(flip2, flip3, :RMF) == 3
 
 end

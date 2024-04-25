@@ -25,7 +25,7 @@
     Gauge = GaugeStrategy
 
     energies = Vector{Float64}[]
-    for Strategy ∈ (SVDTruncate, Zipper), Sparsity ∈ (Dense,)
+    for Strategy ∈ (SVDTruncate, Zipper), Sparsity ∈ (Dense, Sparse)
         for Layout ∈ (GaugesEnergy,)
             for transform ∈ all_lattice_transformations
                 net = PEPSNetwork{SquareSingleNode{Layout}, Sparsity}(m, n, cl_h, transform)

@@ -20,5 +20,4 @@
     ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], graduate_truncation, params; onGPU=onGPU, mode=:RMF)
     sol_peps, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
     # sol_peps, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, SingleLayerDroplets(100.0, 100, :hamming, :RMF)))
-    println(sol_peps.energies[begin])
 end

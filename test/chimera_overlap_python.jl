@@ -2,10 +2,6 @@ using SpinGlassNetworks
 using SpinGlassTensors
 using SpinGlassEngine
 
-function my_brute_force(ig::IsingGraph; num_states::Int)
-    brute_force(ig, onGPU ? :GPU : :CPU, num_states=num_states)
-end
-
 m = 4
 n = 4
 t = 8
@@ -33,34 +29,30 @@ search_params = SearchParameters(num_states, δp)
 
 Strategy = SVDTruncate
 Gauge = NoUpdate
-@testset "Compare the results for GaugesEnergy with Python" begin
-    for Sparsity ∈ (Dense, Sparse) 
-        network = PEPSNetwork{SquareSingleNode{GaugesEnergy}, Sparsity}(m, n, cl_h, rotation(0))
-        ctr = MpsContractor{Strategy, Gauge}(network, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
-        @testset "Compare the results with Python" begin
-            overlap_python = [0.2637787707674837, 0.2501621729619047, 0.2951954406837012]
-            for i in 1:n-1
-                psi_top = mps_top(ctr, i, 4)
-                psi_bottom = mps(ctr, i+1, 4)
-                overlap =  psi_top * psi_bottom
-                @test isapprox(overlap, overlap_python[i], atol=1e-5)
-            end
-        end
-        clear_memoize_cache()
-    end
-end
-
-@testset "Compare the results for EnergyGauges with Python" begin
-    overlap_python = [0.18603559878582027, 0.36463028391550056, 0.30532555472025247]
-    for Sparsity ∈ (Dense, Sparse)
-        net = PEPSNetwork{SquareSingleNode{EnergyGauges}, Sparsity}(m, n, cl_h, rotation(0))
-        ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
+@testset "Compare the results for GaugesEnergy with Python (Sparsity = $Sparsity)" for Sparsity ∈ (Dense, Sparse) 
+    network = PEPSNetwork{SquareSingleNode{GaugesEnergy}, Sparsity}(m, n, cl_h, rotation(0))
+    ctr = MpsContractor{Strategy, Gauge}(network, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
+    @testset "Compare the results with Python" begin
+        overlap_python = [0.2637787707674837, 0.2501621729619047, 0.2951954406837012]
         for i in 1:n-1
             psi_top = mps_top(ctr, i, 4)
             psi_bottom = mps(ctr, i+1, 4)
-            overlap = psi_top * psi_bottom
+            overlap =  psi_top * psi_bottom
             @test isapprox(overlap, overlap_python[i], atol=1e-5)
         end
-        clear_memoize_cache()
     end
+    clear_memoize_cache()
+end
+
+@testset "Compare the results for EnergyGauges with Python (Sparsity = $Sparsity)" for Sparsity ∈ (Dense, Sparse)
+    overlap_python = [0.18603559878582027, 0.36463028391550056, 0.30532555472025247]
+    net = PEPSNetwork{SquareSingleNode{EnergyGauges}, Sparsity}(m, n, cl_h, rotation(0))
+    ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
+    for i in 1:n-1
+        psi_top = mps_top(ctr, i, 4)
+        psi_bottom = mps(ctr, i+1, 4)
+        overlap = psi_top * psi_bottom
+        @test isapprox(overlap, overlap_python[i], atol=1e-5)
+    end
+    clear_memoize_cache()
 end

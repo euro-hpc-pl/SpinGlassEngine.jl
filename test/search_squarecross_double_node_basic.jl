@@ -1,11 +1,7 @@
 using SpinGlassEngine
 using Test
 
-# function my_brute_force(ig::IsingGraph; num_states::Int)
-#     brute_force(ig, onGPU ? :GPU : :CPU, num_states=num_states)
-# end
-
-function run_test(instance, m, n, t)
+function run_test_squarecross_double_node(instance, m, n, t)
     β = 2
     bond_dim = 16
     δp = 1e-10
@@ -61,8 +57,6 @@ function run_test(instance, m, n, t)
                 exct_prob = exp.(-β .* (sol2.energies .- sol2.energies[1]))
                 @test norm_prob ≈ exct_prob
 
-                println("Eng = ", sol.energies[1])
-
                 for ii ∈ 1 : ctr.peps.nrows + 1, jj ∈ 1 : length(βs)
                     ψ1, ψ2 = mps(ctr, ii, jj), mps(ctr2, ii, jj)
                     o = ψ1 * ψ2 / sqrt((ψ1 * ψ1) * (ψ2 * ψ2))
@@ -77,11 +71,10 @@ function run_test(instance, m, n, t)
             end
         end
     end
-    println("length energies ", length(energies))
     @test all(e -> e ≈ first(energies), energies)
 end
 
 
 instance = "$(@__DIR__)/instances/pathological/pegasus_3_4_1.txt"
 m, n, t = 3, 4, 1
-run_test(instance, m, n, t)
+run_test_squarecross_double_node(instance, m, n, t)

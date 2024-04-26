@@ -6,8 +6,8 @@ using Logging
 using Graphs
 using LinearAlgebra
 using TensorCast
-using MetaGraphs
 using Statistics
+using MetaGraphs
 
 disable_logging(LogLevel(1))
 

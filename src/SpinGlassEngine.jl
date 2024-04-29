@@ -1,31 +1,32 @@
 module SpinGlassEngine
 
 using Base: Tuple
-using SpinGlassTensors, SpinGlassNetworks
-using TensorOperations, TensorCast
+using Base.Cartesian
+using CUDA
+using SpinGlassTensors
+using SpinGlassNetworks
+using TensorOperations
+using TensorCast
 using MetaGraphs
-using Memoize
-using LinearAlgebra
-using LightGraphs
+using Memoization
+using LinearAlgebra, MKL
+using Graphs
 using ProgressMeter
+using Statistics
+using DocStringExtensions
+using NNlib
 
-SpinGlassNetworks.local_basis(ψ::AbstractMPS, i::Int) =
-    SpinGlassNetworks.local_basis(physical_dim(ψ, i))
-
-function LinearAlgebra.dot(ψ::AbstractMPS, state::Union{AbstractVector,NTuple})
-    C = I
-
-    for (M, σ) ∈ zip(ψ, state)
-        i = idx(σ)
-        C = M[:, i, :]' * (C * M[:, i, :])
-    end
-    tr(C)
-end
-
-include("network_operations.jl")
-include("network_interface.jl")
+include("operations.jl")
+include("geometry.jl")
 include("PEPS.jl")
-include("network_tensors.jl")
+include("contractor.jl")
+include("square_single_node.jl")
+include("square_cross_single_node.jl")
+include("square_double_node.jl")
+include("square_cross_double_node.jl")
+include("tensors.jl")
+include("droplets.jl")
 include("search.jl")
+include("util.jl")
 
 end # module

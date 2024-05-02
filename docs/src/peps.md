@@ -9,14 +9,8 @@ PEPSNetwork
 ## Basic example of usage
 
 ```@example
-using SpinGlassEngine, SpinGlassTensors, SpinGlassNetworks, SpinGlassPEPS
+using SpinGlassEngine, SpinGlassTensors, SpinGlassNetworks
 using SpinGlassExhaustive
-using Logging
-using Graphs
-using LinearAlgebra
-using TensorCast
-using MetaGraphs
-using Statistics
 
 m, n, t = 5, 5, 4
 onGPU = true

@@ -263,8 +263,10 @@ function mpo(
 end
 
 
-@memoize Dict mpo(peps::AbstractGibbsNetwork{T,S,R}, r::Union{Rational{Int},Int}) where {T,S,R} =
-    mpo(R, peps, r)
+@memoize Dict mpo(
+    peps::AbstractGibbsNetwork{T,S,R},
+    r::Union{Rational{Int},Int},
+) where {T,S,R} = mpo(R, peps, r)
 
 
 

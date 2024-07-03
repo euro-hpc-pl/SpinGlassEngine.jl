@@ -34,8 +34,13 @@ Gauge = NoUpdate
     Dense,
     Sparse,
 )
-    network = PEPSNetwork{SquareSingleNode{GaugesEnergy},Sparsity, Float64}(m, n, cl_h, rotation(0))
-    ctr = MpsContractor{Strategy,Gauge, Float64}(
+    network = PEPSNetwork{SquareSingleNode{GaugesEnergy},Sparsity,Float64}(
+        m,
+        n,
+        cl_h,
+        rotation(0),
+    )
+    ctr = MpsContractor{Strategy,Gauge,Float64}(
         network,
         [β / 8, β / 4, β / 2, β],
         :graduate_truncate,
@@ -60,8 +65,13 @@ end
     Sparse,
 )
     overlap_python = [0.18603559878582027, 0.36463028391550056, 0.30532555472025247]
-    net = PEPSNetwork{SquareSingleNode{EnergyGauges},Sparsity, Float64}(m, n, cl_h, rotation(0))
-    ctr = MpsContractor{Strategy,Gauge, Float64}(
+    net = PEPSNetwork{SquareSingleNode{EnergyGauges},Sparsity,Float64}(
+        m,
+        n,
+        cl_h,
+        rotation(0),
+    )
+    ctr = MpsContractor{Strategy,Gauge,Float64}(
         net,
         [β / 8, β / 4, β / 2, β],
         :graduate_truncate,

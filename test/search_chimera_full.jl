@@ -31,8 +31,13 @@ function bench(instance::String)
         for Gauge ∈ (NoUpdate, GaugeStrategy, GaugeStrategyWithBalancing)
             for Layout ∈ (GaugesEnergy,), transform ∈ all_lattice_transformations
 
-                net = PEPSNetwork{SquareSingleNode{Layout},Sparsity, Float64}(m, n, cl_h, transform)
-                ctr = MpsContractor{Strategy,Gauge, Float64}(
+                net = PEPSNetwork{SquareSingleNode{Layout},Sparsity,Float64}(
+                    m,
+                    n,
+                    cl_h,
+                    transform,
+                )
+                ctr = MpsContractor{Strategy,Gauge,Float64}(
                     net,
                     all_betas,
                     :graduate_truncate,

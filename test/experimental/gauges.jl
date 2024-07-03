@@ -74,8 +74,14 @@ search_params = SearchParameters(num_states, δp)
                 for Lattice ∈ (SquareSingleNode, SquareCrossSingleNode),
                     transform ∈ all_lattice_transformations
 
-                    net = PEPSNetwork{Lattice{Layout},Sparsity, Float64}(m, n, cl_h, transform, :id)
-                    ctr = MpsContractor{Strategy,Gauge, Float64}(
+                    net = PEPSNetwork{Lattice{Layout},Sparsity,Float64}(
+                        m,
+                        n,
+                        cl_h,
+                        transform,
+                        :id,
+                    )
+                    ctr = MpsContractor{Strategy,Gauge,Float64}(
                         net,
                         [β / 8, β / 4, β / 2, β],
                         :graduate_truncate,

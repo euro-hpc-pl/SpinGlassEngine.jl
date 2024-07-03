@@ -50,13 +50,25 @@ Gauge = NoUpdate
 i = div(m, 2)
 indβ = 1
 
-net = PEPSNetwork{SquareSingleNode{Layout},Sparse, Float64}(m, n, cl_h, tran)
-ctr = MpsContractor{Strategy,Gauge, Float64}(net, [β], :graduate_truncate, params; onGPU = onGPU)
+net = PEPSNetwork{SquareSingleNode{Layout},Sparse,Float64}(m, n, cl_h, tran)
+ctr = MpsContractor{Strategy,Gauge,Float64}(
+    net,
+    [β],
+    :graduate_truncate,
+    params;
+    onGPU = onGPU,
+)
 Ws = SpinGlassEngine.mpo(ctr, ctr.layers.main, i, indβ)
 println(" Ws -> ", which_device(Ws), " ", format_bytes.(measure_memory(Ws)))
 
-net = PEPSNetwork{SquareSingleNode{Layout},Dense, Float64}(m, n, cl_h, tran)
-ctr = MpsContractor{Strategy,Gauge, Float64}(net, [β], :graduate_truncate, params; onGPU = onGPU)
+net = PEPSNetwork{SquareSingleNode{Layout},Dense,Float64}(m, n, cl_h, tran)
+ctr = MpsContractor{Strategy,Gauge,Float64}(
+    net,
+    [β],
+    :graduate_truncate,
+    params;
+    onGPU = onGPU,
+)
 Wd = SpinGlassEngine.mpo(ctr, ctr.layers.main, i, indβ)
 println(" Wd -> ", which_device(Wd), " ", format_bytes.(measure_memory(Wd)))
 

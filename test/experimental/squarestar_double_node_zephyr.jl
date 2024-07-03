@@ -45,8 +45,8 @@ tran = LatticeTransformation((4, 1, 2, 3), true)
 Layout = GaugesEnergy
 Gauge = NoUpdate
 
-net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity, Float64}(m, n, cl_h, tran)
-ctr = MpsContractor{Strategy,Gauge, Float64}(
+net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity,Float64}(m, n, cl_h, tran)
+ctr = MpsContractor{Strategy,Gauge,Float64}(
     net,
     [β / 6, β / 3, β / 2, β],
     :graduate_truncate,

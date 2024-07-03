@@ -32,8 +32,8 @@ function bench(instance::String, β::Real, bond_dim::Integer, num_states::Intege
     Layout = GaugesEnergy
     transform = rotation(0)
     Gauge = NoUpdate
-    net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity, Float64}(m, n, cl_h, transform)
-    ctr = MpsContractor{Strategy,Gauge, Float64}(
+    net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity,Float64}(m, n, cl_h, transform)
+    ctr = MpsContractor{Strategy,Gauge,Float64}(
         net,
         all_betas,
         :graduate_truncate,

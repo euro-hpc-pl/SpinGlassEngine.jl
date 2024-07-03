@@ -25,7 +25,7 @@ export AbstractGibbsNetwork,
 
 # T: type of the vertex of network
 # S: type of the vertex of underlying factor graph
-abstract type AbstractGibbsNetwork{S,T, R} end
+abstract type AbstractGibbsNetwork{S,T,R} end
 
 """
 $(TYPEDSIGNATURES)
@@ -46,8 +46,8 @@ Construct a Projected Entangled Pair States (PEPS) network.
 # Returns
 An instance of PEPSNetwork{T, S}.
 """
-mutable struct PEPSNetwork{T<:AbstractGeometry,S<:AbstractSparsity, R<:Real} <:
-               AbstractGibbsNetwork{Node,PEPSNode, R}
+mutable struct PEPSNetwork{T<:AbstractGeometry,S<:AbstractSparsity,R<:Real} <:
+               AbstractGibbsNetwork{Node,PEPSNode,R}
     clustered_hamiltonian::LabelledGraph
     vertex_map::Function
     lp::PoolOfProjectors
@@ -64,7 +64,7 @@ mutable struct PEPSNetwork{T<:AbstractGeometry,S<:AbstractSparsity, R<:Real} <:
         clustered_hamiltonian::LabelledGraph,
         transformation::LatticeTransformation,
         gauge_type::Symbol = :id,
-    ) where {T<:AbstractGeometry,S<:AbstractSparsity, R<:Real}
+    ) where {T<:AbstractGeometry,S<:AbstractSparsity,R<:Real}
         lp = get_prop(clustered_hamiltonian, :pool_of_projectors)
         net = new(clustered_hamiltonian, vertex_map(transformation, m, n), lp, m, n)
         net.nrows, net.ncols = transformation.flips_dimensions ? (n, m) : (m, n)
@@ -74,7 +74,7 @@ mutable struct PEPSNetwork{T<:AbstractGeometry,S<:AbstractSparsity, R<:Real} <:
         end
 
         net.tensors_map = tensor_map(T, S, net.nrows, net.ncols)
-        net.gauges = Gauges{T, R}(net.nrows, net.ncols)
+        net.gauges = Gauges{T,R}(net.nrows, net.ncols)
         initialize_gauges!(net, gauge_type)
         net
     end
@@ -133,7 +133,12 @@ Calculate the bond energy between nodes `u` and `v` for a given index `σ` in th
 ## Returns
 - `energies::Vector{T}`: Vector containing the bond energies between nodes `u` and `v` for index `σ`.
 """
-function bond_energy(net::AbstractGibbsNetwork{T,S, R}, u::Node, v::Node, σ::Int) where {T,S, R}
+function bond_energy(
+    net::AbstractGibbsNetwork{T,S,R},
+    u::Node,
+    v::Node,
+    σ::Int,
+) where {T,S,R}
     cl_h_u, cl_h_v = net.vertex_map(u), net.vertex_map(v)
     energies = SpinGlassNetworks.bond_energy(net.clustered_hamiltonian, cl_h_u, cl_h_v, σ)
     R.(vec(energies))
@@ -231,7 +236,7 @@ Retrieve the local energy spectrum associated with a specific vertex in the Gibb
 ## Returns
 - Local energy spectrum associated with the specified vertex.
 """
-function local_energy(network::AbstractGibbsNetwork{S,T, R}, vertex::S) where {S,T, R}
+function local_energy(network::AbstractGibbsNetwork{S,T,R}, vertex::S) where {S,T,R}
     R.(spectrum(network, vertex).energies)
 end
 
@@ -263,7 +268,7 @@ Compute the interaction energy between two vertices in a Gibbs network.
 ## Returns
 - `energy::Matrix{T}`: Interaction energy matrix between vertices `v` and `w`.
 """
-function interaction_energy(network::AbstractGibbsNetwork{S,T, R}, v::S, w::S) where {S,T, R}
+function interaction_energy(network::AbstractGibbsNetwork{S,T,R}, v::S, w::S) where {S,T,R}
     cl_h = network.clustered_hamiltonian
     cl_h_v, cl_h_w = network.vertex_map(v), network.vertex_map(w)
     if has_edge(cl_h, cl_h_w, cl_h_v)
@@ -307,7 +312,10 @@ Each gauge tensor is associated with two positions in the network and a type.
 The positions are determined by the gauge's `positions` field, and the type is specified by the gauge's `type` field. 
 The initialization type can be either `:id` for identity tensors or `:rand` for random tensors.
 """
-function initialize_gauges!(net::AbstractGibbsNetwork{S,T,R}, type::Symbol = :id) where {S,T,R}
+function initialize_gauges!(
+    net::AbstractGibbsNetwork{S,T,R},
+    type::Symbol = :id,
+) where {S,T,R}
     @assert type ∈ (:id, :rand)
     for gauge ∈ net.gauges.info
         n1, n2 = gauge.positions

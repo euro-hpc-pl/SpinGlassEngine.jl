@@ -34,8 +34,13 @@ end
     energies = Vector{Float64}[]
 
     for transform ∈ all_lattice_transformations
-        net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity, Float64}(m, n, cl_h, transform)
-        ctr = MpsContractor{Strategy,Gauge, Float64}(
+        net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity,Float64}(
+            m,
+            n,
+            cl_h,
+            transform,
+        )
+        ctr = MpsContractor{Strategy,Gauge,Float64}(
             net,
             [β / 6, β / 3, β / 2, β],
             :graduate_truncate,

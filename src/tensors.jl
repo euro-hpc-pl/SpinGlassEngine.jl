@@ -1,7 +1,11 @@
 export tensor, probability
 
 
-function tensor(network::AbstractGibbsNetwork{Node,PEPSNode, R}, v::PEPSNode, β::Real) where {R}
+function tensor(
+    network::AbstractGibbsNetwork{Node,PEPSNode,R},
+    v::PEPSNode,
+    β::Real,
+) where {R}
     if v ∉ keys(network.tensors_map)
         return ones(R, 1, 1)
     end
@@ -32,11 +36,11 @@ end
 
 
 function tensor(
-    net::PEPSNetwork{T,Dense, R},
+    net::PEPSNetwork{T,Dense,R},
     v::PEPSNode,
     β::Real,
     ::Val{:site},
-) where {T<:AbstractGeometry, R<:Real}
+) where {T<:AbstractGeometry,R<:Real}
     sp = tensor(net, v, β, Val(:sparse_site))
     projs = Tuple(get_projector!(net.lp, x) for x in sp.projs)
     A = zeros(R, maximum.(projs))

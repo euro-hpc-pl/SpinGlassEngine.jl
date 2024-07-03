@@ -116,8 +116,13 @@
         for Layout ∈ (EnergyGauges,)
             for transform ∈ all_lattice_transformations
 
-                net = PEPSNetwork{SquareSingleNode{Layout},Sparsity, Float64}(m, n, cl_h, transform)
-                ctr = MpsContractor{Strategy,Gauge, Float64}(
+                net = PEPSNetwork{SquareSingleNode{Layout},Sparsity,Float64}(
+                    m,
+                    n,
+                    cl_h,
+                    transform,
+                )
+                ctr = MpsContractor{Strategy,Gauge,Float64}(
                     net,
                     [β / 8.0, β / 4.0, β / 2.0, β],
                     :graduate_truncate,

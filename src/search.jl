@@ -548,12 +548,12 @@ A tuple `(sol, s)` containing:
 - `s::Dict`: A dictionary containing Schmidt spectra for each row of the PEPS network.
 """
 function low_energy_spectrum(
-    ctr::MpsContractor{T, R, S},
+    ctr::MpsContractor{T,R,S},
     sparams::SearchParameters,
     merge_strategy = no_merge,
     symmetry::Symbol = :noZ2;
     no_cache = false,
-) where {T, R, S}
+) where {T,R,S}
     # Build all boundary mps
     CUDA.allowscalar(false)
 
@@ -665,11 +665,11 @@ This function performs Gibbs sampling on a spin glass PEPS (Projected Entangled 
 A `Solution` object representing the result of the Gibbs sampling.
 """
 function gibbs_sampling(
-    ctr::MpsContractor{T, R, S},
+    ctr::MpsContractor{T,R,S},
     sparams::SearchParameters,
     merge_strategy = no_merge;
     no_cache = false,
-) where {T, R, S}
+) where {T,R,S}
     # Build all boundary mps
     CUDA.allowscalar(false)
 

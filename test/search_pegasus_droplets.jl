@@ -31,13 +31,13 @@ function bench(instance::String)
     for Strategy ∈ (Zipper,), Sparsity ∈ (Sparse,)
         for Gauge ∈ (NoUpdate,)
             for Layout ∈ (GaugesEnergy,), transform ∈ all_lattice_transformations[[1]]
-                net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity, Float64}(
+                net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity,Float64}(
                     m,
                     n,
                     cl_h,
                     transform,
                 )
-                ctr = MpsContractor{Strategy,Gauge, Float64}(
+                ctr = MpsContractor{Strategy,Gauge,Float64}(
                     net,
                     all_betas,
                     :graduate_truncate,

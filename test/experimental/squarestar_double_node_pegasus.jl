@@ -299,7 +299,8 @@ cl_h = truncate_clustered_hamiltonian(
     iter = iter,
 )
 check_ground_state(cl_h)
-params = MpsParameters{Float64}(bond_dim, VAR_TOL, MS, TOL_SVD, ITERS_SVD, ITERS_VAR, DTEMP_MULT)
+params =
+    MpsParameters{Float64}(bond_dim, VAR_TOL, MS, TOL_SVD, ITERS_SVD, ITERS_VAR, DTEMP_MULT)
 search_params = SearchParameters(num_states, δp)
 energies = Vector{Float64}[]
 Strategy = Zipper # MPSAnnealing # SVDTruncate
@@ -308,8 +309,8 @@ Layout = GaugesEnergy
 Gauge = NoUpdate
 
 for tran ∈ all_lattice_transformations #[LatticeTransformation((1, 2, 3, 4), false), ]
-    net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity, Float64}(m, n, cl_h, tran)
-    ctr = MpsContractor{Strategy,Gauge, Float64}(
+    net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity,Float64}(m, n, cl_h, tran)
+    ctr = MpsContractor{Strategy,Gauge,Float64}(
         net,
         [β / 6, β / 3, β / 2, β],
         :graduate_truncate,

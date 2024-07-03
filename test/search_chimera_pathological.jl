@@ -121,7 +121,7 @@ transform = $transform
     energies = Vector{Float64}[]
 
 
-    net = PEPSNetwork{Lattice{Layout},Sparsity, Float64}(m, n, cl_h, transform)
+    net = PEPSNetwork{Lattice{Layout},Sparsity,Float64}(m, n, cl_h, transform)
     ctr = MpsContractor{Strategy,Gauge,Float64}(
         net,
         [β / 8.0, β / 4.0, β / 2.0, β],

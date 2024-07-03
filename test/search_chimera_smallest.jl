@@ -21,13 +21,15 @@
     for T in [Float32, Float64]
         energies = Vector{T}[]
         params = MpsParameters{T}(bond_dim, T(1E-8), 4)
-        for Strategy ∈ (SVDTruncate, Zipper), Sparsity ∈ (Dense, Sparse),
+        for Strategy ∈ (SVDTruncate, Zipper),
+            Sparsity ∈ (Dense, Sparse),
             Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng),
             transform ∈ all_lattice_transformations
-            net = PEPSNetwork{SquareSingleNode{Layout},Sparsity, T}(m, n, cl_h, transform)
+
+            net = PEPSNetwork{SquareSingleNode{Layout},Sparsity,T}(m, n, cl_h, transform)
             ctr = MpsContractor{Strategy,Gauge,T}(
                 net,
-                T[β / 8, β / 4, β / 2, β],
+                T[β/8, β/4, β/2, β],
                 :graduate_truncate,
                 params;
                 onGPU = onGPU,
@@ -42,7 +44,11 @@
             @test sol.energies ≈ energy.(Ref(cl_h), cl_h_states)
 
             norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
-            @test isapprox(norm_prob, exp.(-β .* (sol.energies .- sol.energies[1])), atol=eps(T))
+            @test isapprox(
+                norm_prob,
+                exp.(-β .* (sol.energies .- sol.energies[1])),
+                atol = eps(T),
+            )
 
             push!(energies, sol.energies)
             clear_memoize_cache()

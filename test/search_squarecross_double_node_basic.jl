@@ -30,18 +30,27 @@ function run_test_squarecross_double_node(instance, m, n, t)
         for Layout ∈ (EnergyGauges, GaugesEnergy)
             for tran ∈ all_lattice_transformations
 
-                net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity, Float64}(m, n, cl_h, tran)
-                net2 =
-                    PEPSNetwork{SquareCrossSingleNode{Layout},Sparsity, Float64}(m, n, cl_h2, tran)
+                net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity,Float64}(
+                    m,
+                    n,
+                    cl_h,
+                    tran,
+                )
+                net2 = PEPSNetwork{SquareCrossSingleNode{Layout},Sparsity,Float64}(
+                    m,
+                    n,
+                    cl_h2,
+                    tran,
+                )
 
-                ctr = MpsContractor{Strategy,Gauge, Float64}(
+                ctr = MpsContractor{Strategy,Gauge,Float64}(
                     net,
                     βs,
                     :graduate_truncate,
                     params;
                     onGPU = onGPU,
                 )
-                ctr2 = MpsContractor{Strategy,Gauge, Float64}(
+                ctr2 = MpsContractor{Strategy,Gauge,Float64}(
                     net2,
                     βs,
                     :graduate_truncate,

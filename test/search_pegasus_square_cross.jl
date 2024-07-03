@@ -28,8 +28,13 @@ function bench(instance::String)
         transform ∈ all_lattice_transformations
 
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng), Sparsity ∈ (Dense,)
-            net = PEPSNetwork{SquareCrossSingleNode{Layout},Sparsity, Float64}(m, n, cl_h, transform)
-            ctr = MpsContractor{Strategy,Gauge, Float64}(
+            net = PEPSNetwork{SquareCrossSingleNode{Layout},Sparsity,Float64}(
+                m,
+                n,
+                cl_h,
+                transform,
+            )
+            ctr = MpsContractor{Strategy,Gauge,Float64}(
                 net,
                 [β / 8, β / 4, β / 2, β],
                 graduate_truncation,

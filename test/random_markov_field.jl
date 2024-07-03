@@ -7,7 +7,7 @@
     num_states = 64
     cl_h = clustered_hamiltonian(instance_dir)
     Nx, Ny = get_prop(cl_h, :Nx), get_prop(cl_h, :Ny)
-    params = MpsParameters(bond_dim, 1E-8, 10)
+    params = MpsParameters{Float64}(bond_dim, 1E-8, 10)
     search_params = SearchParameters(num_states, δp)
     Gauge = NoUpdate
     graduate_truncation = :graduate_truncate

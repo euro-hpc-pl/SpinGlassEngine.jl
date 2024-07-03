@@ -16,11 +16,11 @@
         cluster_assignment_rule = super_square_lattice((m, n, t)),
     )
 
-    params = MpsParameters(bond_dim, 1E-8, 4)
     search_params = SearchParameters(num_states, 0.0)
     Gauge = NoUpdate
-    for T in [Float32]
+    for T in [Float32, Float64]
         energies = Vector{T}[]
+        params = MpsParameters{T}(bond_dim, T(1E-8), 4)
         for Strategy ∈ (SVDTruncate, Zipper), Sparsity ∈ (Dense, Sparse),
             Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng),
             transform ∈ all_lattice_transformations
@@ -42,7 +42,7 @@
             @test sol.energies ≈ energy.(Ref(cl_h), cl_h_states)
 
             norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
-            @test norm_prob ≈ exp.(-β .* (sol.energies .- sol.energies[1]))
+            @test isapprox(norm_prob, exp.(-β .* (sol.energies .- sol.energies[1])), atol=eps(T))
 
             push!(energies, sol.energies)
             clear_memoize_cache()

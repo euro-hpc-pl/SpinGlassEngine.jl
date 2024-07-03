@@ -19,35 +19,34 @@
     params = MpsParameters(bond_dim, 1E-8, 4)
     search_params = SearchParameters(num_states, 0.0)
     Gauge = NoUpdate
+    for T in [Float32]
+        energies = Vector{T}[]
+        for Strategy ∈ (SVDTruncate, Zipper), Sparsity ∈ (Dense, Sparse),
+            Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng),
+            transform ∈ all_lattice_transformations
+            net = PEPSNetwork{SquareSingleNode{Layout},Sparsity, T}(m, n, cl_h, transform)
+            ctr = MpsContractor{Strategy,Gauge,T}(
+                net,
+                T[β / 8, β / 4, β / 2, β],
+                :graduate_truncate,
+                params;
+                onGPU = onGPU,
+            )
+            sol, s = low_energy_spectrum(ctr, search_params)
+            @test eltype(sol.energies) == T
+            @test sol.energies ≈ exact_energies
 
-    energies = Vector{Float64}[]
-    for Strategy ∈ (SVDTruncate, Zipper), Sparsity ∈ (Dense, Sparse)
-        for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
-            for transform ∈ all_lattice_transformations
-                net = PEPSNetwork{SquareSingleNode{Layout},Sparsity}(m, n, cl_h, transform)
-                ctr = MpsContractor{Strategy,Gauge}(
-                    net,
-                    [β / 8, β / 4, β / 2, β],
-                    :graduate_truncate,
-                    params;
-                    onGPU = onGPU,
-                )
-                sol, s = low_energy_spectrum(ctr, search_params)
+            ig_states = decode_clustered_hamiltonian_state.(Ref(cl_h), sol.states)
+            @test sol.energies ≈ energy.(Ref(ig), ig_states)
+            cl_h_states = decode_state.(Ref(net), sol.states)
+            @test sol.energies ≈ energy.(Ref(cl_h), cl_h_states)
 
-                @test sol.energies ≈ exact_energies
+            norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
+            @test norm_prob ≈ exp.(-β .* (sol.energies .- sol.energies[1]))
 
-                ig_states = decode_clustered_hamiltonian_state.(Ref(cl_h), sol.states)
-                @test sol.energies ≈ energy.(Ref(ig), ig_states)
-                cl_h_states = decode_state.(Ref(net), sol.states)
-                @test sol.energies ≈ energy.(Ref(cl_h), cl_h_states)
-
-                norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
-                @test norm_prob ≈ exp.(-β .* (sol.energies .- sol.energies[1]))
-
-                push!(energies, sol.energies)
-                clear_memoize_cache()
-            end
+            push!(energies, sol.energies)
+            clear_memoize_cache()
         end
+        @test all(e -> e ≈ first(energies), energies)
     end
-    @test all(e -> e ≈ first(energies), energies)
 end

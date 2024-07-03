@@ -263,8 +263,8 @@ function mpo(
 end
 
 
-@memoize Dict mpo(peps::AbstractGibbsNetwork, r::Union{Rational{Int},Int}) =
-    mpo(Float64, peps, r)
+@memoize Dict mpo(peps::AbstractGibbsNetwork{T,S,R}, r::Union{Rational{Int},Int}) where {T,S,R} =
+    mpo(R, peps, r)
 
 
 
@@ -280,7 +280,7 @@ function mps(::Type{T}, peps::AbstractGibbsNetwork, i::Int) where {T<:Number}
 end
 
 
-@memoize Dict mps(peps::AbstractGibbsNetwork, i::Int) = mps(Float64, peps, i)
+@memoize Dict mps(peps::AbstractGibbsNetwork{T,S,R}, i::Int) where {T,S,R} = mps(R, peps, i)
 
 
 @memoize Dict function dressed_mps(peps::AbstractGibbsNetwork, i::Int)

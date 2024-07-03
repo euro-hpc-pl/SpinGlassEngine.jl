@@ -1,10 +1,11 @@
 export tensor, probability
 
 
-function tensor(network::AbstractGibbsNetwork{Node,PEPSNode}, v::PEPSNode, β::Real)
+function tensor(network::AbstractGibbsNetwork{Node,PEPSNode, R}, v::PEPSNode, β::Real) where {R}
     if v ∉ keys(network.tensors_map)
-        return ones(Float64, 1, 1)
+        return ones(R, 1, 1)
     end
+    @show network.tensors_map[v]
     tensor(network, v, β, Val(network.tensors_map[v]))
 end
 
@@ -32,14 +33,14 @@ end
 
 
 function tensor(
-    net::PEPSNetwork{T,Dense},
+    net::PEPSNetwork{T,Dense, R},
     v::PEPSNode,
     β::Real,
     ::Val{:site},
-) where {T<:AbstractGeometry}
+) where {T<:AbstractGeometry, R<:Real}
     sp = tensor(net, v, β, Val(:sparse_site))
     projs = Tuple(get_projector!(net.lp, x) for x in sp.projs)
-    A = zeros(maximum.(projs))
+    A = zeros(R, maximum.(projs))
     for (σ, lexp) ∈ enumerate(sp.loc_exp)
         @inbounds A[getindex.(projs, Ref(σ))...] += lexp
     end
@@ -106,6 +107,7 @@ function tensor(
     β::Real,
     ::Val{:gauge_h},
 )
+    @show typeof(network.gauges.data[v])
     Diagonal(network.gauges.data[v]) # |> Array
 end
 
@@ -138,6 +140,7 @@ end
 
 function sqrt_tensor_up(net::AbstractGibbsNetwork{Node,PEPSNode}, v::Node, w::Node, β::Real)
     U, Σ, _ = svd(connecting_tensor(net, v, w, β))
+    @show eltype(Σ)
     U * Diagonal(sqrt.(Σ))
 end
 
@@ -149,6 +152,7 @@ function sqrt_tensor_down(
     β::Real,
 )
     _, Σ, V = svd(connecting_tensor(net, v, w, β))
+    @show eltype(Σ)
     Diagonal(sqrt.(Σ)) * V'
 end
 
@@ -200,6 +204,7 @@ function tensor(
     ::Val{:sqrt_up_d},
 )
     U, Σ, _ = svd(tensor(network, v, β, Val(:central_d_single_node)))
+    @show eltype(Σ)
     U * Diagonal(sqrt.(Σ))
 end
 
@@ -223,6 +228,7 @@ function tensor(
     ::Val{:sqrt_down_d},
 )
     _, Σ, V = svd(tensor(network, v, β, Val(:central_d_single_node)))
+    @show eltype(Σ)
     Diagonal(sqrt.(Σ)) * V'
 end
 

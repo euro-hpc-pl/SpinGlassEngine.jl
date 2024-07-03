@@ -77,11 +77,11 @@ $(TYPEDSIGNATURES)
 
 Stores gauges and corresponding information.
 """
-struct Gauges{T<:AbstractGeometry}
-    data::Dict{PEPSNode,AbstractArray{<:Real}}
+struct Gauges{T<:AbstractGeometry, R<:Real}
+    data::Dict{PEPSNode,AbstractArray{R}}
     info::Vector{GaugeInfo}
 
-    function Gauges{T}(nrows::Int, ncols::Int) where {T<:AbstractGeometry}
-        new(Dict{PEPSNode,AbstractArray{<:Real}}(), gauges_list(T, nrows, ncols))
+    function Gauges{T, R}(nrows::Int, ncols::Int) where {T<:AbstractGeometry, R<:Real}
+        new(Dict{PEPSNode,AbstractArray{R}}(), gauges_list(T, nrows, ncols))
     end
 end

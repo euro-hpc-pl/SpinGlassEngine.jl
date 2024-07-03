@@ -25,7 +25,7 @@ export AbstractGibbsNetwork,
 
 # T: type of the vertex of network
 # S: type of the vertex of underlying factor graph
-abstract type AbstractGibbsNetwork{S,T} end
+abstract type AbstractGibbsNetwork{S,T, R} end
 
 """
 $(TYPEDSIGNATURES)
@@ -46,8 +46,8 @@ Construct a Projected Entangled Pair States (PEPS) network.
 # Returns
 An instance of PEPSNetwork{T, S}.
 """
-mutable struct PEPSNetwork{T<:AbstractGeometry,S<:AbstractSparsity} <:
-               AbstractGibbsNetwork{Node,PEPSNode}
+mutable struct PEPSNetwork{T<:AbstractGeometry,S<:AbstractSparsity, R<:Real} <:
+               AbstractGibbsNetwork{Node,PEPSNode, R}
     clustered_hamiltonian::LabelledGraph
     vertex_map::Function
     lp::PoolOfProjectors
@@ -58,13 +58,13 @@ mutable struct PEPSNetwork{T<:AbstractGeometry,S<:AbstractSparsity} <:
     tensors_map::Dict{PEPSNode,Symbol}
     gauges::Gauges{T}
 
-    function PEPSNetwork{T,S}(
+    function PEPSNetwork{T,S,R}(
         m::Int,
         n::Int,
         clustered_hamiltonian::LabelledGraph,
         transformation::LatticeTransformation,
         gauge_type::Symbol = :id,
-    ) where {T<:AbstractGeometry,S<:AbstractSparsity}
+    ) where {T<:AbstractGeometry,S<:AbstractSparsity, R<:Real}
         lp = get_prop(clustered_hamiltonian, :pool_of_projectors)
         net = new(clustered_hamiltonian, vertex_map(transformation, m, n), lp, m, n)
         net.nrows, net.ncols = transformation.flips_dimensions ? (n, m) : (m, n)
@@ -74,7 +74,7 @@ mutable struct PEPSNetwork{T<:AbstractGeometry,S<:AbstractSparsity} <:
         end
 
         net.tensors_map = tensor_map(T, S, net.nrows, net.ncols)
-        net.gauges = Gauges{T}(net.nrows, net.ncols)
+        net.gauges = Gauges{T, R}(net.nrows, net.ncols)
         initialize_gauges!(net, gauge_type)
         net
     end
@@ -307,13 +307,13 @@ Each gauge tensor is associated with two positions in the network and a type.
 The positions are determined by the gauge's `positions` field, and the type is specified by the gauge's `type` field. 
 The initialization type can be either `:id` for identity tensors or `:rand` for random tensors.
 """
-function initialize_gauges!(net::AbstractGibbsNetwork{S,T}, type::Symbol = :id) where {S,T}
+function initialize_gauges!(net::AbstractGibbsNetwork{S,T,R}, type::Symbol = :id) where {S,T,R}
     @assert type ∈ (:id, :rand)
     for gauge ∈ net.gauges.info
         n1, n2 = gauge.positions
         push!(net.tensors_map, n1 => gauge.type, n2 => gauge.type)
         d = size(net, gauge.attached_tensor)[gauge.attached_leg]
-        X = type == :id ? ones(d) : rand(d) .+ 0.42
+        X = type == :id ? ones(R, d) : rand(R, d) .+ 0.42
         push!(net.gauges.data, n1 => X, n2 => 1 ./ X)
     end
 end

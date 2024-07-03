@@ -76,26 +76,26 @@ A struct representing control parameters for the MPO-MPS (Matrix Product Operato
 
 The `MpsParameters` struct encapsulates various control parameters that influence the behavior and accuracy of the MPO-MPS contraction scheme used for PEPS network calculations.
 """
-struct MpsParameters
+struct MpsParameters{S<:Real}
     bond_dimension::Int
-    variational_tol::Real
+    variational_tol::S
     max_num_sweeps::Int
-    tol_SVD::Real
+    tol_SVD::S
     iters_svd::Int
     iters_var::Int
     Dtemp_multiplier::Int
     method::Symbol
 
-    MpsParameters(
+    MpsParameters{S}(
         bd = typemax(Int),
-        ϵ = 1E-8,
+        ϵ::S = S(1E-8),
         sw = 4,
-        ts = 1E-16,
+        ts::S = S(1E-16),
         is = 1,
         iv = 1,
         dm = 2,
         m = :psvd_sparse,
-    ) = new(bd, ϵ, sw, ts, is, iv, dm, m)
+    ) where {S} = new(bd, ϵ, sw, ts, is, iv, dm, m)
 end
 
 """
@@ -148,7 +148,7 @@ mutable struct MpsContractor{T<:AbstractStrategy,R<:AbstractGauge, S<:Real} <: A
     betas::Vector{S}
     graduate_truncation::Symbol
     depth::Int
-    params::MpsParameters
+    params::MpsParameters{S}
     layers::MpoLayers
     statistics::Any#::Dict{Vector{Int}, <:Real}
     nodes_search_order::Vector{Node}
@@ -225,7 +225,6 @@ This function constructs an MPO by iterating through the specified layers and as
         lmpo = TensorMap{S}()
         for dr ∈ coordinates
             ten = tensor(ctr.peps, PEPSNode(r + dr, site), ctr.betas[indβ])
-            @show typeof(ten)
             push!(lmpo, dr => ten)
         end
         push!(mpo, site => MpoTensor(lmpo))

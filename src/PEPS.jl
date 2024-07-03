@@ -133,10 +133,10 @@ Calculate the bond energy between nodes `u` and `v` for a given index `σ` in th
 ## Returns
 - `energies::Vector{T}`: Vector containing the bond energies between nodes `u` and `v` for index `σ`.
 """
-function bond_energy(net::AbstractGibbsNetwork{T,S}, u::Node, v::Node, σ::Int) where {T,S}
+function bond_energy(net::AbstractGibbsNetwork{T,S, R}, u::Node, v::Node, σ::Int) where {T,S, R}
     cl_h_u, cl_h_v = net.vertex_map(u), net.vertex_map(v)
     energies = SpinGlassNetworks.bond_energy(net.clustered_hamiltonian, cl_h_u, cl_h_v, σ)
-    vec(energies)
+    R.(vec(energies))
 end
 
 """
@@ -231,8 +231,8 @@ Retrieve the local energy spectrum associated with a specific vertex in the Gibb
 ## Returns
 - Local energy spectrum associated with the specified vertex.
 """
-function local_energy(network::AbstractGibbsNetwork{S,T}, vertex::S) where {S,T}
-    spectrum(network, vertex).energies
+function local_energy(network::AbstractGibbsNetwork{S,T, R}, vertex::S) where {S,T, R}
+    R.(spectrum(network, vertex).energies)
 end
 
 
@@ -263,15 +263,15 @@ Compute the interaction energy between two vertices in a Gibbs network.
 ## Returns
 - `energy::Matrix{T}`: Interaction energy matrix between vertices `v` and `w`.
 """
-function interaction_energy(network::AbstractGibbsNetwork{S,T}, v::S, w::S) where {S,T}
+function interaction_energy(network::AbstractGibbsNetwork{S,T, R}, v::S, w::S) where {S,T, R}
     cl_h = network.clustered_hamiltonian
     cl_h_v, cl_h_w = network.vertex_map(v), network.vertex_map(w)
     if has_edge(cl_h, cl_h_w, cl_h_v)
-        get_prop(cl_h, cl_h_w, cl_h_v, :en)'
+        R.(get_prop(cl_h, cl_h_w, cl_h_v, :en)')
     elseif has_edge(cl_h, cl_h_v, cl_h_w)
-        get_prop(cl_h, cl_h_v, cl_h_w, :en)
+        R.(get_prop(cl_h, cl_h_v, cl_h_w, :en))
     else
-        zeros(1, 1)
+        zeros(R, 1, 1)
     end
 end
 

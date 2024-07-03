@@ -73,10 +73,10 @@ This function creates an empty `Solution` object with the given number of states
 ## Returns
 An empty `Solution` object with default field values, ready to store search results for a specified number of states.
 """
-@inline empty_solution(n::Int = 1) = Solution(
-    zeros(n),
+@inline empty_solution(::Type{T}, n::Int = 1) where {T} = Solution(
+    zeros(T, n),
     fill(Vector{Int}[], n),
-    zeros(n),
+    zeros(T, n),
     ones(Int, n),
     -Inf,
     repeat([NoDroplets()], n),
@@ -536,7 +536,7 @@ and `symmetry` indicating any symmetry constraints. Optionally, you can disable 
 Probabilities are kept as log. Results are stored in Solution structure.
 
 ## Arguments
-- `ctr::T`: The contractor object representing the PEPS network, which should be a subtype of `AbstractContractor`.
+- `ctr::AbstractContractor`: The contractor object representing the PEPS network, which should be a subtype of `AbstractContractor`.
 - `sparams::SearchParameters`: Parameters for controlling the search, including the maximum number of states and a cutoff probability.
 - `merge_strategy=no_merge`: (Optional) Merge strategy for branches. Defaults to `no_merge`.
 - `symmetry::Symbol=:noZ2`: (Optional) Symmetry constraint. Defaults to `:noZ2`. If Z2 symmetry is present in your system, use `:Z2`.
@@ -548,12 +548,12 @@ A tuple `(sol, s)` containing:
 - `s::Dict`: A dictionary containing Schmidt spectra for each row of the PEPS network.
 """
 function low_energy_spectrum(
-    ctr::T,
+    ctr::MpsContractor{T, R, S},
     sparams::SearchParameters,
     merge_strategy = no_merge,
     symmetry::Symbol = :noZ2;
     no_cache = false,
-) where {T<:AbstractContractor}
+) where {T, R, S}
     # Build all boundary mps
     CUDA.allowscalar(false)
 
@@ -585,7 +585,7 @@ function low_energy_spectrum(
     move_to_CPU!(ψ0)
 
     # Start branch and bound search
-    sol = empty_solution()
+    sol = empty_solution(S)
     old_row = ctr.nodes_search_order[1][1]
     @showprogress "Search: " for node ∈ ctr.nodes_search_order
         ctr.current_node = node
@@ -655,7 +655,7 @@ This function performs Gibbs sampling on a spin glass PEPS (Projected Entangled 
 
 ## Arguments
 
-- `ctr::T`: The contractor object representing the PEPS network, which should be a subtype of `AbstractContractor`.
+- `ctr::AbstractContractor`: The contractor object representing the PEPS network, which should be a subtype of `AbstractContractor`.
 - `sparams::SearchParameters`: Parameters for controlling the search, including the maximum number of states and a cutoff probability.
 - `merge_strategy=no_merge`: (Optional) Merge strategy for branches. Defaults to `no_merge`.
 - `no_cache=false`: (Optional) If `true`, disables caching. Defaults to `false`.
@@ -665,11 +665,11 @@ This function performs Gibbs sampling on a spin glass PEPS (Projected Entangled 
 A `Solution` object representing the result of the Gibbs sampling.
 """
 function gibbs_sampling(
-    ctr::T,
+    ctr::MpsContractor{T, R, S},
     sparams::SearchParameters,
     merge_strategy = no_merge;
     no_cache = false,
-) where {T<:AbstractContractor}
+) where {T, R, S}
     # Build all boundary mps
     CUDA.allowscalar(false)
 
@@ -679,7 +679,7 @@ function gibbs_sampling(
     end
 
     # Start branch and bound search
-    sol = empty_solution(sparams.max_states)
+    sol = empty_solution(S, sparams.max_states)
     old_row = ctr.nodes_search_order[1][1]
     @showprogress "Search: " for node ∈ ctr.nodes_search_order
         ctr.current_node = node

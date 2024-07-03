@@ -5,7 +5,6 @@ function tensor(network::AbstractGibbsNetwork{Node,PEPSNode, R}, v::PEPSNode, β
     if v ∉ keys(network.tensors_map)
         return ones(R, 1, 1)
     end
-    @show network.tensors_map[v]
     tensor(network, v, β, Val(network.tensors_map[v]))
 end
 
@@ -107,7 +106,6 @@ function tensor(
     β::Real,
     ::Val{:gauge_h},
 )
-    @show typeof(network.gauges.data[v])
     Diagonal(network.gauges.data[v]) # |> Array
 end
 
@@ -140,7 +138,6 @@ end
 
 function sqrt_tensor_up(net::AbstractGibbsNetwork{Node,PEPSNode}, v::Node, w::Node, β::Real)
     U, Σ, _ = svd(connecting_tensor(net, v, w, β))
-    @show eltype(Σ)
     U * Diagonal(sqrt.(Σ))
 end
 
@@ -152,7 +149,6 @@ function sqrt_tensor_down(
     β::Real,
 )
     _, Σ, V = svd(connecting_tensor(net, v, w, β))
-    @show eltype(Σ)
     Diagonal(sqrt.(Σ)) * V'
 end
 
@@ -204,7 +200,6 @@ function tensor(
     ::Val{:sqrt_up_d},
 )
     U, Σ, _ = svd(tensor(network, v, β, Val(:central_d_single_node)))
-    @show eltype(Σ)
     U * Diagonal(sqrt.(Σ))
 end
 
@@ -228,7 +223,6 @@ function tensor(
     ::Val{:sqrt_down_d},
 )
     _, Σ, V = svd(tensor(network, v, β, Val(:central_d_single_node)))
-    @show eltype(Σ)
     Diagonal(sqrt.(Σ)) * V'
 end
 

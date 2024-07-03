@@ -16,20 +16,20 @@ CUDA.allowscalar(false)
 
 
 function my_brute_force(ig::IsingGraph; num_states::Int)
-    brute_force(ig, onGPU ? :GPU : :CPU, num_states=num_states)
+    brute_force(ig, onGPU ? :GPU : :CPU, num_states = num_states)
 end
 
 
 onGPU = true
 
 function my_brute_force(ig::IsingGraph; num_states::Int)
-    brute_force(ig, onGPU ? :GPU : :CPU, num_states=num_states)
+    brute_force(ig, onGPU ? :GPU : :CPU, num_states = num_states)
 end
 
 m, n, t = 7, 7, 3
 
 Dcut = 8
-β = 1.
+β = 1.0
 tolV = 1E-16
 tolS = 1E-16
 max_sweeps = 1
@@ -40,8 +40,8 @@ DTEMP_MULT = 2
 MAX_STATES = 128
 METHOD = :psvd_sparse #:psvd_sparse #:svd
 DE = 16.0
-δp = 1E-5*exp(-β * DE)
-cluster_states = [2^4, 2^8, 2^12, 2^16, 2^20,]
+δp = 1E-5 * exp(-β * DE)
+cluster_states = [2^4, 2^8, 2^12, 2^16, 2^20]
 
 ig = ising_graph("$(@__DIR__)/../instances/pegasus_random/P8/CBFM-P/SpinGlass/001_sg.txt")
 
@@ -57,14 +57,23 @@ for cl_states in cluster_states
     # )
 
     cl_h = clustered_hamiltonian(
-    ig,
-    spectrum=full_spectrum, #rm _gpu to use CPU
-    cluster_assignment_rule=pegasus_lattice((m, n, t))
+        ig,
+        spectrum = full_spectrum, #rm _gpu to use CPU
+        cluster_assignment_rule = pegasus_lattice((m, n, t)),
     )
 
     cl_h = truncate_clustered_hamiltonian_2site_energy(cl_h, cl_states)
 
-    params = MpsParameters(Dcut, tolV, max_sweeps, tolS, ITERS_SVD, ITERS_VAR, DTEMP_MULT, METHOD)
+    params = MpsParameters(
+        Dcut,
+        tolV,
+        max_sweeps,
+        tolS,
+        ITERS_SVD,
+        ITERS_VAR,
+        DTEMP_MULT,
+        METHOD,
+    )
     search_params = SearchParameters(MAX_STATES, δp)
 
     Strategy = Zipper
@@ -75,8 +84,8 @@ for cl_states in cluster_states
     i = div(m, 2)
     indβ = 1
 
-    net = PEPSNetwork{SquareCrossDoubleNode{Layout}, Sparse}(m, n, cl_h, tran)
-    ctr = MpsContractor{Strategy, Gauge}(net, [β], :graduate_truncate, params; onGPU=onGPU)
+    net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparse}(m, n, cl_h, tran)
+    ctr = MpsContractor{Strategy,Gauge}(net, [β], :graduate_truncate, params; onGPU = onGPU)
     Ws = SpinGlassEngine.mpo(ctr, ctr.layers.main, i, indβ)
     # println(" Ws -> ", which_device(Ws), " ", format_bytes.(measure_memory(Ws)))
     # println(ctr.layers.main)

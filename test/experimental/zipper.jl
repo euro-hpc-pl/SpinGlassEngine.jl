@@ -17,7 +17,7 @@ CUDA.allowscalar(false)
 onGPU = true
 
 function my_brute_force(ig::IsingGraph; num_states::Int)
-    brute_force(ig, onGPU ? :GPU : :CPU, num_states=num_states)
+    brute_force(ig, onGPU ? :GPU : :CPU, num_states = num_states)
 end
 
 m, n, t = 8, 8, 8
@@ -25,10 +25,10 @@ m, n, t = 8, 8, 8
 β = 1
 Dcut = 8
 
-β = 1.
+β = 1.0
 Dcut = 7
 tolV = 0.01
-tolS = 0.
+tolS = 0.0
 max_sweeps = 4
 indβ = 1
 
@@ -36,8 +36,8 @@ ig = ising_graph("$(@__DIR__)/../instances/chimera_droplets/512power/001.txt")
 
 cl_h = clustered_hamiltonian(
     ig,
-    spectrum=my_brute_force, #rm _gpu to use CPU
-    cluster_assignment_rule=super_square_lattice((m, n, t))
+    spectrum = my_brute_force, #rm _gpu to use CPU
+    cluster_assignment_rule = super_square_lattice((m, n, t)),
 )
 
 params = MpsParameters(Dcut, tolV, max_sweeps)
@@ -50,19 +50,30 @@ Gauge = NoUpdate
 i = div(m, 2)
 indβ = 1
 
-net = PEPSNetwork{SquareSingleNode{Layout}, Sparse}(m, n, cl_h, tran)
-ctr = MpsContractor{Strategy, Gauge}(net, [β], :graduate_truncate, params; onGPU=onGPU)
+net = PEPSNetwork{SquareSingleNode{Layout},Sparse}(m, n, cl_h, tran)
+ctr = MpsContractor{Strategy,Gauge}(net, [β], :graduate_truncate, params; onGPU = onGPU)
 Ws = SpinGlassEngine.mpo(ctr, ctr.layers.main, i, indβ)
 println(" Ws -> ", which_device(Ws), " ", format_bytes.(measure_memory(Ws)))
 
-net = PEPSNetwork{SquareSingleNode{Layout}, Dense}(m, n, cl_h, tran)
-ctr = MpsContractor{Strategy, Gauge}(net, [β], :graduate_truncate, params; onGPU=onGPU)
+net = PEPSNetwork{SquareSingleNode{Layout},Dense}(m, n, cl_h, tran)
+ctr = MpsContractor{Strategy,Gauge}(net, [β], :graduate_truncate, params; onGPU = onGPU)
 Wd = SpinGlassEngine.mpo(ctr, ctr.layers.main, i, indβ)
 println(" Wd -> ", which_device(Wd), " ", format_bytes.(measure_memory(Wd)))
 
-println("Dcut = ", Dcut, " tolV = ", tolV, " tolS = ", tolS, " max_sweeps = ", max_sweeps, " i = ", i)
+println(
+    "Dcut = ",
+    Dcut,
+    " tolV = ",
+    tolV,
+    " tolS = ",
+    tolS,
+    " max_sweeps = ",
+    max_sweeps,
+    " i = ",
+    i,
+)
 
-ψ = rand(QMps{Float64}, local_dims(Wd, :down), Dcut; onGPU=onGPU) # F64 for now
+ψ = rand(QMps{Float64}, local_dims(Wd, :down), Dcut; onGPU = onGPU) # F64 for now
 println(" ψ -> ", which_device(ψ), " ", format_bytes.(measure_memory(ψ)))
 canonise!(ψ, :left)
 
@@ -82,17 +93,44 @@ for (W, msg) ∈ [(Ws, "SPARSE"), (Wd, "DENSE")] #
     canonise!(ψ1, :left)
 
     println("zipper dense svd")
-    ψ2 = zipper(W, ψ, method=:svd, Dcut=Dcut, tol=tolS, iters_svd=1, iters_var=1, Dtemp_multiplier=2)
+    ψ2 = zipper(
+        W,
+        ψ,
+        method = :svd,
+        Dcut = Dcut,
+        tol = tolS,
+        iters_svd = 1,
+        iters_var = 1,
+        Dtemp_multiplier = 2,
+    )
     println(dot(ψ0, ψ2) / (norm(ψ0) * norm(ψ2)), "  ", dot(ψ0, ψ2) / norm(ψ0))
     canonise!(ψ2, :left)
 
     println("zipper psvd")
-    ψ3 = zipper(W, ψ, method=:psvd, Dcut=Dcut, tol=tolS, iters_svd=1, iters_var=1, Dtemp_multiplier=2)
+    ψ3 = zipper(
+        W,
+        ψ,
+        method = :psvd,
+        Dcut = Dcut,
+        tol = tolS,
+        iters_svd = 1,
+        iters_var = 1,
+        Dtemp_multiplier = 2,
+    )
     println(dot(ψ0, ψ3) / (norm(ψ0) * norm(ψ3)), "  ", dot(ψ0, ψ3) / norm(ψ0))
     canonise!(ψ3, :left)
 
     println("zipper psvd_sparse")
-    ψ3 = zipper(W, ψ, method=:psvd_sparse, Dcut=Dcut, tol=tolS, iters_svd=1, iters_var=1, Dtemp_multiplier=2)
+    ψ3 = zipper(
+        W,
+        ψ,
+        method = :psvd_sparse,
+        Dcut = Dcut,
+        tol = tolS,
+        iters_svd = 1,
+        iters_var = 1,
+        Dtemp_multiplier = 2,
+    )
     println(dot(ψ0, ψ3) / (norm(ψ0) * norm(ψ3)), "  ", dot(ψ0, ψ3) / norm(ψ0))
     canonise!(ψ3, :left)
 

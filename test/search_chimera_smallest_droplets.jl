@@ -12,8 +12,8 @@
     ig = ising_graph(instance)
     cl_h = clustered_hamiltonian(
         ig,
-        spectrum=full_spectrum,
-        cluster_assignment_rule=super_square_lattice((m, n, t))
+        spectrum = full_spectrum,
+        cluster_assignment_rule = super_square_lattice((m, n, t)),
     )
 
     params = MpsParameters(bond_dim, 1E-8, 4)
@@ -24,10 +24,20 @@
     for Strategy ∈ (Zipper,), Sparsity ∈ (Dense,)
         for Layout ∈ (EnergyGauges,)
             for transform ∈ all_lattice_transformations
-                net = PEPSNetwork{SquareSingleNode{Layout}, Sparsity}(m, n, cl_h, transform)
-                ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
+                net = PEPSNetwork{SquareSingleNode{Layout},Sparsity}(m, n, cl_h, transform)
+                ctr = MpsContractor{Strategy,Gauge}(
+                    net,
+                    [β / 8, β / 4, β / 2, β],
+                    :graduate_truncate,
+                    params;
+                    onGPU = onGPU,
+                )
 
-                sol1, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, SingleLayerDroplets(2.2, 1, :hamming)))
+                sol1, s = low_energy_spectrum(
+                    ctr,
+                    search_params,
+                    merge_branches(ctr, :nofit, SingleLayerDroplets(2.2, 1, :hamming)),
+                )
 
                 @test sol1.energies ≈ exact_energies[[1]]
                 sol2 = unpack_droplets(sol1, β)

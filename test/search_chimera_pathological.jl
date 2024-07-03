@@ -4,14 +4,8 @@ Strategy = $Strategy
 Layout = $Layout
 Lattice = $Lattice
 transform = $transform
-" for
-    Sparsity ∈ (Dense, Sparse),
-    Strategy ∈
-    (
-        SVDTruncate,
-        MPSAnnealing,
-        Zipper,
-    ),
+" for Sparsity ∈ (Dense, Sparse),
+    Strategy ∈ (SVDTruncate, MPSAnnealing, Zipper),
     Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng),
     Lattice ∈ (SquareSingleNode, SquareCrossSingleNode),
     transform ∈ all_lattice_transformations

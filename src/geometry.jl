@@ -1,21 +1,20 @@
 # geometry.jl: This file provides basic stuctures and types needed for constructing PEPS tensor 
 #              network.
 
-export
-       site,
-       Node,
-       PEPSNode,
-       AbstractGeometry,
-       AbstractSparsity,
-       AbstractTensorsLayout,
-       Dense,
-       Sparse,
-       Gauges,
-       GaugeInfo,
-       GaugesEnergy,
-       EnergyGauges,
-       EngGaugesEng,
-       SuperPEPSNode
+export site,
+    Node,
+    PEPSNode,
+    AbstractGeometry,
+    AbstractSparsity,
+    AbstractTensorsLayout,
+    Dense,
+    Sparse,
+    Gauges,
+    GaugeInfo,
+    GaugesEnergy,
+    EnergyGauges,
+    EngGaugesEng,
+    SuperPEPSNode
 
 abstract type AbstractGeometry end
 abstract type AbstractSparsity end
@@ -28,7 +27,7 @@ struct GaugesEnergy{T} <: AbstractTensorsLayout end
 struct EnergyGauges{T} <: AbstractTensorsLayout end
 struct EngGaugesEng{T} <: AbstractTensorsLayout end
 
-const Node = NTuple{N, Int} where N
+const Node = NTuple{N,Int} where {N}
 
 # """
 # $(TYPEDSIGNATURES)
@@ -67,7 +66,7 @@ $(TYPEDSIGNATURES)
 Defines information how to create gauges.
 """
 struct GaugeInfo
-    positions::NTuple{2, PEPSNode}
+    positions::NTuple{2,PEPSNode}
     attached_tensor::PEPSNode
     attached_leg::Int
     type::Symbol
@@ -78,11 +77,11 @@ $(TYPEDSIGNATURES)
 
 Stores gauges and corresponding information.
 """
-struct Gauges{T <: AbstractGeometry}
-    data::Dict{PEPSNode, AbstractArray{<:Real}}
+struct Gauges{T<:AbstractGeometry}
+    data::Dict{PEPSNode,AbstractArray{<:Real}}
     info::Vector{GaugeInfo}
 
-    function Gauges{T}(nrows::Int, ncols::Int) where T <: AbstractGeometry
-        new(Dict{PEPSNode, AbstractArray{<:Real}}(), gauges_list(T, nrows, ncols))
+    function Gauges{T}(nrows::Int, ncols::Int) where {T<:AbstractGeometry}
+        new(Dict{PEPSNode,AbstractArray{<:Real}}(), gauges_list(T, nrows, ncols))
     end
 end

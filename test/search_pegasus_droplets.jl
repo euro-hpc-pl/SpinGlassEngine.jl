@@ -16,25 +16,40 @@ function bench(instance::String)
     dE = 3.0
     δp = exp(-β * dE)
     num_states = 500
-    all_betas = [β/8, β/4, β/2, β]
+    all_betas = [β / 8, β / 4, β / 2, β]
 
     cl_h = clustered_hamiltonian(
         ising_graph(instance),
         # max_cl_states,
-        spectrum=my_brute_force,
-        cluster_assignment_rule=pegasus_lattice((m, n, t))
+        spectrum = my_brute_force,
+        cluster_assignment_rule = pegasus_lattice((m, n, t)),
     )
     params = MpsParameters(bond_dim, 1E-8, 10, 1E-16)
     search_params = SearchParameters(num_states, δp)
 
     energies = Vector{Float64}[]
-    for Strategy ∈ (Zipper, ), Sparsity ∈ (Sparse, )
-        for Gauge ∈ (NoUpdate, )
+    for Strategy ∈ (Zipper,), Sparsity ∈ (Sparse,)
+        for Gauge ∈ (NoUpdate,)
             for Layout ∈ (GaugesEnergy,), transform ∈ all_lattice_transformations[[1]]
-                net = PEPSNetwork{SquareCrossDoubleNode{Layout}, Sparsity}(m, n, cl_h, transform)
-                ctr = MpsContractor{Strategy, Gauge}(net, all_betas, :graduate_truncate, params; onGPU=onGPU)
+                net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity}(
+                    m,
+                    n,
+                    cl_h,
+                    transform,
+                )
+                ctr = MpsContractor{Strategy,Gauge}(
+                    net,
+                    all_betas,
+                    :graduate_truncate,
+                    params;
+                    onGPU = onGPU,
+                )
                 # sol1, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, NoDroplets()))
-                sol1, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, SingleLayerDroplets(0.01, 20, :hamming)))
+                sol1, s = low_energy_spectrum(
+                    ctr,
+                    search_params,
+                    merge_branches(ctr, :nofit, SingleLayerDroplets(0.01, 20, :hamming)),
+                )
 
                 sol2 = unpack_droplets(sol1, β)
                 ig_states = decode_clustered_hamiltonian_state.(Ref(cl_h), sol2.states)

@@ -1,7 +1,7 @@
 using SpinGlassExhaustive
 
 function my_brute_force(ig::IsingGraph; num_states::Int)
-    brute_force(ig, onGPU ? :GPU : :CPU, num_states=num_states)
+    brute_force(ig, onGPU ? :GPU : :CPU, num_states = num_states)
 end
 
 function overlap_states(state1::Vector{Int}, state2::Vector{Int})
@@ -21,8 +21,8 @@ num_states = 7 #22
 ig = ising_graph("$(@__DIR__)/../instances/square_gauss/S12/001.txt")
 cl_h = clustered_hamiltonian(
     ig,
-    spectrum=my_brute_force,
-    cluster_assignment_rule=super_square_lattice((m, n, t))
+    spectrum = my_brute_force,
+    cluster_assignment_rule = super_square_lattice((m, n, t)),
 )
 params = MpsParameters(bond_dim, 1E-8, 4)
 search_params = SearchParameters(num_states, 0.0)
@@ -35,13 +35,19 @@ Layout = EnergyGauges
 Lattice = SquareSingleNode
 transform = rotation(0)
 
-net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, cl_h, transform)
-ctr = MpsContractor{Strategy, Gauge}(net, [β/8., β/4., β/2., β], :graduate_truncate, params; onGPU=onGPU)
+net = PEPSNetwork{Lattice{Layout},Sparsity}(m, n, cl_h, transform)
+ctr = MpsContractor{Strategy,Gauge}(
+    net,
+    [β / 8.0, β / 4.0, β / 2.0, β],
+    :graduate_truncate,
+    params;
+    onGPU = onGPU,
+)
 sol = gibbs_sampling(ctr, search_params)
 
-for i in 1:num_states-1
+for i = 1:num_states-1
     o = overlap_states(sol.states[i], sol.states[i+1])
-    println("Overlap between states ", i, " and ", i+1, " is ", o)
+    println("Overlap between states ", i, " and ", i + 1, " is ", o)
 end
 
 println(sol.energies)

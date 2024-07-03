@@ -1,13 +1,8 @@
 # operations.jl: This file profides functions and structs for perfoming operations
 #                on the whole PEPS tensor network ("lattice").
 
-export
-       LatticeTransformation,
-       rotation,
-       reflection,
-       all_lattice_transformations,
-       vertex_map,
-       check_bounds
+export LatticeTransformation,
+    rotation, reflection, all_lattice_transformations, vertex_map, check_bounds
 
 """
 $(TYPEDSIGNATURES)
@@ -22,7 +17,7 @@ The `LatticeTransformation` struct defines a transformation that can be applied 
 It specifies a permutation of vertex labels, allowing for rotations and reflections, as well as an option to flip dimensions. 
 """
 struct LatticeTransformation
-    permutation::NTuple{4, Int}
+    permutation::NTuple{4,Int}
     flips_dimensions::Bool
 end
 
@@ -32,7 +27,7 @@ end
 function Base.:(∘)(op1::LatticeTransformation, op2::LatticeTransformation)
     LatticeTransformation(
         op1.permutation[collect(op2.permutation)],
-        op1.flips_dimensions ⊻ op2.flips_dimensions
+        op1.flips_dimensions ⊻ op2.flips_dimensions,
     )
 end
 
@@ -125,7 +120,7 @@ Create a vertex mapping function for a lattice transformation.
 # Returns
 A vertex mapping function `vmap` that takes a tuple of vertex coordinates and returns their new coordinates after applying the specified lattice transformation.    
 """
-function vertex_map(vert_permutation::NTuple{4, Int}, nrows, ncols)
+function vertex_map(vert_permutation::NTuple{4,Int}, nrows, ncols)
     if vert_permutation == (1, 2, 3, 4) #
         f = (i, j) -> (i, j)
     elseif vert_permutation == (4, 1, 2, 3) # 90 deg rotation
@@ -145,8 +140,8 @@ function vertex_map(vert_permutation::NTuple{4, Int}, nrows, ncols)
     else
         ArgumentError("$(vert_permutation) does not define square isometry.")
     end
-    vmap(node::NTuple{2, Int}) = f(node[1], node[2])
-    vmap(node::NTuple{3, Int}) = (f(node[1], node[2])..., node[3])
+    vmap(node::NTuple{2,Int}) = f(node[1], node[2])
+    vmap(node::NTuple{3,Int}) = (f(node[1], node[2])..., node[3])
     vmap
 end
 
@@ -175,7 +170,5 @@ A tuple containing all possible lattice transformations.
 This constant includes rotations at angles 0, 90, 180, and 270 degrees, as well as reflections across the x-axis, y-axis, diagonal, and antidiagonal axes. 
 These lattice transformations can be applied to the PEPS lattice to achieve various orientations and reflections in order to start the search on a different sites of lattice.
 """
-const all_lattice_transformations = (
-    rotation.([0, 90, 180, 270])...,
-    reflection.([:x, :y, :diag, :antydiag])...
-)
+const all_lattice_transformations =
+    (rotation.([0, 90, 180, 270])..., reflection.([:x, :y, :diag, :antydiag])...)

@@ -16,8 +16,9 @@ onGPU = true
 using Test
 my_tests = []
 
-push!(my_tests,
-# quick tests:
+push!(
+    my_tests,
+    # quick tests:
     "operations.jl",
     "branch_and_bound.jl",
     "search_chimera_pathological.jl",
@@ -37,14 +38,15 @@ push!(my_tests,
     "search_pegasus_droplets.jl",
     "search_chimera_pathological_Z2.jl",
 
-# time consuming tests:
-#    "search_chimera_full.jl",
+    # time consuming tests:
+    #    "search_chimera_full.jl",
 
 )
 
 # This is work in progress (may or may not be included in future versions)
 
-push!(my_tests,
+push!(
+    my_tests,
     # "experimental/zipper.jl",
     # "experimental/truncate.jl",
     # "experimental/truncate_small.jl",
@@ -58,7 +60,7 @@ push!(my_tests,
 )
 
 function my_brute_force(ig::IsingGraph; num_states::Int)
-    brute_force(ig, onGPU ? :GPU : :CPU, num_states=num_states)
+    brute_force(ig, onGPU ? :GPU : :CPU, num_states = num_states)
 end
 
 @time begin

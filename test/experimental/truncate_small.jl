@@ -17,7 +17,7 @@ CUDA.allowscalar(false)
 onGPU = true
 
 function my_brute_force(ig::IsingGraph; num_states::Int)
-    brute_force(ig, onGPU ? :GPU : :CPU, num_states=num_states)
+    brute_force(ig, onGPU ? :GPU : :CPU, num_states = num_states)
 end
 
 function run_test(instance, m, n, t)
@@ -37,17 +37,26 @@ function run_test(instance, m, n, t)
 
     ig = ising_graph(instance)
 
-    params = MpsParameters(bond_dim, tolV, max_sweeps, tolS, ITERS_SVD, ITERS_VAR, DTEMP_MULT, METHOD)
+    params = MpsParameters(
+        bond_dim,
+        tolV,
+        max_sweeps,
+        tolS,
+        ITERS_SVD,
+        ITERS_VAR,
+        DTEMP_MULT,
+        METHOD,
+    )
 
     # params = MpsParameters(bond_dim, 1E-8, 10)
     search_params = SearchParameters(num_states, δp)
     energies = []
     Gauge = NoUpdate
-    βs = [β/16, β/8, β/4, β/2, β]
+    βs = [β / 16, β / 8, β / 4, β / 2, β]
     Strategy = Zipper
     Sparsity = Sparse
     Layout = GaugesEnergy
-    cl_states = [3,4,5,6,7,8,9,10,15,20]
+    cl_states = [3, 4, 5, 6, 7, 8, 9, 10, 15, 20]
 
 
     for cl in cl_states
@@ -61,14 +70,20 @@ function run_test(instance, m, n, t)
 
             cl_h = clustered_hamiltonian(
                 ig,
-                spectrum=full_spectrum, #_gpu, # rm _gpu to use CPU
-                cluster_assignment_rule=pegasus_lattice((m, n, t))
+                spectrum = full_spectrum, #_gpu, # rm _gpu to use CPU
+                cluster_assignment_rule = pegasus_lattice((m, n, t)),
             )
             cl_h = truncate_clustered_hamiltonian_2site_energy(cl_h, cl)
 
-            net = PEPSNetwork{SquareCrossDoubleNode{Layout}, Sparsity}(m, n, cl_h, tran)
+            net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity}(m, n, cl_h, tran)
 
-            ctr = MpsContractor{Strategy, Gauge}(net, βs, :graduate_truncate, params; onGPU=onGPU)
+            ctr = MpsContractor{Strategy,Gauge}(
+                net,
+                βs,
+                :graduate_truncate,
+                params;
+                onGPU = onGPU,
+            )
 
             sol, schmidts = low_energy_spectrum(ctr, search_params, merge_branches(ctr)) #, merge_branches(ctr))
 

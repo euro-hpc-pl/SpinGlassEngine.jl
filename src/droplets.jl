@@ -1,7 +1,6 @@
 # droplets.jl: This file provides functions for finding droplets and operating on them.
 
-export
-    NoDroplets,
+export NoDroplets,
     SingleLayerDroplets,
     Flip,
     Droplet,
@@ -45,7 +44,7 @@ struct SingleLayerDroplets
         max_energy = 1.0,
         min_size = 1,
         metric = :no_metric,
-        mode = :Ising
+        mode = :Ising,
     ) = new(max_energy, min_size, metric, mode)
 end
 
@@ -93,10 +92,10 @@ mutable struct Droplet
     first::Int  # site where droplet starts
     last::Int
     flip::Flip  # states of nodes flipped by droplet
-    droplets::Union{NoDroplets, Vector{Droplet}}  # subdroplets on top of the current droplet; can be empty
+    droplets::Union{NoDroplets,Vector{Droplet}}  # subdroplets on top of the current droplet; can be empty
 end
 
-Droplets = Union{NoDroplets, Vector{Droplet}}  # Can't be defined before Droplet struct
+Droplets = Union{NoDroplets,Vector{Droplet}}  # Can't be defined before Droplet struct
 
 """
 $(TYPEDSIGNATURES)
@@ -122,8 +121,8 @@ The `NoDroplets` strategy represents a scenario in which no droplets are present
     energies::Vector{<:Real},
     states::Vector{Vector{Int}},
     droplets::Vector{Droplets},
-    spins::Vector{Vector{Int}}
-) where T = NoDroplets()
+    spins::Vector{Vector{Int}},
+) where {T} = NoDroplets()
 
 # """
 # $(TYPEDSIGNATURES)
@@ -139,7 +138,7 @@ The `NoDroplets` strategy represents a scenario in which no droplets are present
 # - `states::Vector{Vector{Int}}`: A vector of states represented as arrays of integers.
 # - `droplets::Vector{Droplets}`: A vector of droplets in the system.
 # - `spins::Vector{Vector{Int}}`: A vector of spin configurations associated with states.
- 
+
 # ## Returns
 # A new `Droplets` object representing the updated droplets based on the `SingleLayerDroplets` strategy
 # """
@@ -149,14 +148,14 @@ function (method::SingleLayerDroplets)(
     energies::Vector{<:Real},
     states::Vector{Vector{Int}},
     droplets::Vector{Droplets},
-    spins::Vector{Vector{Int}}
-) where T
+    spins::Vector{Vector{Int}},
+) where {T}
     ndroplets = copy(droplets[best_idx])
-    bstate  = states[best_idx]
+    bstate = states[best_idx]
     benergy = energies[best_idx]
     bspin = spins[best_idx]
 
-    for ind ∈ (1 : best_idx - 1..., best_idx + 1 : length(energies)...)
+    for ind ∈ (1:best_idx-1..., best_idx+1:length(energies)...)
         flip_support = findall(bstate .!= states[ind])
         flip_state = states[ind][flip_support]
         flip_spinxor = bspin[flip_support] .⊻ spins[ind][flip_support]
@@ -164,12 +163,14 @@ function (method::SingleLayerDroplets)(
         flip = Flip(flip_support, flip_state, flip_spinxor, flip_statexor)
         denergy = energies[ind] - benergy
         droplet = Droplet(denergy, flip_support[1], length(bstate), flip, NoDroplets())
-        if droplet.denergy <= method.max_energy && hamming_distance(droplet.flip, method.mode) >= method.min_size
+        if droplet.denergy <= method.max_energy &&
+           hamming_distance(droplet.flip, method.mode) >= method.min_size
             ndroplets = my_push!(ndroplets, droplet, method)
         end
         for subdroplet ∈ droplets[ind]
             new_droplet = merge_droplets(method, droplet, subdroplet)
-            if new_droplet.denergy <= method.max_energy && hamming_distance(new_droplet.flip, method.mode) >= method.min_size
+            if new_droplet.denergy <= method.max_energy &&
+               hamming_distance(new_droplet.flip, method.mode) >= method.min_size
                 ndroplets = my_push!(ndroplets, new_droplet, method)
             end
         end
@@ -289,7 +290,8 @@ Calculate the Hamming distance between two vectors of states.
 """
 hamming_distance(state1, state2, s::Symbol) = hamming_distance(state1, state2, Val(s))
 
-hamming_distance(state1, state2, ::Val{:Ising}) = sum(count_ones(st) for st ∈ state1 .⊻ state2)
+hamming_distance(state1, state2, ::Val{:Ising}) =
+    sum(count_ones(st) for st ∈ state1 .⊻ state2)
 
 # hamming_distance(state1, state2) = sum(state1 .!== state2)
 hamming_distance(state1, state2, ::Val{:RMF}) = state1 == state2 ? 0 : 1
@@ -306,7 +308,8 @@ Calculate the Hamming distance between two Flip objects representing states with
 ## Returns
 - `hd::Int`: The computed Hamming distance between the two Flip objects.
 """
-hamming_distance(flip1::Flip, flip2::Flip, s::Symbol) = hamming_distance(flip1, flip2, Val(s))
+hamming_distance(flip1::Flip, flip2::Flip, s::Symbol) =
+    hamming_distance(flip1, flip2, Val(s))
 
 function hamming_distance(flip1::Flip, flip2::Flip, ::Val{:Ising})
     n1, n2, hd = 1, 1, 0
@@ -391,7 +394,7 @@ function merge_droplets(method::SingleLayerDroplets, droplet::Droplet, subdrople
     new_spinxor = zeros(Int, ln)
     new_statexor = zeros(Int, ln)
 
-    while i1 <= length(flip.support) &&  i2 <= length(subflip.support)
+    while i1 <= length(flip.support) && i2 <= length(subflip.support)
         if flip.support[i1] == subflip.support[i2]
             new_support[i3] = flip.support[i1]
             new_state[i3] = subflip.state[i2]
@@ -474,7 +477,7 @@ function unpack_droplets(sol, β)  # have β in sol ?
     droplets = Droplets[]
     spins = typeof(sol.spins[begin])[]
 
-    for i in 1:length(sol.energies)
+    for i = 1:length(sol.energies)
         push!(energies, sol.energies[i])
         push!(states, sol.states[i])
         push!(probs, sol.probabilities[i])
@@ -500,7 +503,7 @@ function unpack_droplets(sol, β)  # have β in sol ?
         degeneracy[inds],
         sol.largest_discarded_probability,
         droplets[inds],
-        spins[inds]
+        spins[inds],
     )
 end
 
@@ -530,7 +533,7 @@ Apply a permutation to a collection of 'Droplet' objects.
 
 """
 function perm_droplet(drops::Vector{Droplet}, perm::Vector{Int})
-   [perm_droplet(drop, perm) for drop in drops]
+    [perm_droplet(drop, perm) for drop in drops]
 end
 
 """

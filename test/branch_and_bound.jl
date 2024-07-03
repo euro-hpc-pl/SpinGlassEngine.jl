@@ -5,7 +5,7 @@ const example_solution_short = Solution(
     [1, 1, 1],
     0.666,
     [Droplet[], Droplet[], Droplet[]],
-    [[0], [0], [0]]
+    [[0], [0], [0]],
 )
 
 const example_degenerate_solution = Solution(
@@ -15,7 +15,7 @@ const example_degenerate_solution = Solution(
     [1, 1, 1, 1, 1],
     0.22,
     [Droplet[], Droplet[], Droplet[], Droplet[], Droplet[]],
-    [[0], [0], [0], [0], [0]]
+    [[0], [0], [0], [0], [0]],
 )
 
 @testset "Bounding solution of size ≥ max_states gives solution of max_states length" begin
@@ -36,7 +36,8 @@ end
 end
 
 @testset "Bounding solution clips at correct probability" begin
-    @testset "when max_states=$(max_states)" for (max_states, expected_prob) ∈ [(1, 0.23), (2, 0.23), (3, 0.22)]
+    @testset "when max_states=$(max_states)" for (max_states, expected_prob) ∈
+                                                 [(1, 0.23), (2, 0.23), (3, 0.22)]
         bounded = bound_solution(example_degenerate_solution, max_states, 0.0)
         @test bounded.largest_discarded_probability == expected_prob
         @test all(bounded.probabilities .≥ expected_prob)
@@ -45,11 +46,13 @@ end
 
 
 @testset "Bounding solution preserves correspondence between energies, states and probabilities" begin
-    sorted_idx = sortperm(example_degenerate_solution.probabilities, rev=true)
+    sorted_idx = sortperm(example_degenerate_solution.probabilities, rev = true)
     for max_states ∈ 1:4 # problem for max_states = 5 
         bounded = bound_solution(example_degenerate_solution, max_states, 0.0)
-        @test bounded.energies == example_degenerate_solution.energies[sorted_idx][1:max_states]
-        @test bounded.probabilities == example_degenerate_solution.probabilities[sorted_idx][1:max_states]
+        @test bounded.energies ==
+              example_degenerate_solution.energies[sorted_idx][1:max_states]
+        @test bounded.probabilities ==
+              example_degenerate_solution.probabilities[sorted_idx][1:max_states]
         @test bounded.states == example_degenerate_solution.states[sorted_idx][1:max_states]
     end
 end

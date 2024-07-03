@@ -10,14 +10,14 @@
     VAR_TOL = 1E-8
     TOL_SVD = 1E-16
     DE = 16.0
-    δp = 1E-5*exp(-β * DE)
+    δp = 1E-5 * exp(-β * DE)
     instance = "$(@__DIR__)/instances/chimera_droplets/512power/001.txt"
-    INDβ = [1, 2, 3,]
+    INDβ = [1, 2, 3]
     ig = ising_graph(instance)
     cl_h = clustered_hamiltonian(
         ig,
-        spectrum=full_spectrum,
-        cluster_assignment_rule=super_square_lattice((m, n, t))
+        spectrum = full_spectrum,
+        cluster_assignment_rule = super_square_lattice((m, n, t)),
     )
 
     params = MpsParameters(BOND_DIM, VAR_TOL, MAX_SWEEPS, TOL_SVD)
@@ -28,8 +28,14 @@
     for Strategy ∈ (SVDTruncate, Zipper), Sparsity ∈ (Dense, Sparse)
         for Layout ∈ (GaugesEnergy,)
             for transform ∈ all_lattice_transformations
-                net = PEPSNetwork{SquareSingleNode{Layout}, Sparsity}(m, n, cl_h, transform)
-                ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)
+                net = PEPSNetwork{SquareSingleNode{Layout},Sparsity}(m, n, cl_h, transform)
+                ctr = MpsContractor{Strategy,Gauge}(
+                    net,
+                    [β / 6, β / 3, β / 2, β],
+                    :graduate_truncate,
+                    params;
+                    onGPU = onGPU,
+                )
                 update_gauges!(ctr, m, INDβ, Val(:up))
                 sol, s = low_energy_spectrum(ctr, search_params)
                 #sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
@@ -42,7 +48,7 @@
                 norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
                 # println( maximum(abs.(norm_prob ./ exp.(-β .* (sol.energies .- sol.energies[1]))) .- 1 ))
                 @test norm_prob ≈ exp.(-β .* (sol.energies .- sol.energies[1]))   # test up to 1e-5
-                push!(energies, sol.energies[1 : Int(ceil(MAX_STATES / 4))])
+                push!(energies, sol.energies[1:Int(ceil(MAX_STATES / 4))])
                 clear_memoize_cache()
             end
         end

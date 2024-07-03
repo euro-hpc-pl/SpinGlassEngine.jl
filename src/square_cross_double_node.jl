@@ -1,7 +1,4 @@
-export 
-    SquareCrossDoubleNode,
-    precompute_conditional,
-    VirtualDoubleNode
+export SquareCrossDoubleNode, precompute_conditional, VirtualDoubleNode
 
 
 """
@@ -22,7 +19,7 @@ Each node is labeled with a tuple (i, j, k), where i is the row index, j is the 
 This geometry is suitable for systems with tensors laid out according to the specified `AbstractTensorsLayout`. 
 It can be used in Pegasus and Zephyr graphs.
 """
-struct SquareCrossDoubleNode{T <: AbstractTensorsLayout} <: AbstractGeometry end
+struct SquareCrossDoubleNode{T<:AbstractTensorsLayout} <: AbstractGeometry end
 
 """
 $(TYPEDSIGNATURES)
@@ -44,14 +41,14 @@ The resulting graph is suitable for systems with tensors laid out according to t
 function SquareCrossDoubleNode(m::Int, n::Int)
     lg = SquareDoubleNode(m, n)
     for i ∈ 1:m-1, j ∈ 1:n-1
-        add_edge!(lg, (i, j, 1), (i+1, j+1, 1))
-        add_edge!(lg, (i, j, 1), (i+1, j+1, 2))
-        add_edge!(lg, (i, j, 2), (i+1, j+1, 1))
-        add_edge!(lg, (i, j, 2), (i+1, j+1, 2))
-        add_edge!(lg, (i+1, j, 1), (i, j+1, 1))
-        add_edge!(lg, (i+1, j, 1), (i, j+1, 2))
-        add_edge!(lg, (i+1, j, 2), (i, j+1, 1))
-        add_edge!(lg, (i+1, j, 2), (i, j+1, 2))
+        add_edge!(lg, (i, j, 1), (i + 1, j + 1, 1))
+        add_edge!(lg, (i, j, 1), (i + 1, j + 1, 2))
+        add_edge!(lg, (i, j, 2), (i + 1, j + 1, 1))
+        add_edge!(lg, (i, j, 2), (i + 1, j + 1, 2))
+        add_edge!(lg, (i + 1, j, 1), (i, j + 1, 1))
+        add_edge!(lg, (i + 1, j, 1), (i, j + 1, 2))
+        add_edge!(lg, (i + 1, j, 2), (i, j + 1, 1))
+        add_edge!(lg, (i + 1, j, 2), (i, j + 1, 2))
     end
     lg
 end
@@ -107,21 +104,24 @@ The `tensor_map` function generates a mapping of tensor network nodes for a squa
 The mapping includes different types of nodes, such as site double nodes, virtual double nodes, central vertical double nodes, and central diagonal double nodes.
 """
 function tensor_map(
-    ::Type{SquareCrossDoubleNode{T}}, ::Type{S}, nrows::Int, ncols::Int
-) where {T <: Union{EnergyGauges, GaugesEnergy}, S <: AbstractSparsity}
-    map = Dict{PEPSNode, Symbol}()
+    ::Type{SquareCrossDoubleNode{T}},
+    ::Type{S},
+    nrows::Int,
+    ncols::Int,
+) where {T<:Union{EnergyGauges,GaugesEnergy},S<:AbstractSparsity}
+    map = Dict{PEPSNode,Symbol}()
 
     for i ∈ 1:nrows, j ∈ 1:ncols
         push!(
             map,
             PEPSNode(i, j) => site_double_node(S),
-            PEPSNode(i, j - 1//2) => VirtualDoubleNode(S),
-            PEPSNode(i + 1//2, j) => :central_v_double_node
+            PEPSNode(i, j - 1 // 2) => VirtualDoubleNode(S),
+            PEPSNode(i + 1 // 2, j) => :central_v_double_node,
         )
     end
 
     for i ∈ 1:nrows-1, j ∈ 0:ncols-1   # why from 0?
-        push!(map, PEPSNode(i + 1//2, j + 1//2) => :central_d_double_node)
+        push!(map, PEPSNode(i + 1 // 2, j + 1 // 2) => :central_d_double_node)
     end
     map
 end
@@ -143,15 +143,18 @@ Create a list of gauge information for a square cross double node geometry and G
 The `gauges_list` function generates a list of `GaugeInfo` objects for a square cross double node geometry. 
 Each `GaugeInfo` object contains information about the positions of gauge links, the position of the attached tensor, the leg index, and the type of gauge.
 """
-function gauges_list(::Type{SquareCrossDoubleNode{T}}, nrows::Int, ncols::Int) where T <: GaugesEnergy
+function gauges_list(
+    ::Type{SquareCrossDoubleNode{T}},
+    nrows::Int,
+    ncols::Int,
+) where {T<:GaugesEnergy}
     [
         GaugeInfo(
-            (PEPSNode(i + 1//6, j), PEPSNode(i + 2//6, j)),
-            PEPSNode(i + 1//2, j),
+            (PEPSNode(i + 1 // 6, j), PEPSNode(i + 2 // 6, j)),
+            PEPSNode(i + 1 // 2, j),
             1,
-            :gauge_h
-        )
-        for i ∈ 1:nrows-1 for j ∈ 1//2:1//2:ncols
+            :gauge_h,
+        ) for i ∈ 1:nrows-1 for j ∈ 1//2:1//2:ncols
     ]
 end
 
@@ -171,15 +174,18 @@ Create a list of gauge information for a square cross double node geometry and E
 The `gauges_list` function generates a list of `GaugeInfo` objects for a square cross double node geometry. 
 Each `GaugeInfo` object contains information about the positions of gauge links, the position of the attached tensor, the leg index, and the type of gauge.        
 """
-function gauges_list(::Type{SquareCrossDoubleNode{T}}, nrows::Int, ncols::Int) where T <: EnergyGauges
+function gauges_list(
+    ::Type{SquareCrossDoubleNode{T}},
+    nrows::Int,
+    ncols::Int,
+) where {T<:EnergyGauges}
     [
         GaugeInfo(
-            (PEPSNode(i + 4//6, j), PEPSNode(i + 5//6, j)),
-            PEPSNode(i + 1//2, j),
+            (PEPSNode(i + 4 // 6, j), PEPSNode(i + 5 // 6, j)),
+            PEPSNode(i + 1 // 2, j),
             2,
-            :gauge_h
-        )
-        for i ∈ 1:nrows-1 for j ∈ 1//2:1//2:ncols
+            :gauge_h,
+        ) for i ∈ 1:nrows-1 for j ∈ 1//2:1//2:ncols
     ]
 end
 
@@ -189,11 +195,11 @@ $(TYPEDSIGNATURES)
 
 Defines the MPO layers for the SquareCrossDoubleNode geometry with the EnergyGauges layout.
 """
-function MpoLayers(::Type{T}, ncols::Int) where T <: SquareCrossDoubleNode{EnergyGauges}
+function MpoLayers(::Type{T}, ncols::Int) where {T<:SquareCrossDoubleNode{EnergyGauges}}
     MpoLayers(
-        Dict(site(i) => (-1//6, 0, 3//6, 4//6) for i ∈ 1//2:1//2:ncols),
-        Dict(site(i) => (3//6, 4//6) for i ∈ 1//2:1//2:ncols),
-        Dict(site(i) => (-3//6, 0) for i ∈ 1//2:1//2:ncols),
+        Dict(site(i) => (-1 // 6, 0, 3 // 6, 4 // 6) for i ∈ 1//2:1//2:ncols),
+        Dict(site(i) => (3 // 6, 4 // 6) for i ∈ 1//2:1//2:ncols),
+        Dict(site(i) => (-3 // 6, 0) for i ∈ 1//2:1//2:ncols),
     )
 end
 
@@ -202,11 +208,11 @@ $(TYPEDSIGNATURES)
 
 Defines the MPO layers for the SquareCrossDoubleNode geometry with the GaugesEnergy layout.
 """
-function MpoLayers(::Type{T}, ncols::Int) where T <: SquareCrossDoubleNode{GaugesEnergy}
+function MpoLayers(::Type{T}, ncols::Int) where {T<:SquareCrossDoubleNode{GaugesEnergy}}
     MpoLayers(
-        Dict(site(i) => (-4//6, -1//2, 0, 1//6) for i ∈ 1//2:1//2:ncols),
-        Dict(site(i) => (1//6,) for i ∈ 1//2:1//2:ncols),
-        Dict(site(i) => (-3//6, 0) for i ∈ 1//2:1//2:ncols)
+        Dict(site(i) => (-4 // 6, -1 // 2, 0, 1 // 6) for i ∈ 1//2:1//2:ncols),
+        Dict(site(i) => (1 // 6,) for i ∈ 1//2:1//2:ncols),
+        Dict(site(i) => (-3 // 6, 0) for i ∈ 1//2:1//2:ncols),
     )
 end
 
@@ -230,8 +236,10 @@ The precomputed values are used during the tensor contraction process to speed u
 The function is specialized for the `SquareCrossDoubleNode` tensor network type and is parametrized by the layout type `S` of the contractor.
 """
 @memoize Dict function precompute_conditional(
-    ::Type{T}, ctr::MpsContractor{S}, current_node
-) where {T <: SquareCrossDoubleNode, S}
+    ::Type{T},
+    ctr::MpsContractor{S},
+    current_node,
+) where {T<:SquareCrossDoubleNode,S}
     i, j, k = current_node
     β = last(ctr.betas)
     if k == 1
@@ -239,16 +247,34 @@ The function is specialized for the `SquareCrossDoubleNode` tensor network type 
         p12 = projector(ctr.peps, (i, j, 1), (i, j, 2))
         p21 = projector(ctr.peps, (i, j, 2), (i, j, 1))
 
-        plb1 = projector(ctr.peps, (i, j, 1), ((i+1, j-1, 1), (i+1, j-1, 2)))
-        plb2 = projector(ctr.peps, (i, j, 2), ((i+1, j-1, 1), (i+1, j-1, 2)))
+        plb1 = projector(ctr.peps, (i, j, 1), ((i + 1, j - 1, 1), (i + 1, j - 1, 2)))
+        plb2 = projector(ctr.peps, (i, j, 2), ((i + 1, j - 1, 1), (i + 1, j - 1, 2)))
         prf1 = projector(
-            ctr.peps, (i, j, 1), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2))
-            )
+            ctr.peps,
+            (i, j, 1),
+            (
+                (i + 1, j + 1, 1),
+                (i + 1, j + 1, 2),
+                (i, j + 1, 1),
+                (i, j + 1, 2),
+                (i - 1, j + 1, 1),
+                (i - 1, j + 1, 2),
+            ),
+        )
         prf2 = projector(
-            ctr.peps, (i, j, 2), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2))
-            )
-        pd1 = projector(ctr.peps, (i, j, 1), ((i+1, j, 1), (i+1, j, 2)))
-        pd2 = projector(ctr.peps, (i, j, 2), ((i+1, j, 1), (i+1, j, 2)))
+            ctr.peps,
+            (i, j, 2),
+            (
+                (i + 1, j + 1, 1),
+                (i + 1, j + 1, 2),
+                (i, j + 1, 1),
+                (i, j + 1, 2),
+                (i - 1, j + 1, 1),
+                (i - 1, j + 1, 2),
+            ),
+        )
+        pd1 = projector(ctr.peps, (i, j, 1), ((i + 1, j, 1), (i + 1, j, 2)))
+        pd2 = projector(ctr.peps, (i, j, 2), ((i + 1, j, 1), (i + 1, j, 2)))
 
         plb = outer_projector(plb1, plb2)
         prf = outer_projector(prf1, prf2)
@@ -256,16 +282,18 @@ The function is specialized for the `SquareCrossDoubleNode` tensor network type 
 
         eng_loc = [local_energy(ctr.peps, (i, j, k)) for k ∈ 1:2]
 
-        el = [interaction_energy(ctr.peps, (i, j, k), (i, j-1, m)) for k ∈ 1:2, m ∈ 1:2]
-        pl = [projector(ctr.peps, (i, j, k), (i, j-1, m)) for k ∈ 1:2, m ∈ 1:2]
+        el = [interaction_energy(ctr.peps, (i, j, k), (i, j - 1, m)) for k ∈ 1:2, m ∈ 1:2]
+        pl = [projector(ctr.peps, (i, j, k), (i, j - 1, m)) for k ∈ 1:2, m ∈ 1:2]
         eng_l = [el[k, m][pl[k, m], :] for k ∈ 1:2, m ∈ 1:2]
 
-        elu = [interaction_energy(ctr.peps, (i, j, k), (i-1, j-1, m)) for k ∈ 1:2, m ∈ 1:2]
-        plu = [projector(ctr.peps, (i, j, k), (i-1, j-1, m)) for k ∈ 1:2, m ∈ 1:2]
+        elu = [
+            interaction_energy(ctr.peps, (i, j, k), (i - 1, j - 1, m)) for k ∈ 1:2, m ∈ 1:2
+        ]
+        plu = [projector(ctr.peps, (i, j, k), (i - 1, j - 1, m)) for k ∈ 1:2, m ∈ 1:2]
         eng_lu = [elu[k, m][plu[k, m], :] for k ∈ 1:2, m ∈ 1:2]
 
-        eu = [interaction_energy(ctr.peps, (i, j, k), (i-1, j, m)) for k ∈ 1:2, m ∈ 1:2]
-        pu = [projector(ctr.peps, (i, j, k), (i-1, j, m)) for k ∈ 1:2, m ∈ 1:2]
+        eu = [interaction_energy(ctr.peps, (i, j, k), (i - 1, j, m)) for k ∈ 1:2, m ∈ 1:2]
+        pu = [projector(ctr.peps, (i, j, k), (i - 1, j, m)) for k ∈ 1:2, m ∈ 1:2]
         eng_u = [eu[k, m][pu[k, m], :] for k ∈ 1:2, m ∈ 1:2]
 
         le = en12[p12, p21]
@@ -288,28 +316,37 @@ The function is specialized for the `SquareCrossDoubleNode` tensor network type 
     else
         eng_loc = local_energy(ctr.peps, (i, j, 2))
 
-        el = [interaction_energy(ctr.peps, (i, j, 2), (i, j-1, m)) for m ∈ 1:2]
-        pl = [projector(ctr.peps, (i, j, 2), (i, j-1, m)) for m ∈ 1:2]
+        el = [interaction_energy(ctr.peps, (i, j, 2), (i, j - 1, m)) for m ∈ 1:2]
+        pl = [projector(ctr.peps, (i, j, 2), (i, j - 1, m)) for m ∈ 1:2]
         eng_l = [el[m][pl[m], :] for m ∈ 1:2]
 
-        elu = [interaction_energy(ctr.peps, (i, j, 2), (i-1, j-1, m)) for m ∈ 1:2]
-        plu = [projector(ctr.peps, (i, j, 2), (i-1, j-1, m)) for m ∈ 1:2]
+        elu = [interaction_energy(ctr.peps, (i, j, 2), (i - 1, j - 1, m)) for m ∈ 1:2]
+        plu = [projector(ctr.peps, (i, j, 2), (i - 1, j - 1, m)) for m ∈ 1:2]
         eng_lu = [elu[m][plu[m], :] for m ∈ 1:2]
 
-        eu = [interaction_energy(ctr.peps, (i, j, 2), (i-1, j, m)) for m ∈ 1:2]
-        pu = [projector(ctr.peps, (i, j, 2), (i-1, j, m)) for m ∈ 1:2]
+        eu = [interaction_energy(ctr.peps, (i, j, 2), (i - 1, j, m)) for m ∈ 1:2]
+        pu = [projector(ctr.peps, (i, j, 2), (i - 1, j, m)) for m ∈ 1:2]
         eng_u = [eu[m][pu[m], :] for m ∈ 1:2]
 
         en12 = interaction_energy(ctr.peps, (i, j, 1), (i, j, 2))
         p21 = projector(ctr.peps, (i, j, 2), (i, j, 1))
         eng_12 = @view en12[:, p21]
 
-        plb1 = projector(ctr.peps, (i, j, 1), ((i+1, j-1, 1), (i+1, j-1, 2)))
-        plb2 = projector(ctr.peps, (i, j, 2), ((i+1, j-1, 1), (i+1, j-1, 2)))
+        plb1 = projector(ctr.peps, (i, j, 1), ((i + 1, j - 1, 1), (i + 1, j - 1, 2)))
+        plb2 = projector(ctr.peps, (i, j, 2), ((i + 1, j - 1, 1), (i + 1, j - 1, 2)))
         prf2 = projector(
-            ctr.peps, (i, j, 2), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2))
-            )
-        pd2 = projector(ctr.peps, (i, j, 2), ((i+1, j, 1), (i+1, j, 2)))
+            ctr.peps,
+            (i, j, 2),
+            (
+                (i + 1, j + 1, 1),
+                (i + 1, j + 1, 2),
+                (i, j + 1, 1),
+                (i, j + 1, 2),
+                (i - 1, j + 1, 1),
+                (i - 1, j + 1, 2),
+            ),
+        )
+        pd2 = projector(ctr.peps, (i, j, 2), ((i + 1, j, 1), (i + 1, j, 2)))
 
         splb1, splb2, sprf2, spd2 = maximum.((plb1, plb2, prf2, pd2))
 
@@ -323,7 +360,20 @@ The function is specialized for the `SquareCrossDoubleNode` tensor network type 
             prf2 = CuArray(prf2)
             pd2 = CuArray(pd2)
         end
-        return (eng_loc, eng_l, eng_lu, eng_u, eng_12, plb2, prf2, pd2, splb1, splb2, sprf2, spd2)
+        return (
+            eng_loc,
+            eng_l,
+            eng_lu,
+            eng_u,
+            eng_12,
+            plb2,
+            prf2,
+            pd2,
+            splb1,
+            splb2,
+            sprf2,
+            spd2,
+        )
     end
 end
 
@@ -346,36 +396,39 @@ The function supports both left and right environments, and the resulting probab
 The function is specialized for the `SquareCrossDoubleNode` tensor network type and is parametrized by the layout type `S` of the contractor.
 """
 function conditional_probability(
-    ::Type{T}, ctr::MpsContractor{S}, ∂v::Vector{Int}
-) where {T <: SquareCrossDoubleNode, S}
+    ::Type{T},
+    ctr::MpsContractor{S},
+    ∂v::Vector{Int},
+) where {T<:SquareCrossDoubleNode,S}
     indβ, β = length(ctr.betas), last(ctr.betas)
     i, j, k = ctr.current_node
 
     L = left_env(ctr, i, ∂v[1:2*j-2], indβ)
     ψ = dressed_mps(ctr, i, indβ)
-    MX, M = ψ[j - 1//2], ψ[j]
+    MX, M = ψ[j-1//2], ψ[j]
     @tensor LMX[y, z] := L[x] * MX[x, y, z]
 
     if k == 1  # here has to avarage over s2
-        R = right_env(ctr, i, ∂v[(2 * j + 12) : end], indβ)
+        R = right_env(ctr, i, ∂v[(2*j+12):end], indβ)
         if ctr.onGPU
             R = CuArray(R)
         end
 
-        ele, eng_loc, eng_l, eng_lu, eng_u, plb, prf, pd, splb = precompute_conditional(T, ctr, ctr.current_node)
+        ele, eng_loc, eng_l, eng_lu, eng_u, plb, prf, pd, splb =
+            precompute_conditional(T, ctr, ctr.current_node)
 
-        eng_l = [@view eng_l[k, m][:, ∂v[2 * j - 1 + k + (m - 1) * 2]] for k ∈ 1:2, m ∈ 1:2]
-        eng_lu = [@view eng_lu[k, m][:, ∂v[2 * j + 3 + k + (m - 1) * 2]] for k ∈ 1:2, m ∈ 1:2]
-        eng_u = [@view eng_u[k, m][:, ∂v[2 * j + 7 + k + (m - 1) * 2]] for k ∈ 1:2, m ∈ 1:2]
+        eng_l = [@view eng_l[k, m][:, ∂v[2*j-1+k+(m-1)*2]] for k ∈ 1:2, m ∈ 1:2]
+        eng_lu = [@view eng_lu[k, m][:, ∂v[2*j+3+k+(m-1)*2]] for k ∈ 1:2, m ∈ 1:2]
+        eng_u = [@view eng_u[k, m][:, ∂v[2*j+7+k+(m-1)*2]] for k ∈ 1:2, m ∈ 1:2]
         en = [
-            eng_loc[k] .+ eng_l[k, 1] .+ eng_l[k, 2] .+ eng_lu[k, 1] .+
-            eng_lu[k, 2] .+ eng_u[k, 1] .+ eng_u[k, 2] for k ∈ 1:2
-            ]
+            eng_loc[k] .+ eng_l[k, 1] .+ eng_l[k, 2] .+ eng_lu[k, 1] .+ eng_lu[k, 2] .+
+            eng_u[k, 1] .+ eng_u[k, 2] for k ∈ 1:2
+        ]
         en = [exp.(-β .* (en[k] .- minimum(en[k]))) for k ∈ 1:2]
         tele = reshape(en[1], (:, 1)) .* ele .* reshape(en[2], (1, :))
 
-        @cast LMX4[x, y, v, p] := LMX[(x, y), (v, p)]  (x ∈ 1:1, p ∈ 1:splb)
-        LMX3 = LMX4[:, :, ∂v[2 * j - 1], :]
+        @cast LMX4[x, y, v, p] := LMX[(x, y), (v, p)] (x ∈ 1:1, p ∈ 1:splb)
+        LMX3 = LMX4[:, :, ∂v[2*j-1], :]
         @cast R3[x, y, p] := R[(x, y), p] (y ∈ 1:1)
 
         from = 1
@@ -385,7 +438,9 @@ function conditional_probability(
         s1, s2, _ = size(M)
         batch_size = max(Int(floor(total_memory / (8 * (s1 * s2 + s1 + s2 + 1)))), 1)
         batch_size = Int(2^floor(log2(batch_size) + 1e-6))
-        LR = typeof(M) <: CuArray ? CUDA.zeros(eltype(M), total_size) : zeros(eltype(M), total_size)
+        LR =
+            typeof(M) <: CuArray ? CUDA.zeros(eltype(M), total_size) :
+            zeros(eltype(M), total_size)
         while from <= total_size
             to = min(total_size, from + batch_size - 1)
             vplb = @view plb[from:to]
@@ -394,35 +449,42 @@ function conditional_probability(
             @inbounds LMX3p = LMX3[:, :, vplb]
             @inbounds Mp = M[:, :, vpd]
             @inbounds R3p = R3[:, :, vprf]
-            @inbounds LR[from:to] = dropdims(LMX3p ⊠ Mp ⊠ R3p, dims=(1, 2))
+            @inbounds LR[from:to] = dropdims(LMX3p ⊠ Mp ⊠ R3p, dims = (1, 2))
             from = to + 1
         end
         LR = reshape(LR, size(tele))
         LR .*= tele
-        probs = Array(dropdims(sum(LR, dims=2), dims=2))
+        probs = Array(dropdims(sum(LR, dims = 2), dims = 2))
     else  # k == 2
-        R = right_env(ctr, i, ∂v[(2 * j + 10) : end], indβ)
+        R = right_env(ctr, i, ∂v[(2*j+10):end], indβ)
         if ctr.onGPU
             R = CuArray(R)
         end
 
-        eng_loc, eng_l, eng_lu, eng_u, eng_12, plb2, prf2, pd2, splb1, splb2, sprf2, spd2 = precompute_conditional(T, ctr, ctr.current_node) #TODO split the line
+        eng_loc, eng_l, eng_lu, eng_u, eng_12, plb2, prf2, pd2, splb1, splb2, sprf2, spd2 =
+            precompute_conditional(T, ctr, ctr.current_node) #TODO split the line
 
-        eng_l = [@view eng_l[m][:, ∂v[2 * j - 1 + m]] for m ∈ 1:2]
-        eng_lu = [@view eng_lu[m][:, ∂v[2 * j + 1 + m]] for m ∈ 1:2]
-        eng_u = [@view eng_u[m][:, ∂v[2 * j + 3 + m]] for m ∈ 1:2]
-        eng_12 = @view eng_12[∂v[2 * j + 6], :]
+        eng_l = [@view eng_l[m][:, ∂v[2*j-1+m]] for m ∈ 1:2]
+        eng_lu = [@view eng_lu[m][:, ∂v[2*j+1+m]] for m ∈ 1:2]
+        eng_u = [@view eng_u[m][:, ∂v[2*j+3+m]] for m ∈ 1:2]
+        eng_12 = @view eng_12[∂v[2*j+6], :]
 
-        le = eng_loc .+ eng_l[1] .+ eng_l[2] .+ eng_lu[1] .+ eng_lu[2] .+ eng_u[1] .+ eng_u[2] .+ eng_12
+        le =
+            eng_loc .+ eng_l[1] .+ eng_l[2] .+ eng_lu[1] .+ eng_lu[2] .+ eng_u[1] .+
+            eng_u[2] .+ eng_12
         ele = exp.(-β .* (le .- minimum(le)))
 
-        @cast LMX5[x, y, v, p1, p2] := LMX[(x, y), (v, p1, p2)]  (p1 ∈ 1:splb1, p2 ∈ 1:splb2, x ∈ 1:1)
-        LMX3 =  LMX5[:, :, ∂v[2 * j - 1], ∂v[2 * j + 7], :]
+        @cast LMX5[x, y, v, p1, p2] := LMX[(x, y), (v, p1, p2)] (
+            p1 ∈ 1:splb1,
+            p2 ∈ 1:splb2,
+            x ∈ 1:1,
+        )
+        LMX3 = LMX5[:, :, ∂v[2*j-1], ∂v[2*j+7], :]
         @cast M4[x, y, p1, p2] := M[x, y, (p1, p2)] (p2 ∈ 1:spd2)
-        M2 =  M4[:, :, ∂v[2 * j + 8], :]
+        M2 = M4[:, :, ∂v[2*j+8], :]
         @cast R4[x, y, p1, p2] := R[(x, y), (p1, p2)] (p2 ∈ 1:sprf2, y ∈ 1:1)
-        R2 =  R4[:, :, ∂v[2 * j + 9], :]
-        LR = dropdims(LMX3[:, :, plb2] ⊠ M2[:, :, pd2] ⊠ R2[:, :, prf2], dims=(1, 2))
+        R2 = R4[:, :, ∂v[2*j+9], :]
+        LR = dropdims(LMX3[:, :, plb2] ⊠ M2[:, :, pd2] ⊠ R2[:, :, prf2], dims = (1, 2))
         probs = Array(ele .* LR)
     end
     push!(ctr.statistics, ((i, j), ∂v) => error_measure(probs))
@@ -445,8 +507,11 @@ It creates a list of node coordinates `(i, j, k)` representing rows, columns, an
 The resulting order is suitable for traversing the nodes in the tensor network during contraction.
 The function is specialized for the `SquareCrossDoubleNode` tensor network type and is parametrized by the layout type `S`.
 """
-function nodes_search_order_Mps(peps::PEPSNetwork{T, S}) where {T <: SquareCrossDoubleNode, S}
-    ([(i, j, k) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols for k ∈ 1:2], (peps.nrows+1, 1, 1))
+function nodes_search_order_Mps(peps::PEPSNetwork{T,S}) where {T<:SquareCrossDoubleNode,S}
+    (
+        [(i, j, k) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols for k ∈ 1:2],
+        (peps.nrows + 1, 1, 1),
+    )
 end
 
 """
@@ -467,61 +532,141 @@ The `boundary` function computes the boundary states for a specific node in a ma
 The boundary states are determined by analyzing the connections between the current node and its neighboring nodes, considering different physical indices.
 The function is specialized for the `SquareCrossDoubleNode` tensor network type and is parametrized by the layout type `S`.
 """
-function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T <: SquareCrossDoubleNode, S}
+function boundary(
+    ::Type{T},
+    ctr::MpsContractor{S},
+    node::Node,
+) where {T<:SquareCrossDoubleNode,S}
     i, j, k = node  # todo
     if k == 1
         bnd = vcat(
             [
-                [((i, m-1, 1), ((i+1, m, 1), (i+1, m, 2)), (i, m-1, 2), ((i+1, m, 1), (i+1, m, 2)),
-                (i, m, 1), ((i+1, m-1, 1), (i+1, m-1, 2)), (i, m, 2), ((i+1, m-1, 1), (i+1, m-1, 2))),
-                ((i, m, 1), ((i+1, m, 1), (i+1, m, 2)), (i, m, 2), ((i+1, m, 1), (i+1, m, 2)))]
-                for m ∈ 1:(j-1)
+                [
+                    (
+                        (i, m - 1, 1),
+                        ((i + 1, m, 1), (i + 1, m, 2)),
+                        (i, m - 1, 2),
+                        ((i + 1, m, 1), (i + 1, m, 2)),
+                        (i, m, 1),
+                        ((i + 1, m - 1, 1), (i + 1, m - 1, 2)),
+                        (i, m, 2),
+                        ((i + 1, m - 1, 1), (i + 1, m - 1, 2)),
+                    ),
+                    (
+                        (i, m, 1),
+                        ((i + 1, m, 1), (i + 1, m, 2)),
+                        (i, m, 2),
+                        ((i + 1, m, 1), (i + 1, m, 2)),
+                    ),
+                ] for m ∈ 1:(j-1)
             ]...,
-            ((i, j-1, 1), ((i+1, j, 1), (i+1, j, 2)), (i, j-1, 2), ((i+1, j, 1), (i+1, j, 2))),
-            ((i, j-1, 1), (i, j, 1)),
-            ((i, j-1, 1), (i, j, 2)),
-            ((i, j-1, 2), (i, j, 1)),
-            ((i, j-1, 2), (i, j, 2)),
-            ((i-1, j-1, 1), (i, j, 1)),
-            ((i-1, j-1, 1), (i, j, 2)),
-            ((i-1, j-1, 2), (i, j, 1)),
-            ((i-1, j-1, 2), (i, j, 2)),
-            ((i-1, j, 1), (i, j, 1)),
-            ((i-1, j, 1), (i, j, 2)),
-            ((i-1, j, 2), (i, j, 1)),
-            ((i-1, j, 2), (i, j, 2)),
+            (
+                (i, j - 1, 1),
+                ((i + 1, j, 1), (i + 1, j, 2)),
+                (i, j - 1, 2),
+                ((i + 1, j, 1), (i + 1, j, 2)),
+            ),
+            ((i, j - 1, 1), (i, j, 1)),
+            ((i, j - 1, 1), (i, j, 2)),
+            ((i, j - 1, 2), (i, j, 1)),
+            ((i, j - 1, 2), (i, j, 2)),
+            ((i - 1, j - 1, 1), (i, j, 1)),
+            ((i - 1, j - 1, 1), (i, j, 2)),
+            ((i - 1, j - 1, 2), (i, j, 1)),
+            ((i - 1, j - 1, 2), (i, j, 2)),
+            ((i - 1, j, 1), (i, j, 1)),
+            ((i - 1, j, 1), (i, j, 2)),
+            ((i - 1, j, 2), (i, j, 1)),
+            ((i - 1, j, 2), (i, j, 2)),
             [
-                [((i-1, m-1, 1), ((i, m, 1), (i, m, 2)), (i-1, m-1, 2), ((i, m, 1), (i, m, 2)),
-                (i-1, m, 1), ((i, m-1, 1), (i, m-1, 2)), (i-1, m, 2), ((i, m-1, 1), (i, m-1, 2))),
-                ((i-1, m, 1), ((i, m, 1), (i, m, 2)), (i-1, m, 2), ((i, m, 1), (i, m, 2)))]
-                for m ∈ (j+1):ctr.peps.ncols
-            ]...
+                [
+                    (
+                        (i - 1, m - 1, 1),
+                        ((i, m, 1), (i, m, 2)),
+                        (i - 1, m - 1, 2),
+                        ((i, m, 1), (i, m, 2)),
+                        (i - 1, m, 1),
+                        ((i, m - 1, 1), (i, m - 1, 2)),
+                        (i - 1, m, 2),
+                        ((i, m - 1, 1), (i, m - 1, 2)),
+                    ),
+                    (
+                        (i - 1, m, 1),
+                        ((i, m, 1), (i, m, 2)),
+                        (i - 1, m, 2),
+                        ((i, m, 1), (i, m, 2)),
+                    ),
+                ] for m ∈ (j+1):ctr.peps.ncols
+            ]...,
         )
     else  # k == 2
         bnd = vcat(
             [
-                [((i, m-1, 1), ((i+1, m, 1), (i+1, m, 2)), (i, m-1, 2), ((i+1, m, 1), (i+1, m, 2)),
-                (i, m, 1), ((i+1, m-1, 1), (i+1, m-1, 2)), (i, m, 2), ((i+1, m-1, 1), (i+1, m-1, 2))),
-                ((i, m, 1), ((i+1, m, 1), (i+1, m, 2)), (i, m, 2), ((i+1, m, 1), (i+1, m, 2)))]
-                for m ∈ 1:(j-1)
+                [
+                    (
+                        (i, m - 1, 1),
+                        ((i + 1, m, 1), (i + 1, m, 2)),
+                        (i, m - 1, 2),
+                        ((i + 1, m, 1), (i + 1, m, 2)),
+                        (i, m, 1),
+                        ((i + 1, m - 1, 1), (i + 1, m - 1, 2)),
+                        (i, m, 2),
+                        ((i + 1, m - 1, 1), (i + 1, m - 1, 2)),
+                    ),
+                    (
+                        (i, m, 1),
+                        ((i + 1, m, 1), (i + 1, m, 2)),
+                        (i, m, 2),
+                        ((i + 1, m, 1), (i + 1, m, 2)),
+                    ),
+                ] for m ∈ 1:(j-1)
             ]...,
-            ((i, j-1, 1), ((i+1, j, 1), (i+1, j, 2)), (i, j-1, 2), ((i+1, j, 1), (i+1, j, 2))),
-            ((i, j-1, 1), (i, j, 2)),
-            ((i, j-1, 2), (i, j, 2)),
-            ((i-1, j-1, 1), (i, j, 2)),
-            ((i-1, j-1, 2), (i, j, 2)),
-            ((i-1, j, 1), (i, j, 2)),
-            ((i-1, j, 2), (i, j, 2)),
+            (
+                (i, j - 1, 1),
+                ((i + 1, j, 1), (i + 1, j, 2)),
+                (i, j - 1, 2),
+                ((i + 1, j, 1), (i + 1, j, 2)),
+            ),
+            ((i, j - 1, 1), (i, j, 2)),
+            ((i, j - 1, 2), (i, j, 2)),
+            ((i - 1, j - 1, 1), (i, j, 2)),
+            ((i - 1, j - 1, 2), (i, j, 2)),
+            ((i - 1, j, 1), (i, j, 2)),
+            ((i - 1, j, 2), (i, j, 2)),
             ((i, j, 1), (i, j, 2)),
-            ((i, j, 1), ((i+1, j-1, 1), (i+1, j-1, 2))),
-            ((i, j, 1), ((i+1, j, 1), (i+1, j, 2))),
-            ((i, j, 1), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2))),
+            ((i, j, 1), ((i + 1, j - 1, 1), (i + 1, j - 1, 2))),
+            ((i, j, 1), ((i + 1, j, 1), (i + 1, j, 2))),
+            (
+                (i, j, 1),
+                (
+                    (i + 1, j + 1, 1),
+                    (i + 1, j + 1, 2),
+                    (i, j + 1, 1),
+                    (i, j + 1, 2),
+                    (i - 1, j + 1, 1),
+                    (i - 1, j + 1, 2),
+                ),
+            ),
             [
-                [((i-1, m-1, 1), ((i, m, 1), (i, m, 2)), (i-1, m-1, 2), ((i, m, 1), (i, m, 2)),
-                (i-1, m, 1), ((i, m-1, 1), (i, m-1, 2)), (i-1, m, 2), ((i, m-1, 1), (i, m-1, 2))),
-                ((i-1, m, 1), ((i, m, 1), (i, m, 2)), (i-1, m, 2), ((i, m, 1), (i, m, 2)))]
-                for m ∈ (j+1):ctr.peps.ncols
-            ]...
+                [
+                    (
+                        (i - 1, m - 1, 1),
+                        ((i, m, 1), (i, m, 2)),
+                        (i - 1, m - 1, 2),
+                        ((i, m, 1), (i, m, 2)),
+                        (i - 1, m, 1),
+                        ((i, m - 1, 1), (i, m - 1, 2)),
+                        (i - 1, m, 2),
+                        ((i, m - 1, 1), (i, m - 1, 2)),
+                    ),
+                    (
+                        (i - 1, m, 1),
+                        ((i, m, 1), (i, m, 2)),
+                        (i - 1, m, 2),
+                        ((i, m, 1), (i, m, 2)),
+                    ),
+                ] for m ∈ (j+1):ctr.peps.ncols
+            ]...,
         )
     end
     bnd
@@ -545,18 +690,29 @@ The energy is computed based on the local energy at the node and the interaction
 The function is specialized for the `SquareCrossDoubleNode` tensor network type and is parametrized by the layout type `S`.
 """
 function update_energy(
-    ::Type{T}, ctr::MpsContractor{S}, σ::Vector{Int}
-) where {T <: SquareCrossDoubleNode, S}
+    ::Type{T},
+    ctr::MpsContractor{S},
+    σ::Vector{Int},
+) where {T<:SquareCrossDoubleNode,S}
     net = ctr.peps
     i, j, k = ctr.current_node
 
     en = local_energy(net, (i, j, k))
     for v ∈ (
-        (i, j-1, 1), (i, j-1, 2), (i-1, j, 1), (i-1, j, 2), (i-1, j-1, 1), (i-1, j-1, 2), (i-1, j+1, 1), (i-1, j+1, 2)
-        )
+        (i, j - 1, 1),
+        (i, j - 1, 2),
+        (i - 1, j, 1),
+        (i - 1, j, 2),
+        (i - 1, j - 1, 1),
+        (i - 1, j - 1, 2),
+        (i - 1, j + 1, 1),
+        (i - 1, j + 1, 2),
+    )
         en += bond_energy(net, (i, j, k), v, local_state_for_node(ctr, σ, v))
     end
-    if k != 2 return en end
+    if k != 2
+        return en
+    end
     en += bond_energy(net, (i, j, k), (i, j, 1), local_state_for_node(ctr, σ, (i, j, 1)))  # here k=2
     en
 end
@@ -580,11 +736,14 @@ It uses the inverse temperature parameter `β` to construct the central tensor b
 The function is specialized for PEPS tensor networks with sparse tensors (`Sparse`) and is parametrized by the abstract geometry type `T`.
 """
 function tensor(
-    net::PEPSNetwork{T, Sparse}, node::PEPSNode, β::Real, ::Val{:central_d_double_node}
-) where {T <: AbstractGeometry}
+    net::PEPSNetwork{T,Sparse},
+    node::PEPSNode,
+    β::Real,
+    ::Val{:central_d_double_node},
+) where {T<:AbstractGeometry}
     i, j = floor(Int, node.i), floor(Int, node.j)
-    T_NW_SE = CentralTensor(net, β, (i, j), (i+1, j+1))
-    T_NE_SW = CentralTensor(net, β, (i, j+1), (i+1, j))
+    T_NW_SE = CentralTensor(net, β, (i, j), (i + 1, j + 1))
+    T_NE_SW = CentralTensor(net, β, (i, j + 1), (i + 1, j))
     DiagonalTensor(T_NW_SE, T_NE_SW)
 end
 
@@ -606,11 +765,13 @@ It calculates the size by considering the sizes of the two central tensors assoc
 The function is parametrized by the abstract tensors layout type `T` and the abstract sparsity type `S`.
 """
 function Base.size(
-    net::PEPSNetwork{SquareCrossDoubleNode{T}, S}, node::PEPSNode, ::Val{:central_d_double_node}
-) where {T <: AbstractTensorsLayout, S <: AbstractSparsity}
+    net::PEPSNetwork{SquareCrossDoubleNode{T},S},
+    node::PEPSNode,
+    ::Val{:central_d_double_node},
+) where {T<:AbstractTensorsLayout,S<:AbstractSparsity}
     i, j = floor(Int, node.i), floor(Int, node.j)
-    s_1 =  CentralTensor_size(net, (i, j), (i+1, j+1))
-    s_2 =  CentralTensor_size(net, (i, j+1), (i+1, j))
+    s_1 = CentralTensor_size(net, (i, j), (i + 1, j + 1))
+    s_2 = CentralTensor_size(net, (i, j + 1), (i + 1, j))
     (s_1[1] * s_2[1], s_1[2] * s_2[2])
 end
 
@@ -634,18 +795,21 @@ The function is parametrized by the abstract tensors layout type `T`, and the ab
 
 """
 function tensor(  #TODO
-    net::PEPSNetwork{SquareCrossDoubleNode{T}, S}, node::PEPSNode, β::Real, ::Val{:sparse_virtual_double_node}
-) where {T <: AbstractTensorsLayout, S <: Union{Sparse, Dense}}
+    net::PEPSNetwork{SquareCrossDoubleNode{T},S},
+    node::PEPSNode,
+    β::Real,
+    ::Val{:sparse_virtual_double_node},
+) where {T<:AbstractTensorsLayout,S<:Union{Sparse,Dense}}
     v = Node(node)
     i, j = node.i, floor(Int, node.j)
 
-    p_lb = [projector(net, (i, j, k), ((i+1, j+1, 1), (i+1, j+1, 2))) for k ∈ 1:2]
-    p_l = [projector(net, (i, j, k), ((i, j+1, 1), (i, j+1, 2))) for k ∈ 1:2]
-    p_lt = [projector(net, (i, j, k), ((i-1, j+1, 1), (i-1, j+1, 2))) for k ∈ 1:2]
+    p_lb = [projector(net, (i, j, k), ((i + 1, j + 1, 1), (i + 1, j + 1, 2))) for k ∈ 1:2]
+    p_l = [projector(net, (i, j, k), ((i, j + 1, 1), (i, j + 1, 2))) for k ∈ 1:2]
+    p_lt = [projector(net, (i, j, k), ((i - 1, j + 1, 1), (i - 1, j + 1, 2))) for k ∈ 1:2]
 
-    p_rb = [projector(net, (i, j+1, k), ((i+1, j, 1), (i+1, j, 2))) for k ∈ 1:2]
-    p_r = [projector(net, (i, j+1, k), ((i, j, 1), (i, j, 2))) for k ∈ 1:2]
-    p_rt = [projector(net, (i, j+1, k), ((i-1, j, 1), (i-1, j, 2))) for k ∈ 1:2]
+    p_rb = [projector(net, (i, j + 1, k), ((i + 1, j, 1), (i + 1, j, 2))) for k ∈ 1:2]
+    p_r = [projector(net, (i, j + 1, k), ((i, j, 1), (i, j, 2))) for k ∈ 1:2]
+    p_rt = [projector(net, (i, j + 1, k), ((i - 1, j, 1), (i - 1, j, 2))) for k ∈ 1:2]
 
     p_lb[1], p_l[1], p_lt[1] = last(fuse_projectors((p_lb[1], p_l[1], p_lt[1])))
     p_lb[2], p_l[2], p_lt[2] = last(fuse_projectors((p_lb[2], p_l[2], p_lt[2])))
@@ -663,7 +827,7 @@ function tensor(  #TODO
 
     VirtualTensor(
         net.lp,
-        CentralTensor(net, β, (i, j), (i, j+1)),
+        CentralTensor(net, β, (i, j), (i, j + 1)),
         (p_lb, p_l, p_lt, p_rb, p_r, p_rt),
     )
 end
@@ -688,18 +852,24 @@ It constructs the tensor by combining information from the sparse virtual double
 The function is parametrized by the abstract geometry type `T`.
 """
 function tensor(
-    net::PEPSNetwork{T, Dense}, node::PEPSNode, β::Real, ::Val{:virtual_double_node}
-) where{T <: AbstractGeometry}
+    net::PEPSNetwork{T,Dense},
+    node::PEPSNode,
+    β::Real,
+    ::Val{:virtual_double_node},
+) where {T<:AbstractGeometry}
     sp = tensor(net, node, β, Val(:sparse_virtual_double_node))
     p_lb, p_l, p_lt, p_rb, p_r, p_rt = (get_projector!(net.lp, x) for x in sp.projs)
     dense_con = dense_central_tensor(sp.con)
 
     A = zeros(
         eltype(dense_con),
-        length(p_l), maximum.((p_lt, p_rt))..., length(p_r), maximum.((p_lb, p_rb))...
+        length(p_l),
+        maximum.((p_lt, p_rt))...,
+        length(p_r),
+        maximum.((p_lb, p_rb))...,
     )
     for l ∈ 1:length(p_l), r ∈ 1:length(p_r)
-         A[l, p_lt[l], p_rt[r], r, p_lb[l], p_rb[r]] = dense_con[p_l[l], p_r[r]]
+        A[l, p_lt[l], p_rt[r], r, p_lb[l], p_rb[r]] = dense_con[p_l[l], p_r[r]]
     end
     @cast B[l, (uu, u), r, (dd, d)] := A[l, uu, u, r, dd, d]
     B
@@ -723,21 +893,48 @@ The projectors are created based on the neighboring tensors and directions in th
 The function is parametrized by the abstract node type `T` and the abstract sparsity type `S`.
 """
 function projectors_site_tensor(
-    net::PEPSNetwork{T, S}, vertex::Node
-) where {T <: SquareCrossDoubleNode, S}
+    net::PEPSNetwork{T,S},
+    vertex::Node,
+) where {T<:SquareCrossDoubleNode,S}
     i, j = vertex
     plf = outer_projector(
-        (projector(
-            net, (i, j, k), ((i+1, j-1, 1), (i+1, j-1, 2), (i, j-1, 1), (i, j-1, 2), (i-1, j-1, 1), (i-1, j-1, 2))
-            ) for k ∈ 1:2)...
-        )
-    pt = outer_projector((projector(net, (i, j, k), ((i-1, j, 1), (i-1, j, 2))) for k ∈ 1:2)...)
+        (
+            projector(
+                net,
+                (i, j, k),
+                (
+                    (i + 1, j - 1, 1),
+                    (i + 1, j - 1, 2),
+                    (i, j - 1, 1),
+                    (i, j - 1, 2),
+                    (i - 1, j - 1, 1),
+                    (i - 1, j - 1, 2),
+                ),
+            ) for k ∈ 1:2
+        )...,
+    )
+    pt = outer_projector(
+        (projector(net, (i, j, k), ((i - 1, j, 1), (i - 1, j, 2))) for k ∈ 1:2)...,
+    )
     prf = outer_projector(
-        (projector(
-            net, (i, j, k), ((i+1, j+1, 1), (i+1, j+1, 2), (i, j+1, 1), (i, j+1, 2), (i-1, j+1, 1), (i-1, j+1, 2))
-            ) for k ∈ 1:2)...
-        )
-    pb = outer_projector((projector(net, (i, j, k), ((i+1, j, 1), (i+1, j, 2))) for k ∈ 1:2)...)
+        (
+            projector(
+                net,
+                (i, j, k),
+                (
+                    (i + 1, j + 1, 1),
+                    (i + 1, j + 1, 2),
+                    (i, j + 1, 1),
+                    (i, j + 1, 2),
+                    (i - 1, j + 1, 1),
+                    (i - 1, j + 1, 2),
+                ),
+            ) for k ∈ 1:2
+        )...,
+    )
+    pb = outer_projector(
+        (projector(net, (i, j, k), ((i + 1, j, 1), (i + 1, j, 2))) for k ∈ 1:2)...,
+    )
     (plf, pt, prf, pb)
 end
 
@@ -760,20 +957,20 @@ The size is specified by the dimensions along the left, top, right, and bottom d
 The function is parametrized by the types of nodes (`Node` and `PEPSNode`) and the tag indicating whether the virtual tensor is dense or sparse.
 """
 function Base.size(
-    net::AbstractGibbsNetwork{Node, PEPSNode},
+    net::AbstractGibbsNetwork{Node,PEPSNode},
     node::PEPSNode,
-    ::Union{Val{:virtual_double_node}, Val{:sparse_virtual_double_node}}
+    ::Union{Val{:virtual_double_node},Val{:sparse_virtual_double_node}},
 )
     v = Node(node)
     i, j = node.i, floor(Int, node.j)
 
-    p_lb = [projector(net, (i, j, k), ((i+1, j+1, 1), (i+1, j+1, 2))) for k ∈ 1:2]
-    p_l = [projector(net, (i, j, k), ((i, j+1, 1), (i, j+1, 2))) for k ∈ 1:2]
-    p_lt = [projector(net, (i, j, k), ((i-1, j+1, 1), (i-1, j+1, 2))) for k ∈ 1:2]
+    p_lb = [projector(net, (i, j, k), ((i + 1, j + 1, 1), (i + 1, j + 1, 2))) for k ∈ 1:2]
+    p_l = [projector(net, (i, j, k), ((i, j + 1, 1), (i, j + 1, 2))) for k ∈ 1:2]
+    p_lt = [projector(net, (i, j, k), ((i - 1, j + 1, 1), (i - 1, j + 1, 2))) for k ∈ 1:2]
 
-    p_rb = [projector(net, (i, j+1, k), ((i+1, j, 1), (i+1, j, 2))) for k ∈ 1:2]
-    p_r = [projector(net, (i, j+1, k), ((i, j, 1), (i, j, 2))) for k ∈ 1:2]
-    p_rt = [projector(net, (i, j+1, k), ((i-1, j, 1), (i-1, j, 2))) for k ∈ 1:2]
+    p_rb = [projector(net, (i, j + 1, k), ((i + 1, j, 1), (i + 1, j, 2))) for k ∈ 1:2]
+    p_r = [projector(net, (i, j + 1, k), ((i, j, 1), (i, j, 2))) for k ∈ 1:2]
+    p_rt = [projector(net, (i, j + 1, k), ((i - 1, j, 1), (i - 1, j, 2))) for k ∈ 1:2]
 
     p_lb[1], p_l[1], p_lt[1] = last(fuse_projectors((p_lb[1], p_l[1], p_lt[1])))
     p_lb[2], p_l[2], p_lt[2] = last(fuse_projectors((p_lb[2], p_l[2], p_lt[2])))
@@ -789,5 +986,10 @@ function Base.size(
     p_r = outer_projector(p_r[1], p_r[2])
     p_rt = outer_projector(p_rt[1], p_rt[2])
 
-    (size(p_l, 1), maximum(p_lt) * maximum(p_rt), size(p_r, 1), maximum(p_lb) * maximum(p_rb))
+    (
+        size(p_l, 1),
+        maximum(p_lt) * maximum(p_rt),
+        size(p_r, 1),
+        maximum(p_lb) * maximum(p_rb),
+    )
 end

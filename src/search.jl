@@ -1,20 +1,19 @@
-export
-       SearchParameters,
-       merge_branches,
-       merge_branches_blur,
-       low_energy_spectrum,
-       Solution,
-       bound_solution,
-       gibbs_sampling,
-       decode_to_spin,
-       empty_solution,
-       branch_energy,
-       no_merge,
-       sampling,
-       branch_probability,
-       discard_probabilities!,
-       branch_energies,
-       branch_states
+export SearchParameters,
+    merge_branches,
+    merge_branches_blur,
+    low_energy_spectrum,
+    Solution,
+    bound_solution,
+    gibbs_sampling,
+    decode_to_spin,
+    empty_solution,
+    branch_energy,
+    no_merge,
+    sampling,
+    branch_probability,
+    discard_probabilities!,
+    branch_energies,
+    branch_states
 
 """
 $(TYPEDSIGNATURES)
@@ -30,7 +29,7 @@ struct SearchParameters
     max_states::Int
     cut_off_prob::Real
 
-    function SearchParameters(max_states::Int=1, cut_off_prob::Real=0.0)
+    function SearchParameters(max_states::Int = 1, cut_off_prob::Real = 0.0)
         new(max_states, cut_off_prob)
     end
 end
@@ -74,8 +73,15 @@ This function creates an empty `Solution` object with the given number of states
 ## Returns
 An empty `Solution` object with default field values, ready to store search results for a specified number of states.
 """
-@inline empty_solution(n::Int=1) = Solution(zeros(n), fill(Vector{Int}[], n), zeros(n), ones(Int, n),
-                                            -Inf, repeat([NoDroplets()], n), fill(Vector{Int}[], n))
+@inline empty_solution(n::Int = 1) = Solution(
+    zeros(n),
+    fill(Vector{Int}[], n),
+    zeros(n),
+    ones(Int, n),
+    -Inf,
+    repeat([NoDroplets()], n),
+    fill(Vector{Int}[], n),
+)
 
 """
 $(TYPEDSIGNATURES)
@@ -95,7 +101,9 @@ By default, it is set to the largest discarded probability of the original `Solu
 A new `Solution` object containing information only for the selected states.
 """
 function Solution(
-    sol::Solution, idx::Vector{Int}, ldp::Real=sol.largest_discarded_probability
+    sol::Solution,
+    idx::Vector{Int},
+    ldp::Real = sol.largest_discarded_probability,
 )
     Solution(
         sol.energies[idx],
@@ -104,7 +112,7 @@ function Solution(
         sol.degeneracy[idx],
         ldp,
         sol.droplets[idx],
-        sol.spins[idx]
+        sol.spins[idx],
     )
 end
 
@@ -126,7 +134,10 @@ and the spin configuration as the second element (a vector of integers).
 ## Returns
 The branch energy, which is the sum of the base energy and the energy contribution of the spin configuration.
 """
-@inline function branch_energy(ctr::MpsContractor{T}, eσ::Tuple{<:Real, Vector{Int}}) where T
+@inline function branch_energy(
+    ctr::MpsContractor{T},
+    eσ::Tuple{<:Real,Vector{Int}},
+) where {T}
     eσ[begin] .+ update_energy(ctr, eσ[end])
 end
 
@@ -146,7 +157,7 @@ This function computes the energies of branches in a solution by applying the `b
 to each pair of energy and state in the given partial solution. 
 The result is a vector of energies corresponding to the branches.
 """
-@inline function branch_energies(ctr::MpsContractor{T}, psol::Solution) where T
+@inline function branch_energies(ctr::MpsContractor{T}, psol::Solution) where {T}
     reduce(vcat, branch_energy.(Ref(ctr), zip(psol.energies, psol.states)))
 end
 
@@ -170,10 +181,10 @@ function branch_states(local_basis::Vector{Int}, vec_states::Vector{Vector{Int}}
     states = reduce(hcat, vec_states)
     num_states = length(local_basis)
     lstate, nstates = size(states)
-    ns = Array{Int}(undef, lstate+1, num_states, nstates)
+    ns = Array{Int}(undef, lstate + 1, num_states, nstates)
     ns[1:lstate, :, :] .= reshape(states, lstate, 1, nstates)
     ns[lstate+1, :, :] .= reshape(local_basis, num_states, 1, 1)
-    collect(eachcol(reshape(ns, lstate+1, nstates * num_states)))
+    collect(eachcol(reshape(ns, lstate + 1, nstates * num_states)))
 end
 
 """
@@ -193,7 +204,7 @@ provided by the MPS contractor.
 The branch probability is computed as the logarithm of the conditional probability of the given state. 
 The conditional probability is obtained from the MPS contractor. 
 """
-function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real, Vector{Int}}) where T
+function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real,Vector{Int}}) where {T}
     pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
 end
 
@@ -217,8 +228,10 @@ maximum discarded probability among the removed states and the existing `ldp` in
 """
 function discard_probabilities!(psol::Solution, cut_off_prob::Real)
     pcut = maximum(psol.probabilities) + log(cut_off_prob)
-    if minimum(psol.probabilities) >= pcut return psol end
-    local_ldp = maximum(psol.probabilities[psol.probabilities .< pcut])
+    if minimum(psol.probabilities) >= pcut
+        return psol
+    end
+    local_ldp = maximum(psol.probabilities[psol.probabilities.<pcut])
     ldp = max(local_ldp, psol.largest_discarded_probability)
     Solution(psol, findall(p -> p >= pcut, psol.probabilities), ldp)
 end
@@ -238,7 +251,7 @@ Retrieve the local spin configurations associated with a vertex in the Gibbs net
 This function retrieves the local spin configurations associated with a given vertex in the Gibbs network. 
 The local spins are extracted from the spectrum of the clustered Hamiltonian associated with the vertex.
 """
-function local_spins(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T}
+function local_spins(network::AbstractGibbsNetwork{S,T}, vertex::S) where {S,T}
     spectrum(network, vertex).states_int
 end
 
@@ -258,7 +271,7 @@ This function generates a new solution by branching the given partial solution i
 It computes the energies, states, probabilities, degeneracies, discarded probabilities, droplets, and spins for the resulting solution. 
 The branching process involves considering the current node in the contractor and updating the solution accordingly.
 """
-function branch_solution(psol::Solution, ctr::T) where T <: AbstractContractor
+function branch_solution(psol::Solution, ctr::T) where {T<:AbstractContractor}
     num_states = cluster_size(ctr.peps, ctr.current_node)
     basis_states = collect(1:num_states)
     basis_spins = local_spins(ctr.peps, ctr.current_node)
@@ -267,10 +280,10 @@ function branch_solution(psol::Solution, ctr::T) where T <: AbstractContractor
         branch_energies(ctr, psol),
         branch_states(basis_states, psol.states),
         reduce(vcat, branch_probability.(Ref(ctr), zip(psol.probabilities, boundaries))),
-        repeat(psol.degeneracy, inner=num_states),
+        repeat(psol.degeneracy, inner = num_states),
         psol.largest_discarded_probability,
-        repeat(psol.droplets, inner=num_states),#,
-        branch_states(basis_spins, psol.spins)
+        repeat(psol.droplets, inner = num_states),#,
+        branch_states(basis_spins, psol.spins),
     )
 end
 
@@ -293,9 +306,13 @@ A function `_merge` that can be used to merge branches in a solution.
 ## Details
 The `_merge` function can be applied to a `Solution` object to merge its branches based on the specified merge type and droplet update strategy.
 """
-function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit, update_droplets=NoDroplets()) where {T}
+function merge_branches(
+    ctr::MpsContractor{T},
+    merge_type::Symbol = :nofit,
+    update_droplets = NoDroplets(),
+) where {T}
     function _merge(psol::Solution)
-        node = get(ctr.nodes_search_order, length(psol.states[1])+1, ctr.node_outside)
+        node = get(ctr.nodes_search_order, length(psol.states[1]) + 1, ctr.node_outside)
         boundaries = boundary_states(ctr, psol.states, node)
         _, bnd_types = SpinGlassNetworks.unique_dims(boundaries, 1)
         sorting_idx = sortperm(bnd_types)
@@ -320,7 +337,7 @@ function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit, update
 
             new_degeneracy = 0
             ind_deg = []
-            for i in start:stop
+            for i = start:stop
                 if nsol.energies[i] <= nsol.energies[best_idx] + 1E-12 # this is hack for now
                     new_degeneracy += nsol.degeneracy[i]
                     push!(ind_deg, i)
@@ -329,7 +346,8 @@ function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit, update
 
             if merge_type == :fit
                 c = Statistics.median(
-                    ctr.betas[end] .* nsol.energies[start:stop] .+ nsol.probabilities[start:stop]
+                    ctr.betas[end] .* nsol.energies[start:stop] .+
+                    nsol.probabilities[start:stop],
                 )
                 new_prob = -ctr.betas[end] .* nsol.energies[best_idx] .+ c
                 push!(probs, new_prob)
@@ -341,8 +359,14 @@ function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit, update
 
             ## states with unique boundary => we take the one with best energy
             ## treat other states with the same boundary as droplets on top of the best one
-            excitation = update_droplets(ctr, best_idx_bnd, nsol.energies[start:stop], nsol.states[start:stop],
-                                        nsol.droplets[start:stop], nsol.spins[start:stop])
+            excitation = update_droplets(
+                ctr,
+                best_idx_bnd,
+                nsol.energies[start:stop],
+                nsol.states[start:stop],
+                nsol.droplets[start:stop],
+                nsol.spins[start:stop],
+            )
             push!(droplets, excitation)
 
             push!(energies, nsol.energies[best_idx])
@@ -351,7 +375,15 @@ function merge_branches(ctr::MpsContractor{T}, merge_type::Symbol=:nofit, update
             push!(spins, nsol.spins[best_idx])
             start = stop + 1
         end
-        Solution(energies, states, probs, degeneracy, psol.largest_discarded_probability, droplets, spins)
+        Solution(
+            energies,
+            states,
+            probs,
+            degeneracy,
+            psol.largest_discarded_probability,
+            droplets,
+            spins,
+        )
     end
     _merge
 end
@@ -376,18 +408,26 @@ It returns a new solution with the merged branches.
 The Hamming distance blur helps in selecting diverse states during the merging process. 
 States with Hamming distances greater than or equal to the specified cutoff are considered distinct.
 """
-function merge_branches_blur(ctr::MpsContractor{T}, hamming_cutoff::Int, merge_type::Symbol=:nofit, update_droplets=NoDroplets()) where {T}
+function merge_branches_blur(
+    ctr::MpsContractor{T},
+    hamming_cutoff::Int,
+    merge_type::Symbol = :nofit,
+    update_droplets = NoDroplets(),
+) where {T}
     function _merge_blur(psol::Solution)
         psol = merge_branches(ctr, merge_type, update_droplets)(psol)
-        node = get(ctr.nodes_search_order, length(psol.states[1])+1, ctr.node_outside)
+        node = get(ctr.nodes_search_order, length(psol.states[1]) + 1, ctr.node_outside)
         boundaries = boundary_states(ctr, psol.states, node)
-        sorted_indices = sortperm(psol.probabilities, rev=true)
+        sorted_indices = sortperm(psol.probabilities, rev = true)
         sorted_boundaries = boundaries[sorted_indices]
         nsol = Solution(psol, Vector{Int}(sorted_indices)) #TODO Vector{Int} should be rm
         selected_boundaries = []
         selected_idx = []
         for (i, state) in enumerate(sorted_boundaries)
-            if all(hamming_distance(state, s, :Ising) >= hamming_cutoff for s in selected_boundaries) #TODO case with :RMF
+            if all(
+                hamming_distance(state, s, :Ising) >= hamming_cutoff for
+                s in selected_boundaries
+            ) #TODO case with :RMF
                 push!(selected_boundaries, state)
                 push!(selected_idx, i)
             end
@@ -431,11 +471,16 @@ A `Solution` object representing the bounded solution with a maximum of `max_sta
 
 """
 function bound_solution(
-    psol::Solution, max_states::Int, δprob::Real, merge_strategy=no_merge
+    psol::Solution,
+    max_states::Int,
+    δprob::Real,
+    merge_strategy = no_merge,
 )
     psol = discard_probabilities!(merge_strategy(psol), δprob)
-    if length(psol.probabilities) <= max_states return psol end
-    idx = partialsortperm(psol.probabilities, 1:max_states + 1, rev=true)
+    if length(psol.probabilities) <= max_states
+        return psol
+    end
+    idx = partialsortperm(psol.probabilities, 1:max_states+1, rev = true)
     ldp = max(psol.largest_discarded_probability, psol.probabilities[idx[end]])
     Solution(psol, idx[1:max_states], ldp)
 end
@@ -461,7 +506,7 @@ Additionally, states with probabilities below the threshold `δprob` are discard
 The optional argument `merge_strategy` specifies the merging strategy to be used during the sampling process. 
 It defaults to `no_merge`, indicating no merging.
 """
-function sampling(psol::Solution, max_states::Int, δprob::Real, merge_strategy=no_merge)
+function sampling(psol::Solution, max_states::Int, δprob::Real, merge_strategy = no_merge)
     prob = exp.(psol.probabilities)
     new_prob = cumsum(reshape(prob, :, max_states), dims = 1)
 
@@ -472,7 +517,7 @@ function sampling(psol::Solution, max_states::Int, δprob::Real, merge_strategy=
         np = new_prob[:, i]
         new_prob[:, i] = np / np[end]
         idx[i] = searchsortedfirst(new_prob[:, i], m)
-        idx_lin[i] = Int((i-1) * size(new_prob, 1) + idx[i])
+        idx_lin[i] = Int((i - 1) * size(new_prob, 1) + idx[i])
     end
     ldp = 0.0
     Solution(psol, idx_lin, ldp)
@@ -503,15 +548,19 @@ A tuple `(sol, s)` containing:
 - `s::Dict`: A dictionary containing Schmidt spectra for each row of the PEPS network.
 """
 function low_energy_spectrum(
-    ctr::T, sparams::SearchParameters, merge_strategy=no_merge, symmetry::Symbol=:noZ2; no_cache=false,
-) where T <: AbstractContractor
+    ctr::T,
+    sparams::SearchParameters,
+    merge_strategy = no_merge,
+    symmetry::Symbol = :noZ2;
+    no_cache = false,
+) where {T<:AbstractContractor}
     # Build all boundary mps
     CUDA.allowscalar(false)
 
     schmidts = Dict()
-    @showprogress "Preprocessing: " for i ∈ ctr.peps.nrows + 1 : -1 : 2
+    @showprogress "Preprocessing: " for i ∈ ctr.peps.nrows+1:-1:2
         ψ0 = mps(ctr, i, length(ctr.betas))
-        push!(schmidts, i=> measure_spectrum(ψ0))
+        push!(schmidts, i => measure_spectrum(ψ0))
         clear_memoize_cache_after_row()
         Memoization.empty_cache!(SpinGlassTensors.sparse)
         empty!(ctr.peps.lp, :GPU)
@@ -560,15 +609,17 @@ function low_energy_spectrum(
         end
         sol = bound_solution(sol, sparams.max_states, sparams.cut_off_prob, merge_strategy)
         Memoization.empty_cache!(precompute_conditional)
-        if no_cache Memoization.empty_all_caches!() end
+        if no_cache
+            Memoization.empty_all_caches!()
+        end
     end
     clear_memoize_cache_after_row()
     empty!(ctr.peps.lp, :GPU)
 
     # Translate variable order (network --> factor graph)
     inner_perm = sortperm([
-        ctr.peps.clustered_hamiltonian.reverse_label_map[idx]
-        for idx ∈ ctr.peps.vertex_map.(ctr.nodes_search_order)
+        ctr.peps.clustered_hamiltonian.reverse_label_map[idx] for
+        idx ∈ ctr.peps.vertex_map.(ctr.nodes_search_order)
     ])
 
     inner_perm_inv = zeros(Int, length(inner_perm))
@@ -582,14 +633,16 @@ function low_energy_spectrum(
         sol.probabilities[outer_perm],
         sol.degeneracy[outer_perm],
         sol.largest_discarded_probability,
-        [perm_droplet(drop, inner_perm_inv) for drop in sol.droplets[outer_perm] ],
-        sol.spins[outer_perm]
+        [perm_droplet(drop, inner_perm_inv) for drop in sol.droplets[outer_perm]],
+        sol.spins[outer_perm],
         # sol.pool_of_flips # TODO
     )
 
     # Final check if states correspond energies
-    @assert sol.energies ≈ energy.(
-        Ref(ctr.peps.clustered_hamiltonian), decode_state.(Ref(ctr.peps), sol.states)
+    @assert sol.energies ≈
+            energy.(
+        Ref(ctr.peps.clustered_hamiltonian),
+        decode_state.(Ref(ctr.peps), sol.states),
     )
     sol, s
 end
@@ -612,8 +665,11 @@ This function performs Gibbs sampling on a spin glass PEPS (Projected Entangled 
 A `Solution` object representing the result of the Gibbs sampling.
 """
 function gibbs_sampling(
-    ctr::T, sparams::SearchParameters, merge_strategy=no_merge; no_cache=false,
-) where T <: AbstractContractor
+    ctr::T,
+    sparams::SearchParameters,
+    merge_strategy = no_merge;
+    no_cache = false,
+) where {T<:AbstractContractor}
     # Build all boundary mps
     CUDA.allowscalar(false)
 
@@ -636,14 +692,16 @@ function gibbs_sampling(
         sol = sampling(sol, sparams.max_states, sparams.cut_off_prob, merge_strategy)
         Memoization.empty_cache!(precompute_conditional)
         # TODO: clear memoize cache partially
-        if no_cache Memoization.empty_all_caches!() end
+        if no_cache
+            Memoization.empty_all_caches!()
+        end
     end
     clear_memoize_cache_after_row()
 
     # Translate variable order (network --> factor graph)
     inner_perm = sortperm([
-        ctr.peps.clustered_hamiltonian.reverse_label_map[idx]
-        for idx ∈ ctr.peps.vertex_map.(ctr.nodes_search_order)
+        ctr.peps.clustered_hamiltonian.reverse_label_map[idx] for
+        idx ∈ ctr.peps.vertex_map.(ctr.nodes_search_order)
     ])
 
     inner_perm_inv = zeros(Int, length(inner_perm))
@@ -658,12 +716,14 @@ function gibbs_sampling(
         sol.degeneracy[outer_perm],
         sol.largest_discarded_probability,
         [perm_droplet(drop, inner_perm_inv) for drop in sol.droplets[outer_perm]],
-        sol.spins[outer_perm]
+        sol.spins[outer_perm],
     )
 
     # Final check if states correspond energies
-    @assert sol.energies ≈ energy.(
-        Ref(ctr.peps.clustered_hamiltonian), decode_state.(Ref(ctr.peps), sol.states)
+    @assert sol.energies ≈
+            energy.(
+        Ref(ctr.peps.clustered_hamiltonian),
+        decode_state.(Ref(ctr.peps), sol.states),
     )
     sol
 end

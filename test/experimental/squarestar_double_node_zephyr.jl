@@ -1,7 +1,7 @@
 using SpinGlassExhaustive
 
 function my_brute_force(ig::IsingGraph; num_states::Int)
-    brute_force(ig, onGPU ? :GPU : :CPU, num_states=num_states)
+    brute_force(ig, onGPU ? :GPU : :CPU, num_states = num_states)
 end
 
 m = 6 # for Z3
@@ -11,7 +11,7 @@ t = 4
 β = 0.5
 DE = 16.0
 bond_dim = 5
-δp = 1E-5*exp(-β * DE)
+δp = 1E-5 * exp(-β * DE)
 num_states = 128
 iter = 1
 cs = 2^10
@@ -22,9 +22,17 @@ cl_h = clustered_hamiltonian(
     ig,
     # max_cl_states,
     spectrum = full_spectrum,  #brute_force_gpu, # rm _gpu to use CPU
-    cluster_assignment_rule = zephyr_lattice((m, n, t))
+    cluster_assignment_rule = zephyr_lattice((m, n, t)),
 )
-@time cl_h = truncate_clustered_hamiltonian(cl_h, β, cs, results_folder, inst; tol=1e-6, iter=iter)
+@time cl_h = truncate_clustered_hamiltonian(
+    cl_h,
+    β,
+    cs,
+    results_folder,
+    inst;
+    tol = 1e-6,
+    iter = iter,
+)
 
 params = MpsParameters(bond_dim, 1E-8, 10, 1E-16)
 search_params = SearchParameters(num_states, δp)
@@ -33,12 +41,18 @@ search_params = SearchParameters(num_states, δp)
 energies = Vector{Float64}[]
 Strategy = Zipper # SVDTruncate
 Sparsity = Sparse #Dense
-tran =  LatticeTransformation((4, 1, 2, 3), true)
+tran = LatticeTransformation((4, 1, 2, 3), true)
 Layout = GaugesEnergy
 Gauge = NoUpdate
 
-net = PEPSNetwork{SquareCrossDoubleNode{Layout}, Sparsity}(m, n, cl_h, tran)
-ctr = MpsContractor{Strategy, Gauge}(net, [β/6, β/3, β/2, β], :graduate_truncate, params; onGPU=onGPU)
+net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity}(m, n, cl_h, tran)
+ctr = MpsContractor{Strategy,Gauge}(
+    net,
+    [β / 6, β / 3, β / 2, β],
+    :graduate_truncate,
+    params;
+    onGPU = onGPU,
+)
 
 # for i in 1//2 : 1//2 : m
 #     for j in 1 : 1//2 : n

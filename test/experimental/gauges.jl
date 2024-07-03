@@ -7,9 +7,9 @@ n = 4
 t = 8
 
 L = n * m * t
-max_cl_states = 2^(t-0)
+max_cl_states = 2^(t - 0)
 
-β =0.5
+β = 0.5
 bond_dim = 32
 δp = 1E-3
 num_states = 1000
@@ -19,8 +19,8 @@ instance = "$(@__DIR__)/instances/chimera_droplets/128power/001.txt"
 cl_h = clustered_hamiltonian(
     ising_graph(instance),
     max_cl_states,
-    spectrum=full_spectrum,
-    cluster_assignment_rule=super_square_lattice((m, n, t))
+    spectrum = full_spectrum,
+    cluster_assignment_rule = super_square_lattice((m, n, t)),
 )
 
 params = MpsParameters(bond_dim, 1E-8, 10)
@@ -68,68 +68,76 @@ search_params = SearchParameters(num_states, δp)
 # end
 
 @testset "Updating gauges works correctly." begin
-for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, Sparse) 
-    for Layout ∈ (GaugesEnergy,)
-        for Gauge ∈ (GaugeStrategy, )
-            for Lattice ∈ (SquareSingleNode, SquareCrossSingleNode), transform ∈ all_lattice_transformations
-                net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, cl_h, transform, :id)
-                ctr = MpsContractor{Strategy, Gauge}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
+    for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, Sparse)
+        for Layout ∈ (GaugesEnergy,)
+            for Gauge ∈ (GaugeStrategy,)
+                for Lattice ∈ (SquareSingleNode, SquareCrossSingleNode),
+                    transform ∈ all_lattice_transformations
 
-                @testset "Overlaps calculated differently are the same." begin
-                    indβ = 3
-                    for i ∈ 1:m-1
+                    net = PEPSNetwork{Lattice{Layout},Sparsity}(m, n, cl_h, transform, :id)
+                    ctr = MpsContractor{Strategy,Gauge}(
+                        net,
+                        [β / 8, β / 4, β / 2, β],
+                        :graduate_truncate,
+                        params;
+                        onGPU = onGPU,
+                    )
 
-                        ψ_top = mps_top(ctr, i, indβ)
-                        ψ_bot = mps(ctr, i+1, indβ)
+                    @testset "Overlaps calculated differently are the same." begin
+                        indβ = 3
+                        for i ∈ 1:m-1
 
-                        try
-                            overlap = tr(overlap_density_matrix(ψ_top, ψ_bot, indβ))
-                            @test overlap ≈ ψ_bot * ψ_top
-                        catch
-                            println(Strategy, " ", Sparsity, " ", Lattice, " ", i)
-                            overlap = Inf
-                            @test overlap ≈ ψ_bot * ψ_top
+                            ψ_top = mps_top(ctr, i, indβ)
+                            ψ_bot = mps(ctr, i + 1, indβ)
+
+                            try
+                                overlap = tr(overlap_density_matrix(ψ_top, ψ_bot, indβ))
+                                @test overlap ≈ ψ_bot * ψ_top
+                            catch
+                                println(Strategy, " ", Sparsity, " ", Lattice, " ", i)
+                                overlap = Inf
+                                @test overlap ≈ ψ_bot * ψ_top
+
+                            end
 
                         end
-
                     end
+                    clear_memoize_cache()
+
+                    # @testset "ψ_bot and ψ_top are not updated in place though memoize!" begin
+                    #     indβ = [3,]
+                    #     for aba in 1:3, i ∈ 1:m-1
+                    #         println(aba," ", i)
+                    #         ψ_top = mps_top(ctr, i, indβ[begin])
+                    #         ψ_bot = mps(ctr, i+1, indβ[begin])
+
+                    #         overlap_old = ψ_top * ψ_bot
+
+                    #         update_gauges!(ctr, i, indβ, Val(:down))
+
+                    #         # assert that ψ_bot and ψ_top are not updated in place though memoize!
+                    #         overlap_old2 = ψ_bot * ψ_top
+
+                    #         @test overlap_old ≈ overlap_old2
+
+
+                    #     end
+                    # end
+                    # break
+                    # clear_memoize_cache()
+
+                    # @testset "Updating gauges from top and bottom gives the same energy." begin
+                    #     indβ = [3,]
+                    #     update_gauges!(ctr, m, indβ, Val(:down))
+                    #     sol_l, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+                    #     clear_memoize_cache()
+                    #     update_gauges!(ctr, m, indβ, Val(:up))
+                    #     sol_r, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
+                    #     @test sol_l.energies[begin] ≈ sol_r.energies[begin]
+                    # end
+                    # clear_memoize_cache()
                 end
-                clear_memoize_cache()
-
-                # @testset "ψ_bot and ψ_top are not updated in place though memoize!" begin
-                #     indβ = [3,]
-                #     for aba in 1:3, i ∈ 1:m-1
-                #         println(aba," ", i)
-                #         ψ_top = mps_top(ctr, i, indβ[begin])
-                #         ψ_bot = mps(ctr, i+1, indβ[begin])
-
-                #         overlap_old = ψ_top * ψ_bot
-
-                #         update_gauges!(ctr, i, indβ, Val(:down))
-
-                #         # assert that ψ_bot and ψ_top are not updated in place though memoize!
-                #         overlap_old2 = ψ_bot * ψ_top
-
-                #         @test overlap_old ≈ overlap_old2
-                        
-                        
-                #     end
-                # end
-                # break
-                # clear_memoize_cache()
-
-                # @testset "Updating gauges from top and bottom gives the same energy." begin
-                #     indβ = [3,]
-                #     update_gauges!(ctr, m, indβ, Val(:down))
-                #     sol_l, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
-                #     clear_memoize_cache()
-                #     update_gauges!(ctr, m, indβ, Val(:up))
-                #     sol_r, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
-                #     @test sol_l.energies[begin] ≈ sol_r.energies[begin]
-                # end
-                # clear_memoize_cache()
             end
         end
     end
-end
 end

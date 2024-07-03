@@ -2,31 +2,30 @@
 
 using LabelledGraphs
 
-export
-       AbstractGibbsNetwork,
-       interaction_energy,
-       connecting_tensor,
-       normalize_probability,
-       fuse_projectors,
-       initialize_gauges!,
-       decode_state,
-       PEPSNetwork,
-       mod_wo_zero,
-       bond_energy,
-       outer_projector,
-       projector,
-       spectrum,
-       is_compatible,
-       ones_like,
-       _equalize,
-       _normalize,
-       branch_solution,
-       local_spins,
-       local_energy
+export AbstractGibbsNetwork,
+    interaction_energy,
+    connecting_tensor,
+    normalize_probability,
+    fuse_projectors,
+    initialize_gauges!,
+    decode_state,
+    PEPSNetwork,
+    mod_wo_zero,
+    bond_energy,
+    outer_projector,
+    projector,
+    spectrum,
+    is_compatible,
+    ones_like,
+    _equalize,
+    _normalize,
+    branch_solution,
+    local_spins,
+    local_energy
 
 # T: type of the vertex of network
 # S: type of the vertex of underlying factor graph
-abstract type AbstractGibbsNetwork{S, T} end
+abstract type AbstractGibbsNetwork{S,T} end
 
 """
 $(TYPEDSIGNATURES)
@@ -47,9 +46,8 @@ Construct a Projected Entangled Pair States (PEPS) network.
 # Returns
 An instance of PEPSNetwork{T, S}.
 """
-mutable struct PEPSNetwork{
-    T <: AbstractGeometry, S <: AbstractSparsity
-} <: AbstractGibbsNetwork{Node, PEPSNode}
+mutable struct PEPSNetwork{T<:AbstractGeometry,S<:AbstractSparsity} <:
+               AbstractGibbsNetwork{Node,PEPSNode}
     clustered_hamiltonian::LabelledGraph
     vertex_map::Function
     lp::PoolOfProjectors
@@ -57,16 +55,16 @@ mutable struct PEPSNetwork{
     n::Int
     nrows::Int
     ncols::Int
-    tensors_map::Dict{PEPSNode, Symbol}
+    tensors_map::Dict{PEPSNode,Symbol}
     gauges::Gauges{T}
 
-    function PEPSNetwork{T, S}(
+    function PEPSNetwork{T,S}(
         m::Int,
         n::Int,
         clustered_hamiltonian::LabelledGraph,
         transformation::LatticeTransformation,
-        gauge_type::Symbol=:id
-    ) where {T <: AbstractGeometry, S <: AbstractSparsity}
+        gauge_type::Symbol = :id,
+    ) where {T<:AbstractGeometry,S<:AbstractSparsity}
         lp = get_prop(clustered_hamiltonian, :pool_of_projectors)
         net = new(clustered_hamiltonian, vertex_map(transformation, m, n), lp, m, n)
         net.nrows, net.ncols = transformation.flips_dimensions ? (n, m) : (m, n)
@@ -135,7 +133,7 @@ Calculate the bond energy between nodes `u` and `v` for a given index `σ` in th
 ## Returns
 - `energies::Vector{T}`: Vector containing the bond energies between nodes `u` and `v` for index `σ`.
 """
-function bond_energy(net::AbstractGibbsNetwork{T, S}, u::Node, v::Node, σ::Int) where {T, S}
+function bond_energy(net::AbstractGibbsNetwork{T,S}, u::Node, v::Node, σ::Int) where {T,S}
     cl_h_u, cl_h_v = net.vertex_map(u), net.vertex_map(v)
     energies = SpinGlassNetworks.bond_energy(net.clustered_hamiltonian, cl_h_u, cl_h_v, σ)
     vec(energies)
@@ -154,7 +152,7 @@ Compute the projector between two nodes `v` and `w` in the Gibbs network `networ
 ## Returns
 - `projector::Matrix{T}`: Projector matrix between nodes `v` and `w`.
 """
-function projector(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
+function projector(network::AbstractGibbsNetwork{S,T}, v::S, w::S) where {S,T}
     cl_h = network.clustered_hamiltonian
     cl_h_v, cl_h_w = network.vertex_map(v), network.vertex_map(w)
     SpinGlassNetworks.projector(cl_h, cl_h_v, cl_h_w)
@@ -175,8 +173,10 @@ Compute the projector matrix for the given node `v` onto a tuple of target nodes
     
 """
 function projector(
-    net::AbstractGibbsNetwork{S, T}, v::S, vertices::NTuple{N, S}
-) where {S, T, N}
+    net::AbstractGibbsNetwork{S,T},
+    v::S,
+    vertices::NTuple{N,S},
+) where {S,T,N}
     first(fuse_projectors(projector.(Ref(net), Ref(v), vertices)))
 end
 
@@ -192,16 +192,16 @@ Fuse a tuple of projector matrices into a single projector matrix using rank-rev
 - `transitions::NTuple{N, Vector{Int}}`: Tuple of transition vectors indicating the indices of the non-zero rows in each original projector.
 """
 function fuse_projectors(
-    projectors::NTuple{N, K}
+    projectors::NTuple{N,K},
     #projectors::Union{Vector{S}, NTuple{N, S}}
-    ) where {N, K}
+) where {N,K}
     fused, transitions_matrix = rank_reveal(hcat(projectors...), :PE)
     # transitions = collect(eachcol(transitions_matrix))
     transitions = Tuple(Array(t) for t ∈ eachcol(transitions_matrix))
     fused, transitions
 end
 
-function outer_projector(p1::Array{T, 1}, p2::Array{T, 1}) where T <: Number
+function outer_projector(p1::Array{T,1}, p2::Array{T,1}) where {T<:Number}
     reshape(reshape(p1, :, 1) .+ maximum(p1) .* reshape(p2 .- 1, 1, :), :)
 end
 
@@ -216,7 +216,7 @@ Retrieve the spectrum associated with a specific vertex in the Gibbs network.
 ## Returns
 - Spectrum associated with the specified vertex.
 """
-function spectrum(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T}
+function spectrum(network::AbstractGibbsNetwork{S,T}, vertex::S) where {S,T}
     get_prop(network.clustered_hamiltonian, network.vertex_map(vertex), :spectrum)
 end
 
@@ -231,7 +231,7 @@ Retrieve the local energy spectrum associated with a specific vertex in the Gibb
 ## Returns
 - Local energy spectrum associated with the specified vertex.
 """
-function local_energy(network::AbstractGibbsNetwork{S, T}, vertex::S) where {S, T}
+function local_energy(network::AbstractGibbsNetwork{S,T}, vertex::S) where {S,T}
     spectrum(network, vertex).energies
 end
 
@@ -247,7 +247,7 @@ Determine the cluster size associated with a specific vertex in the Gibbs networ
 ## Returns
 - `size::Int`: Number of states in the local energy spectrum associated with the specified vertex.
 """
-function SpinGlassNetworks.cluster_size(net::AbstractGibbsNetwork{S, T}, v::S) where {S, T}
+function SpinGlassNetworks.cluster_size(net::AbstractGibbsNetwork{S,T}, v::S) where {S,T}
     length(local_energy(net, v))
 end
 
@@ -263,7 +263,7 @@ Compute the interaction energy between two vertices in a Gibbs network.
 ## Returns
 - `energy::Matrix{T}`: Interaction energy matrix between vertices `v` and `w`.
 """
-function interaction_energy(network::AbstractGibbsNetwork{S, T}, v::S, w::S) where {S, T}
+function interaction_energy(network::AbstractGibbsNetwork{S,T}, v::S, w::S) where {S,T}
     cl_h = network.clustered_hamiltonian
     cl_h_v, cl_h_w = network.vertex_map(v), network.vertex_map(w)
     if has_edge(cl_h, cl_h_w, cl_h_v)
@@ -287,7 +287,10 @@ Check if a clustered Hamiltonian is compatible with a given network graph.
 - `compatibility::Bool`: `true` if the clustered Hamiltonian is compatible with the network graph, `false` otherwise.
 """
 function is_compatible(clustered_hamiltonian::LabelledGraph, network_graph::LabelledGraph)
-    all(has_edge(network_graph, src(edge), dst(edge)) for edge ∈ edges(clustered_hamiltonian))
+    all(
+        has_edge(network_graph, src(edge), dst(edge)) for
+        edge ∈ edges(clustered_hamiltonian)
+    )
 end
 
 """
@@ -304,7 +307,7 @@ Each gauge tensor is associated with two positions in the network and a type.
 The positions are determined by the gauge's `positions` field, and the type is specified by the gauge's `type` field. 
 The initialization type can be either `:id` for identity tensors or `:rand` for random tensors.
 """
-function initialize_gauges!(net::AbstractGibbsNetwork{S, T}, type::Symbol=:id) where {S, T}
+function initialize_gauges!(net::AbstractGibbsNetwork{S,T}, type::Symbol = :id) where {S,T}
     @assert type ∈ (:id, :rand)
     for gauge ∈ net.gauges.info
         n1, n2 = gauge.positions
@@ -353,7 +356,9 @@ Normalize a probability distribution.
 - `Vector{Float64}`: Normalized probability distribution.
 """
 function normalize_probability(probs::Vector{<:Real})
-    if minimum(probs) < 0 return _equalize(probs) end
+    if minimum(probs) < 0
+        return _equalize(probs)
+    end
     _normalize(probs)
 end
 
@@ -370,8 +375,12 @@ Decode a state vector into a dictionary representation.
 - `Dict{Symbol, Int}`: A dictionary mapping node symbols to corresponding values in the state vector.
 """
 function decode_state(
-    peps::AbstractGibbsNetwork{S, T}, σ::Vector{Int}, cl_h_order::Bool=false
-) where {S, T}
-    nodes = cl_h_order ? peps.vertex_map.(nodes_search_order_Mps(peps)) : vertices(peps.clustered_hamiltonian)
+    peps::AbstractGibbsNetwork{S,T},
+    σ::Vector{Int},
+    cl_h_order::Bool = false,
+) where {S,T}
+    nodes =
+        cl_h_order ? peps.vertex_map.(nodes_search_order_Mps(peps)) :
+        vertices(peps.clustered_hamiltonian)
     Dict(nodes[1:length(σ)] .=> σ)
 end

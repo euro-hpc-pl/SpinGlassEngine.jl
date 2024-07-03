@@ -37,7 +37,7 @@ function run_test(instance, m, n, t)
 
     ig = ising_graph(instance)
 
-    params = MpsParameters(
+    params = MpsParameters{Float64}(
         bond_dim,
         tolV,
         max_sweeps,
@@ -48,7 +48,7 @@ function run_test(instance, m, n, t)
         METHOD,
     )
 
-    # params = MpsParameters(bond_dim, 1E-8, 10)
+    # params = MpsParameters{Float64}(bond_dim, 1E-8, 10)
     search_params = SearchParameters(num_states, δp)
     energies = []
     Gauge = NoUpdate
@@ -75,9 +75,9 @@ function run_test(instance, m, n, t)
             )
             cl_h = truncate_clustered_hamiltonian_2site_energy(cl_h, cl)
 
-            net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity}(m, n, cl_h, tran)
+            net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity, Float64}(m, n, cl_h, tran)
 
-            ctr = MpsContractor{Strategy,Gauge}(
+            ctr = MpsContractor{Strategy,Gauge, Float64}(
                 net,
                 βs,
                 :graduate_truncate,

@@ -23,7 +23,7 @@ function bench(instance::String)
         spectrum = full_spectrum,
         cluster_assignment_rule = super_square_lattice((m, n, t)),
     )
-    params = MpsParameters(bond_dim, 1E-8, 10, 1E-16)
+    params = MpsParameters{Float64}(bond_dim, 1E-8, 10, 1E-16)
     search_params = SearchParameters(num_states, δp)
 
     energies = Vector{Float64}[]
@@ -31,8 +31,13 @@ function bench(instance::String)
         for Gauge ∈ (NoUpdate, GaugeStrategy, GaugeStrategyWithBalancing)
             for Layout ∈ (GaugesEnergy,), transform ∈ all_lattice_transformations
 
-                net = PEPSNetwork{SquareSingleNode{Layout},Sparsity}(m, n, cl_h, transform)
-                ctr = MpsContractor{Strategy,Gauge}(
+                net = PEPSNetwork{SquareSingleNode{Layout},Sparsity,Float64}(
+                    m,
+                    n,
+                    cl_h,
+                    transform,
+                )
+                ctr = MpsContractor{Strategy,Gauge,Float64}(
                     net,
                     all_betas,
                     :graduate_truncate,

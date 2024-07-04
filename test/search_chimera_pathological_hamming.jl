@@ -117,7 +117,7 @@ end
         cluster_assignment_rule = super_square_lattice((m, n, t)),
     )
 
-    params = MpsParameters(bond_dim, 1E-8, 4)
+    params = MpsParameters{Float64}(bond_dim, 1E-8, 4)
     search_params = SearchParameters(num_states, 0.0)
     Gauge = NoUpdate
 
@@ -127,8 +127,13 @@ end
             for Lattice ∈ (SquareCrossSingleNode,),
                 transform ∈ all_lattice_transformations[[1]]
 
-                net = PEPSNetwork{SquareSingleNode{Layout},Sparsity}(m, n, cl_h, transform)
-                ctr = MpsContractor{Strategy,Gauge}(
+                net = PEPSNetwork{SquareSingleNode{Layout},Sparsity,Float64}(
+                    m,
+                    n,
+                    cl_h,
+                    transform,
+                )
+                ctr = MpsContractor{Strategy,Gauge,Float64}(
                     net,
                     [β / 8.0, β / 4.0, β / 2.0, β],
                     :graduate_truncate,

@@ -34,7 +34,7 @@ cl_h = clustered_hamiltonian(
     iter = iter,
 )
 
-params = MpsParameters(bond_dim, 1E-8, 10, 1E-16)
+params = MpsParameters{Float64}(bond_dim, 1E-8, 10, 1E-16)
 search_params = SearchParameters(num_states, δp)
 
 # Solve using PEPS search
@@ -45,8 +45,8 @@ tran = LatticeTransformation((4, 1, 2, 3), true)
 Layout = GaugesEnergy
 Gauge = NoUpdate
 
-net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity}(m, n, cl_h, tran)
-ctr = MpsContractor{Strategy,Gauge}(
+net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity,Float64}(m, n, cl_h, tran)
+ctr = MpsContractor{Strategy,Gauge,Float64}(
     net,
     [β / 6, β / 3, β / 2, β],
     :graduate_truncate,

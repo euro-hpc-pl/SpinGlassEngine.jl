@@ -24,7 +24,7 @@ cl_h = clustered_hamiltonian(
     cluster_assignment_rule = super_square_lattice((m, n, t)),
 )
 
-params = MpsParameters(bond_dim, 1E-8, 10)
+params = MpsParameters{Float64}(bond_dim, 1E-8, 10)
 search_params = SearchParameters(num_states, δp)
 
 Strategy = SVDTruncate
@@ -34,8 +34,13 @@ Gauge = NoUpdate
     Dense,
     Sparse,
 )
-    network = PEPSNetwork{SquareSingleNode{GaugesEnergy},Sparsity}(m, n, cl_h, rotation(0))
-    ctr = MpsContractor{Strategy,Gauge}(
+    network = PEPSNetwork{SquareSingleNode{GaugesEnergy},Sparsity,Float64}(
+        m,
+        n,
+        cl_h,
+        rotation(0),
+    )
+    ctr = MpsContractor{Strategy,Gauge,Float64}(
         network,
         [β / 8, β / 4, β / 2, β],
         :graduate_truncate,
@@ -60,8 +65,13 @@ end
     Sparse,
 )
     overlap_python = [0.18603559878582027, 0.36463028391550056, 0.30532555472025247]
-    net = PEPSNetwork{SquareSingleNode{EnergyGauges},Sparsity}(m, n, cl_h, rotation(0))
-    ctr = MpsContractor{Strategy,Gauge}(
+    net = PEPSNetwork{SquareSingleNode{EnergyGauges},Sparsity,Float64}(
+        m,
+        n,
+        cl_h,
+        rotation(0),
+    )
+    ctr = MpsContractor{Strategy,Gauge,Float64}(
         net,
         [β / 8, β / 4, β / 2, β],
         :graduate_truncate,

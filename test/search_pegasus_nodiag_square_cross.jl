@@ -19,7 +19,7 @@ function bench(instance::String)
         spectrum = my_brute_force,
         cluster_assignment_rule = super_square_lattice((m, n, t)),
     )
-    params = MpsParameters(bond_dim, 1E-8, 10)
+    params = MpsParameters{Float64}(bond_dim, 1E-8, 10)
     search_params = SearchParameters(num_states, δp)
 
     # Solve using PEPS search
@@ -28,8 +28,13 @@ function bench(instance::String)
         transform ∈ all_lattice_transformations
 
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng), Sparsity ∈ (Dense,)
-            net = PEPSNetwork{SquareCrossSingleNode{Layout},Sparsity}(m, n, cl_h, transform)
-            ctr = MpsContractor{Strategy,NoUpdate}(
+            net = PEPSNetwork{SquareCrossSingleNode{Layout},Sparsity,Float64}(
+                m,
+                n,
+                cl_h,
+                transform,
+            )
+            ctr = MpsContractor{Strategy,NoUpdate,Float64}(
                 net,
                 [β / 8, β / 4, β / 2, β],
                 :graduate_truncate,

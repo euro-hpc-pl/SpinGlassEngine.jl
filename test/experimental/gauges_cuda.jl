@@ -24,7 +24,7 @@ end
         cluster_assignment_rule = pegasus_lattice((m, n, t)),
     )
 
-    params = MpsParameters(BOND_DIM, VAR_TOL, MAX_SWEEPS, TOL_SVD)
+    params = MpsParameters{Float64}(BOND_DIM, VAR_TOL, MAX_SWEEPS, TOL_SVD)
     search_params = SearchParameters(MAX_STATES, δp)
     Gauge = GaugeStrategy
     Strategy = Zipper
@@ -34,8 +34,13 @@ end
     energies = Vector{Float64}[]
 
     for transform ∈ all_lattice_transformations
-        net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity}(m, n, cl_h, transform)
-        ctr = MpsContractor{Strategy,Gauge}(
+        net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity,Float64}(
+            m,
+            n,
+            cl_h,
+            transform,
+        )
+        ctr = MpsContractor{Strategy,Gauge,Float64}(
             net,
             [β / 6, β / 3, β / 2, β],
             :graduate_truncate,

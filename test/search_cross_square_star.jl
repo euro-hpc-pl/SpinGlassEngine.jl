@@ -15,7 +15,7 @@
         spectrum = full_spectrum,
         cluster_assignment_rule = super_square_lattice((m, n, t)),
     )
-    params = MpsParameters(bond_dim, 1E-8, 4)
+    params = MpsParameters{Float64}(bond_dim, 1E-8, 4)
     search_params = SearchParameters(num_states, 0.0)
     Gauge = NoUpdate
 
@@ -23,8 +23,8 @@
     for Strategy ∈ (MPSAnnealing, Zipper, SVDTruncate), Sparsity ∈ (Dense, Sparse)
         for Layout ∈ (GaugesEnergy, EngGaugesEng, EnergyGauges)  #
             for transform ∈ all_lattice_transformations, Lattice ∈ (SquareCrossSingleNode,)
-                net = PEPSNetwork{Lattice{Layout},Sparsity}(m, n, cl_h, transform)
-                ctr = MpsContractor{Strategy,Gauge}(
+                net = PEPSNetwork{Lattice{Layout},Sparsity,Float64}(m, n, cl_h, transform)
+                ctr = MpsContractor{Strategy,Gauge,Float64}(
                     net,
                     [β / 2, β],
                     :graduate_truncate,

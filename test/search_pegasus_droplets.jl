@@ -24,7 +24,7 @@ function bench(instance::String)
         spectrum = my_brute_force,
         cluster_assignment_rule = pegasus_lattice((m, n, t)),
     )
-    params = MpsParameters{Float64}(bond_dim, 1E-8, 10, 1E-16)
+    params = MpsParameters{Float64}(;bond_dim, 1E-8, 10, 1E-16)
     search_params = SearchParameters(num_states, δp)
 
     energies = Vector{Float64}[]

@@ -29,7 +29,7 @@ struct SearchParameters
     max_states::Int
     cut_off_prob::Real
 
-    function SearchParameters(max_states::Int = 1, cut_off_prob::Real = 0.0)
+    function SearchParameters(; max_states::Int = 1, cut_off_prob::Real = 0.0)
         new(max_states, cut_off_prob)
     end
 end

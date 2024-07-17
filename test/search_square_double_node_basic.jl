@@ -20,7 +20,7 @@ function run_test_square_double_node(instance, m, n, t)
         cluster_assignment_rule = super_square_lattice((m, n, 8)),
     )
 
-    params = MpsParameters{Float64}(bond_dim, 1E-8, 10)
+    params = MpsParameters{Float64}(;bond_dim, 1E-8, 10)
     search_params = SearchParameters(num_states, δp)
     energies = []
     Gauge = NoUpdate

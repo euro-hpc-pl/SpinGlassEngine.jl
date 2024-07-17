@@ -117,8 +117,8 @@ end
         cluster_assignment_rule = super_square_lattice((m, n, t)),
     )
 
-    params = MpsParameters{Float64}(bond_dim, 1E-8, 4)
-    search_params = SearchParameters(num_states, 0.0)
+    params = MpsParameters{Float64}(;bd=bond_dim, ϵ=1E-8, sw=4)
+    search_params = SearchParameters(; max_states=num_states, cut_off_prob=0.0)
     Gauge = NoUpdate
 
     energies = Vector{Float64}[]

@@ -15,7 +15,7 @@ function bench(instance::String)
         spectrum = full_spectrum,
         cluster_assignment_rule = super_square_lattice((m, n, t)),
     )
-    params = MpsParameters{Float64}(;bond_dim, 1E-8, 10)
+    params = MpsParameters{Float64}(;bd=bond_dim, ϵ=T(1E-8), sw=4)
     search_params = SearchParameters(num_states, δp)
     Gauge = NoUpdate
     graduate_truncation = :graduate_truncate

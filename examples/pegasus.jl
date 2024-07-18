@@ -25,7 +25,7 @@ function bench(instance::String, β::Real, bond_dim::Integer, num_states::Intege
         cluster_assignment_rule = pegasus_lattice((m, n, t)),
     )
 
-    params = MpsParameters{Float64}(;bond_dim, 1E-8, 10, 1E-16)
+    params = MpsParameters{Float64}(;bd=bond_dim, ϵ=T(1E-8), sw=4, 1E-16)
     search_params = SearchParameters(num_states, δp)
     Strategy = Zipper
     Sparsity = Sparse

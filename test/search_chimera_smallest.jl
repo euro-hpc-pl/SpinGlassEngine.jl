@@ -20,7 +20,7 @@
     Gauge = NoUpdate
     for T in [Float32, Float64]
         energies = Vector{T}[]
-        params = MpsParameters{T}(;bond_dim, T(1E-8), 4)
+        params = MpsParameters{T}(;bd=bond_dim, ϵ=T(1E-8), sw=4)
         for Strategy ∈ (SVDTruncate, Zipper),
             Sparsity ∈ (Dense, Sparse),
             Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng),

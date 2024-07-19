@@ -18,7 +18,7 @@ function bench(instance::String)
         cluster_assignment_rule = super_square_lattice((m, n, t)),
     )
     params = MpsParameters{Float64}(;bd=bond_dim, ϵ=1E-8, sw=4)
-    search_params = SearchParameters(num_states=num_states, cut_off_prob=δp)
+    search_params = SearchParameters(max_states=num_states, cut_off_prob=δp)
     Gauge = NoUpdate
     graduate_truncation = :graduate_truncate
 

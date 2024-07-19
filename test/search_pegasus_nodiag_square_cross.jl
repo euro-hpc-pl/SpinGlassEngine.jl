@@ -19,8 +19,8 @@ function bench(instance::String)
         spectrum = my_brute_force,
         cluster_assignment_rule = super_square_lattice((m, n, t)),
     )
-    params = MpsParameters{Float64}(;bd=bond_dim, ϵ=T(1E-8), sw=4)
-    search_params = SearchParameters(num_states, δp)
+    params = MpsParameters{Float64}(;bd=bond_dim, ϵ=1E-8, sw=4)
+    search_params = SearchParameters(; max_states=num_states, cut_off_prob=δp)
 
     # Solve using PEPS search
     energies = Vector{Float64}[]

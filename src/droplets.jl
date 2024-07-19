@@ -143,7 +143,7 @@ The `NoDroplets` strategy represents a scenario in which no droplets are present
 # A new `Droplets` object representing the updated droplets based on the `SingleLayerDroplets` strategy
 # """
 function (method::SingleLayerDroplets)(
-    ::MpsContractor
+    ::MpsContractor,
     best_idx::Int,
     energies::Vector{<:Real},
     states::Vector{Vector{Int}},

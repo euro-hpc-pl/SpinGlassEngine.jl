@@ -38,7 +38,7 @@ function bench(instance::String)
                 net,
                 params;
                 onGPU = onGPU,
-                [β / 8, β / 4, β / 2, β],
+                βs=[β / 8, β / 4, β / 2, β],
                 graduate_truncation=graduate_truncation,
             )
             sol_peps, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))

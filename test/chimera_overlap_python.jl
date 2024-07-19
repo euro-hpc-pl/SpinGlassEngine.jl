@@ -42,10 +42,10 @@ Gauge = NoUpdate
     )
     ctr = MpsContractor{Strategy,Gauge,Float64}(
         network,
-        [β / 8, β / 4, β / 2, β],
-        :graduate_truncate,
         params;
         onGPU = onGPU,
+        βs = [β / 8, β / 4, β / 2, β],
+        graduate_truncation=:graduate_truncate,
     )
     @testset "Compare the results with Python" begin
         overlap_python = [0.2637787707674837, 0.2501621729619047, 0.2951954406837012]
@@ -73,10 +73,10 @@ end
     )
     ctr = MpsContractor{Strategy,Gauge,Float64}(
         net,
-        [β / 8, β / 4, β / 2, β],
-        :graduate_truncate,
         params;
         onGPU = onGPU,
+        βs = [β / 8, β / 4, β / 2, β],
+        graduate_truncation=:graduate_truncate,
     )
     for i = 1:n-1
         psi_top = mps_top(ctr, i, 4)

@@ -32,16 +32,16 @@
                 )
                 ctr = MpsContractor{Strategy,Gauge,Float64}(
                     net,
-                    [β / 8, β / 4, β / 2, β],
-                    :graduate_truncate,
                     params;
                     onGPU = onGPU,
+                    βs=[β / 8, β / 4, β / 2, β],
+                    graduate_truncation=:graduate_truncate,
                 )
 
                 sol1, s = low_energy_spectrum(
                     ctr,
                     search_params,
-                    merge_branches(ctr, :nofit, SingleLayerDroplets(2.2, 1, :hamming)),
+                    merge_branches(ctr; merge_type=:nofit, update_droplets=SingleLayerDroplets(2.2, 1, :hamming)),
                 )
 
                 @test sol1.energies ≈ exact_energies[[1]]

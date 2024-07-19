@@ -160,9 +160,9 @@ mutable struct MpsContractor{T<:AbstractStrategy,R<:AbstractGauge,S<:Real} <:
 
     function MpsContractor{T,R,S}(
         net,
+        params;
         βs::Vector{S},
         graduate_truncation::Symbol,
-        params;
         onGPU = true,
         depth::Int = 0,
     ) where {T,R,S}
@@ -193,12 +193,12 @@ $(TYPEDSIGNATURES)
 Get the strategy used to contract the PEPS network.
 
 # Arguments
-- `ctr::MpsContractor{T}`: The MpsContractor object representing the PEPS network contraction.
+- `::MpsContractor{T}`: The MpsContractor object representing the PEPS network contraction.
 
 # Returns
 - `T`: The strategy used for network contraction.
 """
-strategy(ctr::MpsContractor{T}) where {T} = T
+strategy(::MpsContractor{T}) where {T} = T
 
 """
 $(TYPEDSIGNATURES)

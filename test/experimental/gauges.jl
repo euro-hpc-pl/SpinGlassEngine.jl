@@ -83,10 +83,10 @@ search_params = SearchParameters(num_states, δp)
                     )
                     ctr = MpsContractor{Strategy,Gauge,Float64}(
                         net,
-                        [β / 8, β / 4, β / 2, β],
-                        :graduate_truncate,
                         params;
                         onGPU = onGPU,
+                        βs=[β / 8, β / 4, β / 2, β],
+                        graduate_truncation=:graduate_truncate,
                     )
 
                     @testset "Overlaps calculated differently are the same." begin

@@ -87,10 +87,10 @@ for cl_states in cluster_states
     net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparse,Float64}(m, n, cl_h, tran)
     ctr = MpsContractor{Strategy,Gauge,Float64}(
         net,
-        [β],
-        :graduate_truncate,
         params;
         onGPU = onGPU,
+        βs=[β],
+        graduate_truncation=:graduate_truncate,
     )
     Ws = SpinGlassEngine.mpo(ctr, ctr.layers.main, i, indβ)
     # println(" Ws -> ", which_device(Ws), " ", format_bytes.(measure_memory(Ws)))

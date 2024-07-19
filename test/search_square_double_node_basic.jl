@@ -40,17 +40,17 @@ function run_test_square_double_node(instance, m, n, t)
 
                 ctr = MpsContractor{Strategy,Gauge,Float64}(
                     net,
-                    βs,
-                    :graduate_truncate,
                     params;
                     onGPU = onGPU,
+                    βs= βs,
+                    graduate_truncation=:graduate_truncate,
                 )
                 ctr2 = MpsContractor{Strategy,Gauge,Float64}(
                     net2,
-                    βs,
-                    :graduate_truncate,
                     params;
                     onGPU = onGPU,
+                    βs=βs,
+                    graduate_truncation=:graduate_truncate,
                 )
 
                 sol, s = low_energy_spectrum(ctr, search_params) #, merge_branches(ctr))

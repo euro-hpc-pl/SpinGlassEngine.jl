@@ -42,10 +42,10 @@ end
         )
         ctr = MpsContractor{Strategy,Gauge,Float64}(
             net,
-            [β / 6, β / 3, β / 2, β],
-            :graduate_truncate,
             params;
             onGPU = onGPU,
+            βs=[β / 6, β / 3, β / 2, β],
+            graduate_truncation=:graduate_truncate,
         )
         update_gauges!(ctr, m, INDβ, Val(:up))
         sol, s = low_energy_spectrum(ctr, search_params)

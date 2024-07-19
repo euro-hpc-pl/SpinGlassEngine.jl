@@ -39,16 +39,15 @@ function bench(instance::String)
                 )
                 ctr = MpsContractor{Strategy,Gauge,Float64}(
                     net,
-                    all_betas,
-                    :graduate_truncate,
                     params;
                     onGPU = onGPU,
+                    βs= all_betas,
+                    graduate_truncation=:graduate_truncate,
                 )
-                # sol1, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, NoDroplets()))
                 sol1, s = low_energy_spectrum(
                     ctr,
                     search_params,
-                    merge_branches(ctr, :nofit, SingleLayerDroplets(0.01, 20, :hamming)),
+                    merge_branches(ctr; merge_type=:nofit, update_droplets=SingleLayerDroplets(0.01, 20, :hamming)),
                 )
 
                 sol2 = unpack_droplets(sol1, β)

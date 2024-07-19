@@ -26,10 +26,10 @@
                 net = PEPSNetwork{Lattice{Layout},Sparsity,Float64}(m, n, cl_h, transform)
                 ctr = MpsContractor{Strategy,Gauge,Float64}(
                     net,
-                    [β / 2, β],
-                    :graduate_truncate,
                     params;
                     onGPU = onGPU,
+                    βs=[β / 2, β],
+                    graduate_truncation=:graduate_truncate,
                 )
                 sol, s = low_energy_spectrum(ctr, search_params)
 

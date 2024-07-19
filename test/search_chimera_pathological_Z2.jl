@@ -121,15 +121,15 @@
                 )
                 ctr = MpsContractor{Strategy,Gauge,Float64}(
                     net,
-                    [β / 8.0, β / 4.0, β / 2.0, β],
-                    :graduate_truncate,
                     params;
                     onGPU = onGPU,
+                    βs=[β / 8.0, β / 4.0, β / 2.0, β],
+                    graduate_truncation=:graduate_truncate,
                 )
                 sol1, s = low_energy_spectrum(
                     ctr,
                     search_params,
-                    merge_branches(ctr, :nofit, SingleLayerDroplets(10.0, 0, :hamming)),
+                    merge_branches(ctr; merge_type=:nofit, update_droplets=SingleLayerDroplets(10.0, 0, :hamming)),
                     :Z2,
                 )
                 sol2 = unpack_droplets(sol1, β)

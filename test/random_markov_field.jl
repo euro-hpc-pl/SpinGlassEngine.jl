@@ -17,14 +17,13 @@
     Sparsity = Sparse
     transform = rotation(0)
     net = PEPSNetwork{SquareCrossSingleNode{Layout},Sparsity}(Nx, Ny, cl_h, transform)
-    ctr = MpsContractor{Strategy,Gauge}(
+    ctr = MpsContractor{Strategy,Gauge,Float64}(
         net,
-        [β / 8, β / 4, β / 2, β],
-        graduate_truncation,
         params;
         onGPU = onGPU,
-        mode = :RMF,
+        βs = [β / 8, β / 4, β / 2, β],
+        graduate_truncation=:graduate_truncate,
+        mode=:RMF
     )
     sol_peps, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
-    # sol_peps, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, SingleLayerDroplets(100.0, 100, :hamming, :RMF)))
 end

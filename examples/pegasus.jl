@@ -35,9 +35,9 @@ function bench(instance::String, β::Real, bond_dim::Integer, num_states::Intege
     net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity,Float64}(m, n, cl_h, transform)
     ctr = MpsContractor{Strategy,Gauge,Float64}(
         net,
-        all_betas,
-        :graduate_truncate,
         params;
+        βs = all_betas,
+        graduate_truncation = :graduate_truncate,
         onGPU = onGPU,
     )
 

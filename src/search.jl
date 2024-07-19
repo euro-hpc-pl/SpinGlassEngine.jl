@@ -307,7 +307,7 @@ A function `_merge` that can be used to merge branches in a solution.
 The `_merge` function can be applied to a `Solution` object to merge its branches based on the specified merge type and droplet update strategy.
 """
 function merge_branches(
-    ctr::MpsContractor{T},
+    ctr::MpsContractor{T};
     merge_type::Symbol = :nofit,
     update_droplets = NoDroplets(),
 ) where {T}
@@ -415,7 +415,7 @@ function merge_branches_blur(
     update_droplets = NoDroplets(),
 ) where {T}
     function _merge_blur(psol::Solution)
-        psol = merge_branches(ctr, merge_type, update_droplets)(psol)
+        psol = merge_branches(ctr; merge_type=merge_type, update_droplets=update_droplets)(psol)
         node = get(ctr.nodes_search_order, length(psol.states[1]) + 1, ctr.node_outside)
         boundaries = boundary_states(ctr, psol.states, node)
         sorted_indices = sortperm(psol.probabilities, rev = true)

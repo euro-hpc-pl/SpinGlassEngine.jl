@@ -36,10 +36,10 @@ function bench(instance::String)
             )
             ctr = MpsContractor{Strategy,NoUpdate,Float64}(
                 net,
-                [β / 8, β / 4, β / 2, β],
-                :graduate_truncate,
                 params;
                 onGPU = onGPU,
+                βs=[β / 8, β / 4, β / 2, β],
+                graduate_truncation=:graduate_truncate,
             )
             sol_peps, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
             push!(energies, sol_peps.energies)

@@ -29,10 +29,10 @@
             net = PEPSNetwork{SquareSingleNode{Layout},Sparsity,T}(m, n, cl_h, transform)
             ctr = MpsContractor{Strategy,Gauge,T}(
                 net,
-                T[β/8, β/4, β/2, β],
-                :graduate_truncate,
                 params;
                 onGPU = onGPU,
+                βs= T[β/8, β/4, β/2, β],
+                graduate_truncation=:graduate_truncate,
             )
             sol, s = low_energy_spectrum(ctr, search_params)
             @test eltype(sol.energies) == T

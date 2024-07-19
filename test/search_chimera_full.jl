@@ -39,13 +39,13 @@ function bench(instance::String)
                 )
                 ctr = MpsContractor{Strategy,Gauge,Float64}(
                     net,
-                    all_betas,
-                    :graduate_truncate,
                     params;
                     onGPU = onGPU,
+                    βs = all_betas,
+                    graduate_truncation=:graduate_truncate,
                 )
                 sol, s =
-                    low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit))
+                    low_energy_spectrum(ctr, search_params, merge_branches(ctr; merge_type=:nofit))
 
                 @test sol.energies[begin] ≈ ground_energy
 

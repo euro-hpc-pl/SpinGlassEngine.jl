@@ -415,7 +415,10 @@ function merge_branches_blur(
     update_droplets = NoDroplets(),
 ) where {T}
     function _merge_blur(psol::Solution)
-        psol = merge_branches(ctr; merge_type=merge_type, update_droplets=update_droplets)(psol)
+        psol =
+            merge_branches(ctr; merge_type = merge_type, update_droplets = update_droplets)(
+                psol,
+            )
         node = get(ctr.nodes_search_order, length(psol.states[1]) + 1, ctr.node_outside)
         boundaries = boundary_states(ctr, psol.states, node)
         sorted_indices = sortperm(psol.probabilities, rev = true)

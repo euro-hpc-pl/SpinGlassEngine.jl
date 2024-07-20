@@ -33,7 +33,16 @@ for T in [Float64, Float32]
     println("=========")
     println("type ", T)
     energies = Vector{T}[]
-    params = MpsParameters{T}(;bond_dim, T(VAR_TOL), MAX_SWEEPS, T(TOL_SVD), ITERS_SVD, ITERS_VAR, DTEMP_MULT, METHOD)
+    params = MpsParameters{T}(;
+        bond_dim,
+        T(VAR_TOL),
+        MAX_SWEEPS,
+        T(TOL_SVD),
+        ITERS_SVD,
+        ITERS_VAR,
+        DTEMP_MULT,
+        METHOD,
+    )
     search_params = SearchParameters(mstates, δp)
 
     net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity,T}(m, n, cl_h, transform)
@@ -42,7 +51,7 @@ for T in [Float64, Float32]
         params;
         onGPU = onGPU,
         βs = [β / 8, β / 4, β / 2, β],
-        graduate_truncation=:graduate_truncate,
+        graduate_truncation = :graduate_truncate,
     )
     sol, s = low_energy_spectrum(ctr, search_params)
     @test eltype(sol.energies) == T

@@ -89,8 +89,8 @@ for cl_states in cluster_states
         net,
         params;
         onGPU = onGPU,
-        βs=[β],
-        graduate_truncation=:graduate_truncate,
+        βs = [β],
+        graduate_truncation = :graduate_truncate,
     )
     Ws = SpinGlassEngine.mpo(ctr, ctr.layers.main, i, indβ)
     # println(" Ws -> ", which_device(Ws), " ", format_bytes.(measure_memory(Ws)))

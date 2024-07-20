@@ -86,8 +86,8 @@ function run_test(instance, m, n, t)
                 net,
                 params;
                 onGPU = onGPU,
-                βs=βs,
-                graduate_truncation=:graduate_truncate,
+                βs = βs,
+                graduate_truncation = :graduate_truncate,
             )
 
             sol, schmidts = low_energy_spectrum(ctr, search_params, merge_branches(ctr)) #, merge_branches(ctr))

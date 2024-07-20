@@ -23,8 +23,8 @@ function bench(instance::String)
         spectrum = full_spectrum,
         cluster_assignment_rule = super_square_lattice((m, n, t)),
     )
-    params = MpsParameters{Float64}(;bd=bond_dim, ϵ=1E-8, sw=4, ts=1E-16)
-    search_params = SearchParameters(; max_states=num_states, cut_off_prob=δp)
+    params = MpsParameters{Float64}(; bd = bond_dim, ϵ = 1E-8, sw = 4, ts = 1E-16)
+    search_params = SearchParameters(; max_states = num_states, cut_off_prob = δp)
 
     energies = Vector{Float64}[]
     for Strategy ∈ (SVDTruncate, Zipper), Sparsity ∈ (Dense, Sparse)
@@ -42,10 +42,13 @@ function bench(instance::String)
                     params;
                     onGPU = onGPU,
                     βs = all_betas,
-                    graduate_truncation=:graduate_truncate,
+                    graduate_truncation = :graduate_truncate,
                 )
-                sol, s =
-                    low_energy_spectrum(ctr, search_params, merge_branches(ctr; merge_type=:nofit))
+                sol, s = low_energy_spectrum(
+                    ctr,
+                    search_params,
+                    merge_branches(ctr; merge_type = :nofit),
+                )
 
                 @test sol.energies[begin] ≈ ground_energy
 

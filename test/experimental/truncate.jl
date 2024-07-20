@@ -83,8 +83,8 @@ for cs ∈ cl_states
             net,
             params;
             onGPU = onGPU,
-            βs=[β / 6, β / 3, β / 2, β],
-            graduate_truncation=:graduate_truncate,
+            βs = [β / 6, β / 3, β / 2, β],
+            graduate_truncation = :graduate_truncate,
         )
         sol, schmidts = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
         println("sol ", sol)

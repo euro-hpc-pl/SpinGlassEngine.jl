@@ -24,8 +24,8 @@ function bench(instance::String)
         spectrum = my_brute_force,
         cluster_assignment_rule = pegasus_lattice((m, n, t)),
     )
-    params = MpsParameters{Float64}(;bd=bond_dim, ϵ=1E-8, sw=4, ts=1E-16)
-    search_params = SearchParameters(; max_states=num_states, cut_off_prob=δp)
+    params = MpsParameters{Float64}(; bd = bond_dim, ϵ = 1E-8, sw = 4, ts = 1E-16)
+    search_params = SearchParameters(; max_states = num_states, cut_off_prob = δp)
 
     energies = Vector{Float64}[]
     for Strategy ∈ (Zipper,), Sparsity ∈ (Sparse,)
@@ -41,13 +41,17 @@ function bench(instance::String)
                     net,
                     params;
                     onGPU = onGPU,
-                    βs= all_betas,
-                    graduate_truncation=:graduate_truncate,
+                    βs = all_betas,
+                    graduate_truncation = :graduate_truncate,
                 )
                 sol1, s = low_energy_spectrum(
                     ctr,
                     search_params,
-                    merge_branches(ctr; merge_type=:nofit, update_droplets=SingleLayerDroplets(0.01, 20, :hamming)),
+                    merge_branches(
+                        ctr;
+                        merge_type = :nofit,
+                        update_droplets = SingleLayerDroplets(0.01, 20, :hamming),
+                    ),
                 )
 
                 sol2 = unpack_droplets(sol1, β)

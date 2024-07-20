@@ -85,8 +85,8 @@ search_params = SearchParameters(num_states, δp)
                         net,
                         params;
                         onGPU = onGPU,
-                        βs=[β / 8, β / 4, β / 2, β],
-                        graduate_truncation=:graduate_truncate,
+                        βs = [β / 8, β / 4, β / 2, β],
+                        graduate_truncation = :graduate_truncate,
                     )
 
                     @testset "Overlaps calculated differently are the same." begin

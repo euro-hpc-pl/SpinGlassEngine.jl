@@ -314,13 +314,17 @@ for tran ∈ all_lattice_transformations #[LatticeTransformation((1, 2, 3, 4), f
         net,
         params;
         onGPU = onGPU,
-        βs=[β / 6, β / 3, β / 2, β],
-        graduate_truncation=:graduate_truncate,
+        βs = [β / 6, β / 3, β / 2, β],
+        graduate_truncation = :graduate_truncate,
     )
     sol, s = low_energy_spectrum(
         ctr,
         search_params,
-        merge_branches(ctr; merge_type=:nofit, update_droplets=SingleLayerDroplets(eng, hamming_dist, :hamming)),
+        merge_branches(
+            ctr;
+            merge_type = :nofit,
+            update_droplets = SingleLayerDroplets(eng, hamming_dist, :hamming),
+        ),
     )
     println(sol.energies)
     # println(sol.states)

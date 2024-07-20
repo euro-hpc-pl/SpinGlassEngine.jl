@@ -15,8 +15,8 @@
         spectrum = full_spectrum,
         cluster_assignment_rule = super_square_lattice((m, n, t)),
     )
-    params = MpsParameters{Float64}(;bd=bond_dim, ϵ=1E-8, sw=4)
-    search_params = SearchParameters(; max_states=num_states, cut_off_prob=0.0)
+    params = MpsParameters{Float64}(; bd = bond_dim, ϵ = 1E-8, sw = 4)
+    search_params = SearchParameters(; max_states = num_states, cut_off_prob = 0.0)
     Gauge = NoUpdate
 
     energies = Vector{Float64}[]
@@ -28,8 +28,8 @@
                     net,
                     params;
                     onGPU = onGPU,
-                    βs=[β / 2, β],
-                    graduate_truncation=:graduate_truncate,
+                    βs = [β / 2, β],
+                    graduate_truncation = :graduate_truncate,
                 )
                 sol, s = low_energy_spectrum(ctr, search_params)
 

@@ -116,13 +116,13 @@ The `NoDroplets` strategy represents a scenario in which no droplets are present
 - `NoDroplets()`: An instance of the `NoDroplets` strategy indicating that no excitation information is calculated in this scenario.
 """
 (method::NoDroplets)(
-    ctr::MpsContractor{T},
-    best_idx::Int,
-    energies::Vector{<:Real},
-    states::Vector{Vector{Int}},
-    droplets::Vector{Droplets},
-    spins::Vector{Vector{Int}},
-) where {T} = NoDroplets()
+    ::MpsContractor,
+    ::Int,
+    ::Vector{<:Real},
+    ::Vector{Vector{Int}},
+    ::Vector{Droplets},
+    ::Vector{Vector{Int}},
+) = NoDroplets()
 
 # """
 # $(TYPEDSIGNATURES)
@@ -143,13 +143,13 @@ The `NoDroplets` strategy represents a scenario in which no droplets are present
 # A new `Droplets` object representing the updated droplets based on the `SingleLayerDroplets` strategy
 # """
 function (method::SingleLayerDroplets)(
-    ctr::MpsContractor{T},
+    ::MpsContractor,
     best_idx::Int,
     energies::Vector{<:Real},
     states::Vector{Vector{Int}},
     droplets::Vector{Droplets},
     spins::Vector{Vector{Int}},
-) where {T}
+)
     ndroplets = copy(droplets[best_idx])
     bstate = states[best_idx]
     benergy = energies[best_idx]

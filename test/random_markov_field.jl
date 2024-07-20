@@ -7,8 +7,8 @@
     num_states = 64
     cl_h = clustered_hamiltonian(instance_dir)
     Nx, Ny = get_prop(cl_h, :Nx), get_prop(cl_h, :Ny)
-    params = MpsParameters{Float64}(bond_dim, 1E-8, 10)
-    search_params = SearchParameters(num_states, δp)
+    params = MpsParameters{Float64}(; bd = bond_dim, ϵ = 1E-8, sw = 4)
+    search_params = SearchParameters(; max_states = num_states, cut_off_prob = δp)
     Gauge = NoUpdate
     graduate_truncation = :graduate_truncate
     energies = Vector{Float64}[]
@@ -17,14 +17,13 @@
     Sparsity = Sparse
     transform = rotation(0)
     net = PEPSNetwork{SquareCrossSingleNode{Layout},Sparsity}(Nx, Ny, cl_h, transform)
-    ctr = MpsContractor{Strategy,Gauge}(
+    ctr = MpsContractor{Strategy,Gauge,Float64}(
         net,
-        [β / 8, β / 4, β / 2, β],
-        graduate_truncation,
         params;
         onGPU = onGPU,
+        βs = [β / 8, β / 4, β / 2, β],
+        graduate_truncation = :graduate_truncate,
         mode = :RMF,
     )
     sol_peps, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
-    # sol_peps, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :nofit, SingleLayerDroplets(100.0, 100, :hamming, :RMF)))
 end

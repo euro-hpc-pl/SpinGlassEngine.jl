@@ -38,10 +38,10 @@ transform = rotation(0)
 net = PEPSNetwork{Lattice{Layout},Sparsity,Float64}(m, n, cl_h, transform)
 ctr = MpsContractor{Strategy,Gauge,Float64}(
     net,
-    [β / 8.0, β / 4.0, β / 2.0, β],
-    :graduate_truncate,
     params;
     onGPU = onGPU,
+    βs = [β / 8.0, β / 4.0, β / 2.0, β],
+    graduate_truncation = :graduate_truncate,
 )
 sol = gibbs_sampling(ctr, search_params)
 

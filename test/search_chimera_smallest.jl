@@ -16,11 +16,11 @@
         cluster_assignment_rule = super_square_lattice((m, n, t)),
     )
 
-    search_params = SearchParameters(num_states, 0.0)
+    search_params = SearchParameters(; max_states = num_states, cut_off_prob = 0.0)
     Gauge = NoUpdate
     for T in [Float32, Float64]
         energies = Vector{T}[]
-        params = MpsParameters{T}(bond_dim, T(1E-8), 4)
+        params = MpsParameters{T}(; bd = bond_dim, ϵ = T(1E-8), sw = 4)
         for Strategy ∈ (SVDTruncate, Zipper),
             Sparsity ∈ (Dense, Sparse),
             Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng),
@@ -29,10 +29,10 @@
             net = PEPSNetwork{SquareSingleNode{Layout},Sparsity,T}(m, n, cl_h, transform)
             ctr = MpsContractor{Strategy,Gauge,T}(
                 net,
-                T[β/8, β/4, β/2, β],
-                :graduate_truncate,
                 params;
                 onGPU = onGPU,
+                βs = T[β/8, β/4, β/2, β],
+                graduate_truncation = :graduate_truncate,
             )
             sol, s = low_energy_spectrum(ctr, search_params)
             @test eltype(sol.energies) == T

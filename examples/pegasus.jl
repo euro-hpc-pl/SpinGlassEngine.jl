@@ -25,8 +25,8 @@ function bench(instance::String, β::Real, bond_dim::Integer, num_states::Intege
         cluster_assignment_rule = pegasus_lattice((m, n, t)),
     )
 
-    params = MpsParameters{Float64}(bond_dim, 1E-8, 10, 1E-16)
-    search_params = SearchParameters(num_states, δp)
+    params = MpsParameters{Float64}(; bd = bond_dim, ϵ = 1E-8, sw = 4, ts = 1E-16)
+    search_params = SearchParameters(; max_states = num_states, cut_off_prob = δp)
     Strategy = Zipper
     Sparsity = Sparse
     Layout = GaugesEnergy
@@ -35,9 +35,9 @@ function bench(instance::String, β::Real, bond_dim::Integer, num_states::Intege
     net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity,Float64}(m, n, cl_h, transform)
     ctr = MpsContractor{Strategy,Gauge,Float64}(
         net,
-        all_betas,
-        :graduate_truncate,
         params;
+        βs = all_betas,
+        graduate_truncation = :graduate_truncate,
         onGPU = onGPU,
     )
 

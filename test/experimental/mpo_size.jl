@@ -49,20 +49,20 @@ for cl_states in cluster_states
     println("====================")
 
     println("cluster states: ", cl_states)
-    # cl_h = clustered_hamiltonian(
+    # cl_h = potts_hamiltonian(
     #     ig,
     #     cl_states,
     #     spectrum=my_brute_force, #rm _gpu to use CPU
     #     cluster_assignment_rule=pegasus_lattice((m, n, t))
     # )
 
-    cl_h = clustered_hamiltonian(
+    cl_h = potts_hamiltonian(
         ig,
         spectrum = full_spectrum, #rm _gpu to use CPU
         cluster_assignment_rule = pegasus_lattice((m, n, t)),
     )
 
-    cl_h = truncate_clustered_hamiltonian_2site_energy(cl_h, cl_states)
+    cl_h = truncate_potts_hamiltonian_2site_energy(cl_h, cl_states)
 
     params = MpsParameters{Float64}(
         Dcut,

@@ -19,7 +19,7 @@ bond_dim = 2
 num_states = 7 #22
 
 ig = ising_graph("$(@__DIR__)/../instances/square_gauss/S12/001.txt")
-cl_h = clustered_hamiltonian(
+cl_h = potts_hamiltonian(
     ig,
     spectrum = my_brute_force,
     cluster_assignment_rule = super_square_lattice((m, n, t)),

@@ -9,12 +9,12 @@ function run_test_squarecross_double_node(instance, m, n, t)
 
     ig = ising_graph(instance)
 
-    cl_h = clustered_hamiltonian(
+    cl_h = potts_hamiltonian(
         ig,
         spectrum = full_spectrum, #_gpu, # rm _gpu to use CPU
         cluster_assignment_rule = pegasus_lattice((m, n, t)),
     )
-    cl_h2 = clustered_hamiltonian(
+    cl_h2 = potts_hamiltonian(
         ig,
         spectrum = full_spectrum, #_gpu, # rm _gpu to use CPU
         cluster_assignment_rule = super_square_lattice((m, n, 8)),
@@ -36,7 +36,7 @@ function run_test_squarecross_double_node(instance, m, n, t)
                     cl_h,
                     tran,
                 )
-                net2 = PEPSNetwork{SquareCrossSingleNode{Layout},Sparsity,Float64}(
+                net2 = PEPSNetwork{KingSingleNode{Layout},Sparsity,Float64}(
                     m,
                     n,
                     cl_h2,
@@ -61,7 +61,7 @@ function run_test_squarecross_double_node(instance, m, n, t)
                 sol, s = low_energy_spectrum(ctr, search_params) #, merge_branches(ctr))
                 sol2, s = low_energy_spectrum(ctr2, search_params) #, merge_branches(ctr2))
 
-                # ig_states = decode_clustered_hamiltonian_state.(Ref(cl_h), sol.states)
+                # ig_states = decode_potts_hamiltonian_state.(Ref(cl_h), sol.states)
                 # @test sol.energies ≈ energy.(Ref(ig), ig_states)
                 # cl_h_states = decode_state.(Ref(net), sol.states)
                 # @test sol.energies ≈ energy.(Ref(cl_h), cl_h_states)

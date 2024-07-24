@@ -19,7 +19,7 @@ function bench(instance::String, β::Real, bond_dim::Integer, num_states::Intege
     δp = exp(-β * dE)
     all_betas = [β / 8, β / 4, β / 2, β]
 
-    cl_h = clustered_hamiltonian(
+    cl_h = potts_hamiltonian(
         ising_graph(instance),
         spectrum = my_brute_force,
         cluster_assignment_rule = pegasus_lattice((m, n, t)),

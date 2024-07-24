@@ -37,7 +37,7 @@ const Node = NTuple{N,Int} where {N}
 """
 $(TYPEDSIGNATURES)
 
-Node for the SquareSingleNode and SquareCrossSingleNode.
+Node for the SquareSingleNode and KingSingleNode.
 """
 struct PEPSNode
     i::Site

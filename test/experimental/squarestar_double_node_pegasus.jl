@@ -284,12 +284,12 @@ if !Base.Filesystem.isdir(results_folder)
     Base.Filesystem.mkpath(results_folder)
 end
 
-cl_h = clustered_hamiltonian(
+cl_h = potts_hamiltonian(
     ig,
     spectrum = full_spectrum, #rm _gpu to use CPU
     cluster_assignment_rule = pegasus_lattice((m, n, t)),
 )
-cl_h = truncate_clustered_hamiltonian(
+cl_h = truncate_potts_hamiltonian(
     cl_h,
     β,
     cs,
@@ -328,7 +328,7 @@ for tran ∈ all_lattice_transformations #[LatticeTransformation((1, 2, 3, 4), f
     )
     println(sol.energies)
     # println(sol.states)
-    ig_states = decode_clustered_hamiltonian_state.(Ref(cl_h), sol.states)
+    ig_states = decode_potts_hamiltonian_state.(Ref(cl_h), sol.states)
     # println(ig_states)
     clear_memoize_cache()
 end

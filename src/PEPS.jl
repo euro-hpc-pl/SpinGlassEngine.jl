@@ -35,12 +35,12 @@ Construct a Projected Entangled Pair States (PEPS) network.
 # Arguments
 - `m::Int`: Number of rows in the PEPS lattice.
 - `n::Int`: Number of columns in the PEPS lattice.
-- `clustered_hamiltonian::LabelledGraph`: clustered hamiltonian representing the Hamiltonian.
+- `potts_hamiltonian::LabelledGraph`: Potts Hamiltonian representing the Hamiltonian.
 - `transformation::LatticeTransformation`: Transformation of the PEPS lattice, as it can be rotated or reflected. 
 - `gauge_type::Symbol=:id`: Type of gauge to initialize (default is identity).
 
 # Type Parameters
-- `T <: AbstractGeometry`: Type of geometry for the PEPS lattice. It can be `SquareSingleNode`, `SquareDoubleNode`, `SquareCrossSingleNode`, `SquareCrossDoubleNode`.
+- `T <: AbstractGeometry`: Type of geometry for the PEPS lattice. It can be `SquareSingleNode`, `SquareDoubleNode`, `KingSingleNode`, `SquareCrossDoubleNode`.
 - `S <: AbstractSparsity`: Type of sparsity for the PEPS tensors: `Dense` or `Sparse`.
 
 # Returns
@@ -48,7 +48,7 @@ An instance of PEPSNetwork{T, S}.
 """
 mutable struct PEPSNetwork{T<:AbstractGeometry,S<:AbstractSparsity,R<:Real} <:
                AbstractGibbsNetwork{Node,PEPSNode,R}
-    clustered_hamiltonian::LabelledGraph
+    potts_hamiltonian::LabelledGraph
     vertex_map::Function
     lp::PoolOfProjectors
     m::Int
@@ -61,15 +61,15 @@ mutable struct PEPSNetwork{T<:AbstractGeometry,S<:AbstractSparsity,R<:Real} <:
     function PEPSNetwork{T,S,R}(
         m::Int,
         n::Int,
-        clustered_hamiltonian::LabelledGraph,
+        potts_hamiltonian::LabelledGraph,
         transformation::LatticeTransformation,
         gauge_type::Symbol = :id,
     ) where {T<:AbstractGeometry,S<:AbstractSparsity,R<:Real}
-        lp = get_prop(clustered_hamiltonian, :pool_of_projectors)
-        net = new(clustered_hamiltonian, vertex_map(transformation, m, n), lp, m, n)
+        lp = get_prop(potts_hamiltonian, :pool_of_projectors)
+        net = new(potts_hamiltonian, vertex_map(transformation, m, n), lp, m, n)
         net.nrows, net.ncols = transformation.flips_dimensions ? (n, m) : (m, n)
 
-        if !is_compatible(net.clustered_hamiltonian, T.name.wrapper(m, n))
+        if !is_compatible(net.potts_hamiltonian, T.name.wrapper(m, n))
             throw(ArgumentError("Factor graph not compatible with given network."))
         end
 
@@ -140,7 +140,7 @@ function bond_energy(
     σ::Int,
 ) where {T,S,R}
     cl_h_u, cl_h_v = net.vertex_map(u), net.vertex_map(v)
-    energies = SpinGlassNetworks.bond_energy(net.clustered_hamiltonian, cl_h_u, cl_h_v, σ)
+    energies = SpinGlassNetworks.bond_energy(net.potts_hamiltonian, cl_h_u, cl_h_v, σ)
     R.(vec(energies))
 end
 
@@ -158,7 +158,7 @@ Compute the projector between two nodes `v` and `w` in the Gibbs network `networ
 - `projector::Matrix{T}`: Projector matrix between nodes `v` and `w`.
 """
 function projector(network::AbstractGibbsNetwork{S,T}, v::S, w::S) where {S,T}
-    cl_h = network.clustered_hamiltonian
+    cl_h = network.potts_hamiltonian
     cl_h_v, cl_h_w = network.vertex_map(v), network.vertex_map(w)
     SpinGlassNetworks.projector(cl_h, cl_h_v, cl_h_w)
 end
@@ -215,14 +215,14 @@ $(TYPEDSIGNATURES)
 Retrieve the spectrum associated with a specific vertex in the Gibbs network.
 
 ## Arguments
-- `network::AbstractGibbsNetwork{S, T}`: Gibbs network containing the clustered Hamiltonian.
+- `network::AbstractGibbsNetwork{S, T}`: Gibbs network containing the Potts Hamiltonian.
 - `vertex::S`: Vertex for which the spectrum is to be retrieved.
 
 ## Returns
 - Spectrum associated with the specified vertex.
 """
 function spectrum(network::AbstractGibbsNetwork{S,T}, vertex::S) where {S,T}
-    get_prop(network.clustered_hamiltonian, network.vertex_map(vertex), :spectrum)
+    get_prop(network.potts_hamiltonian, network.vertex_map(vertex), :spectrum)
 end
 
 """
@@ -230,7 +230,7 @@ $(TYPEDSIGNATURES)
 Retrieve the local energy spectrum associated with a specific vertex in the Gibbs network.
 
 ## Arguments
-- `network::AbstractGibbsNetwork{S, T}`: Gibbs network containing the clustered Hamiltonian.
+- `network::AbstractGibbsNetwork{S, T}`: Gibbs network containing the Potts Hamiltonian.
 - `vertex::S`: Vertex for which the local energy spectrum is to be retrieved.
 
 ## Returns
@@ -246,7 +246,7 @@ $(TYPEDSIGNATURES)
 Determine the cluster size associated with a specific vertex in the Gibbs network.
 
 ## Arguments
-- `net::AbstractGibbsNetwork{S, T}`: Gibbs network containing the clustered Hamiltonian.
+- `net::AbstractGibbsNetwork{S, T}`: Gibbs network containing the Potts Hamiltonian.
 - `v::S`: Vertex for which the cluster size is to be determined.
 
 ## Returns
@@ -261,7 +261,7 @@ $(TYPEDSIGNATURES)
 Compute the interaction energy between two vertices in a Gibbs network.
 
 ## Arguments
-- `network::AbstractGibbsNetwork{S, T}`: Gibbs network containing the clustered Hamiltonian.
+- `network::AbstractGibbsNetwork{S, T}`: Gibbs network containing the Potts Hamiltonian.
 - `v::S`: First vertex.
 - `w::S`: Second vertex.
 
@@ -269,7 +269,7 @@ Compute the interaction energy between two vertices in a Gibbs network.
 - `energy::Matrix{T}`: Interaction energy matrix between vertices `v` and `w`.
 """
 function interaction_energy(network::AbstractGibbsNetwork{S,T,R}, v::S, w::S) where {S,T,R}
-    cl_h = network.clustered_hamiltonian
+    cl_h = network.potts_hamiltonian
     cl_h_v, cl_h_w = network.vertex_map(v), network.vertex_map(w)
     if has_edge(cl_h, cl_h_w, cl_h_v)
         R.(get_prop(cl_h, cl_h_w, cl_h_v, :en)')
@@ -282,19 +282,19 @@ end
 
 """
 $(TYPEDSIGNATURES)
-Check if a clustered Hamiltonian is compatible with a given network graph.
+Check if a Potts Hamiltonian is compatible with a given network graph.
 
 ## Arguments
-- `clustered_hamiltonian::LabelledGraph`: Graph representing the clustered Hamiltonian.
+- `potts_hamiltonian::LabelledGraph`: Graph representing the Potts Hamiltonian.
 - `network_graph::LabelledGraph`: Graph representing the network.
     
 ## Returns
-- `compatibility::Bool`: `true` if the clustered Hamiltonian is compatible with the network graph, `false` otherwise.
+- `compatibility::Bool`: `true` if the Potts Hamiltonian is compatible with the network graph, `false` otherwise.
 """
-function is_compatible(clustered_hamiltonian::LabelledGraph, network_graph::LabelledGraph)
+function is_compatible(potts_hamiltonian::LabelledGraph, network_graph::LabelledGraph)
     all(
         has_edge(network_graph, src(edge), dst(edge)) for
-        edge ∈ edges(clustered_hamiltonian)
+        edge ∈ edges(potts_hamiltonian)
     )
 end
 
@@ -377,7 +377,7 @@ Decode a state vector into a dictionary representation.
 ## Arguments
 - `peps::AbstractGibbsNetwork{S, T}`: The Gibbs network.
 - `σ::Vector{Int}`: State vector to be decoded.
-- `cl_h_order::Bool=false`: If true, use the order of nodes in the clustered Hamiltonian.
+- `cl_h_order::Bool=false`: If true, use the order of nodes in the Potts Hamiltonian.
 
 ## Returns
 - `Dict{Symbol, Int}`: A dictionary mapping node symbols to corresponding values in the state vector.
@@ -389,6 +389,6 @@ function decode_state(
 ) where {S,T}
     nodes =
         cl_h_order ? peps.vertex_map.(nodes_search_order_Mps(peps)) :
-        vertices(peps.clustered_hamiltonian)
+        vertices(peps.potts_hamiltonian)
     Dict(nodes[1:length(σ)] .=> σ)
 end

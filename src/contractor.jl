@@ -896,7 +896,7 @@ function boundary_indices(
     states::Vector{Vector{Int}},
 ) where {T,S,N}
     v, w = nodes
-    if ctr.peps.vertex_map(v) ∈ vertices(ctr.peps.clustered_hamiltonian)
+    if ctr.peps.vertex_map(v) ∈ vertices(ctr.peps.potts_hamiltonian)
         @inbounds idx = [σ[ctr.node_search_index[v]] for σ ∈ states]
         return @inbounds projector(ctr.peps, v, w)[idx]
     end

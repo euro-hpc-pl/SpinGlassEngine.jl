@@ -18,7 +18,7 @@ num_states = 1000
 
 instance = "$(@__DIR__)/instances/chimera_droplets/128power/001.txt"
 
-cl_h = clustered_hamiltonian(
+cl_h = potts_hamiltonian(
     ising_graph(instance),
     spectrum = full_spectrum, #my_brute_force,
     cluster_assignment_rule = super_square_lattice((m, n, t)),

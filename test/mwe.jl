@@ -22,7 +22,7 @@ Layout = GaugesEnergy
 onGPU = true
 transform = all_lattice_transformations[1]
 ig = ising_graph(instance)
-cl_h = clustered_hamiltonian(
+cl_h = potts_hamiltonian(
     ig,
     spectrum = full_spectrum,
     cluster_assignment_rule = pegasus_lattice((m, n, t)),

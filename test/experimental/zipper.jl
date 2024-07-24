@@ -34,7 +34,7 @@ indβ = 1
 
 ig = ising_graph("$(@__DIR__)/../instances/chimera_droplets/512power/001.txt")
 
-cl_h = clustered_hamiltonian(
+cl_h = potts_hamiltonian(
     ig,
     spectrum = my_brute_force, #rm _gpu to use CPU
     cluster_assignment_rule = super_square_lattice((m, n, t)),

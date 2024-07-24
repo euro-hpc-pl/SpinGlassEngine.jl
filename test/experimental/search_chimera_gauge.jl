@@ -14,7 +14,7 @@
     instance = "$(@__DIR__)/instances/chimera_droplets/512power/001.txt"
     INDβ = [1, 2, 3]
     ig = ising_graph(instance)
-    cl_h = clustered_hamiltonian(
+    cl_h = potts_hamiltonian(
         ig,
         spectrum = full_spectrum,
         cluster_assignment_rule = super_square_lattice((m, n, t)),
@@ -45,7 +45,7 @@
                 sol, s = low_energy_spectrum(ctr, search_params)
                 #sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 
-                ig_states = decode_clustered_hamiltonian_state.(Ref(cl_h), sol.states)
+                ig_states = decode_potts_hamiltonian_state.(Ref(cl_h), sol.states)
                 @test sol.energies ≈ energy.(Ref(ig), ig_states)
                 cl_h_states = decode_state.(Ref(net), sol.states)
                 @test sol.energies ≈ energy.(Ref(cl_h), cl_h_states)

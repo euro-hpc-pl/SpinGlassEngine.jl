@@ -13,7 +13,7 @@ function bench(instance::String)
     num_states = 1000
 
     ig = ising_graph(instance)
-    cl_h = clustered_hamiltonian(
+    cl_h = potts_hamiltonian(
         ig,
         max_cl_states,
         spectrum = my_brute_force,
@@ -28,7 +28,7 @@ function bench(instance::String)
         transform ∈ all_lattice_transformations
 
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng), Sparsity ∈ (Dense,)
-            net = PEPSNetwork{SquareCrossSingleNode{Layout},Sparsity,Float64}(
+            net = PEPSNetwork{KingSingleNode{Layout},Sparsity,Float64}(
                 m,
                 n,
                 cl_h,

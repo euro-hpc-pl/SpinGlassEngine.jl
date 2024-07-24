@@ -10,7 +10,7 @@
     instance = "$(@__DIR__)/instances/pathological/chim_$(n)_$(m)_$(t).txt"
 
     ig = ising_graph(instance)
-    cl_h = clustered_hamiltonian(
+    cl_h = potts_hamiltonian(
         ig,
         spectrum = full_spectrum,
         cluster_assignment_rule = super_square_lattice((m, n, t)),
@@ -38,7 +38,7 @@
             @test eltype(sol.energies) == T
             @test sol.energies ≈ exact_energies
 
-            ig_states = decode_clustered_hamiltonian_state.(Ref(cl_h), sol.states)
+            ig_states = decode_potts_hamiltonian_state.(Ref(cl_h), sol.states)
             @test sol.energies ≈ energy.(Ref(ig), ig_states)
             cl_h_states = decode_state.(Ref(net), sol.states)
             @test sol.energies ≈ energy.(Ref(cl_h), cl_h_states)

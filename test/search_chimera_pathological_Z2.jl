@@ -98,7 +98,7 @@
     )
 
     ig = ising_graph("$(@__DIR__)/instances/pathological/chim_$(m)_$(n)_$(t)_Z2.txt")
-    cl_h = clustered_hamiltonian(
+    cl_h = potts_hamiltonian(
         ig,
         spectrum = full_spectrum,
         cluster_assignment_rule = super_square_lattice((m, n, t)),
@@ -110,7 +110,7 @@
     energies = Vector{Float64}[]
     for Strategy ∈ (SVDTruncate, MPSAnnealing, Zipper), Sparsity ∈ (Dense, Sparse)
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
-            for Lattice ∈ (SquareSingleNode, SquareCrossSingleNode),
+            for Lattice ∈ (SquareSingleNode, KingSingleNode),
                 transform ∈ all_lattice_transformations
 
                 net = PEPSNetwork{SquareSingleNode{Layout},Sparsity,Float64}(
@@ -139,7 +139,7 @@
                 sol2 = unpack_droplets(sol1, β)
 
                 for sol ∈ (sol1, sol2)
-                    ig_states = decode_clustered_hamiltonian_state.(Ref(cl_h), sol.states)
+                    ig_states = decode_potts_hamiltonian_state.(Ref(cl_h), sol.states)
                     @test sol.energies ≈ energy.(Ref(ig), ig_states)
 
                     cl_h_states = decode_state.(Ref(net), sol.states)

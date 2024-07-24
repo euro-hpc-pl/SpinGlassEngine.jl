@@ -18,7 +18,7 @@ function bench(instance::String)
     num_states = 500
     all_betas = [β / 8, β / 4, β / 2, β]
 
-    cl_h = clustered_hamiltonian(
+    cl_h = potts_hamiltonian(
         ising_graph(instance),
         # max_cl_states,
         spectrum = my_brute_force,
@@ -55,7 +55,7 @@ function bench(instance::String)
                 )
 
                 sol2 = unpack_droplets(sol1, β)
-                ig_states = decode_clustered_hamiltonian_state.(Ref(cl_h), sol2.states)
+                ig_states = decode_potts_hamiltonian_state.(Ref(cl_h), sol2.states)
                 # cl_h_states = decode_state.(Ref(net), sol2.states)
 
                 # @test sol1.energies[begin] ≈ ground_energy
@@ -63,7 +63,7 @@ function bench(instance::String)
                 # push!(energies, sol1.energies)
 
                 # for sol ∈ (sol1, sol2)
-                #     ig_states = decode_clustered_hamiltonian_state.(Ref(cl_h), sol.states)
+                #     ig_states = decode_potts_hamiltonian_state.(Ref(cl_h), sol.states)
                 #     @test sol.energies ≈ energy.(Ref(ising_graph(instance)), ig_states)
 
                 #     cl_h_states = decode_state.(Ref(net), sol.states)

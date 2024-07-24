@@ -16,7 +16,7 @@ num_states = 1000
 
 instance = "$(@__DIR__)/instances/chimera_droplets/128power/001.txt"
 
-cl_h = clustered_hamiltonian(
+cl_h = potts_hamiltonian(
     ising_graph(instance),
     max_cl_states,
     spectrum = full_spectrum,
@@ -27,7 +27,7 @@ params = MpsParameters{Float64}(bond_dim, 1E-8, 10)
 search_params = SearchParameters(num_states, δp)
 
 # @testset "Overlaps calculated differently are the same." begin
-# for Lattice ∈ (SquareSingleNode, SquareCrossSingleNode) 
+# for Lattice ∈ (SquareSingleNode, KingSingleNode) 
 #     for Sparsity ∈ (Dense, Sparse), transform ∈ all_lattice_transformations[[1]]
 #         for Layout ∈ (GaugesEnergy, EnergyGauges, EngGaugesEng)
 #             net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, cl_h, transform, :id)
@@ -71,7 +71,7 @@ search_params = SearchParameters(num_states, δp)
     for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, Sparse)
         for Layout ∈ (GaugesEnergy,)
             for Gauge ∈ (GaugeStrategy,)
-                for Lattice ∈ (SquareSingleNode, SquareCrossSingleNode),
+                for Lattice ∈ (SquareSingleNode, KingSingleNode),
                     transform ∈ all_lattice_transformations
 
                     net = PEPSNetwork{Lattice{Layout},Sparsity,Float64}(

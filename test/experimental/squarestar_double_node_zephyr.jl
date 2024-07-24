@@ -18,13 +18,13 @@ cs = 2^10
 ig = ising_graph("$(@__DIR__)/../instances/zephyr_random/Z3/RAU/SpinGlass/001_sg.txt")
 results_folder = "$(@__DIR__)/../instances/zephyr_random/Z3/RAU/SpinGlass/BP"
 inst = "001"
-cl_h = clustered_hamiltonian(
+cl_h = potts_hamiltonian(
     ig,
     # max_cl_states,
     spectrum = full_spectrum,  #brute_force_gpu, # rm _gpu to use CPU
     cluster_assignment_rule = zephyr_lattice((m, n, t)),
 )
-@time cl_h = truncate_clustered_hamiltonian(
+@time cl_h = truncate_potts_hamiltonian(
     cl_h,
     β,
     cs,

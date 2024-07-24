@@ -8,26 +8,26 @@ export exact_marginal_probability,
 """
 $(TYPEDSIGNATURES)
 
-Calculate the exact spectrum and corresponding eigenstates for a clustered Hamiltonian using memoization.
+Calculate the exact spectrum and corresponding eigenstates for a Potts Hamiltonian using memoization.
 
 ## Arguments
-- `clustered_hamiltonian::LabelledGraph{S, T}`: A clustered Hamiltonian represented as a labelled graph.
+- `potts_hamiltonian::LabelledGraph{S, T}`: A Potts Hamiltonian represented as a labelled graph.
     
 ## Returns
 - Tuple `(energies, states)`: A tuple containing the calculated energies and corresponding eigenstates.
     
 ## Description
-The `exact_spectrum` function calculates the exact spectrum and corresponding eigenstates for a clustered Hamiltonian using memoization. 
+The `exact_spectrum` function calculates the exact spectrum and corresponding eigenstates for a Potts Hamiltonian using memoization. 
 The function utilizes memoization to efficiently store and retrieve previously computed results for different inputs, reducing redundant calculations.
 The Hamiltonian is represented as a labelled graph (`LabelledGraph`) with vertices corresponding to clusters and edges 
 representing interactions between clusters.
 """
-@memoize function exact_spectrum(clustered_hamiltonian::LabelledGraph{S,T}) where {S,T}
+@memoize function exact_spectrum(potts_hamiltonian::LabelledGraph{S,T}) where {S,T}
     # TODO: Not going to work without PoolOfProjectors
-    ver = vertices(clustered_hamiltonian)
-    rank = cluster_size.(Ref(clustered_hamiltonian), ver)
+    ver = vertices(potts_hamiltonian)
+    rank = cluster_size.(Ref(potts_hamiltonian), ver)
     states = [Dict(ver .=> σ) for σ ∈ Iterators.product([1:r for r ∈ rank]...)]
-    energy.(Ref(clustered_hamiltonian), states), states
+    energy.(Ref(potts_hamiltonian), states), states
 end
 
 """
@@ -44,15 +44,15 @@ Calculate the exact marginal probability of a target state within the context of
 ## Description
 The `exact_marginal_probability` function calculates the exact marginal probability of a target state within the context of an MPS contractor. 
 It decodes the provided state vector `σ` using the `decode_state` function, obtains the exact spectrum and states 
-from the clustered Hamiltonian of the associated PEPS, and computes the marginal probability of the target state using the Boltzmann distribution.
-The function utilizes the `exact_spectrum` function to obtain the energies and states of the clustered Hamiltonian, 
+from the Potts Hamiltonian of the associated PEPS, and computes the marginal probability of the target state using the Boltzmann distribution.
+The function utilizes the `exact_spectrum` function to obtain the energies and states of the Potts Hamiltonian, 
 exponentiates the negative energies multiplied by the inverse temperature (`ctr.betas[end]`), normalizes the probabilities, 
 and calculates the marginal probability of the target state.
 """
 function exact_marginal_probability(ctr::MpsContractor{T}, σ::Vector{Int}) where {T}
     # TODO: Not going to work without PoolOfProjectors
     target_state = decode_state(ctr.peps, σ, true)
-    energies, states = exact_spectrum(ctr.peps.clustered_hamiltonian)
+    energies, states = exact_spectrum(ctr.peps.potts_hamiltonian)
     prob = exp.(-ctr.betas[end] .* energies)
     prob ./= sum(prob)
     sum(prob[findall([all(s[k] == v for (k, v) ∈ target_state) for s ∈ states])])

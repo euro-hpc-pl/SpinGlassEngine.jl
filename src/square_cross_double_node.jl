@@ -12,7 +12,7 @@ Each node is labeled with a tuple (i, j, k), where i is the row index, j is the 
 - `T <: AbstractTensorsLayout`: The layout of decomposition of tensors into MPS. Can be `GaugesEnergy`, `EnergyGauges` or `EngGaugesEng`.
 
 # Constructors
-- `SquareCrossSingleNode(layout::T)`: Create a `SquareCrossDoubleNode` with the specified tensor layout.
+- `KingSingleNode(layout::T)`: Create a `SquareCrossDoubleNode` with the specified tensor layout.
 
 ## Description
 `SquareCrossDoubleNode` is a geometry type that models a double unit cell square lattice with diagonal interaction. 

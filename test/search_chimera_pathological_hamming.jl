@@ -111,7 +111,7 @@ end
     )
 
     ig = ising_graph("$(@__DIR__)/instances/pathological/chim_$(m)_$(n)_$(t).txt")
-    cl_h = clustered_hamiltonian(
+    cl_h = potts_hamiltonian(
         ig,
         spectrum = full_spectrum,
         cluster_assignment_rule = super_square_lattice((m, n, t)),
@@ -124,7 +124,7 @@ end
     energies = Vector{Float64}[]
     for Strategy ∈ (SVDTruncate,), Sparsity ∈ (Sparse,)
         for Layout ∈ (EnergyGauges,)
-            for Lattice ∈ (SquareCrossSingleNode,),
+            for Lattice ∈ (KingSingleNode,),
                 transform ∈ all_lattice_transformations[[1]]
 
                 net = PEPSNetwork{SquareSingleNode{Layout},Sparsity,Float64}(
@@ -152,7 +152,7 @@ end
                 )
                 @test sol1.energies ≈ [exact_energies[1]]
                 sol2 = unpack_droplets(sol1, β)
-                (dict1, dict2) = decode_clustered_hamiltonian_state.(Ref(cl_h), sol2.states)
+                (dict1, dict2) = decode_potts_hamiltonian_state.(Ref(cl_h), sol2.states)
                 @test hamming_distance(
                     sol1.droplets[1][1].flip,
                     Flip([], [], [], []),

@@ -139,8 +139,8 @@ function bond_energy(
     v::Node,
     σ::Int,
 ) where {T,S,R}
-    cl_h_u, cl_h_v = net.vertex_map(u), net.vertex_map(v)
-    energies = SpinGlassNetworks.bond_energy(net.potts_hamiltonian, cl_h_u, cl_h_v, σ)
+    potts_h_u, potts_h_v = net.vertex_map(u), net.vertex_map(v)
+    energies = SpinGlassNetworks.bond_energy(net.potts_hamiltonian, potts_h_u, potts_h_v, σ)
     R.(vec(energies))
 end
 
@@ -158,9 +158,9 @@ Compute the projector between two nodes `v` and `w` in the Gibbs network `networ
 - `projector::Matrix{T}`: Projector matrix between nodes `v` and `w`.
 """
 function projector(network::AbstractGibbsNetwork{S,T}, v::S, w::S) where {S,T}
-    cl_h = network.potts_hamiltonian
-    cl_h_v, cl_h_w = network.vertex_map(v), network.vertex_map(w)
-    SpinGlassNetworks.projector(cl_h, cl_h_v, cl_h_w)
+    potts_h = network.potts_hamiltonian
+    potts_h_v, potts_h_w = network.vertex_map(v), network.vertex_map(w)
+    SpinGlassNetworks.projector(potts_h, potts_h_v, potts_h_w)
 end
 
 """
@@ -269,12 +269,12 @@ Compute the interaction energy between two vertices in a Gibbs network.
 - `energy::Matrix{T}`: Interaction energy matrix between vertices `v` and `w`.
 """
 function interaction_energy(network::AbstractGibbsNetwork{S,T,R}, v::S, w::S) where {S,T,R}
-    cl_h = network.potts_hamiltonian
-    cl_h_v, cl_h_w = network.vertex_map(v), network.vertex_map(w)
-    if has_edge(cl_h, cl_h_w, cl_h_v)
-        R.(get_prop(cl_h, cl_h_w, cl_h_v, :en)')
-    elseif has_edge(cl_h, cl_h_v, cl_h_w)
-        R.(get_prop(cl_h, cl_h_v, cl_h_w, :en))
+    potts_h = network.potts_hamiltonian
+    potts_h_v, potts_h_w = network.vertex_map(v), network.vertex_map(w)
+    if has_edge(potts_h, potts_h_w, potts_h_v)
+        R.(get_prop(potts_h, potts_h_w, potts_h_v, :en)')
+    elseif has_edge(potts_h, potts_h_v, potts_h_w)
+        R.(get_prop(potts_h, potts_h_v, potts_h_w, :en))
     else
         zeros(R, 1, 1)
     end
@@ -377,7 +377,7 @@ Decode a state vector into a dictionary representation.
 ## Arguments
 - `peps::AbstractGibbsNetwork{S, T}`: The Gibbs network.
 - `σ::Vector{Int}`: State vector to be decoded.
-- `cl_h_order::Bool=false`: If true, use the order of nodes in the Potts Hamiltonian.
+- `potts_h_order::Bool=false`: If true, use the order of nodes in the Potts Hamiltonian.
 
 ## Returns
 - `Dict{Symbol, Int}`: A dictionary mapping node symbols to corresponding values in the state vector.
@@ -385,10 +385,10 @@ Decode a state vector into a dictionary representation.
 function decode_state(
     peps::AbstractGibbsNetwork{S,T},
     σ::Vector{Int},
-    cl_h_order::Bool = false,
+    potts_h_order::Bool = false,
 ) where {S,T}
     nodes =
-        cl_h_order ? peps.vertex_map.(nodes_search_order_Mps(peps)) :
+        potts_h_order ? peps.vertex_map.(nodes_search_order_Mps(peps)) :
         vertices(peps.potts_hamiltonian)
     Dict(nodes[1:length(σ)] .=> σ)
 end

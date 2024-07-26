@@ -42,7 +42,7 @@ transform = $transform
         -15.4,
     ]
 
-    # degenerate cl_h solutions
+    # degenerate potts_h solutions
     exact_states = [   # E =-16.4
         [
             [1, 4, 5, 1, 2, 2, 1, 1, 1, 4, 2, 1],
@@ -109,7 +109,7 @@ transform = $transform
     )
 
     ig = ising_graph("$(@__DIR__)/instances/pathological/chim_$(m)_$(n)_$(t).txt")
-    cl_h = potts_hamiltonian(
+    potts_h = potts_hamiltonian(
         ig,
         spectrum = full_spectrum,
         cluster_assignment_rule = super_square_lattice((m, n, t)),
@@ -121,7 +121,7 @@ transform = $transform
     energies = Vector{Float64}[]
 
 
-    net = PEPSNetwork{Lattice{Layout},Sparsity,Float64}(m, n, cl_h, transform)
+    net = PEPSNetwork{Lattice{Layout},Sparsity,Float64}(m, n, potts_h, transform)
     ctr = MpsContractor{Strategy,Gauge,Float64}(
         net,
         params;
@@ -133,11 +133,11 @@ transform = $transform
 
     @test sol.energies ≈ exact_energies
 
-    ig_states = decode_potts_hamiltonian_state.(Ref(cl_h), sol.states)
+    ig_states = decode_potts_hamiltonian_state.(Ref(potts_h), sol.states)
     @test sol.energies ≈ energy.(Ref(ig), ig_states)
 
-    cl_h_states = decode_state.(Ref(net), sol.states)
-    @test sol.energies ≈ energy.(Ref(cl_h), cl_h_states)
+    potts_h_states = decode_state.(Ref(net), sol.states)
+    @test sol.energies ≈ energy.(Ref(potts_h), potts_h_states)
 
     for (i, σ) ∈ enumerate(sol.states)
         @test σ ∈ exact_states[deg[i]]

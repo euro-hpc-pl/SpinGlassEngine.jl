@@ -22,7 +22,7 @@ Layout = GaugesEnergy
 onGPU = true
 transform = all_lattice_transformations[1]
 ig = ising_graph(instance)
-cl_h = potts_hamiltonian(
+potts_h = potts_hamiltonian(
     ig,
     spectrum = full_spectrum,
     cluster_assignment_rule = pegasus_lattice((m, n, t)),
@@ -45,7 +45,7 @@ for T in [Float64, Float32]
     )
     search_params = SearchParameters(mstates, δp)
 
-    net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity,T}(m, n, cl_h, transform)
+    net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity,T}(m, n, potts_h, transform)
     ctr = MpsContractor{Strategy,Gauge,T}(
         net,
         params;

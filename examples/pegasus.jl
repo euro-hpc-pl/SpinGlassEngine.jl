@@ -19,7 +19,7 @@ function bench(instance::String, β::Real, bond_dim::Integer, num_states::Intege
     δp = exp(-β * dE)
     all_betas = [β / 8, β / 4, β / 2, β]
 
-    cl_h = potts_hamiltonian(
+    potts_h = potts_hamiltonian(
         ising_graph(instance),
         spectrum = my_brute_force,
         cluster_assignment_rule = pegasus_lattice((m, n, t)),
@@ -32,7 +32,7 @@ function bench(instance::String, β::Real, bond_dim::Integer, num_states::Intege
     Layout = GaugesEnergy
     transform = rotation(0)
     Gauge = NoUpdate
-    net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity,Float64}(m, n, cl_h, transform)
+    net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity,Float64}(m, n, potts_h, transform)
     ctr = MpsContractor{Strategy,Gauge,Float64}(
         net,
         params;

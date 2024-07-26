@@ -57,16 +57,16 @@ for cs ∈ cl_states
         println("===============")
         println("Transform ", tran)
 
-        cl_h = potts_hamiltonian(
+        potts_h = potts_hamiltonian(
             ig,
             spectrum = full_spectrum, #rm _gpu to use CPU
             cluster_assignment_rule = pegasus_lattice((m, n, t)),
         )
 
         println("Truncate iter ", iter)
-        #@time cl_h = truncate_potts_hamiltonian_2site_energy(cl_h, cs)
-        @time cl_h = truncate_potts_hamiltonian(
-            cl_h,
+        #@time potts_h = truncate_potts_hamiltonian_2site_energy(potts_h, cs)
+        @time potts_h = truncate_potts_hamiltonian(
+            potts_h,
             β,
             cs,
             results_folder,
@@ -74,11 +74,11 @@ for cs ∈ cl_states
             tol = 1e-6,
             iter = iter,
         )
-        for v ∈ vertices(cl_h)
-            println(v, " -> ", length(get_prop(cl_h, v, :spectrum).energies))
+        for v ∈ vertices(potts_h)
+            println(v, " -> ", length(get_prop(potts_h, v, :spectrum).energies))
         end
 
-        net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparse}(m, n, cl_h, tran)
+        net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparse}(m, n, potts_h, tran)
         ctr = MpsContractor{Strategy,Gauge}(
             net,
             params;

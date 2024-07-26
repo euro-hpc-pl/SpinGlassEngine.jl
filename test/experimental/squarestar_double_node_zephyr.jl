@@ -18,14 +18,14 @@ cs = 2^10
 ig = ising_graph("$(@__DIR__)/../instances/zephyr_random/Z3/RAU/SpinGlass/001_sg.txt")
 results_folder = "$(@__DIR__)/../instances/zephyr_random/Z3/RAU/SpinGlass/BP"
 inst = "001"
-cl_h = potts_hamiltonian(
+potts_h = potts_hamiltonian(
     ig,
     # max_cl_states,
     spectrum = full_spectrum,  #brute_force_gpu, # rm _gpu to use CPU
     cluster_assignment_rule = zephyr_lattice((m, n, t)),
 )
-@time cl_h = truncate_potts_hamiltonian(
-    cl_h,
+@time potts_h = truncate_potts_hamiltonian(
+    potts_h,
     β,
     cs,
     results_folder,
@@ -45,7 +45,7 @@ tran = LatticeTransformation((4, 1, 2, 3), true)
 Layout = GaugesEnergy
 Gauge = NoUpdate
 
-net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity,Float64}(m, n, cl_h, tran)
+net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity,Float64}(m, n, potts_h, tran)
 ctr = MpsContractor{Strategy,Gauge,Float64}(
     net,
     params;

@@ -17,7 +17,7 @@ function bench(instance::String)
     num_states = 500
     all_betas = [β / 8, β / 4, β / 2, β]
 
-    cl_h = potts_hamiltonian(
+    potts_h = potts_hamiltonian(
         ising_graph(instance),
         max_cl_states,
         spectrum = full_spectrum,
@@ -34,7 +34,7 @@ function bench(instance::String)
                 net = PEPSNetwork{SquareSingleNode{Layout},Sparsity,Float64}(
                     m,
                     n,
-                    cl_h,
+                    potts_h,
                     transform,
                 )
                 ctr = MpsContractor{Strategy,Gauge,Float64}(

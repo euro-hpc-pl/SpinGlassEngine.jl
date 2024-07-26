@@ -10,7 +10,7 @@ function bench(instance::String)
     num_states = 20
 
     ig = ising_graph(instance)
-    cl_h = potts_hamiltonian(
+    potts_h = potts_hamiltonian(
         ig,
         spectrum = full_spectrum,
         cluster_assignment_rule = super_square_lattice((m, n, t)),
@@ -24,7 +24,7 @@ function bench(instance::String)
         transform ∈ all_lattice_transformations
 
         for Layout ∈ (GaugesEnergy, EnergyGauges, EngGaugesEng), Sparsity ∈ (Dense, Sparse)
-            net = PEPSNetwork{KingSingleNode{Layout},Sparsity}(m, n, cl_h, transform)
+            net = PEPSNetwork{KingSingleNode{Layout},Sparsity}(m, n, potts_h, transform)
             ctr = MpsContractor{Strategy,Gauge}(
                 net,
                 params;

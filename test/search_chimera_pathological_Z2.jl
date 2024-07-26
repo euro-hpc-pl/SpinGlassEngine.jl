@@ -31,7 +31,7 @@
         -15.4,
     ]
 
-    # degenerate cl_h solutions
+    # degenerate potts_h solutions
     exact_states = [   # E =-16.4
         [
             [1, 4, 5, 1, 2, 2, 1, 1, 1, 4, 2, 1],
@@ -98,7 +98,7 @@
     )
 
     ig = ising_graph("$(@__DIR__)/instances/pathological/chim_$(m)_$(n)_$(t)_Z2.txt")
-    cl_h = potts_hamiltonian(
+    potts_h = potts_hamiltonian(
         ig,
         spectrum = full_spectrum,
         cluster_assignment_rule = super_square_lattice((m, n, t)),
@@ -116,7 +116,7 @@
                 net = PEPSNetwork{SquareSingleNode{Layout},Sparsity,Float64}(
                     m,
                     n,
-                    cl_h,
+                    potts_h,
                     transform,
                 )
                 ctr = MpsContractor{Strategy,Gauge,Float64}(
@@ -139,11 +139,11 @@
                 sol2 = unpack_droplets(sol1, β)
 
                 for sol ∈ (sol1, sol2)
-                    ig_states = decode_potts_hamiltonian_state.(Ref(cl_h), sol.states)
+                    ig_states = decode_potts_hamiltonian_state.(Ref(potts_h), sol.states)
                     @test sol.energies ≈ energy.(Ref(ig), ig_states)
 
-                    cl_h_states = decode_state.(Ref(net), sol.states)
-                    @test sol.energies ≈ energy.(Ref(cl_h), cl_h_states)
+                    potts_h_states = decode_state.(Ref(net), sol.states)
+                    @test sol.energies ≈ energy.(Ref(potts_h), potts_h_states)
 
                     norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
                     @test norm_prob ≈ exp.(-β .* (sol.energies .- sol.energies[1]))

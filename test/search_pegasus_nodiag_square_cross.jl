@@ -13,7 +13,7 @@ function bench(instance::String)
     num_states = 1000
 
     ig = ising_graph(instance)
-    cl_h = potts_hamiltonian(
+    potts_h = potts_hamiltonian(
         ig,
         max_cl_states,
         spectrum = my_brute_force,
@@ -31,7 +31,7 @@ function bench(instance::String)
             net = PEPSNetwork{KingSingleNode{Layout},Sparsity,Float64}(
                 m,
                 n,
-                cl_h,
+                potts_h,
                 transform,
             )
             ctr = MpsContractor{Strategy,NoUpdate,Float64}(

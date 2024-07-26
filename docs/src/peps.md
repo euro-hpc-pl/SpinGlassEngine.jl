@@ -22,11 +22,11 @@ Layout = GaugesEnergy
 Sparsity = Sparse
 
 ig = ising_graph(instance)
-cl_h = potts_hamiltonian(
+potts_h = potts_hamiltonian(
     ig,
     spectrum = full_spectrum,
     cluster_assignment_rule=super_square_lattice((m, n, t))
 )
 
-net = PEPSNetwork{KingSingleNode{Layout}, Sparsity}(m, n, cl_h, transform)
+net = PEPSNetwork{KingSingleNode{Layout}, Sparsity}(m, n, potts_h, transform)
 ```

@@ -61,14 +61,14 @@ for cs ∈ cl_states
         println("Transform ", tran)
         println("Iter ", iter)
 
-        cl_h = potts_hamiltonian(
+        potts_h = potts_hamiltonian(
             ig,
             spectrum = full_spectrum, #rm _gpu to use CPU
             cluster_assignment_rule = pegasus_lattice((m, n, t)),
         )
 
-        @time cl_h = truncate_potts_hamiltonian(
-            cl_h,
+        @time potts_h = truncate_potts_hamiltonian(
+            potts_h,
             β,
             cs,
             results_folder,
@@ -76,9 +76,9 @@ for cs ∈ cl_states
             tol = 1e-6,
             iter = iter,
         )
-        # @time cl_h = truncate_potts_hamiltonian_2site_energy(cl_h, cs)
-        for v in vertices(cl_h)
-            println(length(get_prop(cl_h, v, :spectrum).states))
+        # @time potts_h = truncate_potts_hamiltonian_2site_energy(potts_h, cs)
+        for v in vertices(potts_h)
+            println(length(get_prop(potts_h, v, :spectrum).states))
         end
     end
 end

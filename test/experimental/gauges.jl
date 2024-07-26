@@ -16,7 +16,7 @@ num_states = 1000
 
 instance = "$(@__DIR__)/instances/chimera_droplets/128power/001.txt"
 
-cl_h = potts_hamiltonian(
+potts_h = potts_hamiltonian(
     ising_graph(instance),
     max_cl_states,
     spectrum = full_spectrum,
@@ -30,7 +30,7 @@ search_params = SearchParameters(num_states, δp)
 # for Lattice ∈ (SquareSingleNode, KingSingleNode) 
 #     for Sparsity ∈ (Dense, Sparse), transform ∈ all_lattice_transformations[[1]]
 #         for Layout ∈ (GaugesEnergy, EnergyGauges, EngGaugesEng)
-#             net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, cl_h, transform, :id)
+#             net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, potts_h, transform, :id)
 #             ctr_svd = MpsContractor{SVDTruncate, GaugeStrategy}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
 #             ctr_anneal = MpsContractor{MPSAnnealing, GaugeStrategy}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
 
@@ -48,7 +48,7 @@ search_params = SearchParameters(num_states, δp)
 #         clear_memoize_cache()
 
 #         for Layout ∈ (GaugesEnergy,)
-#             net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, cl_h, transform, :id)
+#             net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, potts_h, transform, :id)
 #             ctr_svd = MpsContractor{SVDTruncate, GaugeStrategy}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
 #             @testset "Overlaps calculated in Python are the same as in Julia." begin
 #                 indβ = [4, ]
@@ -77,7 +77,7 @@ search_params = SearchParameters(num_states, δp)
                     net = PEPSNetwork{Lattice{Layout},Sparsity,Float64}(
                         m,
                         n,
-                        cl_h,
+                        potts_h,
                         transform,
                         :id,
                     )

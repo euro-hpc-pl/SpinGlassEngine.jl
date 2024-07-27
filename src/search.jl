@@ -249,7 +249,7 @@ Retrieve the local spin configurations associated with a vertex in the Gibbs net
 
 ## Description
 This function retrieves the local spin configurations associated with a given vertex in the Gibbs network. 
-The local spins are extracted from the spectrum of the clustered Hamiltonian associated with the vertex.
+The local spins are extracted from the spectrum of the Potts Hamiltonian associated with the vertex.
 """
 function local_spins(network::AbstractGibbsNetwork{S,T}, vertex::S) where {S,T}
     spectrum(network, vertex).states_int
@@ -621,7 +621,7 @@ function low_energy_spectrum(
 
     # Translate variable order (network --> factor graph)
     inner_perm = sortperm([
-        ctr.peps.clustered_hamiltonian.reverse_label_map[idx] for
+        ctr.peps.potts_hamiltonian.reverse_label_map[idx] for
         idx ∈ ctr.peps.vertex_map.(ctr.nodes_search_order)
     ])
 
@@ -644,7 +644,7 @@ function low_energy_spectrum(
     # Final check if states correspond energies
     @assert sol.energies ≈
             energy.(
-        Ref(ctr.peps.clustered_hamiltonian),
+        Ref(ctr.peps.potts_hamiltonian),
         decode_state.(Ref(ctr.peps), sol.states),
     )
     sol, s
@@ -703,7 +703,7 @@ function gibbs_sampling(
 
     # Translate variable order (network --> factor graph)
     inner_perm = sortperm([
-        ctr.peps.clustered_hamiltonian.reverse_label_map[idx] for
+        ctr.peps.potts_hamiltonian.reverse_label_map[idx] for
         idx ∈ ctr.peps.vertex_map.(ctr.nodes_search_order)
     ])
 
@@ -725,7 +725,7 @@ function gibbs_sampling(
     # Final check if states correspond energies
     @assert sol.energies ≈
             energy.(
-        Ref(ctr.peps.clustered_hamiltonian),
+        Ref(ctr.peps.potts_hamiltonian),
         decode_state.(Ref(ctr.peps), sol.states),
     )
     sol

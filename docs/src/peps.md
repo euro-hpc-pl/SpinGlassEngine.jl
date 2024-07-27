@@ -1,6 +1,6 @@
 # Constructing PEPS tensor network
 
-After creating the clustered Hamiltonian, we can turn it into a PEPS tensor network as shown in the Section [Brief description of the algorithm](../algorithm.md). 
+After creating the Potts Hamiltonian, we can turn it into a PEPS tensor network as shown in the Section [Brief description of the algorithm](../algorithm.md). 
 
 ```@docs
 PEPSNetwork
@@ -22,11 +22,11 @@ Layout = GaugesEnergy
 Sparsity = Sparse
 
 ig = ising_graph(instance)
-cl_h = clustered_hamiltonian(
+potts_h = potts_hamiltonian(
     ig,
     spectrum = full_spectrum,
     cluster_assignment_rule=super_square_lattice((m, n, t))
 )
 
-net = PEPSNetwork{SquareCrossSingleNode{Layout}, Sparsity}(m, n, cl_h, transform)
+net = PEPSNetwork{KingSingleNode{Layout}, Sparsity}(m, n, potts_h, transform)
 ```

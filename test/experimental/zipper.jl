@@ -34,7 +34,7 @@ indβ = 1
 
 ig = ising_graph("$(@__DIR__)/../instances/chimera_droplets/512power/001.txt")
 
-cl_h = clustered_hamiltonian(
+potts_h = potts_hamiltonian(
     ig,
     spectrum = my_brute_force, #rm _gpu to use CPU
     cluster_assignment_rule = super_square_lattice((m, n, t)),
@@ -50,7 +50,7 @@ Gauge = NoUpdate
 i = div(m, 2)
 indβ = 1
 
-net = PEPSNetwork{SquareSingleNode{Layout},Sparse,Float64}(m, n, cl_h, tran)
+net = PEPSNetwork{SquareSingleNode{Layout},Sparse,Float64}(m, n, potts_h, tran)
 ctr = MpsContractor{Strategy,Gauge,Float64}(
     net,
     params;
@@ -61,7 +61,7 @@ ctr = MpsContractor{Strategy,Gauge,Float64}(
 Ws = SpinGlassEngine.mpo(ctr, ctr.layers.main, i, indβ)
 println(" Ws -> ", which_device(Ws), " ", format_bytes.(measure_memory(Ws)))
 
-net = PEPSNetwork{SquareSingleNode{Layout},Dense,Float64}(m, n, cl_h, tran)
+net = PEPSNetwork{SquareSingleNode{Layout},Dense,Float64}(m, n, potts_h, tran)
 ctr = MpsContractor{Strategy,Gauge,Float64}(
     net,
     params;

@@ -18,7 +18,7 @@ end
     δp = 1E-5 * exp(-β * DE)
     ig = ising_graph("$(@__DIR__)/../instances/pegasus_random/minimal.txt")
     INDβ = [1, 2, 3]
-    cl_h = clustered_hamiltonian(
+    potts_h = potts_hamiltonian(
         ig,
         spectrum = my_brute_force,
         cluster_assignment_rule = pegasus_lattice((m, n, t)),
@@ -37,7 +37,7 @@ end
         net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity,Float64}(
             m,
             n,
-            cl_h,
+            potts_h,
             transform,
         )
         ctr = MpsContractor{Strategy,Gauge,Float64}(
@@ -51,10 +51,10 @@ end
         sol, s = low_energy_spectrum(ctr, search_params)
         #sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 
-        ig_states = decode_clustered_hamiltonian_state.(Ref(cl_h), sol.states)
+        ig_states = decode_potts_hamiltonian_state.(Ref(potts_h), sol.states)
         @test sol.energies ≈ energy.(Ref(ig), ig_states)
-        cl_h_states = decode_state.(Ref(net), sol.states)
-        @test sol.energies ≈ energy.(Ref(cl_h), cl_h_states)
+        potts_h_states = decode_state.(Ref(net), sol.states)
+        @test sol.energies ≈ energy.(Ref(potts_h), potts_h_states)
 
         norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
         # println( maximum(abs.(norm_prob ./ exp.(-β .* (sol.energies .- sol.energies[1]))) .- 1 ))

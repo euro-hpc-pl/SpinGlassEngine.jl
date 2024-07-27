@@ -18,7 +18,7 @@ function bench(instance::String)
     num_states = 500
     all_betas = [β / 8, β / 4, β / 2, β]
 
-    cl_h = clustered_hamiltonian(
+    potts_h = potts_hamiltonian(
         ising_graph(instance),
         # max_cl_states,
         spectrum = my_brute_force,
@@ -34,7 +34,7 @@ function bench(instance::String)
                 net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity,Float64}(
                     m,
                     n,
-                    cl_h,
+                    potts_h,
                     transform,
                 )
                 ctr = MpsContractor{Strategy,Gauge,Float64}(
@@ -55,19 +55,19 @@ function bench(instance::String)
                 )
 
                 sol2 = unpack_droplets(sol1, β)
-                ig_states = decode_clustered_hamiltonian_state.(Ref(cl_h), sol2.states)
-                # cl_h_states = decode_state.(Ref(net), sol2.states)
+                ig_states = decode_potts_hamiltonian_state.(Ref(potts_h), sol2.states)
+                # potts_h_states = decode_state.(Ref(net), sol2.states)
 
                 # @test sol1.energies[begin] ≈ ground_energy
                 # @test sol2.energies[begin] ≈ ground_energy
                 # push!(energies, sol1.energies)
 
                 # for sol ∈ (sol1, sol2)
-                #     ig_states = decode_clustered_hamiltonian_state.(Ref(cl_h), sol.states)
+                #     ig_states = decode_potts_hamiltonian_state.(Ref(potts_h), sol.states)
                 #     @test sol.energies ≈ energy.(Ref(ising_graph(instance)), ig_states)
 
-                #     cl_h_states = decode_state.(Ref(net), sol.states)
-                #     @test sol.energies ≈ energy.(Ref(cl_h), cl_h_states)
+                #     potts_h_states = decode_state.(Ref(net), sol.states)
+                #     @test sol.energies ≈ energy.(Ref(potts_h), potts_h_states)
 
                 #     norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
                 #     @test norm_prob ≈ exp.(-β .* (sol.energies .- sol.energies[1]))

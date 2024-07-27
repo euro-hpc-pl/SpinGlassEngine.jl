@@ -1,4 +1,4 @@
-export SquareCrossSingleNode
+export KingSingleNode
 
 """
 $(TYPEDSIGNATURES)
@@ -10,9 +10,9 @@ and additional diagonal edges forming a cross pattern between neighboring nodes.
 - `T <: AbstractTensorsLayout`: The layout of decomposition of tensors into MPS. Can be `GaugesEnergy`, `EnergyGauges` or `EngGaugesEng`.
 
 # Constructors
-- `SquareCrossSingleNode(layout::T)`: Create a `SquareCrossSingleNode` with the specified tensor layout.
+- `KingSingleNode(layout::T)`: Create a `KingSingleNode` with the specified tensor layout.
 """
-struct SquareCrossSingleNode{T<:AbstractTensorsLayout} <: AbstractGeometry end
+struct KingSingleNode{T<:AbstractTensorsLayout} <: AbstractGeometry end
 
 """
 $(TYPEDSIGNATURES)
@@ -28,7 +28,7 @@ edges forming a cross pattern between neighboring nodes.
 A `LabelledGraph` representing a grid graph with nodes arranged in an m x n grid, 
 and additional diagonal edges forming a cross pattern between neighboring nodes.
 """
-function SquareCrossSingleNode(m::Int, n::Int)
+function KingSingleNode(m::Int, n::Int)
     lg = SquareSingleNode(m, n)
     for i ∈ 1:m-1, j ∈ 1:n-1
         add_edge!(lg, (i, j), (i + 1, j + 1))
@@ -45,7 +45,7 @@ VirtualSingleNode(::Type{Sparse}) = :sparse_virtual_single_node
 
 
 function tensor_map(
-    ::Type{SquareCrossSingleNode{T}},
+    ::Type{KingSingleNode{T}},
     ::Type{S},
     nrows::Int,
     ncols::Int,
@@ -68,7 +68,7 @@ end
 
 
 function tensor_map(
-    ::Type{SquareCrossSingleNode{T}},
+    ::Type{KingSingleNode{T}},
     ::Type{S},
     nrows::Int,
     ncols::Int,
@@ -96,7 +96,7 @@ end
 
 
 function gauges_list(
-    ::Type{SquareCrossSingleNode{T}},
+    ::Type{KingSingleNode{T}},
     nrows::Int,
     ncols::Int,
 ) where {T<:GaugesEnergy}
@@ -112,7 +112,7 @@ end
 
 
 function gauges_list(
-    ::Type{SquareCrossSingleNode{T}},
+    ::Type{KingSingleNode{T}},
     nrows::Int,
     ncols::Int,
 ) where {T<:EnergyGauges}
@@ -128,7 +128,7 @@ end
 
 
 function gauges_list(
-    ::Type{SquareCrossSingleNode{T}},
+    ::Type{KingSingleNode{T}},
     nrows::Int,
     ncols::Int,
 ) where {T<:EngGaugesEng}
@@ -145,9 +145,9 @@ end
 """
 $(TYPEDSIGNATURES)
 
-Defines the MPO layers for the SquareCrossSingleNode geometry with the EnergyGauges layout.
+Defines the MPO layers for the KingSingleNode geometry with the EnergyGauges layout.
 """
-function MpoLayers(::Type{T}, ncols::Int) where {T<:SquareCrossSingleNode{EnergyGauges}}
+function MpoLayers(::Type{T}, ncols::Int) where {T<:KingSingleNode{EnergyGauges}}
     MpoLayers(
         Dict(site(i) => (-1 // 6, 0, 3 // 6, 4 // 6) for i ∈ 1//2:1//2:ncols),
         Dict(site(i) => (3 // 6, 4 // 6) for i ∈ 1//2:1//2:ncols),
@@ -158,9 +158,9 @@ end
 """
 $(TYPEDSIGNATURES)
 
-Defines the MPO layers for the SquareCrossSingleNode geometry with the GaugesEnergy layout.
+Defines the MPO layers for the KingSingleNode geometry with the GaugesEnergy layout.
 """
-function MpoLayers(::Type{T}, ncols::Int) where {T<:SquareCrossSingleNode{GaugesEnergy}}
+function MpoLayers(::Type{T}, ncols::Int) where {T<:KingSingleNode{GaugesEnergy}}
     MpoLayers(
         Dict(site(i) => (-4 // 6, -1 // 2, 0, 1 // 6) for i ∈ 1//2:1//2:ncols),
         Dict(site(i) => (1 // 6,) for i ∈ 1//2:1//2:ncols),
@@ -171,9 +171,9 @@ end
 """
 $(TYPEDSIGNATURES)
 
-Defines the MPO layers for the SquareCrossSingleNode geometry with the EngGaugesEng layout.
+Defines the MPO layers for the KingSingleNode geometry with the EngGaugesEng layout.
 """
-function MpoLayers(::Type{T}, ncols::Int) where {T<:SquareCrossSingleNode{EngGaugesEng}}
+function MpoLayers(::Type{T}, ncols::Int) where {T<:KingSingleNode{EngGaugesEng}}
     MpoLayers(
         Dict(site(i) => (-2 // 5, -1 // 5, 0, 1 // 5, 2 // 5) for i ∈ 1//2:1//2:ncols),
         Dict(site(i) => (1 // 5, 2 // 5) for i ∈ 1//2:1//2:ncols),
@@ -187,7 +187,7 @@ function conditional_probability(
     ::Type{T},
     ctr::MpsContractor{S},
     ∂v::Vector{Int},
-) where {T<:SquareCrossSingleNode,S}
+) where {T<:KingSingleNode,S}
     indβ, β = length(ctr.betas), last(ctr.betas)
     i, j = ctr.current_node
 
@@ -229,7 +229,7 @@ end
 function projectors_site_tensor(
     network::PEPSNetwork{T,S},
     vertex::Node,
-) where {T<:SquareCrossSingleNode,S}
+) where {T<:KingSingleNode,S}
     i, j = vertex
     nbrs = (
         (@ntuple 3 k -> (i + 2 - k, j - 1)),
@@ -241,7 +241,7 @@ function projectors_site_tensor(
 end
 
 
-function nodes_search_order_Mps(peps::PEPSNetwork{T,S}) where {T<:SquareCrossSingleNode,S}
+function nodes_search_order_Mps(peps::PEPSNetwork{T,S}) where {T<:KingSingleNode,S}
     ([(i, j) for i ∈ 1:peps.nrows for j ∈ 1:peps.ncols], (peps.nrows + 1, 1))
 end
 
@@ -250,7 +250,7 @@ function boundary(
     ::Type{T},
     ctr::MpsContractor{S},
     node::Node,
-) where {T<:SquareCrossSingleNode,S}
+) where {T<:KingSingleNode,S}
     i, j = node
     vcat(
         [
@@ -273,7 +273,7 @@ function update_energy(
     ::Type{T},
     ctr::MpsContractor{S},
     σ::Vector{Int},
-) where {T<:SquareCrossSingleNode,S}
+) where {T<:KingSingleNode,S}
     net = ctr.peps
     i, j = ctr.current_node
     en = local_energy(net, (i, j))
@@ -285,7 +285,7 @@ end
 
 
 function tensor(
-    net::PEPSNetwork{SquareCrossSingleNode{T},S},
+    net::PEPSNetwork{KingSingleNode{T},S},
     node::PEPSNode,
     β::Real,
     ::Val{:central_d_single_node},
@@ -299,7 +299,7 @@ end
 
 
 function Base.size(
-    network::PEPSNetwork{SquareCrossSingleNode{T},S},
+    network::PEPSNetwork{KingSingleNode{T},S},
     node::PEPSNode,
     ::Val{:central_d_single_node},
 ) where {T<:AbstractTensorsLayout,S<:AbstractSparsity}
@@ -311,7 +311,7 @@ end
 
 
 function tensor(
-    net::PEPSNetwork{SquareCrossSingleNode{T},S},
+    net::PEPSNetwork{KingSingleNode{T},S},
     node::PEPSNode,
     β::Real,
     ::Val{:sparse_virtual_single_node},
@@ -334,7 +334,7 @@ end
 
 
 function tensor(
-    net::PEPSNetwork{SquareCrossSingleNode{T},Dense},
+    net::PEPSNetwork{KingSingleNode{T},Dense},
     node::PEPSNode,
     β::Real,
     ::Val{:virtual_single_node},

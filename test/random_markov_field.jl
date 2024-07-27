@@ -5,8 +5,8 @@
     bond_dim = 8
     δp = 1E-4
     num_states = 64
-    cl_h = clustered_hamiltonian(instance_dir)
-    Nx, Ny = get_prop(cl_h, :Nx), get_prop(cl_h, :Ny)
+    potts_h = potts_hamiltonian(instance_dir)
+    Nx, Ny = get_prop(potts_h, :Nx), get_prop(potts_h, :Ny)
     params = MpsParameters{Float64}(; bd = bond_dim, ϵ = 1E-8, sw = 4)
     search_params = SearchParameters(; max_states = num_states, cut_off_prob = δp)
     Gauge = NoUpdate
@@ -16,7 +16,7 @@
     Layout = GaugesEnergy
     Sparsity = Sparse
     transform = rotation(0)
-    net = PEPSNetwork{SquareCrossSingleNode{Layout},Sparsity}(Nx, Ny, cl_h, transform)
+    net = PEPSNetwork{KingSingleNode{Layout},Sparsity}(Nx, Ny, potts_h, transform)
     ctr = MpsContractor{Strategy,Gauge,Float64}(
         net,
         params;

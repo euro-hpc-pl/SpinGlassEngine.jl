@@ -54,12 +54,12 @@ SquareSingleNode
 SquareDoubleNode
 ```
 
-* `SquareCrossSingleNode`
+* `KingSingleNode`
 ```@raw html
 <img src="../images/square_cross_single.png" width="50%" class="center"/>
 ```
 ```@docs
-SquareCrossSingleNode
+KingSingleNode
 ```
 
 * `SquareCrossDoubleNode`

@@ -18,7 +18,7 @@ num_states = 1000
 
 instance = "$(@__DIR__)/instances/chimera_droplets/128power/001.txt"
 
-cl_h = clustered_hamiltonian(
+potts_h = potts_hamiltonian(
     ising_graph(instance),
     spectrum = full_spectrum, #my_brute_force,
     cluster_assignment_rule = super_square_lattice((m, n, t)),
@@ -37,7 +37,7 @@ Gauge = NoUpdate
     network = PEPSNetwork{SquareSingleNode{GaugesEnergy},Sparsity,Float64}(
         m,
         n,
-        cl_h,
+        potts_h,
         rotation(0),
     )
     ctr = MpsContractor{Strategy,Gauge,Float64}(
@@ -68,7 +68,7 @@ end
     net = PEPSNetwork{SquareSingleNode{EnergyGauges},Sparsity,Float64}(
         m,
         n,
-        cl_h,
+        potts_h,
         rotation(0),
     )
     ctr = MpsContractor{Strategy,Gauge,Float64}(

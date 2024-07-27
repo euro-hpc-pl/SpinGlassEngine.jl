@@ -68,17 +68,17 @@ function run_test(instance, m, n, t)
             println("===============")
             println("Transform ", tran)
 
-            cl_h = clustered_hamiltonian(
+            potts_h = potts_hamiltonian(
                 ig,
                 spectrum = full_spectrum, #_gpu, # rm _gpu to use CPU
                 cluster_assignment_rule = pegasus_lattice((m, n, t)),
             )
-            cl_h = truncate_clustered_hamiltonian_2site_energy(cl_h, cl)
+            potts_h = truncate_potts_hamiltonian_2site_energy(potts_h, cl)
 
             net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity,Float64}(
                 m,
                 n,
-                cl_h,
+                potts_h,
                 tran,
             )
 

@@ -4,7 +4,7 @@ function my_brute_force(ig::IsingGraph; num_states::Int)
     brute_force(ig, onGPU ? :GPU : :CPU, num_states = num_states)
 end
 
-function check_ground_state(cl_h)
+function check_ground_state(potts_h)
     ground_state = [
         982,
         751,
@@ -244,9 +244,9 @@ function check_ground_state(cl_h)
         65 => -1,
     )
     decoded_states = zeros(18)
-    for (i, node) in enumerate(vertices(cl_h))
-        node_states = get_prop(cl_h, node, :spectrum).states
-        spins = get_prop(cl_h, node, :cluster).labels
+    for (i, node) in enumerate(vertices(potts_h))
+        node_states = get_prop(potts_h, node, :spectrum).states
+        spins = get_prop(potts_h, node, :cluster).labels
         decoded_from_ig = [gs[key] for key in spins]
 
         if decoded_from_ig in node_states
@@ -284,13 +284,13 @@ if !Base.Filesystem.isdir(results_folder)
     Base.Filesystem.mkpath(results_folder)
 end
 
-cl_h = clustered_hamiltonian(
+potts_h = potts_hamiltonian(
     ig,
     spectrum = full_spectrum, #rm _gpu to use CPU
     cluster_assignment_rule = pegasus_lattice((m, n, t)),
 )
-cl_h = truncate_clustered_hamiltonian(
-    cl_h,
+potts_h = truncate_potts_hamiltonian(
+    potts_h,
     β,
     cs,
     results_folder,
@@ -298,7 +298,7 @@ cl_h = truncate_clustered_hamiltonian(
     tol = 1e-6,
     iter = iter,
 )
-check_ground_state(cl_h)
+check_ground_state(potts_h)
 params =
     MpsParameters{Float64}(bond_dim, VAR_TOL, MS, TOL_SVD, ITERS_SVD, ITERS_VAR, DTEMP_MULT)
 search_params = SearchParameters(num_states, δp)
@@ -309,7 +309,7 @@ Layout = GaugesEnergy
 Gauge = NoUpdate
 
 for tran ∈ all_lattice_transformations #[LatticeTransformation((1, 2, 3, 4), false), ]
-    net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity,Float64}(m, n, cl_h, tran)
+    net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity,Float64}(m, n, potts_h, tran)
     ctr = MpsContractor{Strategy,Gauge,Float64}(
         net,
         params;
@@ -328,7 +328,7 @@ for tran ∈ all_lattice_transformations #[LatticeTransformation((1, 2, 3, 4), f
     )
     println(sol.energies)
     # println(sol.states)
-    ig_states = decode_clustered_hamiltonian_state.(Ref(cl_h), sol.states)
+    ig_states = decode_potts_hamiltonian_state.(Ref(potts_h), sol.states)
     # println(ig_states)
     clear_memoize_cache()
 end

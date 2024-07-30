@@ -20,14 +20,14 @@ rank = MPI.Comm_rank(MPI.COMM_WORLD)
 
 M, N, T = 7, 7, 3
 INSTANCE_DIR = "$(@__DIR__)/../test/instances/pegasus_random/P8/RCO/SpinGlass"
-OUTPUT_DIR = "$(@__DIR__)/results/pegasus_random/P8/RCO/final_bench_float32_beta2"
+OUTPUT_DIR = "$(@__DIR__)/results/pegasus_random/P8/RCO/final_bench_float64_beta2"
 if !Base.Filesystem.isdir(OUTPUT_DIR)
     Base.Filesystem.mkpath(OUTPUT_DIR)
 end
 BETAS =  [2.0,] #collect(0.5:0.5:3)
 LAYOUT = (GaugesEnergy,)
 TRANSFORM = all_lattice_transformations
-TT = Float32
+TT = Float64
 GAUGE =  NoUpdate
 STRATEGY = Zipper #SVDTruncate
 SPARSITY = Sparse
@@ -56,7 +56,7 @@ function pegasus_sim(inst, trans, β, Layout)
         spectrum=full_spectrum,
         cluster_assignment_rule=pegasus_lattice((M, N, T))
     )
-    params = MpsParameters{TT}(;bd=BOND_DIM, ϵ =TT(VAR_TOL), sw=MAX_SWEEPS, ts=TT(TOL_SVD), is=ITERS_SVD, iv=ITERS_VAR, dm=DTEMP_MULT, m=METHOD)
+    params = MpsParameters{TT}(;bond_dim=BOND_DIM, var_tol=TT(VAR_TOL), num_sweeps=MAX_SWEEPS, tol_SVD=TT(TOL_SVD), iters_SVD=ITERS_SVD, iters_var=ITERS_VAR, Dtemp_multiplier=DTEMP_MULT, method=METHOD)
     search_params = SearchParameters(;max_states=MAX_STATES, cut_off_prob=δp)
   
     net = PEPSNetwork{SquareCrossDoubleNode{Layout}, SPARSITY, TT}(M, N, potts_h, trans)

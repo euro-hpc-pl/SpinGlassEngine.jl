@@ -87,15 +87,15 @@ struct MpsParameters{S<:Real}
     method::Symbol
 
     MpsParameters{S}(;
-        bd = typemax(Int),
-        ϵ::S = S(1E-8),
-        sw = 4,
-        ts::S = S(1E-16),
-        is = 1,
-        iv = 1,
-        dm = 2,
-        m = :psvd_sparse,
-    ) where {S} = new(bd, ϵ, sw, ts, is, iv, dm, m)
+        bond_dim = typemax(Int),
+        var_tol::S = S(1E-8),
+        num_sweeps = 4,
+        tol_SVD::S = S(1E-16),
+        iters_svd = 1,
+        iters_var = 1,
+        Dtemp_multiplier = 2,
+        method = :psvd_sparse,
+    ) where {S} = new(bond_dim, var_tol, num_sweeps, tol_SVD, iters_svd, iters_var, Dtemp_multiplier, method)
 end
 
 """

@@ -34,7 +34,7 @@ potts_h = potts_hamiltonian(
     iter = iter,
 )
 
-params = MpsParameters{Float64}(; bd = bond_dim, ϵ = 1E-8, sw = 10, ts = 1E-16)
+params = MpsParameters{Float64}(; bond_dim = bond_dim, var_tol = 1E-8, num_sweeps = 10, tol_SVD = 1E-16)
 search_params = SearchParameters(num_states, δp)
 
 # Solve using PEPS search

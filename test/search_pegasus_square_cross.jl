@@ -17,7 +17,7 @@ function bench(instance::String)
         spectrum = my_brute_force,
         cluster_assignment_rule = super_square_lattice((m, n, t)),
     )
-    params = MpsParameters{Float64}(; bd = bond_dim, ϵ = 1E-8, sw = 4)
+    params = MpsParameters{Float64}(; bond_dim = bond_dim, var_tol = 1E-8, num_sweeps = 4)
     search_params = SearchParameters(max_states = num_states, cut_off_prob = δp)
     Gauge = NoUpdate
     graduate_truncation = :graduate_truncate

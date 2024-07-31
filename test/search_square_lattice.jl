@@ -18,7 +18,7 @@ function bench(instance::String)
     params = MpsParameters{Float64}(; bond_dim = bond_dim, var_tol = 1E-8, num_sweeps = 4)
     search_params = SearchParameters(; max_states = num_states, cut_off_prob = δp)
     Gauge = NoUpdate
-    graduate_truncation = :graduate_truncate
+    graduate_truncation = :graduate
     energies = Vector{Float64}[]
     for Strategy ∈ (SVDTruncate, Zipper),
         transform ∈ all_lattice_transformations

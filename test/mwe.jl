@@ -51,7 +51,7 @@ for T in [Float64, Float32]
         params;
         onGPU = onGPU,
         beta = β,
-        graduate_truncation = :graduate_truncate,
+        graduate_truncation = :graduate,
     )
     sol, s = low_energy_spectrum(ctr, search_params)
     @test eltype(sol.energies) == T

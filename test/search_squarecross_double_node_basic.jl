@@ -47,14 +47,14 @@ function run_test_squarecross_double_node(instance, m, n, t)
                     params;
                     onGPU = onGPU,
                     beta = β,
-                    graduate_truncation = :graduate_truncate,
+                    graduate_truncation = :graduate,
                 )
                 ctr2 = MpsContractor{Strategy,Gauge,Float64}(
                     net2,
                     params;
                     onGPU = onGPU,
                     beta = β,
-                    graduate_truncation = :graduate_truncate,
+                    graduate_truncation = :graduate,
                 )
 
                 sol, s = low_energy_spectrum(ctr, search_params) #, merge_branches(ctr))

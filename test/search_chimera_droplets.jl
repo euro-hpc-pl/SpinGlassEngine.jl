@@ -41,7 +41,7 @@ function bench(instance::String)
                     params;
                     onGPU = onGPU,
                     beta = β,
-                    graduate_truncation = :graduate_truncate,
+                    graduate_truncation = :graduate,
                 )
                 sol1, s = low_energy_spectrum(
                     ctr,
@@ -49,7 +49,7 @@ function bench(instance::String)
                     merge_branches(
                         ctr;
                         merge_type = :nofit,
-                        update_droplets = SingleLayerDroplets(1.0, 1000, :hamming),
+                        update_droplets = SingleLayerDroplets(; max_energy=1, min_size=1000, metric=:hamming),
                     ),
                 )
 

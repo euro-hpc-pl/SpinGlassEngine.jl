@@ -31,8 +31,8 @@ search_params = SearchParameters(num_states, δp)
 #     for Sparsity ∈ (Dense, Sparse), transform ∈ all_lattice_transformations[[1]]
 #         for Layout ∈ (GaugesEnergy, EnergyGauges, EngGaugesEng)
 #             net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, potts_h, transform, :id)
-#             ctr_svd = MpsContractor{SVDTruncate, GaugeStrategy}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
-#             ctr_anneal = MpsContractor{MPSAnnealing, GaugeStrategy}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
+#             ctr_svd = MpsContractor{SVDTruncate, GaugeStrategy}(net, [β/8, β/4, β/2, β], :graduate, params; onGPU=onGPU)
+#             ctr_anneal = MpsContractor{MPSAnnealing, GaugeStrategy}(net, [β/8, β/4, β/2, β], :graduate, params; onGPU=onGPU)
 
 #             @testset "Overlaps calculated for different Starategies are the same." begin
 #                 for i ∈ 1:m-1
@@ -48,7 +48,7 @@ search_params = SearchParameters(num_states, δp)
 
 #         for Layout ∈ (GaugesEnergy,)
 #             net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, potts_h, transform, :id)
-#             ctr_svd = MpsContractor{SVDTruncate, GaugeStrategy}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
+#             ctr_svd = MpsContractor{SVDTruncate, GaugeStrategy}(net, [β/8, β/4, β/2, β], :graduate, params; onGPU=onGPU)
 #             @testset "Overlaps calculated in Python are the same as in Julia." begin
 #                 overlap_python = [0.2637787707674837, 0.2501621729619047, 0.2951954406837012]
 
@@ -84,7 +84,7 @@ search_params = SearchParameters(num_states, δp)
                         params;
                         onGPU = onGPU,
                         beta = β,
-                        graduate_truncation = :graduate_truncate,
+                        graduate_truncation = :graduate,
                     )
 
                     @testset "Overlaps calculated differently are the same." begin

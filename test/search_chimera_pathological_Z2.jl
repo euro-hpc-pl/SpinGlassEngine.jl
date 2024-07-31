@@ -124,7 +124,7 @@
                     params;
                     onGPU = onGPU,
                     beta = β,
-                    graduate_truncation = :graduate_truncate,
+                    graduate_truncation = :graduate,
                 )
                 sol1, s = low_energy_spectrum(
                     ctr,
@@ -132,7 +132,7 @@
                     merge_branches(
                         ctr;
                         merge_type = :nofit,
-                        update_droplets = SingleLayerDroplets(10.0, 0, :hamming),
+                        update_droplets = SingleLayerDroplets(; max_energy=10.0, min_size=0, metric=:hamming),
                     ),
                     :Z2,
                 )

@@ -45,7 +45,7 @@ Gauge = NoUpdate
         params;
         onGPU = onGPU,
         beta = β,
-        graduate_truncation = :graduate_truncate,
+        graduate_truncation = :graduate,
     )
     @testset "Compare the results with Python" begin
         overlap_python = [0.2637787707674837, 0.2501621729619047, 0.2951954406837012]
@@ -76,7 +76,7 @@ end
         params;
         onGPU = onGPU,
         beta = β,
-        graduate_truncation = :graduate_truncate,
+        graduate_truncation = :graduate,
     )
     for i = 1:n-1
         psi_top = mps_top(ctr, i)

@@ -36,7 +36,7 @@ function bench(instance::String, β::Real, bond_dim::Integer, num_states::Intege
         net,
         params;
         beta = β,
-        graduate_truncation = :graduate_truncate,
+        graduate_truncation = :graduate,
         onGPU = onGPU,
     )
 

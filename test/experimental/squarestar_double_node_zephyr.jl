@@ -51,7 +51,7 @@ ctr = MpsContractor{Strategy,Gauge,Float64}(
     params;
     onGPU = onGPU,
     beta = β,
-    graduate_truncation = :graduate_truncate,
+    graduate_truncation = :graduate,
 )
 
 # for i in 1//2 : 1//2 : m

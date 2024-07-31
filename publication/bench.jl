@@ -11,9 +11,6 @@ function run_square_diag_bench(::Type{T}; topology::NTuple{3, Int}) where {T}
     instance = get_instance(topology)
     lattice = super_square_lattice(topology)
 
-    hamming_dist = 5
-    eng = 10
-
     best_energies = T[]
 
     potts_h = potts_hamiltonian(
@@ -32,10 +29,10 @@ function run_square_diag_bench(::Type{T}; topology::NTuple{3, Int}) where {T}
 
         ctr = MpsContractor{SVDTruncate, NoUpdate, T}(
             net, params; 
-            onGPU = false, beta = T(2), graduate_truncation = :graduate_truncate,
+            onGPU = false, beta = T(2), graduate_truncation = :graduate,
         )
 
-        single = SingleLayerDroplets(eng, hamming_dist, :hamming)
+        single = SingleLayerDroplets(; max_energy = 10, min_size = 5, metric = :hamming)
         merge_strategy = merge_branches(
             ctr; merge_type = :nofit, update_droplets = single,
         )

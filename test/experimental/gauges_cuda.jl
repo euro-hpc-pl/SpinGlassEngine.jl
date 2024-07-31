@@ -44,7 +44,7 @@ end
             params;
             onGPU = onGPU,
             beta = β,
-            graduate_truncation = :graduate_truncate,
+            graduate_truncation = :graduate,
         )
         update_gauges!(ctr, m, Val(:up))
         sol, s = low_energy_spectrum(ctr, search_params)

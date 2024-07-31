@@ -39,7 +39,7 @@ function bench(instance::String)
                 params;
                 onGPU = onGPU,
                 beta = β,
-                graduate_truncation = :graduate_truncate,
+                graduate_truncation = :graduate,
             )
             sol_peps, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
             push!(energies, sol_peps.energies)

@@ -31,7 +31,7 @@ TT = Float64
 GAUGE =  NoUpdate
 STRATEGY = Zipper #SVDTruncate
 SPARSITY = Sparse
-graduate_truncation = :graduate_truncate
+graduate_truncation = :graduate
 
 MAX_STATES = 1024
 BOND_DIM = 8

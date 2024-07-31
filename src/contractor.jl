@@ -262,7 +262,7 @@ This function constructs the top MPS using SVD for a given row in the PEPS netwo
     ψ0 = dot(W, ψ)
 
     canonise!(ψ0, :right)
-    if ctr.graduate_truncation == :graduate_truncate
+    if ctr.graduate_truncation == :graduate
         canonise_truncate!(ψ0, :left, Dcut * 2, tolS / 2)
         variational_sweep!(ψ0, W, ψ, Val(:right))
     end
@@ -304,7 +304,7 @@ This function constructs the (bottom) MPS using SVD for a given row in the PEPS 
 
     ψ0 = dot(W, ψ)
     canonise!(ψ0, :right)
-    if ctr.graduate_truncation == :graduate_truncate
+    if ctr.graduate_truncation == :graduate
         canonise_truncate!(ψ0, :left, Dcut * 2, tolS / 2)
         variational_sweep!(ψ0, W, ψ, Val(:right))
     end

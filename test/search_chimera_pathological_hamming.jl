@@ -138,7 +138,7 @@ end
                     params;
                     onGPU = onGPU,
                     beta = β,
-                    graduate_truncation = :graduate_truncate,
+                    graduate_truncation = :graduate,
                 )
                 sol1, s = low_energy_spectrum(
                     ctr,
@@ -147,7 +147,7 @@ end
                         ctr,
                         hamming_dist,
                         :nofit,
-                        SingleLayerDroplets(1.01, 10, :hamming),
+                        SingleLayerDroplets(; max_energy=1.01, min_size=10, metric=:hamming),
                     ),
                 )
                 @test sol1.energies ≈ [exact_energies[1]]

@@ -17,7 +17,6 @@ end
     DE = 16.0
     δp = 1E-5 * exp(-β * DE)
     ig = ising_graph("$(@__DIR__)/../instances/pegasus_random/minimal.txt")
-    INDβ = [1, 2, 3]
     potts_h = potts_hamiltonian(
         ig,
         spectrum = my_brute_force,
@@ -44,10 +43,10 @@ end
             net,
             params;
             onGPU = onGPU,
-            βs = [β / 6, β / 3, β / 2, β],
+            beta = β,
             graduate_truncation = :graduate_truncate,
         )
-        update_gauges!(ctr, m, INDβ, Val(:up))
+        update_gauges!(ctr, m, Val(:up))
         sol, s = low_energy_spectrum(ctr, search_params)
         #sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 

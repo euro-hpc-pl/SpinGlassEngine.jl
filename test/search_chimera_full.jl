@@ -15,7 +15,6 @@ function bench(instance::String)
     dE = 3.0
     δp = exp(-β * dE)
     num_states = 500
-    all_betas = [β / 8, β / 4, β / 2, β]
 
     potts_h = potts_hamiltonian(
         ising_graph(instance),
@@ -41,7 +40,7 @@ function bench(instance::String)
                     net,
                     params;
                     onGPU = onGPU,
-                    βs = all_betas,
+                    beta = β,
                     graduate_truncation = :graduate_truncate,
                 )
                 sol, s = low_energy_spectrum(

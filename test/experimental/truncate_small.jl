@@ -29,7 +29,6 @@ function run_test(instance, m, n, t)
     tolV = 1E-16
     tolS = 1E-16
     max_sweeps = 1
-    indβ = 1
     ITERS_SVD = 1
     ITERS_VAR = 1
     DTEMP_MULT = 2
@@ -52,7 +51,6 @@ function run_test(instance, m, n, t)
     search_params = SearchParameters(num_states, δp)
     energies = []
     Gauge = NoUpdate
-    βs = [β / 16, β / 8, β / 4, β / 2, β]
     Strategy = Zipper
     Sparsity = Sparse
     Layout = GaugesEnergy
@@ -86,7 +84,7 @@ function run_test(instance, m, n, t)
                 net,
                 params;
                 onGPU = onGPU,
-                βs = βs,
+                beta = β,
                 graduate_truncation = :graduate_truncate,
             )
 

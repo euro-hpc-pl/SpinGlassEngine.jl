@@ -33,7 +33,6 @@ STRATEGY = Zipper #SVDTruncate
 SPARSITY = Sparse
 graduate_truncation = :graduate_truncate
 
-INDβ = [3,] #[1, 2, 3]
 MAX_STATES = 1024
 BOND_DIM = 8
 DE = 16.0
@@ -56,11 +55,13 @@ function pegasus_sim(inst, trans, β, Layout)
         spectrum=full_spectrum,
         cluster_assignment_rule=pegasus_lattice((M, N, T))
     )
-    params = MpsParameters{TT}(;bond_dim=BOND_DIM, var_tol=TT(VAR_TOL), num_sweeps=MAX_SWEEPS, tol_SVD=TT(TOL_SVD), iters_SVD=ITERS_SVD, iters_var=ITERS_VAR, Dtemp_multiplier=DTEMP_MULT, method=METHOD)
-    search_params = SearchParameters(;max_states=MAX_STATES, cut_off_prob=δp)
+    # params = MpsParameters{TT}(;bond_dim=BOND_DIM, var_tol=TT(VAR_TOL), num_sweeps=MAX_SWEEPS, tol_SVD=TT(TOL_SVD), iters_SVD=ITERS_SVD, iters_var=ITERS_VAR, Dtemp_multiplier=DTEMP_MULT, method=METHOD)
+    params = MpsParameters{TT}(; bond_dim=BOND_DIM, var_tol=TT(VAR_TOL), num_sweeps=MAX_SWEEPS)
+
+    search_params = SearchParameters(; max_states=MAX_STATES, cut_off_prob=δp)
   
     net = PEPSNetwork{SquareCrossDoubleNode{Layout}, SPARSITY, TT}(M, N, potts_h, trans)
-    ctr = MpsContractor{STRATEGY, GAUGE, TT}(net, params; onGPU = true, βs = TT[β/6, β/3, β/2, β], graduate_truncation = graduate_truncation)
+    ctr = MpsContractor{STRATEGY, GAUGE, TT}(net, params; onGPU = true, beta = TT(β), graduate_truncation = graduate_truncation)
     sol, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr; merge_type=:nofit))
 
     # cRAM = round(Base.summarysize(Memoization.caches) * 1E-9; sigdigits=2)

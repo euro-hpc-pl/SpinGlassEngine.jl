@@ -15,7 +15,6 @@ SearchParameters
 In the boundary MPS-MPO approach we apply Matrix Product Operator (MPO) to appropriate sites of Matrix Product State (MPS). In this context, the absorption of a MPO into a MPS leads to an exponential growth of the bond dimension. Hence, a truncation scheme is necessary to mitigate this issue and to keep the bond dimension in a reasonable size. 
 Our package offers users the flexibility to choose between three distinct methods for optimizing the boundary MPS used in contracting the tensor network: 
 * `Zipper`
-* `MPSAnnealing`
 * `SVDTruncate`.
 `Zipper` method combines randomized truncated Singular Value Decomposition (SVD) and a variational scheme.
 ```@raw html
@@ -24,10 +23,6 @@ Our package offers users the flexibility to choose between three distinct method
 With the `SVDTruncate` method, the Matrix Product State (MPS) is systematically constructed row by row, contracted with the Matrix Product Operator (MPO) from the preceding row. The resulting MPS undergoes a Singular Value Decomposition (SVD) to truncate its bond dimension, followed by variational compression. 
 ```@raw html
 <img src="../images/svd_truncate.png" width="50%" class="center"/>
-```
-On the other hand, the `MPSAnnealing` method tailors the construction of MPS based on variational compression.
-```@raw html
-<img src="../images/annealing.png" width="50%" class="center"/>
 ```
 
 # Sparsity 

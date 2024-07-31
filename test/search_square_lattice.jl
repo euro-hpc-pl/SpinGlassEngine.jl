@@ -20,7 +20,7 @@ function bench(instance::String)
     Gauge = NoUpdate
     graduate_truncation = :graduate_truncate
     energies = Vector{Float64}[]
-    for Strategy ∈ (SVDTruncate, MPSAnnealing, Zipper),
+    for Strategy ∈ (SVDTruncate, Zipper),
         transform ∈ all_lattice_transformations
 
         for Layout ∈ (GaugesEnergy, EnergyGauges, EngGaugesEng), Sparsity ∈ (Dense, Sparse)
@@ -29,7 +29,7 @@ function bench(instance::String)
                 net,
                 params;
                 onGPU = onGPU,
-                βs = [β / 8, β / 4, β / 2, β],
+                beta = β,
                 graduate_truncation = graduate_truncation,
             )
             sol_peps, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))

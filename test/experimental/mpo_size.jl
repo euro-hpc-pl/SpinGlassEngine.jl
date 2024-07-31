@@ -33,7 +33,6 @@ Dcut = 8
 tolV = 1E-16
 tolS = 1E-16
 max_sweeps = 1
-indβ = 1
 ITERS_SVD = 1
 ITERS_VAR = 1
 DTEMP_MULT = 2
@@ -82,17 +81,16 @@ for cl_states in cluster_states
     Gauge = NoUpdate
 
     i = div(m, 2)
-    indβ = 1
 
     net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparse,Float64}(m, n, potts_h, tran)
     ctr = MpsContractor{Strategy,Gauge,Float64}(
         net,
         params;
         onGPU = onGPU,
-        βs = [β],
+        beta = β,
         graduate_truncation = :graduate_truncate,
     )
-    Ws = SpinGlassEngine.mpo(ctr, ctr.layers.main, i, indβ)
+    Ws = SpinGlassEngine.mpo(ctr, ctr.layers.main, i)
     # println(" Ws -> ", which_device(Ws), " ", format_bytes.(measure_memory(Ws)))
     # println(ctr.layers.main)
     site = Ws[3].ctr

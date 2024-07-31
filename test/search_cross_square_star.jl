@@ -20,7 +20,7 @@
     Gauge = NoUpdate
 
     energies = Vector{Float64}[]
-    for Strategy ∈ (MPSAnnealing, Zipper, SVDTruncate), Sparsity ∈ (Dense, Sparse)
+    for Strategy ∈ (Zipper, SVDTruncate), Sparsity ∈ (Dense, Sparse)
         for Layout ∈ (GaugesEnergy, EngGaugesEng, EnergyGauges)  #
             for transform ∈ all_lattice_transformations, Lattice ∈ (KingSingleNode,)
                 net = PEPSNetwork{Lattice{Layout},Sparsity,Float64}(m, n, potts_h, transform)
@@ -28,7 +28,7 @@
                     net,
                     params;
                     onGPU = onGPU,
-                    βs = [β / 2, β],
+                    beta = β,
                     graduate_truncation = :graduate_truncate,
                 )
                 sol, s = low_energy_spectrum(ctr, search_params)

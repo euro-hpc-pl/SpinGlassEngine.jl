@@ -108,7 +108,7 @@
     Gauge = NoUpdate
 
     energies = Vector{Float64}[]
-    for Strategy ∈ (SVDTruncate, MPSAnnealing, Zipper), Sparsity ∈ (Dense, Sparse)
+    for Strategy ∈ (SVDTruncate, Zipper), Sparsity ∈ (Dense, Sparse)
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng)
             for Lattice ∈ (SquareSingleNode, KingSingleNode),
                 transform ∈ all_lattice_transformations
@@ -123,7 +123,7 @@
                     net,
                     params;
                     onGPU = onGPU,
-                    βs = [β / 8.0, β / 4.0, β / 2.0, β],
+                    beta = β,
                     graduate_truncation = :graduate_truncate,
                 )
                 sol1, s = low_energy_spectrum(

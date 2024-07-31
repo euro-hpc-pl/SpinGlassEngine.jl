@@ -36,8 +36,7 @@ function run_square_diag_bench(::Type{T}; topology::NTuple{3, Int}) where {T}
         )
 
         ctr = MpsContractor{SVDTruncate, NoUpdate, T}(
-            net, params; 
-            onGPU = false, βs = [T(2)], graduate_truncation = :graduate_truncate
+            net, params; onGPU = false, beta = T(2), graduate_truncation = :graduate_truncate
         )
 
         merge_strategy = merge_branches(

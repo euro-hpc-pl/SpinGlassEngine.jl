@@ -32,15 +32,17 @@ function run_square_diag_bench(::Type{T}; topology::NTuple{3, Int}) where {T}
 
     for transform ∈ all_lattice_transformations
         net = PEPSNetwork{KingSingleNode{GaugesEnergy}, Dense, T}(
-            m, n, potts_h, transform
+            m, n, potts_h, transform,
         )
 
         ctr = MpsContractor{SVDTruncate, NoUpdate, T}(
-            net, params; onGPU = false, beta = T(2), graduate_truncation = :graduate_truncate
+            net, params; 
+            onGPU = false, beta = T(2), graduate_truncation = :graduate_truncate,
         )
 
+        droplets = SingleLayerDroplets(eng, hamming_dist, :hamming)
         merge_strategy = merge_branches(
-            ctr; merge_type = :nofit, update_droplets = SingleLayerDroplets(eng, hamming_dist, :hamming)
+            ctr; merge_type = :nofit, update_droplets = droplets,
         )
 
         sol, _ = low_energy_spectrum(ctr, search_params, merge_strategy)

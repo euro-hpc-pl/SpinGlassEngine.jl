@@ -22,7 +22,12 @@ function run_square_diag_bench(::Type{T}; topology::NTuple{3, Int}) where {T}
         cluster_assignment_rule = lattice,
     )
 
-    params = MpsParameters{T}(; bond_dim = 16, var_tol = T(1E-16), num_sweeps = 0, tol_SVD = T(1E-16))
+    params = MpsParameters{T}(; 
+        bond_dim = 16, 
+        var_tol = 1E-16, 
+        num_sweeps = 0, 
+        tol_SVD = 1E-16,
+    )
     search_params = SearchParameters(; max_states = 2^8, cut_off_prob = T(1E-4))
 
     for transform ∈ all_lattice_transformations
@@ -31,7 +36,8 @@ function run_square_diag_bench(::Type{T}; topology::NTuple{3, Int}) where {T}
         )
 
         ctr = MpsContractor{SVDTruncate, NoUpdate, T}(
-            net, params; onGPU = false, βs = [T(2)], graduate_truncation = :graduate_truncate
+            net, params; 
+            onGPU = false, βs = [T(2)], graduate_truncation = :graduate_truncate
         )
 
         merge_strategy = merge_branches(

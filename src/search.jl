@@ -346,10 +346,10 @@ function merge_branches(
 
             if merge_type == :fit
                 c = Statistics.median(
-                    ctr.betas[end] .* nsol.energies[start:stop] .+
+                    ctr.beta .* nsol.energies[start:stop] .+
                     nsol.probabilities[start:stop],
                 )
-                new_prob = -ctr.betas[end] .* nsol.energies[best_idx] .+ c
+                new_prob = -ctr.beta .* nsol.energies[best_idx] .+ c
                 push!(probs, new_prob)
             elseif merge_type == :nofit
                 push!(probs, nsol.probabilities[best_idx])
@@ -562,13 +562,13 @@ function low_energy_spectrum(
 
     schmidts = Dict()
     @showprogress "Preprocessing: " for i ∈ ctr.peps.nrows+1:-1:2
-        ψ0 = mps(ctr, i, length(ctr.betas))
+        ψ0 = mps(ctr, i)
         push!(schmidts, i => measure_spectrum(ψ0))
         clear_memoize_cache_after_row()
         Memoization.empty_cache!(SpinGlassTensors.sparse)
         empty!(ctr.peps.lp, :GPU)
         if i <= ctr.peps.nrows
-            ψ0 = mps(ctr, i + 1, length(ctr.betas))
+            ψ0 = mps(ctr, i + 1)
             move_to_CPU!(ψ0)
         end
     end
@@ -584,7 +584,7 @@ function low_energy_spectrum(
         push!(s, k => v)
     end
 
-    ψ0 = mps(ctr, 2, length(ctr.betas))
+    ψ0 = mps(ctr, 2)
     move_to_CPU!(ψ0)
 
     # Start branch and bound search

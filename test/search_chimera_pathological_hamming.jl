@@ -137,7 +137,7 @@ end
                     net,
                     params;
                     onGPU = onGPU,
-                    βs = [β / 8.0, β / 4.0, β / 2.0, β],
+                    beta = β,
                     graduate_truncation = :graduate_truncate,
                 )
                 sol1, s = low_energy_spectrum(

@@ -21,7 +21,7 @@
         net,
         params;
         onGPU = onGPU,
-        βs = [β / 8, β / 4, β / 2, β],
+        beta = β,
         graduate_truncation = :graduate_truncate,
         mode = :RMF,
     )

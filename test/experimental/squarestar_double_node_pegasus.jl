@@ -303,7 +303,7 @@ params =
     MpsParameters{Float64}(bond_dim, VAR_TOL, MS, TOL_SVD, ITERS_SVD, ITERS_VAR, DTEMP_MULT)
 search_params = SearchParameters(num_states, δp)
 energies = Vector{Float64}[]
-Strategy = Zipper # MPSAnnealing # SVDTruncate
+Strategy = Zipper # SVDTruncate
 Sparsity = Sparse #Dense
 Layout = GaugesEnergy
 Gauge = NoUpdate
@@ -314,7 +314,7 @@ for tran ∈ all_lattice_transformations #[LatticeTransformation((1, 2, 3, 4), f
         net,
         params;
         onGPU = onGPU,
-        βs = [β / 6, β / 3, β / 2, β],
+        beta = β,
         graduate_truncation = :graduate_truncate,
     )
     sol, s = low_energy_spectrum(

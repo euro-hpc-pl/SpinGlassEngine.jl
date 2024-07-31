@@ -17,7 +17,6 @@ function bench(instance::String, β::Real, bond_dim::Integer, num_states::Intege
 
     dE = 3.0
     δp = exp(-β * dE)
-    all_betas = [β / 8, β / 4, β / 2, β]
 
     potts_h = potts_hamiltonian(
         ising_graph(instance),
@@ -36,7 +35,7 @@ function bench(instance::String, β::Real, bond_dim::Integer, num_states::Intege
     ctr = MpsContractor{Strategy,Gauge,Float64}(
         net,
         params;
-        βs = all_betas,
+        beta = β,
         graduate_truncation = :graduate_truncate,
         onGPU = onGPU,
     )

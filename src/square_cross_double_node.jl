@@ -241,7 +241,7 @@ The function is specialized for the `SquareCrossDoubleNode` tensor network type 
     current_node,
 ) where {T<:SquareCrossDoubleNode,S}
     i, j, k = current_node
-    β = last(ctr.betas)
+    β = ctr.beta
     if k == 1
         en12 = interaction_energy(ctr.peps, (i, j, 1), (i, j, 2))
         p12 = projector(ctr.peps, (i, j, 1), (i, j, 2))
@@ -400,16 +400,16 @@ function conditional_probability(
     ctr::MpsContractor{S},
     ∂v::Vector{Int},
 ) where {T<:SquareCrossDoubleNode,S}
-    indβ, β = length(ctr.betas), last(ctr.betas)
+    β = ctr.beta
     i, j, k = ctr.current_node
 
-    L = left_env(ctr, i, ∂v[1:2*j-2], indβ)
-    ψ = dressed_mps(ctr, i, indβ)
+    L = left_env(ctr, i, ∂v[1:2*j-2])
+    ψ = dressed_mps(ctr, i)
     MX, M = ψ[j-1//2], ψ[j]
     @tensor LMX[y, z] := L[x] * MX[x, y, z]
 
     if k == 1  # here has to avarage over s2
-        R = right_env(ctr, i, ∂v[(2*j+12):end], indβ)
+        R = right_env(ctr, i, ∂v[(2*j+12):end])
         if ctr.onGPU
             R = CuArray(R)
         end
@@ -456,7 +456,7 @@ function conditional_probability(
         LR .*= tele
         probs = Array(dropdims(sum(LR, dims = 2), dims = 2))
     else  # k == 2
-        R = right_env(ctr, i, ∂v[(2*j+10):end], indβ)
+        R = right_env(ctr, i, ∂v[(2*j+10):end])
         if ctr.onGPU
             R = CuArray(R)
         end

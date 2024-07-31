@@ -27,7 +27,6 @@ Dcut = 8
 tolV = 1E-16
 tolS = 1E-16
 max_sweeps = 0
-indβ = 1
 ITERS_SVD = 2
 ITERS_VAR = 1
 DTEMP_MULT = 2
@@ -42,7 +41,7 @@ params =
     MpsParameters(Dcut, tolV, max_sweeps, tolS, ITERS_SVD, ITERS_VAR, DTEMP_MULT, METHOD)
 search_params = SearchParameters(MAX_STATES, δp)
 
-Strategy = Zipper  # MPSAnnealing SVDTruncate
+Strategy = Zipper  # SVDTruncate
 Layout = GaugesEnergy
 Gauge = NoUpdate
 cl_states = [2^10]
@@ -83,7 +82,7 @@ for cs ∈ cl_states
             net,
             params;
             onGPU = onGPU,
-            βs = [β / 6, β / 3, β / 2, β],
+            beta = β,
             graduate_truncation = :graduate_truncate,
         )
         sol, schmidts = low_energy_spectrum(ctr, search_params, merge_branches(ctr))

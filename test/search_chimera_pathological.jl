@@ -5,7 +5,7 @@ Layout = $Layout
 Lattice = $Lattice
 transform = $transform
 " for Sparsity ∈ (Dense, Sparse),
-    Strategy ∈ (SVDTruncate, MPSAnnealing, Zipper),
+    Strategy ∈ (SVDTruncate, Zipper),
     Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng),
     Lattice ∈ (SquareSingleNode, KingSingleNode),
     transform ∈ all_lattice_transformations
@@ -126,7 +126,7 @@ transform = $transform
         net,
         params;
         onGPU = onGPU,
-        βs = [β / 8.0, β / 4.0, β / 2.0, β],
+        beta = β,
         graduate_truncation = :graduate_truncate,
     )
     sol, s = low_energy_spectrum(ctr, search_params)

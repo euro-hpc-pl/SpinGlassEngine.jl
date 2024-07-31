@@ -1,11 +1,10 @@
 using SpinGlassEngine
 
 function run_test_square_double_node(instance, m, n, t)
-    β = 2
+    β = 2.0
     bond_dim = 16
     δp = 1e-10
     num_states = 512
-    βs = [β / 16, β / 8, β / 4, β / 2, β]
 
     ig = ising_graph(instance)
 
@@ -25,7 +24,7 @@ function run_test_square_double_node(instance, m, n, t)
     energies = []
     Gauge = NoUpdate
 
-    for Strategy ∈ (SVDTruncate, MPSAnnealing, Zipper), Sparsity ∈ (Dense, Sparse)
+    for Strategy ∈ (SVDTruncate, Zipper), Sparsity ∈ (Dense, Sparse)
         for Layout ∈ (EnergyGauges, GaugesEnergy)
             for tran ∈ all_lattice_transformations
 
@@ -42,14 +41,14 @@ function run_test_square_double_node(instance, m, n, t)
                     net,
                     params;
                     onGPU = onGPU,
-                    βs = βs,
+                    beta = β,
                     graduate_truncation = :graduate_truncate,
                 )
                 ctr2 = MpsContractor{Strategy,Gauge,Float64}(
                     net2,
                     params;
                     onGPU = onGPU,
-                    βs = βs,
+                    beta = β,
                     graduate_truncation = :graduate_truncate,
                 )
 
@@ -76,13 +75,13 @@ function run_test_square_double_node(instance, m, n, t)
                 exct_prob = exp.(-β .* (sol2.energies .- sol2.energies[1]))
                 @test norm_prob ≈ exct_prob
 
-                for ii ∈ 1:ctr.peps.nrows+1, jj ∈ 1:length(βs)
-                    ψ1, ψ2 = mps(ctr, ii, jj), mps(ctr2, ii, jj)
+                for ii ∈ 1:ctr.peps.nrows+1
+                    ψ1, ψ2 = mps(ctr, ii), mps(ctr2, ii)
                     o = ψ1 * ψ2 / sqrt((ψ1 * ψ1) * (ψ2 * ψ2))
                     @test o ≈ 1.0
                 end
-                for ii ∈ 0:ctr.peps.nrows, jj ∈ 1:length(βs)
-                    ψ1_top, ψ2_top = mps_top(ctr, ii, jj), mps_top(ctr2, ii, jj)
+                for ii ∈ 0:ctr.peps.nrows
+                    ψ1_top, ψ2_top = mps_top(ctr, ii), mps_top(ctr2, ii)
                     o_top = ψ1_top * ψ2_top / sqrt((ψ1_top * ψ1_top) * (ψ2_top * ψ2_top))
                     @test o_top ≈ 1.0
                 end

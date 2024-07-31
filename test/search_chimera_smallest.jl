@@ -31,7 +31,7 @@
                 net,
                 params;
                 onGPU = onGPU,
-                βs = T[β/8, β/4, β/2, β],
+                beta = T(β),
                 graduate_truncation = :graduate_truncate,
             )
             sol, s = low_energy_spectrum(ctr, search_params)

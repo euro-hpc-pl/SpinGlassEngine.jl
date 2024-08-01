@@ -32,9 +32,9 @@ function run_square_diag_bench(::Type{T}; topology::NTuple{3, Int}) where {T}
             onGPU = false, beta = T(2), graduate_truncation = :graduate,
         )
 
-        single = SingleLayerDroplets(; max_energy = 10, min_size = 5, metric = :hamming)
+        droplets = SingleLayerDroplets(; max_energy = 10, min_size = 5, metric = :hamming)
         merge_strategy = merge_branches(
-            ctr; merge_type = :nofit, update_droplets = single,
+            ctr; merge_type = :nofit, update_droplets = droplets,
         )
 
         sol, _ = low_energy_spectrum(ctr, search_params, merge_strategy)

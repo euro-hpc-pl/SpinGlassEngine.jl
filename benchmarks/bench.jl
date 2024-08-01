@@ -18,16 +18,16 @@ MPI.Init()
 size = MPI.Comm_size(MPI.COMM_WORLD)
 rank = MPI.Comm_rank(MPI.COMM_WORLD)
 
-M, N, T = 7, 7, 3
-INSTANCE_DIR = "$(@__DIR__)/../test/instances/pegasus_random/P8/RCO/SpinGlass"
-OUTPUT_DIR = "$(@__DIR__)/results/pegasus_random/P8/RCO/final_bench_float64_beta2"
+M, N, T = 3, 3, 3
+INSTANCE_DIR = "$(@__DIR__)/../test/instances/pegasus_random/P4/RCO/SpinGlass"
+OUTPUT_DIR = "$(@__DIR__)/results/pegasus_random/P4/RCO/final_bench_float32_betas_tr2^20"
 if !Base.Filesystem.isdir(OUTPUT_DIR)
     Base.Filesystem.mkpath(OUTPUT_DIR)
 end
-BETAS =  [2.0,] #collect(0.5:0.5:3)
+BETAS =  [0.25,0.5, 1.0, 2.0, 5.0, 10.0] #collect(0.5:0.5:3)
 LAYOUT = (GaugesEnergy,)
-TRANSFORM = all_lattice_transformations
-TT = Float64
+TRANSFORM = [all_lattice_transformations[1],]
+TT = Float32
 GAUGE =  NoUpdate
 STRATEGY = Zipper #SVDTruncate
 SPARSITY = Sparse
@@ -36,7 +36,11 @@ graduate_truncation = :graduate
 MAX_STATES = 1024
 BOND_DIM = 8
 DE = 16.0
+cs=2^20
+iter = 2
 
+RESULTS_FOLDER = "$(@__DIR__)/../test/instances/pegasus_random/P4/RCO/BP"
+inst="001"
 MAX_SWEEPS = 0
 VAR_TOL = 1E-16
 TOL_SVD = 1E-16
@@ -55,6 +59,8 @@ function pegasus_sim(inst, trans, β, Layout)
         spectrum=full_spectrum,
         cluster_assignment_rule=pegasus_lattice((M, N, T))
     )
+    potts_h = truncate_potts_hamiltonian(potts_h, β, cs, RESULTS_FOLDER, inst; tol=1e-6, iter=iter)
+
     # params = MpsParameters{TT}(;bond_dim=BOND_DIM, var_tol=TT(VAR_TOL), num_sweeps=MAX_SWEEPS, tol_SVD=TT(TOL_SVD), iters_SVD=ITERS_SVD, iters_var=ITERS_VAR, Dtemp_multiplier=DTEMP_MULT, method=METHOD)
     params = MpsParameters{TT}(; bond_dim=BOND_DIM, var_tol=TT(VAR_TOL), num_sweeps=MAX_SWEEPS)
 
@@ -90,6 +96,7 @@ function run_bench(inst::String, β::Real, t, l)
                 :statistic => minimum(values(ctr.statistics)),
                 :max_states => MAX_STATES,
                 :bond_dim => BOND_DIM,
+                :cs => cs,
                 :de => DE,
                 :max_sweeps => MAX_SWEEPS,
                 :var_tol => VAR_TOL,

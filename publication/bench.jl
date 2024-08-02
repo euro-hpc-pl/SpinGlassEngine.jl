@@ -20,7 +20,7 @@ function run_square_diag_bench(::Type{T}; topology::NTuple{3, Int}) where {T}
     )
 
     params = MpsParameters{T}(; bond_dim = 16, num_sweeps = 1)
-    search_params = SearchParameters(; max_states = 2^8, cut_off_prob = 1E-4)
+    search_params = SearchParameters(; max_states = 2^8, cutoff_prob = 1E-4)
 
     for transform ∈ all_lattice_transformations
         net = PEPSNetwork{KingSingleNode{GaugesEnergy}, Dense, T}(
@@ -29,25 +29,25 @@ function run_square_diag_bench(::Type{T}; topology::NTuple{3, Int}) where {T}
 
         ctr = MpsContractor{SVDTruncate, NoUpdate, T}(
             net, params; 
-            onGPU = false, beta = T(2), graduate_truncation = :graduate,
+            onGPU = false, beta = T(2), graduate_truncation = true,
         )
 
         droplets = SingleLayerDroplets(; max_energy = 10, min_size = 5, metric = :hamming)
         merge_strategy = merge_branches(
-            ctr; merge_type = :nofit, update_droplets = droplets,
+            ctr; merge_prob = :none , droplets_encoding = droplets,
         )
 
-        sol, _ = low_energy_spectrum(ctr, search_params, merge_strategy)
+        sol, info = low_energy_spectrum(ctr, search_params, merge_strategy)
 
         push!(best_energies, sol.energies[1])
         clear_memoize_cache()
     end
 
-    ground = best_energies[1]
+    ground = minimum(best_energies)
     @assert all(ground .≈ best_energies)
 
     println("Best energy found: $(ground)")
 end
 
-T = Float64
+T = Float32
 @time run_square_diag_bench(T; topology = (3, 3, 2))

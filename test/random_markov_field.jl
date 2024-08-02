@@ -8,9 +8,9 @@
     potts_h = potts_hamiltonian(instance_dir)
     Nx, Ny = get_prop(potts_h, :Nx), get_prop(potts_h, :Ny)
     params = MpsParameters{Float64}(; bond_dim = bond_dim, var_tol = 1E-8, num_sweeps = 4)
-    search_params = SearchParameters(; max_states = num_states, cut_off_prob = δp)
+    search_params = SearchParameters(; max_states = num_states, cutoff_prob = δp)
     Gauge = NoUpdate
-    graduate_truncation = :graduate
+    graduate_truncation = true
     energies = Vector{Float64}[]
     Strategy = Zipper
     Layout = GaugesEnergy
@@ -22,7 +22,7 @@
         params;
         onGPU = onGPU,
         beta = β,
-        graduate_truncation = :graduate,
+        graduate_truncation = true,
         mode = :RMF,
     )
     sol_peps, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))

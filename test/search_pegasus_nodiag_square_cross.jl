@@ -20,7 +20,7 @@ function bench(instance::String)
         cluster_assignment_rule = super_square_lattice((m, n, t)),
     )
     params = MpsParameters{Float64}(; bond_dim = bond_dim, var_tol = 1E-8, num_sweeps = 4)
-    search_params = SearchParameters(; max_states = num_states, cut_off_prob = δp)
+    search_params = SearchParameters(; max_states = num_states, cutoff_prob = δp)
 
     # Solve using PEPS search
     energies = Vector{Float64}[]
@@ -39,7 +39,7 @@ function bench(instance::String)
                 params;
                 onGPU = onGPU,
                 beta = β,
-                graduate_truncation = :graduate,
+                graduate_truncation = true,
             )
             sol_peps, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
             push!(energies, sol_peps.energies)

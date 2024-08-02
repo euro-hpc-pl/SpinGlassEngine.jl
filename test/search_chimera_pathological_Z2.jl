@@ -104,7 +104,7 @@
         cluster_assignment_rule = super_square_lattice((m, n, t)),
     )
     params = MpsParameters{Float64}(; bond_dim = bond_dim, var_tol = 1E-8, num_sweeps = 4)
-    search_params = SearchParameters(; max_states = num_states, cut_off_prob = 0.0)
+    search_params = SearchParameters(; max_states = num_states, cutoff_prob = 0.0)
     Gauge = NoUpdate
 
     energies = Vector{Float64}[]
@@ -124,15 +124,15 @@
                     params;
                     onGPU = onGPU,
                     beta = β,
-                    graduate_truncation = :graduate,
+                    graduate_truncation = true,
                 )
                 sol1, s = low_energy_spectrum(
                     ctr,
                     search_params,
                     merge_branches(
                         ctr;
-                        merge_type = :nofit,
-                        update_droplets = SingleLayerDroplets(; max_energy=10.0, min_size=0, metric=:hamming),
+                        merge_prob = :none ,
+                        droplets_encoding = SingleLayerDroplets(; max_energy=10.0, min_size=0, metric=:hamming),
                     ),
                     :Z2,
                 )

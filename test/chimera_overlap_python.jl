@@ -25,7 +25,7 @@ potts_h = potts_hamiltonian(
 )
 
 params = MpsParameters{Float64}(; bond_dim = bond_dim, var_tol = 1E-8, num_sweeps = 4)
-search_params = SearchParameters(; max_states = num_states, cut_off_prob = δp)
+search_params = SearchParameters(; max_states = num_states, cutoff_prob = δp)
 
 Strategy = SVDTruncate
 Gauge = NoUpdate
@@ -45,7 +45,7 @@ Gauge = NoUpdate
         params;
         onGPU = onGPU,
         beta = β,
-        graduate_truncation = :graduate,
+        graduate_truncation = true,
     )
     @testset "Compare the results with Python" begin
         overlap_python = [0.2637787707674837, 0.2501621729619047, 0.2951954406837012]
@@ -76,7 +76,7 @@ end
         params;
         onGPU = onGPU,
         beta = β,
-        graduate_truncation = :graduate,
+        graduate_truncation = true,
     )
     for i = 1:n-1
         psi_top = mps_top(ctr, i)

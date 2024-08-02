@@ -23,8 +23,8 @@ end
         cluster_assignment_rule = pegasus_lattice((m, n, t)),
     )
 
-    params = MpsParameters{Float64}(BOND_DIM, VAR_TOL, MAX_SWEEPS, TOL_SVD)
-    search_params = SearchParameters(MAX_STATES, δp)
+    params = MpsParameters{Float64}(;bond_dim=BOND_DIM, var_tol=VAR_TOL, num_sweeps=MAX_SWEEPS, tol_SVD=TOL_SVD)
+    search_params = SearchParameters(;max_states=MAX_STATES, cutoff_prob=δp)
     Gauge = GaugeStrategy
     Strategy = Zipper
     Sparsity = Sparse
@@ -44,16 +44,16 @@ end
             params;
             onGPU = onGPU,
             beta = β,
-            graduate_truncation = :graduate,
+            graduate_truncation = true,
         )
         update_gauges!(ctr, m, Val(:up))
         sol, s = low_energy_spectrum(ctr, search_params)
         #sol = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
 
         ig_states = decode_potts_hamiltonian_state.(Ref(potts_h), sol.states)
-        @test sol.energies ≈ energy.(Ref(ig), ig_states)
+        @test sol.energies ≈ SpinGlassNetworks.energy.(Ref(ig), ig_states)
         potts_h_states = decode_state.(Ref(net), sol.states)
-        @test sol.energies ≈ energy.(Ref(potts_h), potts_h_states)
+        @test sol.energies ≈ SpinGlassNetworks.energy.(Ref(potts_h), potts_h_states)
 
         norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
         # println( maximum(abs.(norm_prob ./ exp.(-β .* (sol.energies .- sol.energies[1]))) .- 1 ))

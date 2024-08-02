@@ -21,7 +21,7 @@ function run_test_squarecross_double_node(instance, m, n, t)
     )
 
     params = MpsParameters{Float64}(; bond_dim = bond_dim, var_tol = 1E-8, num_sweeps = 4)
-    search_params = SearchParameters(; max_states = num_states, cut_off_prob = δp)
+    search_params = SearchParameters(; max_states = num_states, cutoff_prob = δp)
     energies = []
     Gauge = NoUpdate
 
@@ -47,14 +47,14 @@ function run_test_squarecross_double_node(instance, m, n, t)
                     params;
                     onGPU = onGPU,
                     beta = β,
-                    graduate_truncation = :graduate,
+                    graduate_truncation = true,
                 )
                 ctr2 = MpsContractor{Strategy,Gauge,Float64}(
                     net2,
                     params;
                     onGPU = onGPU,
                     beta = β,
-                    graduate_truncation = :graduate,
+                    graduate_truncation = true,
                 )
 
                 sol, s = low_energy_spectrum(ctr, search_params) #, merge_branches(ctr))

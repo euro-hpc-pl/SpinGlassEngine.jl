@@ -24,7 +24,7 @@ function bench(instance::String)
         cluster_assignment_rule = super_square_lattice((m, n, t)),
     )
     params = MpsParameters{Float64}(; bond_dim = bond_dim, var_tol = 1E-8, num_sweeps = 4, tol_SVD = 1E-16)
-    search_params = SearchParameters(; max_states = num_states, cut_off_prob = δp)
+    search_params = SearchParameters(; max_states = num_states, cutoff_prob = δp)
 
     energies = Vector{Float64}[]
     for Strategy ∈ (Zipper,), Sparsity ∈ (Dense,)
@@ -41,15 +41,15 @@ function bench(instance::String)
                     params;
                     onGPU = onGPU,
                     beta = β,
-                    graduate_truncation = :graduate,
+                    graduate_truncation = true,
                 )
                 sol1, s = low_energy_spectrum(
                     ctr,
                     search_params,
                     merge_branches(
                         ctr;
-                        merge_type = :nofit,
-                        update_droplets = SingleLayerDroplets(; max_energy=1, min_size=1000, metric=:hamming),
+                        merge_prob = :none ,
+                        droplets_encoding = SingleLayerDroplets(; max_energy=1, min_size=1000, metric=:hamming),
                     ),
                 )
 

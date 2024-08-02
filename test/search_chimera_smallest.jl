@@ -16,7 +16,7 @@
         cluster_assignment_rule = super_square_lattice((m, n, t)),
     )
 
-    search_params = SearchParameters(; max_states = num_states, cut_off_prob = 0.0)
+    search_params = SearchParameters(; max_states = num_states, cutoff_prob = 0.0)
     Gauge = NoUpdate
     for T in [Float32, Float64]
         energies = Vector{T}[]
@@ -32,7 +32,7 @@
                 params;
                 onGPU = onGPU,
                 beta = T(β),
-                graduate_truncation = :graduate,
+                graduate_truncation = true,
             )
             sol, s = low_energy_spectrum(ctr, search_params)
             @test eltype(sol.energies) == T

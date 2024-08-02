@@ -51,7 +51,7 @@ ctr = MpsContractor{Strategy,Gauge,Float64}(
     params;
     onGPU = onGPU,
     beta = β,
-    graduate_truncation = :graduate,
+    graduate_truncation = true,
 )
 Ws = SpinGlassEngine.mpo(ctr, ctr.layers.main, i)
 println(" Ws -> ", which_device(Ws), " ", format_bytes.(measure_memory(Ws)))
@@ -62,7 +62,7 @@ ctr = MpsContractor{Strategy,Gauge,Float64}(
     params;
     onGPU = onGPU,
     beta = β,
-    graduate_truncation = :graduate,
+    graduate_truncation = true,
 )
 Wd = SpinGlassEngine.mpo(ctr, ctr.layers.main, i)
 println(" Wd -> ", which_device(Wd), " ", format_bytes.(measure_memory(Wd)))

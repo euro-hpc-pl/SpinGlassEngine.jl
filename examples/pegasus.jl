@@ -25,7 +25,7 @@ function bench(instance::String, β::Real, bond_dim::Integer, num_states::Intege
     )
 
     params = MpsParameters{Float64}(; bond_dim = bond_dim, var_tol = 1E-8, num_sweeps = 4, tol_SVD = 1E-16)
-    search_params = SearchParameters(; max_states = num_states, cut_off_prob = δp)
+    search_params = SearchParameters(; max_states = num_states, cutoff_prob = δp)
     Strategy = Zipper
     Sparsity = Sparse
     Layout = GaugesEnergy
@@ -36,7 +36,7 @@ function bench(instance::String, β::Real, bond_dim::Integer, num_states::Intege
         net,
         params;
         beta = β,
-        graduate_truncation = :graduate,
+        graduate_truncation = true,
         onGPU = onGPU,
     )
 

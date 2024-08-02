@@ -42,7 +42,7 @@ for T in [Float64, Float32]
         num_sweeps = MAX_SWEEPS,
         tol_SVD = T(TOL_SVD),
     )
-    search_params = SearchParameters(;max_states=mstates, cut_off_prob=δp)
+    search_params = SearchParameters(;max_states=mstates, cutoff_prob=δp)
 
     net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity,T}(m, n, potts_h, transform)
     ctr = MpsContractor{Strategy,Gauge,T}(
@@ -50,7 +50,7 @@ for T in [Float64, Float32]
         params;
         onGPU = onGPU,
         beta = T(β),
-        graduate_truncation = :graduate,
+        graduate_truncation = true,
     )
     sol, s = low_energy_spectrum(ctr, search_params)
     @test eltype(sol.energies) == T

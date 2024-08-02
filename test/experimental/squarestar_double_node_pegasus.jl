@@ -315,15 +315,15 @@ for tran ∈ all_lattice_transformations #[LatticeTransformation((1, 2, 3, 4), f
         params;
         onGPU = onGPU,
         beta = β,
-        graduate_truncation = :graduate,
+        graduate_truncation = true,
     )
     sol, s = low_energy_spectrum(
         ctr,
         search_params,
         merge_branches(
             ctr;
-            merge_type = :nofit,
-            update_droplets = SingleLayerDroplets(; max_energy=eng, min_size=hamming_dist, metric=:hamming),
+            merge_prob = :none ,
+            droplets_encoding = SingleLayerDroplets(; max_energy=eng, min_size=hamming_dist, metric=:hamming),
         ),
     )
     println(sol.energies)

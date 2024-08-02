@@ -41,7 +41,7 @@ ctr = MpsContractor{Strategy,Gauge,Float64}(
     params;
     onGPU = onGPU,
     beta = β,
-    graduate_truncation = :graduate,
+    graduate_truncation = true,
 )
 sol = gibbs_sampling(ctr, search_params)
 

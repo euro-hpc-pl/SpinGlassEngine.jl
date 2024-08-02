@@ -16,7 +16,7 @@
         cluster_assignment_rule = super_square_lattice((m, n, t)),
     )
     params = MpsParameters{Float64}(; bond_dim = bond_dim, var_tol = 1E-8, num_sweeps = 4)
-    search_params = SearchParameters(; max_states = num_states, cut_off_prob = 0.0)
+    search_params = SearchParameters(; max_states = num_states, cutoff_prob = 0.0)
     Gauge = NoUpdate
 
     energies = Vector{Float64}[]
@@ -29,7 +29,7 @@
                     params;
                     onGPU = onGPU,
                     beta = β,
-                    graduate_truncation = :graduate,
+                    graduate_truncation = true,
                 )
                 sol, s = low_energy_spectrum(ctr, search_params)
 

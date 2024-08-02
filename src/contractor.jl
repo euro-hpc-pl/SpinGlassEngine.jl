@@ -131,7 +131,7 @@ A mutable struct representing a contractor for contracting a PEPS (Projected Ent
 # Fields
 - `peps::PEPSNetwork{T, S}`: The PEPS network to be contracted.
 - `betas::Vector{<:Real}`: A vector of inverse temperatures (β) used during the search. The last one is the target one. This parameter plays a crucial role: a larger β enables a finer focus on low-energy states, although it may compromise the numerical stability of tensor network contraction. Determining the optimal β could be instance-dependent, and experimental exploration might be necessary for different classes of instances.
-- `graduate_truncation::Symbol`: The truncation method to use for gradually truncating MPS bond dimensions.
+- `graduate_truncation::Bool`: The truncation method to use for gradually truncating MPS bond dimensions.
 - `params::MpsParameters`: Control parameters for the MPO-MPS contraction.
 
 # Optional Arguments
@@ -145,7 +145,7 @@ mutable struct MpsContractor{T<:AbstractStrategy,R<:AbstractGauge,S<:Real} <:
                AbstractContractor
     peps::PEPSNetwork{T} where {T}
     beta::S
-    graduate_truncation::Symbol
+    graduate_truncation::Bool
     depth::Int
     params::MpsParameters{S}
     layers::MpoLayers
@@ -160,7 +160,7 @@ mutable struct MpsContractor{T<:AbstractStrategy,R<:AbstractGauge,S<:Real} <:
         net,
         params;
         beta::S,
-        graduate_truncation::Symbol,
+        graduate_truncation::Bool,
         onGPU = true,
         depth::Int = 0,
     ) where {T,R,S}
@@ -262,7 +262,7 @@ This function constructs the top MPS using SVD for a given row in the PEPS netwo
     ψ0 = dot(W, ψ)
 
     canonise!(ψ0, :right)
-    if ctr.graduate_truncation == :graduate
+    if ctr.graduate_truncation
         canonise_truncate!(ψ0, :left, Dcut * 2, tolS / 2)
         variational_sweep!(ψ0, W, ψ, Val(:right))
     end
@@ -304,7 +304,7 @@ This function constructs the (bottom) MPS using SVD for a given row in the PEPS 
 
     ψ0 = dot(W, ψ)
     canonise!(ψ0, :right)
-    if ctr.graduate_truncation == :graduate
+    if ctr.graduate_truncation
         canonise_truncate!(ψ0, :left, Dcut * 2, tolS / 2)
         variational_sweep!(ψ0, W, ψ, Val(:right))
     end

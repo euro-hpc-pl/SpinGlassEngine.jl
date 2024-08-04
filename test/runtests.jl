@@ -37,7 +37,6 @@ push!(
     "search_chimera_droplets.jl",
     "search_pegasus_droplets.jl",
     "search_chimera_pathological_Z2.jl",
-    "mwe.jl",
 
     # time consuming tests:
     #    "search_chimera_full.jl",

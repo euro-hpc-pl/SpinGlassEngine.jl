@@ -117,8 +117,8 @@ end
         cluster_assignment_rule = super_square_lattice((m, n, t)),
     )
 
-    params = MpsParameters{Float64}(; bd = bond_dim, ϵ = 1E-8, sw = 4)
-    search_params = SearchParameters(; max_states = num_states, cut_off_prob = 0.0)
+    params = MpsParameters{Float64}(; bond_dim = bond_dim, var_tol = 1E-8, num_sweeps = 4)
+    search_params = SearchParameters(; max_states = num_states, cutoff_prob = 0.0)
     Gauge = NoUpdate
 
     energies = Vector{Float64}[]
@@ -137,8 +137,8 @@ end
                     net,
                     params;
                     onGPU = onGPU,
-                    βs = [β / 8.0, β / 4.0, β / 2.0, β],
-                    graduate_truncation = :graduate_truncate,
+                    beta = β,
+                    graduate_truncation = true,
                 )
                 sol1, s = low_energy_spectrum(
                     ctr,
@@ -146,8 +146,8 @@ end
                     merge_branches_blur(
                         ctr,
                         hamming_dist,
-                        :nofit,
-                        SingleLayerDroplets(1.01, 10, :hamming),
+                        :none ,
+                        SingleLayerDroplets(; max_energy=1.01, min_size=10, metric=:hamming),
                     ),
                 )
                 @test sol1.energies ≈ [exact_energies[1]]

@@ -31,14 +31,13 @@ search_params = SearchParameters(num_states, δp)
 #     for Sparsity ∈ (Dense, Sparse), transform ∈ all_lattice_transformations[[1]]
 #         for Layout ∈ (GaugesEnergy, EnergyGauges, EngGaugesEng)
 #             net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, potts_h, transform, :id)
-#             ctr_svd = MpsContractor{SVDTruncate, GaugeStrategy}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
-#             ctr_anneal = MpsContractor{MPSAnnealing, GaugeStrategy}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
+#             ctr_svd = MpsContractor{SVDTruncate, GaugeStrategy}(net, [β/8, β/4, β/2, β], true, params; onGPU=onGPU)
+#             ctr_anneal = MpsContractor{MPSAnnealing, GaugeStrategy}(net, [β/8, β/4, β/2, β], true, params; onGPU=onGPU)
 
 #             @testset "Overlaps calculated for different Starategies are the same." begin
-#                 indβ = 3
 #                 for i ∈ 1:m-1
-#                     ψ_top = mps_top(ctr_svd, i, indβ)
-#                     ϕ_top = mps_top(ctr_anneal, i, indβ)
+#                     ψ_top = mps_top(ctr_svd, i)
+#                     ϕ_top = mps_top(ctr_anneal, i)
 #                     @test ψ_top * ψ_top ≈ 1
 #                     @test ϕ_top * ϕ_top ≈ 1
 #                     @test ψ_top * ϕ_top ≈ 1
@@ -49,14 +48,13 @@ search_params = SearchParameters(num_states, δp)
 
 #         for Layout ∈ (GaugesEnergy,)
 #             net = PEPSNetwork{Lattice{Layout}, Sparsity}(m, n, potts_h, transform, :id)
-#             ctr_svd = MpsContractor{SVDTruncate, GaugeStrategy}(net, [β/8, β/4, β/2, β], :graduate_truncate, params; onGPU=onGPU)
+#             ctr_svd = MpsContractor{SVDTruncate, GaugeStrategy}(net, [β/8, β/4, β/2, β], true, params; onGPU=onGPU)
 #             @testset "Overlaps calculated in Python are the same as in Julia." begin
-#                 indβ = [4, ]
 #                 overlap_python = [0.2637787707674837, 0.2501621729619047, 0.2951954406837012]
 
 #                 for i ∈ vcat(1:m-1)#, m-1:-1:1)
-#                     ψ_top = mps_top(ctr_svd, i, indβ[begin])
-#                     ψ_bot = mps(ctr_svd, i+1, indβ[begin])
+#                     ψ_top = mps_top(ctr_svd, i)
+#                     ψ_bot = mps(ctr_svd, i+1)
 #                     overlap1 = ψ_top * ψ_bot
 #                     @test isapprox(overlap1, overlap_python[i], atol=1e-5)
 #                 end
@@ -68,7 +66,7 @@ search_params = SearchParameters(num_states, δp)
 # end
 
 @testset "Updating gauges works correctly." begin
-    for Strategy ∈ (SVDTruncate, MPSAnnealing), Sparsity ∈ (Dense, Sparse)
+    for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, Sparse)
         for Layout ∈ (GaugesEnergy,)
             for Gauge ∈ (GaugeStrategy,)
                 for Lattice ∈ (SquareSingleNode, KingSingleNode),
@@ -85,19 +83,18 @@ search_params = SearchParameters(num_states, δp)
                         net,
                         params;
                         onGPU = onGPU,
-                        βs = [β / 8, β / 4, β / 2, β],
-                        graduate_truncation = :graduate_truncate,
+                        beta = β,
+                        graduate_truncation = true,
                     )
 
                     @testset "Overlaps calculated differently are the same." begin
-                        indβ = 3
                         for i ∈ 1:m-1
 
-                            ψ_top = mps_top(ctr, i, indβ)
-                            ψ_bot = mps(ctr, i + 1, indβ)
+                            ψ_top = mps_top(ctr, i)
+                            ψ_bot = mps(ctr, i + 1)
 
                             try
-                                overlap = tr(overlap_density_matrix(ψ_top, ψ_bot, indβ))
+                                overlap = tr(overlap_density_matrix(ψ_top, ψ_bot, i))
                                 @test overlap ≈ ψ_bot * ψ_top
                             catch
                                 println(Strategy, " ", Sparsity, " ", Lattice, " ", i)
@@ -111,15 +108,14 @@ search_params = SearchParameters(num_states, δp)
                     clear_memoize_cache()
 
                     # @testset "ψ_bot and ψ_top are not updated in place though memoize!" begin
-                    #     indβ = [3,]
                     #     for aba in 1:3, i ∈ 1:m-1
                     #         println(aba," ", i)
-                    #         ψ_top = mps_top(ctr, i, indβ[begin])
-                    #         ψ_bot = mps(ctr, i+1, indβ[begin])
+                    #         ψ_top = mps_top(ctr, i)
+                    #         ψ_bot = mps(ctr, i+1)
 
                     #         overlap_old = ψ_top * ψ_bot
 
-                    #         update_gauges!(ctr, i, indβ, Val(:down))
+                    #         update_gauges!(ctr, i, Val(:down))
 
                     #         # assert that ψ_bot and ψ_top are not updated in place though memoize!
                     #         overlap_old2 = ψ_bot * ψ_top
@@ -133,11 +129,10 @@ search_params = SearchParameters(num_states, δp)
                     # clear_memoize_cache()
 
                     # @testset "Updating gauges from top and bottom gives the same energy." begin
-                    #     indβ = [3,]
-                    #     update_gauges!(ctr, m, indβ, Val(:down))
+                    #     update_gauges!(ctr, m, Val(:down))
                     #     sol_l, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
                     #     clear_memoize_cache()
-                    #     update_gauges!(ctr, m, indβ, Val(:up))
+                    #     update_gauges!(ctr, m, Val(:up))
                     #     sol_r, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr))
                     #     @test sol_l.energies[begin] ≈ sol_r.energies[begin]
                     # end

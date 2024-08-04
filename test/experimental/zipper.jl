@@ -22,15 +22,11 @@ end
 
 m, n, t = 8, 8, 8
 
-β = 1
-Dcut = 8
-
 β = 1.0
 Dcut = 7
 tolV = 0.01
 tolS = 0.0
 max_sweeps = 4
-indβ = 1
 
 ig = ising_graph("$(@__DIR__)/../instances/chimera_droplets/512power/001.txt")
 
@@ -48,17 +44,16 @@ Layout = EnergyGauges
 Gauge = NoUpdate
 
 i = div(m, 2)
-indβ = 1
 
 net = PEPSNetwork{SquareSingleNode{Layout},Sparse,Float64}(m, n, potts_h, tran)
 ctr = MpsContractor{Strategy,Gauge,Float64}(
     net,
     params;
     onGPU = onGPU,
-    βs = [β],
-    graduate_truncation = :graduate_truncate,
+    beta = β,
+    graduate_truncation = true,
 )
-Ws = SpinGlassEngine.mpo(ctr, ctr.layers.main, i, indβ)
+Ws = SpinGlassEngine.mpo(ctr, ctr.layers.main, i)
 println(" Ws -> ", which_device(Ws), " ", format_bytes.(measure_memory(Ws)))
 
 net = PEPSNetwork{SquareSingleNode{Layout},Dense,Float64}(m, n, potts_h, tran)
@@ -66,10 +61,10 @@ ctr = MpsContractor{Strategy,Gauge,Float64}(
     net,
     params;
     onGPU = onGPU,
-    βs = [β],
-    graduate_truncation = :graduate_truncate,
+    beta = β,
+    graduate_truncation = true,
 )
-Wd = SpinGlassEngine.mpo(ctr, ctr.layers.main, i, indβ)
+Wd = SpinGlassEngine.mpo(ctr, ctr.layers.main, i)
 println(" Wd -> ", which_device(Wd), " ", format_bytes.(measure_memory(Wd)))
 
 println(

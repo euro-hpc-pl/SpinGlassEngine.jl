@@ -24,7 +24,7 @@ function bench()
 
     #for transform ∈ all_lattice_transformations
     peps = PEPSNetwork(m, n, fg, rotation(0), β = β, bond_dim = 32)
-    kupdate_gauges!(peps, :rand)
+    update_gauges!(peps, :rand)
     @time sol = low_energy_spectrum(peps, num_states)#, merge_branches(peps, 1.0))
     println(sol.energies[1:1])
 end

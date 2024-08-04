@@ -156,15 +156,15 @@ function conditional_probability(
     ctr::MpsContractor{S},
     ∂v::Vector{Int},
 ) where {T<:SquareDoubleNode,S}
-    indβ, β = length(ctr.betas), last(ctr.betas)
+    β = ctr.beta
     i, j, k = ctr.current_node
 
-    L = left_env(ctr, i, ∂v[1:j-1], indβ)
-    M = dressed_mps(ctr, i, indβ)[j]
+    L = left_env(ctr, i, ∂v[1:j-1])
+    M = dressed_mps(ctr, i)[j]
     @tensor LM[y, z] := L[x] * M[x, y, z]
 
     if k == 1  # here has to avarage over s2
-        R = right_env(ctr, i, ∂v[(j+8):end], indβ)
+        R = right_env(ctr, i, ∂v[(j+8):end])
         if ctr.onGPU
             R = CuArray(R)
         end
@@ -201,7 +201,7 @@ function conditional_probability(
 
         probs = dropdims(sum(Array(LR) .* ele, dims = 2), dims = 2)
     else  # k == 2 ; here s1 is fixed
-        R = right_env(ctr, i, ∂v[(j+7):end], indβ)
+        R = right_env(ctr, i, ∂v[(j+7):end])
         if ctr.onGPU
             R = CuArray(R)
         end

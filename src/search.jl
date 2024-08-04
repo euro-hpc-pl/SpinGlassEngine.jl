@@ -21,16 +21,16 @@ A struct representing search parameters for low-energy spectrum search.
 
 ## Fields
 - `max_states::Int`: The maximum number of states to be considered during the search. Default is 1, indicating a single state search.
-- `cut_off_prob::Real`: The cutoff probability for terminating the search. Default is 0.0, meaning no cutoff based on probability.
+- `cutoff_prob::Real`: The cutoff probability for terminating the search. Default is 0.0, meaning no cutoff based on probability.
 
 SearchParameters encapsulates parameters that control the behavior of low-energy spectrum search algorithms in the SpinGlassPEPS package.
 """
 struct SearchParameters
     max_states::Int
-    cut_off_prob::Real
+    cutoff_prob::Real
 
-    function SearchParameters(; max_states::Int = 1, cut_off_prob::Real = 0.0)
-        new(max_states, cut_off_prob)
+    function SearchParameters(; max_states::Int = 1, cutoff_prob::Real = 0.0)
+        new(max_states, cutoff_prob)
     end
 end
 
@@ -78,7 +78,7 @@ An empty `Solution` object with default field values, ready to store search resu
     fill(Vector{Int}[], n),
     zeros(T, n),
     ones(Int, n),
-    -Inf,
+    T(-Inf),
     repeat([NoDroplets()], n),
     fill(Vector{Int}[], n),
 )
@@ -214,20 +214,20 @@ Discards low-probability states from the given solution.
 
 ## Arguments
 - `psol::Solution`: The input solution containing states and their probabilities.
-- `cut_off_prob::Real`: The cutoff probability below which states will be discarded.
+- `cutoff_prob::Real`: The cutoff probability below which states will be discarded.
 
 ## Returns
 - `Solution`: A new solution with low-probability states discarded.
 
 ## Description
-This function removes states from the solution `psol` whose probabilities are below the specified `cut_off_prob`. 
-It calculates a cutoff probability (`pcut`) based on the maximum probability in `psol` and the provided `cut_off_prob`. 
+This function removes states from the solution `psol` whose probabilities are below the specified `cutoff_prob`. 
+It calculates a cutoff probability (`pcut`) based on the maximum probability in `psol` and the provided `cutoff_prob`. 
 States with probabilities lower than `pcut` are considered discarded.
 The largest discarded probability (`ldp`) in the resulting solution is updated based on the 
 maximum discarded probability among the removed states and the existing `ldp` in `psol`.
 """
-function discard_probabilities!(psol::Solution, cut_off_prob::Real)
-    pcut = maximum(psol.probabilities) + log(cut_off_prob)
+function discard_probabilities!(psol::Solution, cutoff_prob::Real)
+    pcut = maximum(psol.probabilities) + log(cutoff_prob)
     if minimum(psol.probabilities) >= pcut
         return psol
     end
@@ -291,14 +291,14 @@ end
 $(TYPEDSIGNATURES)
 Merge branches of a contractor based on specified merge type and droplet update strategy.
 
-This function merges branches of a contractor (`ctr`) based on a specified merge type (`merge_type`)
-and an optional droplet update strategy (`update_droplets`).
+This function merges branches of a contractor (`ctr`) based on a specified merge type (`merge_prob`)
+and an optional droplet update strategy (`droplets_encoding`).
 It returns a function `_merge` that can be used to merge branches in a solution.
 
 ## Arguments
 - `ctr::MpsContractor{T}`: A contractor for which branches will be merged.
-- `merge_type::Symbol=:nofit`: (Optional) The merge type to use. Defaults to `:nofit`. Possible values are `:nofit`, `:fit`, and `:python`.
-- `update_droplets=NoDroplets()`: (Optional) The droplet update strategy. Defaults to `NoDroplets()`. You can provide a custom droplet update strategy if needed.
+- `merge_prob::Symbol=:none `: (Optional) The merge type to use. Defaults to `:none `. Possible values are `:none `, `:median`, and `:tnac4o`.
+- `droplets_encoding=NoDroplets()`: (Optional) The droplet update strategy. Defaults to `NoDroplets()`. You can provide a custom droplet update strategy if needed.
 
 ## Returns
 A function `_merge` that can be used to merge branches in a solution.
@@ -308,8 +308,8 @@ The `_merge` function can be applied to a `Solution` object to merge its branche
 """
 function merge_branches(
     ctr::MpsContractor{T};
-    merge_type::Symbol = :nofit,
-    update_droplets = NoDroplets(),
+    merge_prob::Symbol = :none ,
+    droplets_encoding = NoDroplets(),
 ) where {T}
     function _merge(psol::Solution)
         node = get(ctr.nodes_search_order, length(psol.states[1]) + 1, ctr.node_outside)
@@ -344,22 +344,22 @@ function merge_branches(
                 end
             end
 
-            if merge_type == :fit
+            if merge_prob == :median
                 c = Statistics.median(
-                    ctr.betas[end] .* nsol.energies[start:stop] .+
+                    ctr.beta .* nsol.energies[start:stop] .+
                     nsol.probabilities[start:stop],
                 )
-                new_prob = -ctr.betas[end] .* nsol.energies[best_idx] .+ c
+                new_prob = -ctr.beta .* nsol.energies[best_idx] .+ c
                 push!(probs, new_prob)
-            elseif merge_type == :nofit
+            elseif merge_prob == :none 
                 push!(probs, nsol.probabilities[best_idx])
-            elseif merge_type == :python
+            elseif merge_prob == :tnac4o
                 push!(probs, Statistics.mean(nsol.probabilities[ind_deg]))
             end
 
             ## states with unique boundary => we take the one with best energy
             ## treat other states with the same boundary as droplets on top of the best one
-            excitation = update_droplets(
+            excitation = droplets_encoding(
                 ctr,
                 best_idx_bnd,
                 nsol.energies[start:stop],
@@ -395,8 +395,8 @@ Generate a function for merging branches in a Gibbs network with a Hamming dista
 ## Arguments
 - `ctr::MpsContractor{T}`: The contractor representing the contracted Gibbs network.
 - `hamming_cutoff::Int`: The Hamming distance cutoff for blur.
-- `merge_type::Symbol=:nofit`: The merging strategy, defaults to `:nofit`.
-- `update_droplets=NoDroplets()`: Droplet update method, defaults to `NoDroplets()`.
+- `merge_prob::Symbol=:none `: The merging strategy, defaults to `:none `.
+- `droplets_encoding=NoDroplets()`: Droplet update method, defaults to `NoDroplets()`.
     
 ## Returns
 A function `_merge_blur` that can be used to merge branches with Hamming distance blur in a solution.
@@ -411,12 +411,12 @@ States with Hamming distances greater than or equal to the specified cutoff are 
 function merge_branches_blur(
     ctr::MpsContractor{T},
     hamming_cutoff::Int,
-    merge_type::Symbol = :nofit,
-    update_droplets = NoDroplets(),
+    merge_prob::Symbol = :none ,
+    droplets_encoding = NoDroplets(),
 ) where {T}
     function _merge_blur(psol::Solution)
         psol =
-            merge_branches(ctr; merge_type = merge_type, update_droplets = update_droplets)(
+            merge_branches(ctr; merge_prob = merge_prob, droplets_encoding = droplets_encoding)(
                 psol,
             )
         node = get(ctr.nodes_search_order, length(psol.states[1]) + 1, ctr.node_outside)
@@ -562,13 +562,13 @@ function low_energy_spectrum(
 
     schmidts = Dict()
     @showprogress "Preprocessing: " for i ∈ ctr.peps.nrows+1:-1:2
-        ψ0 = mps(ctr, i, length(ctr.betas))
+        ψ0 = mps(ctr, i)
         push!(schmidts, i => measure_spectrum(ψ0))
         clear_memoize_cache_after_row()
         Memoization.empty_cache!(SpinGlassTensors.sparse)
         empty!(ctr.peps.lp, :GPU)
         if i <= ctr.peps.nrows
-            ψ0 = mps(ctr, i + 1, length(ctr.betas))
+            ψ0 = mps(ctr, i + 1)
             move_to_CPU!(ψ0)
         end
     end
@@ -584,7 +584,7 @@ function low_energy_spectrum(
         push!(s, k => v)
     end
 
-    ψ0 = mps(ctr, 2, length(ctr.betas))
+    ψ0 = mps(ctr, 2)
     move_to_CPU!(ψ0)
 
     # Start branch and bound search
@@ -610,7 +610,7 @@ function low_energy_spectrum(
             sol = Solution(sol, indices_with_even_numbers)
             # end
         end
-        sol = bound_solution(sol, sparams.max_states, sparams.cut_off_prob, merge_strategy)
+        sol = bound_solution(sol, sparams.max_states, sparams.cutoff_prob, merge_strategy)
         Memoization.empty_cache!(precompute_conditional)
         if no_cache
             Memoization.empty_all_caches!()
@@ -692,7 +692,7 @@ function gibbs_sampling(
             clear_memoize_cache_after_row()
         end
         sol = branch_solution(sol, ctr)
-        sol = sampling(sol, sparams.max_states, sparams.cut_off_prob, merge_strategy)
+        sol = sampling(sol, sparams.max_states, sparams.cutoff_prob, merge_strategy)
         Memoization.empty_cache!(precompute_conditional)
         # TODO: clear memoize cache partially
         if no_cache

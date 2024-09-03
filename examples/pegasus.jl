@@ -17,7 +17,6 @@ function bench(instance::String, β::Real, bond_dim::Integer, num_states::Intege
 
     dE = 3.0
     δp = exp(-β * dE)
-    all_betas = [β / 8, β / 4, β / 2, β]
 
     potts_h = potts_hamiltonian(
         ising_graph(instance),
@@ -25,8 +24,8 @@ function bench(instance::String, β::Real, bond_dim::Integer, num_states::Intege
         cluster_assignment_rule = pegasus_lattice((m, n, t)),
     )
 
-    params = MpsParameters{Float64}(; bd = bond_dim, ϵ = 1E-8, sw = 4, ts = 1E-16)
-    search_params = SearchParameters(; max_states = num_states, cut_off_prob = δp)
+    params = MpsParameters{Float64}(; bond_dim = bond_dim, var_tol = 1E-8, num_sweeps = 4, tol_SVD = 1E-16)
+    search_params = SearchParameters(; max_states = num_states, cutoff_prob = δp)
     Strategy = Zipper
     Sparsity = Sparse
     Layout = GaugesEnergy
@@ -36,8 +35,8 @@ function bench(instance::String, β::Real, bond_dim::Integer, num_states::Intege
     ctr = MpsContractor{Strategy,Gauge,Float64}(
         net,
         params;
-        βs = all_betas,
-        graduate_truncation = :graduate_truncate,
+        beta = β,
+        graduate_truncation = true,
         onGPU = onGPU,
     )
 

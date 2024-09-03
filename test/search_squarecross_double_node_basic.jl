@@ -2,7 +2,7 @@ using SpinGlassEngine
 using Test
 
 function run_test_squarecross_double_node(instance, m, n, t)
-    β = 2
+    β = 2.0
     bond_dim = 16
     δp = 1e-10
     num_states = 512
@@ -20,13 +20,12 @@ function run_test_squarecross_double_node(instance, m, n, t)
         cluster_assignment_rule = super_square_lattice((m, n, 8)),
     )
 
-    params = MpsParameters{Float64}(; bd = bond_dim, ϵ = 1E-8, sw = 4)
-    search_params = SearchParameters(; max_states = num_states, cut_off_prob = δp)
+    params = MpsParameters{Float64}(; bond_dim = bond_dim, var_tol = 1E-8, num_sweeps = 4)
+    search_params = SearchParameters(; max_states = num_states, cutoff_prob = δp)
     energies = []
     Gauge = NoUpdate
-    βs = [β / 16, β / 8, β / 4, β / 2, β]
 
-    for Strategy ∈ (SVDTruncate, MPSAnnealing, Zipper), Sparsity ∈ (Sparse,)
+    for Strategy ∈ (SVDTruncate, Zipper), Sparsity ∈ (Sparse,)
         for Layout ∈ (EnergyGauges, GaugesEnergy)
             for tran ∈ all_lattice_transformations
 
@@ -47,15 +46,15 @@ function run_test_squarecross_double_node(instance, m, n, t)
                     net,
                     params;
                     onGPU = onGPU,
-                    βs = βs,
-                    graduate_truncation = :graduate_truncate,
+                    beta = β,
+                    graduate_truncation = true,
                 )
                 ctr2 = MpsContractor{Strategy,Gauge,Float64}(
                     net2,
                     params;
                     onGPU = onGPU,
-                    βs = βs,
-                    graduate_truncation = :graduate_truncate,
+                    beta = β,
+                    graduate_truncation = true,
                 )
 
                 sol, s = low_energy_spectrum(ctr, search_params) #, merge_branches(ctr))
@@ -80,13 +79,13 @@ function run_test_squarecross_double_node(instance, m, n, t)
                 exct_prob = exp.(-β .* (sol2.energies .- sol2.energies[1]))
                 @test norm_prob ≈ exct_prob
 
-                for ii ∈ 1:ctr.peps.nrows+1, jj ∈ 1:length(βs)
-                    ψ1, ψ2 = mps(ctr, ii, jj), mps(ctr2, ii, jj)
+                for ii ∈ 1:ctr.peps.nrows+1
+                    ψ1, ψ2 = mps(ctr, ii), mps(ctr2, ii)
                     o = ψ1 * ψ2 / sqrt((ψ1 * ψ1) * (ψ2 * ψ2))
                     @test o ≈ 1.0
                 end
-                for ii ∈ 0:ctr.peps.nrows, jj ∈ 1:length(βs)
-                    ψ1_top, ψ2_top = mps_top(ctr, ii, jj), mps_top(ctr2, ii, jj)
+                for ii ∈ 0:ctr.peps.nrows
+                    ψ1_top, ψ2_top = mps_top(ctr, ii), mps_top(ctr2, ii)
                     o_top = ψ1_top * ψ2_top / sqrt((ψ1_top * ψ1_top) * (ψ2_top * ψ2_top))
                     @test o_top ≈ 1.0
                 end

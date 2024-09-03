@@ -16,7 +16,6 @@ function bench(instance::String)
     dE = 3.0
     δp = exp(-β * dE)
     num_states = 500
-    all_betas = [β / 8, β / 4, β / 2, β]
 
     potts_h = potts_hamiltonian(
         ising_graph(instance),
@@ -24,8 +23,8 @@ function bench(instance::String)
         spectrum = my_brute_force,
         cluster_assignment_rule = super_square_lattice((m, n, t)),
     )
-    params = MpsParameters{Float64}(; bd = bond_dim, ϵ = 1E-8, sw = 4, ts = 1E-16)
-    search_params = SearchParameters(; max_states = num_states, cut_off_prob = δp)
+    params = MpsParameters{Float64}(; bond_dim = bond_dim, var_tol = 1E-8, num_sweeps = 4, tol_SVD = 1E-16)
+    search_params = SearchParameters(; max_states = num_states, cutoff_prob = δp)
 
     energies = Vector{Float64}[]
     for Strategy ∈ (Zipper,), Sparsity ∈ (Dense,)
@@ -41,16 +40,16 @@ function bench(instance::String)
                     net,
                     params;
                     onGPU = onGPU,
-                    βs = all_betas,
-                    graduate_truncation = :graduate_truncate,
+                    beta = β,
+                    graduate_truncation = true,
                 )
                 sol1, s = low_energy_spectrum(
                     ctr,
                     search_params,
                     merge_branches(
                         ctr;
-                        merge_type = :nofit,
-                        update_droplets = SingleLayerDroplets(1.0, 1000, :hamming),
+                        merge_prob = :none ,
+                        droplets_encoding = SingleLayerDroplets(; max_energy=1, min_size=1000, metric=:hamming),
                     ),
                 )
 

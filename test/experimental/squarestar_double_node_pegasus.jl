@@ -303,7 +303,7 @@ params =
     MpsParameters{Float64}(bond_dim, VAR_TOL, MS, TOL_SVD, ITERS_SVD, ITERS_VAR, DTEMP_MULT)
 search_params = SearchParameters(num_states, δp)
 energies = Vector{Float64}[]
-Strategy = Zipper # MPSAnnealing # SVDTruncate
+Strategy = Zipper # SVDTruncate
 Sparsity = Sparse #Dense
 Layout = GaugesEnergy
 Gauge = NoUpdate
@@ -314,16 +314,16 @@ for tran ∈ all_lattice_transformations #[LatticeTransformation((1, 2, 3, 4), f
         net,
         params;
         onGPU = onGPU,
-        βs = [β / 6, β / 3, β / 2, β],
-        graduate_truncation = :graduate_truncate,
+        beta = β,
+        graduate_truncation = true,
     )
     sol, s = low_energy_spectrum(
         ctr,
         search_params,
         merge_branches(
             ctr;
-            merge_type = :nofit,
-            update_droplets = SingleLayerDroplets(eng, hamming_dist, :hamming),
+            merge_prob = :none ,
+            droplets_encoding = SingleLayerDroplets(; max_energy=eng, min_size=hamming_dist, metric=:hamming),
         ),
     )
     println(sol.energies)

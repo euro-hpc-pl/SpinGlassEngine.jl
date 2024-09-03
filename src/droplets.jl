@@ -40,7 +40,7 @@ struct SingleLayerDroplets
     min_size::Int
     metric::Symbol
     mode::Symbol
-    SingleLayerDroplets(
+    SingleLayerDroplets(;
         max_energy = 1.0,
         min_size = 1,
         metric = :no_metric,

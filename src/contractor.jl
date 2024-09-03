@@ -1,5 +1,4 @@
 export SVDTruncate,
-    MPSAnnealing,
     Zipper,
     MpoLayers,
     MpsParameters,
@@ -35,7 +34,6 @@ abstract type AbstractStrategy end
 abstract type AbstractGauge end
 
 struct SVDTruncate <: AbstractStrategy end
-struct MPSAnnealing <: AbstractStrategy end
 struct Zipper <: AbstractStrategy end
 struct GaugeStrategyWithBalancing <: AbstractGauge end
 struct GaugeStrategy <: AbstractGauge end
@@ -87,15 +85,15 @@ struct MpsParameters{S<:Real}
     method::Symbol
 
     MpsParameters{S}(;
-        bd = typemax(Int),
-        ϵ::S = S(1E-8),
-        sw = 4,
-        ts::S = S(1E-16),
-        is = 1,
-        iv = 1,
-        dm = 2,
-        m = :psvd_sparse,
-    ) where {S} = new(bd, ϵ, sw, ts, is, iv, dm, m)
+        bond_dim = typemax(Int),
+        var_tol::S = S(1E-8),
+        num_sweeps = 4,
+        tol_SVD::S = S(1E-16),
+        iters_svd = 1,
+        iters_var = 1,
+        Dtemp_multiplier = 2,
+        method = :psvd_sparse,
+    ) where {S} = new(bond_dim, var_tol, num_sweeps, tol_SVD, iters_svd, iters_var, Dtemp_multiplier, method)
 end
 
 """
@@ -133,7 +131,7 @@ A mutable struct representing a contractor for contracting a PEPS (Projected Ent
 # Fields
 - `peps::PEPSNetwork{T, S}`: The PEPS network to be contracted.
 - `betas::Vector{<:Real}`: A vector of inverse temperatures (β) used during the search. The last one is the target one. This parameter plays a crucial role: a larger β enables a finer focus on low-energy states, although it may compromise the numerical stability of tensor network contraction. Determining the optimal β could be instance-dependent, and experimental exploration might be necessary for different classes of instances.
-- `graduate_truncation::Symbol`: The truncation method to use for gradually truncating MPS bond dimensions.
+- `graduate_truncation::Bool`: The truncation method to use for gradually truncating MPS bond dimensions.
 - `params::MpsParameters`: Control parameters for the MPO-MPS contraction.
 
 # Optional Arguments
@@ -146,8 +144,8 @@ It encapsulates various components and settings required for the contraction pro
 mutable struct MpsContractor{T<:AbstractStrategy,R<:AbstractGauge,S<:Real} <:
                AbstractContractor
     peps::PEPSNetwork{T} where {T}
-    betas::Vector{S}
-    graduate_truncation::Symbol
+    beta::S
+    graduate_truncation::Bool
     depth::Int
     params::MpsParameters{S}
     layers::MpoLayers
@@ -161,8 +159,8 @@ mutable struct MpsContractor{T<:AbstractStrategy,R<:AbstractGauge,S<:Real} <:
     function MpsContractor{T,R,S}(
         net,
         params;
-        βs::Vector{S},
-        graduate_truncation::Symbol,
+        beta::S,
+        graduate_truncation::Bool,
         onGPU = true,
         depth::Int = 0,
     ) where {T,R,S}
@@ -173,7 +171,7 @@ mutable struct MpsContractor{T<:AbstractStrategy,R<:AbstractGauge,S<:Real} <:
         node = ord[begin]
         new(
             net,
-            βs,
+            beta,
             graduate_truncation,
             depth,
             params,
@@ -208,7 +206,6 @@ Construct and memoize a Matrix Product Operator (MPO) for a given set of layers.
 - `ctr::MpsContractor{T}`: The MpsContractor object representing the PEPS network contraction.
 - `layers::Dict{Site, Sites}`: A dictionary mapping sites to their corresponding layers.
 - `r::Int`: The current row index.
-- `indβ::Int`: The index of the beta values.
 
 # Returns
 - `QMpo`: The constructed MPO for the specified layers.
@@ -219,13 +216,12 @@ This function constructs an MPO by iterating through the specified layers and as
     ctr::MpsContractor{T,R,S},
     layers::Dict{Site,Sites},
     r::Int,
-    indβ::Int,
 ) where {T<:AbstractStrategy,R,S}
     mpo = Dict{Site,MpoTensor{S}}()
     for (site, coordinates) ∈ layers
         lmpo = TensorMap{S}()
         for dr ∈ coordinates
-            ten = tensor(ctr.peps, PEPSNode(r + dr, site), ctr.betas[indβ])
+            ten = tensor(ctr.peps, PEPSNode(r + dr, site), ctr.beta)
             push!(lmpo, dr => ten)
         end
         push!(mpo, site => MpoTensor(lmpo))
@@ -241,7 +237,6 @@ Construct and memoize the top Matrix Product State (MPS) using Singular Value De
 # Arguments
 - `ctr::MpsContractor{SVDTruncate}`: The MpsContractor object representing the PEPS network contraction with SVD truncation.
 - `i::Int`: The current row index.
-- `indβ::Int`: The index of the beta values.
 
 # Returns
 - `QMps`: The constructed top MPS for the specified row.
@@ -251,7 +246,6 @@ This function constructs the top MPS using SVD for a given row in the PEPS netwo
 @memoize Dict function mps_top(
     ctr::MpsContractor{SVDTruncate,R,S},
     i::Int,
-    indβ::Int,
 ) where {R,S}
     Dcut = ctr.params.bond_dimension
     tolV = ctr.params.variational_tol
@@ -259,16 +253,16 @@ This function constructs the top MPS using SVD for a given row in the PEPS netwo
     max_sweeps = ctr.params.max_num_sweeps
 
     if i < 1
-        W = mpo(ctr, ctr.layers.main, 1, indβ)
+        W = mpo(ctr, ctr.layers.main, 1)
         return IdentityQMps(S, local_dims(W, :up); onGPU = ctr.onGPU)
     end
 
-    ψ = mps_top(ctr, i - 1, indβ)
-    W = transpose(mpo(ctr, ctr.layers.main, i, indβ))
+    ψ = mps_top(ctr, i - 1)
+    W = transpose(mpo(ctr, ctr.layers.main, i))
     ψ0 = dot(W, ψ)
 
     canonise!(ψ0, :right)
-    if ctr.graduate_truncation == :graduate_truncate
+    if ctr.graduate_truncation
         canonise_truncate!(ψ0, :left, Dcut * 2, tolS / 2)
         variational_sweep!(ψ0, W, ψ, Val(:right))
     end
@@ -285,7 +279,6 @@ Construct and memoize the (bottom) Matrix Product State (MPS) using Singular Val
 # Arguments
 - `ctr::MpsContractor{SVDTruncate}`: The MpsContractor object representing the PEPS network contraction with SVD truncation.
 - `i::Int`: The current row index.
-- `indβ::Int`: The index of the beta values.
 
 # Returns
 - `QMps`: The constructed (bottom) MPS for the specified row.
@@ -295,7 +288,6 @@ This function constructs the (bottom) MPS using SVD for a given row in the PEPS 
 @memoize Dict function mps(
     ctr::MpsContractor{SVDTruncate,R,S},
     i::Int,
-    indβ::Int,
 ) where {R,S}
     Dcut = ctr.params.bond_dimension
     tolV = ctr.params.variational_tol
@@ -303,16 +295,16 @@ This function constructs the (bottom) MPS using SVD for a given row in the PEPS 
     max_sweeps = ctr.params.max_num_sweeps
 
     if i > ctr.peps.nrows
-        W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
+        W = mpo(ctr, ctr.layers.main, ctr.peps.nrows)
         return IdentityQMps(S, local_dims(W, :down); onGPU = ctr.onGPU)
     end
 
-    ψ = mps(ctr, i + 1, indβ)
-    W = mpo(ctr, ctr.layers.main, i, indβ)
+    ψ = mps(ctr, i + 1)
+    W = mpo(ctr, ctr.layers.main, i)
 
     ψ0 = dot(W, ψ)
     canonise!(ψ0, :right)
-    if ctr.graduate_truncation == :graduate_truncate
+    if ctr.graduate_truncation
         canonise_truncate!(ψ0, :left, Dcut * 2, tolS / 2)
         variational_sweep!(ψ0, W, ψ, Val(:right))
     end
@@ -330,7 +322,6 @@ Construct and memoize the (bottom) Matrix Product State (MPS) approximation usin
 # Arguments
 - `ctr::MpsContractor{SVDTruncate}`: The MpsContractor object representing the PEPS network contraction with SVD truncation.
 - `i::Int`: The current row index.
-- `indβ::Int`: The index of the beta values.
 
 # Returns
 - `QMps`: The constructed (bottom) MPS approximation for the specified row.
@@ -340,14 +331,13 @@ This function constructs the (bottom) MPS approximation using SVD for a given ro
 @memoize Dict function mps_approx(
     ctr::MpsContractor{SVDTruncate,R,S},
     i::Int,
-    indβ::Int,
 ) where {R,S}
     if i > ctr.peps.nrows
-        W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
+        W = mpo(ctr, ctr.layers.main, ctr.peps.nrows)
         return IdentityQMps(S, local_dims(W, :down); onGPU = ctr.onGPU) # F64 for now
     end
 
-    W = mpo(ctr, ctr.layers.main, i, indβ)
+    W = mpo(ctr, ctr.layers.main, i)
     ψ = IdentityQMps(S, local_dims(W, :down); onGPU = ctr.onGPU) # F64 for now
 
     ψ0 = dot(W, ψ)
@@ -374,7 +364,6 @@ Construct and memoize the top Matrix Product State (MPS) using the Zipper (trunc
 # Arguments
 - `ctr::MpsContractor{Zipper}`: The MpsContractor object representing the PEPS network contraction with the Zipper method.
 - `i::Int`: The current row index.
-- `indβ::Int`: The index of the beta values.
 
 # Returns
 - `QMps`: The constructed top MPS using the Zipper method for the specified row.
@@ -384,7 +373,6 @@ This function constructs the top Matrix Product State (MPS) using the Zipper (tr
 @memoize Dict function mps_top(
     ctr::MpsContractor{Zipper,R,S},
     i::Int,
-    indβ::Int,
 ) where {R,S}
     Dcut = ctr.params.bond_dimension
     tolV = ctr.params.variational_tol
@@ -396,12 +384,12 @@ This function constructs the top Matrix Product State (MPS) using the Zipper (tr
     method = ctr.params.method
     depth = ctr.depth
     if i < 1
-        W = mpo(ctr, ctr.layers.main, 1, indβ)
+        W = mpo(ctr, ctr.layers.main, 1)
         return IdentityQMps(S, local_dims(W, :up); onGPU = ctr.onGPU) # F64 for now
     end
 
-    ψ = mps_top(ctr, i - 1, indβ)
-    W = transpose(mpo(ctr, ctr.layers.main, i, indβ))
+    ψ = mps_top(ctr, i - 1)
+    W = transpose(mpo(ctr, ctr.layers.main, i))
 
     canonise!(ψ, :left)
     ψ0 = zipper(
@@ -428,14 +416,13 @@ Construct and memoize the (bottom) Matrix Product State (MPS) using the Zipper (
 # Arguments
 - `ctr::MpsContractor{Zipper}`: The MpsContractor object representing the PEPS network contraction with the Zipper method.
 - `i::Int`: The current row index.
-- `indβ::Int`: The index of the beta values.
 
 # Returns
 - `QMps`: The constructed (bottom) MPS using the Zipper method for the specified row.
 
 This function constructs the (bottom) Matrix Product State (MPS) using the Zipper (truncated Singular Value Decomposition) method for a given row in the PEPS network contraction. It recursively builds the MPS row by row, performing canonicalization, and truncation steps based on the specified parameters in `ctr.params`. The resulting MPS is memoized for efficient reuse.
 """
-@memoize Dict function mps(ctr::MpsContractor{Zipper,R,S}, i::Int, indβ::Int) where {R,S}
+@memoize Dict function mps(ctr::MpsContractor{Zipper,R,S}, i::Int) where {R,S}
     Dcut = ctr.params.bond_dimension
     tolV = ctr.params.variational_tol
     tolS = ctr.params.tol_SVD
@@ -447,11 +434,11 @@ This function constructs the (bottom) Matrix Product State (MPS) using the Zippe
     depth = ctr.depth
 
     if i > ctr.peps.nrows
-        W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
+        W = mpo(ctr, ctr.layers.main, ctr.peps.nrows)
         ψ0 = IdentityQMps(S, local_dims(W, :down); onGPU = ctr.onGPU)
     else
-        ψ = mps(ctr, i + 1, indβ)
-        W = mpo(ctr, ctr.layers.main, i, indβ)
+        ψ = mps(ctr, i + 1)
+        W = mpo(ctr, ctr.layers.main, i)
         canonise!(ψ, :left)
         ψ0 = zipper(
             W,
@@ -473,139 +460,31 @@ end
 """
 $(TYPEDSIGNATURES)
 
-Construct and memoize the (bottom) top Matrix Product State (MPS) using the Annealing method for a given row.
-
-# Arguments
-- `ctr::MpsContractor{MPSAnnealing}`: The MpsContractor object representing the PEPS network contraction with the Annealing method.
-- `i::Int`: The current row index.
-- `indβ::Int`: The index of the beta values.
-
-# Returns
-- `QMps`: The constructed (bottom) top MPS using the Annealing method for the specified row.
-
-This function constructs the (bottom) top Matrix Product State (MPS) using the Annealing method for a given row in the PEPS network contraction. It recursively builds the MPS row by row, performing variational compression steps based on the specified parameters in `ctr.params`. The resulting MPS is memoized for efficient reuse.
-"""
-@memoize Dict function mps_top(
-    ctr::MpsContractor{MPSAnnealing,R,S},
-    i::Int,
-    indβ::Int,
-) where {R,S}
-    if i < 1
-        W = mpo(ctr, ctr.layers.main, 1, indβ)
-        return IdentityQMps(S, local_dims(W, :up); onGPU = ctr.onGPU)
-    end
-
-    ψ = mps_top(ctr, i - 1, indβ)
-    W = transpose(mpo(ctr, ctr.layers.main, i, indβ))
-
-    if indβ > 1
-        ψ0 = mps_top(ctr, i, indβ - 1)
-    else
-        ψ0 = IdentityQMps(
-            S,
-            local_dims(W, :up),
-            ctr.params.bond_dimension;
-            onGPU = ctr.onGPU,
-        )
-        # ψ0 = IdentityQMps(S, local_dims(W, :down), ctr.params.bond_dimension) # F64 for now
-        canonise!(ψ0, :left)
-    end
-    variational_compress!(ψ0, W, ψ, ctr.params.variational_tol, ctr.params.max_num_sweeps)
-    ψ0
-end
-
-"""
-$(TYPEDSIGNATURES)
-
-Construct and memoize the (bottom) Matrix Product State (MPS) using the Annealing method for a given row.
-
-# Arguments
-- `ctr::MpsContractor{MPSAnnealing}`: The MpsContractor object representing the PEPS network contraction with the Annealing method.
-- `i::Int`: The current row index.
-- `indβ::Int`: The index of the beta values.
-
-# Returns
-- `QMps`: The constructed (bottom) MPS using the Annealing method for the specified row.
-
-This function constructs the (bottom) Matrix Product State (MPS) using the Annealing method for a given row in the PEPS network contraction. It recursively builds the MPS row by row, performing variational compression steps based on the specified parameters in `ctr.params`. The resulting MPS is memoized for efficient reuse.
-"""
-@memoize Dict function mps(
-    ctr::MpsContractor{MPSAnnealing,R,S},
-    i::Int,
-    indβ::Int,
-) where {R,S}
-    if i > ctr.peps.nrows
-        W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, indβ)
-        return IdentityQMps(S, local_dims(W, :down); onGPU = ctr.onGPU)
-    end
-
-    ψ = mps(ctr, i + 1, indβ)
-    W = mpo(ctr, ctr.layers.main, i, indβ)
-
-    if indβ > 1
-        ψ0 = mps(ctr, i, indβ - 1)
-    else
-        ψ0 = IdentityQMps(
-            S,
-            local_dims(W, :up),
-            ctr.params.bond_dimension;
-            onGPU = ctr.onGPU,
-        )
-        canonise!(ψ0, :left)
-    end
-
-    variational_compress!(ψ0, W, ψ, ctr.params.variational_tol, ctr.params.max_num_sweeps)
-    ψ0
-end
-
-"""
-$(TYPEDSIGNATURES)
-
-Construct dressed Matrix Product State (MPS) for a given row and strategy.
-
-# Arguments
-- `ctr::MpsContractor{T}`: The MpsContractor object representing the PEPS network contraction.
-- `i::Int`: The current row index.
-
-# Returns
-- `QMps`: The constructed dressed MPS for the specified row.
-
-This function constructs the dressed Matrix Product State (MPS) for a given row in the PEPS network contraction using the specified strategy. It internally calculates the length of the `ctr.betas` vector and then calls `dressed_mps(ctr, i, length(ctr.betas))` to construct the dressed MPS with the given parameters.
-"""
-function dressed_mps(ctr::MpsContractor{T}, i::Int) where {T<:AbstractStrategy}
-    dressed_mps(ctr, i, length(ctr.betas))
-end
-
-"""
-$(TYPEDSIGNATURES)
-
 Construct (and memoize) dressed Matrix Product State (MPS) for a given row and strategy.
 
 # Arguments
 - `ctr::MpsContractor{T}`: The MpsContractor object representing the PEPS network contraction.
 - `i::Int`: The current row index.
-- `indβ::Int`: The index of the beta parameter vector used for construction.
 
 # Returns
 - `QMps`: The constructed dressed MPS for the specified row and strategy.
 
-This function constructs the dressed Matrix Product State (MPS) for a given row in the PEPS network contraction using the specified strategy and memoizes the result for future use. It takes into account the beta parameter index `indβ` and internally calls other functions such as `mps` and `mpo` to construct the dressed MPS. Additionally, it normalizes the MPS tensors to ensure numerical stability.
+This function constructs the dressed Matrix Product State (MPS) for a given row in the PEPS network contraction using the specified strategy and memoizes the result for future use. It internally calls other functions such as `mps` and `mpo` to construct the dressed MPS. Additionally, it normalizes the MPS tensors to ensure numerical stability.
 
 Note: The memoization ensures that the dressed MPS is only constructed once for each combination of arguments and is reused when needed.
 """
 @memoize Dict function dressed_mps(
     ctr::MpsContractor{T},
     i::Int,
-    indβ::Int,
 ) where {T<:AbstractStrategy}
 
-    ψ = mps(ctr, i + 1, indβ)
+    ψ = mps(ctr, i + 1)
     caches = Memoization.find_caches(mps)
-    delete!(caches[mps], ((ctr, i + 1, indβ), ()))
+    delete!(caches[mps], ((ctr, i + 1), ()))
     if ctr.onGPU
         ψ = move_to_CUDA!(ψ)
     end
-    W = mpo(ctr, ctr.layers.dress, i, indβ)
+    W = mpo(ctr, ctr.layers.dress, i)
     ϕ = dot(W, ψ)
     for j ∈ ϕ.sites
         nrm = maximum(abs.(ϕ[j]))
@@ -625,12 +504,11 @@ Construct (and memoize) the right environment tensor for a given node in the PEP
 - `ctr::MpsContractor{T}`: The MpsContractor object representing the PEPS network contraction.
 - `i::Int`: The current row index.
 - `∂v::Vector{Int}`: A vector representing the partial environment configuration.
-- `indβ::Int`: The index of the beta parameter vector used for construction.
 
 # Returns
 - `Array{S,2}`: The constructed right environment tensor for the specified node.
 
-This function constructs the right environment tensor for a given node in the PEPS network contraction using the specified strategy and memoizes the result for future use. It takes into account the beta parameter index `indβ` and internally calls other functions such as `dressed_mps` and `mpo` to construct the right environment tensor. Additionally, it normalizes the right environment tensor to ensure numerical stability.
+This function constructs the right environment tensor for a given node in the PEPS network contraction using the specified strategy and memoizes the result for future use. It internally calls other functions such as `dressed_mps` and `mpo` to construct the right environment tensor. Additionally, it normalizes the right environment tensor to ensure numerical stability.
 
 Note: The memoization ensures that the right environment tensor is only constructed once for each combination of arguments and is reused when needed.
 """
@@ -638,19 +516,18 @@ Note: The memoization ensures that the right environment tensor is only construc
     ctr::MpsContractor{T,R,S},
     i::Int,
     ∂v::Vector{Int},
-    indβ::Int,
 ) where {T<:AbstractStrategy,R,S}
     l = length(∂v)
     if l == 0
         return ctr.onGPU ? CUDA.ones(S, 1, 1) : ones(S, 1, 1)
     end
 
-    R̃ = right_env(ctr, i, ∂v[2:l], indβ)
+    R̃ = right_env(ctr, i, ∂v[2:l])
     if ctr.onGPU
         R̃ = CuArray(R̃)
     end
-    ϕ = dressed_mps(ctr, i, indβ)
-    W = mpo(ctr, ctr.layers.right, i, indβ)
+    ϕ = dressed_mps(ctr, i)
+    W = mpo(ctr, ctr.layers.right, i)
     k = length(ϕ.sites)
     site = ϕ.sites[k-l+1]
     M = W[site]
@@ -684,12 +561,11 @@ Construct (and memoize) the left environment tensor for a given node in the PEPS
 - `ctr::MpsContractor{T}`: The MpsContractor object representing the PEPS network contraction.
 - `i::Int`: The current row index.
 - `∂v::Vector{Int}`: A vector representing the partial environment configuration.
-- `indβ::Int`: The index of the beta parameter vector used for construction.
 
 # Returns
 - `Array{S,2}`: The constructed left environment tensor for the specified node.
 
-This function constructs the left environment tensor for a given node in the PEPS network contraction using the specified strategy and memoizes the result for future use. It takes into account the beta parameter index `indβ` and internally calls other functions such as `dressed_mps` to construct the left environment tensor. Additionally, it normalizes the left environment tensor to ensure numerical stability.
+This function constructs the left environment tensor for a given node in the PEPS network contraction using the specified strategy and memoizes the result for future use. It internally calls other functions such as `dressed_mps` to construct the left environment tensor. Additionally, it normalizes the left environment tensor to ensure numerical stability.
 
 Note: The memoization ensures that the left environment tensor is only constructed once for each combination of arguments and is reused when needed.
 
@@ -698,15 +574,14 @@ Note: The memoization ensures that the left environment tensor is only construct
     ctr::MpsContractor{T,R,S},
     i::Int,
     ∂v::Vector{Int},
-    indβ::Int,
 ) where {T,R,S}
     l = length(∂v)
     if l == 0
         return ctr.onGPU ? CUDA.ones(S, 1) : ones(S, 1)
     end
 
-    L̃ = left_env(ctr, i, ∂v[1:l-1], indβ)
-    ϕ = dressed_mps(ctr, i, indβ)
+    L̃ = left_env(ctr, i, ∂v[1:l-1])
+    ϕ = dressed_mps(ctr, i)
     m = ∂v[l]
     site = ϕ.sites[l]
     M = ϕ[site]
@@ -744,7 +619,7 @@ end
 $(TYPEDSIGNATURES)
 Clear memoization cache for specific operations for a given row and index beta.
 
-This function clears the memoization cache for specific operations used in the PEPS network contraction for a given row and index beta (indβ).
+This function clears the memoization cache for specific operations used in the PEPS network contraction for a given row.
 The cleared operations include `mps_top`, `mps`, `mpo`, `dressed_mps`, and related operations.
 Memoization is used to optimize the contraction process by avoiding redundant computations.
 Calling this function allows you to clear the cache for these specific operations for a particular row and index beta, which can be useful when you want to free up memory or ensure that the cache is refreshed with updated data for a specific computation.
@@ -752,38 +627,34 @@ Calling this function allows you to clear the cache for these specific operation
 # Arguments
 - `ctr::MpsContractor{T, S}`: The PEPS network contractor object.
 - `row::Site`: The row for which the cache should be cleared.
-- `indβ::Int`: The index beta for which the cache should be cleared.
 
 """
-function clear_memoize_cache(ctr::MpsContractor{T,S}, row::Site, indβ::Int) where {T,S}
-    for ind ∈ 1:indβ # indbeta a vector?
-        for i ∈ row:ctr.peps.nrows
-            delete!(Memoization.caches[mps_top], ((ctr, i, ind), ()))
-        end
-        for i ∈ 1:row+1
-            delete!(Memoization.caches[mps], ((ctr, i, ind), ()))
-        end
-        for i ∈ row:row+2
-            cmpo = Memoization.caches[mpo]
-            delete!(cmpo, ((ctr, ctr.layers.main, i, ind), ()))
-            delete!(cmpo, ((ctr, ctr.layers.dress, i, ind), ()))
-            delete!(cmpo, ((ctr, ctr.layers.right, i, ind), ()))
-        end
-
+function clear_memoize_cache(ctr::MpsContractor{T,S}, row::Site) where {T,S}
+    for i ∈ row:ctr.peps.nrows
+        delete!(Memoization.caches[mps_top], ((ctr, i), ()))
     end
+    for i ∈ 1:row+1
+        delete!(Memoization.caches[mps], ((ctr, i), ()))
+    end
+    for i ∈ row:row+2
+        cmpo = Memoization.caches[mpo]
+        delete!(cmpo, ((ctr, ctr.layers.main, i), ()))
+        delete!(cmpo, ((ctr, ctr.layers.dress, i), ()))
+        delete!(cmpo, ((ctr, ctr.layers.right, i), ()))
+    end
+
 end
 
 
 function sweep_gauges!(
     ctr::MpsContractor{T,GaugeStrategy},
     row::Site,
-    indβ::Int,
     tol::Real = 1E-4,
     max_sweeps::Int = 10,
 ) where {T}
     clm = ctr.layers.main
-    ψ_top = mps_top(ctr, row, indβ)
-    ψ_bot = mps(ctr, row + 1, indβ)
+    ψ_top = mps_top(ctr, row)
+    ψ_bot = mps(ctr, row + 1)
 
     ψ_top = deepcopy(ψ_top)
     ψ_bot = deepcopy(ψ_bot)
@@ -805,18 +676,17 @@ function sweep_gauges!(
         g_bot = bot .* g_inv
         push!(ctr.peps.gauges.data, n_top => g_top, n_bot => g_bot)
     end
-    clear_memoize_cache(ctr, row, indβ)
+    clear_memoize_cache(ctr, row)
 end
 
 
 function sweep_gauges!(
     ctr::MpsContractor{T,GaugeStrategyWithBalancing},
     row::Site,
-    indβ::Int,
 ) where {T}
     clm = ctr.layers.main
-    ψ_top = mps_top(ctr, row, indβ)
-    ψ_bot = mps(ctr, row + 1, indβ)
+    ψ_top = mps_top(ctr, row)
+    ψ_bot = mps(ctr, row + 1)
     ψ_top = deepcopy(ψ_top)
     ψ_bot = deepcopy(ψ_bot)
     for i ∈ ψ_top.sites
@@ -826,7 +696,7 @@ function sweep_gauges!(
         _, _, scale = LinearAlgebra.LAPACK.gebal!('S', ρ)
         push!(ctr.peps.gauges.data, n_top => 1.0 ./ scale, n_bot => scale)
     end
-    clear_memoize_cache(ctr, row, indβ)
+    clear_memoize_cache(ctr, row)
     ψ_top * ψ_bot
 end
 
@@ -834,7 +704,6 @@ end
 function sweep_gauges!(
     ctr::MpsContractor{T,NoUpdate},
     row::Site,
-    indβ::Int,
     tol::Real = 1E-4,
     max_sweeps::Int = 10,
 ) where {T}
@@ -845,11 +714,10 @@ end
 function update_gauges!(
     ctr::MpsContractor{T,S},
     row::Site,
-    indβ::Vector{Int},
     ::Val{:down},
 ) where {T,S}
-    for j ∈ indβ, i ∈ 1:row-1
-        sweep_gauges!(ctr, i, j)
+    for i ∈ 1:row-1
+        sweep_gauges!(ctr, i)
     end
 end
 
@@ -857,11 +725,10 @@ end
 function update_gauges!(
     ctr::MpsContractor{T,S},
     row::Site,
-    indβ::Vector{Int},
     ::Val{:up},
 ) where {T,S}
-    for j ∈ indβ, i ∈ row-1:-1:1
-        sweep_gauges!(ctr, i, j)
+    for i ∈ row-1:-1:1
+        sweep_gauges!(ctr, i)
     end
 end
 

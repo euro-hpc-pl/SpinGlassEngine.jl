@@ -1,0 +1,4 @@
+
+[1269484] signal (11.1): Segmentation fault
+in expression starting at /home/tsmierzchalski/.julia/dev/SpinGlassEngine/examples/strawberry.jl:1
+Allocations: 647861 (Pool: 647055; Big: 806); GC: 1

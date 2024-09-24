@@ -4,12 +4,14 @@ using Images, Colors
 using LinearAlgebra
 
 sol_path = "$(@__DIR__)/bench_results/rmf"
-sol = load_object(joinpath(sol_path, "strawbery_sol_2.jld2"))
+sol = load_object(joinpath(sol_path, "strawbery_sol_4.jld2"))
 
 states = sol.states[1]
 states = reshape(states, (240, 320))
 
-
+droplet = sol.droplets
+println(sol.energies[1])
+println(droplet)
 
 # Define a mapping from integers to colors
 color_map = Dict(
@@ -44,4 +46,4 @@ end
 img = transpose(img)
 # Display the image
 
-save(joinpath("bench_results", "rmf", "sol_2.png"), img)
+save(joinpath("bench_results", "rmf", "sol_4.png"), img)

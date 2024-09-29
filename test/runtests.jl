@@ -7,11 +7,13 @@ using Graphs
 using LinearAlgebra
 using TensorCast
 using Statistics
-using MetaGraphs
+using CUDA
 
 disable_logging(LogLevel(1))
 
-onGPU = true
+user_onGPU = true  # or false, based on user's preference
+gpu_available = CUDA.has_cuda()
+onGPU = user_onGPU && gpu_available
 
 using Test
 my_tests = []

@@ -32,7 +32,7 @@ $(TYPEDSIGNATURES)
 
 Construct a Projected Entangled Pair States (PEPS) network.
 
-# Arguments
+# Constructor
 - `m::Int`: Number of rows in the PEPS lattice.
 - `n::Int`: Number of columns in the PEPS lattice.
 - `potts_hamiltonian::LabelledGraph`: Potts Hamiltonian representing the Hamiltonian.
@@ -42,9 +42,10 @@ Construct a Projected Entangled Pair States (PEPS) network.
 # Type Parameters
 - `T <: AbstractGeometry`: Type of geometry for the PEPS lattice. It can be `SquareSingleNode`, `SquareDoubleNode`, `KingSingleNode`, `SquareCrossDoubleNode`.
 - `S <: AbstractSparsity`: Type of sparsity for the PEPS tensors: `Dense` or `Sparse`.
+- `R <: Real`: The numeric precision type for real values (e.g., Float64).
 
 # Returns
-An instance of PEPSNetwork{T, S}.
+An instance of PEPSNetwork{T, S, R}.
 """
 mutable struct PEPSNetwork{T<:AbstractGeometry,S<:AbstractSparsity,R<:Real} <:
                AbstractGibbsNetwork{Node,PEPSNode,R}

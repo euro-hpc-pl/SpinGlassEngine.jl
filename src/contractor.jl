@@ -126,20 +126,22 @@ sparsity(net::PEPSNetwork{T,S}) where {T,S} = S
 
 """
 $(TYPEDSIGNATURES)
-A mutable struct representing a contractor for contracting a PEPS (Projected Entangled Pair States) network using the MPO-MPS (Matrix Product Operator - Matrix Product State) scheme.
+MpsContractor is a mutable struct that represents the contractor responsible for contracting a PEPS (Projected Entangled Pair States) network using the MPO-MPS (Matrix Product Operator - Matrix Product State) scheme.
 
-# Fields
-- `peps::PEPSNetwork{T, S}`: The PEPS network to be contracted.
-- `betas::Vector{<:Real}`: A vector of inverse temperatures (β) used during the search. The last one is the target one. This parameter plays a crucial role: a larger β enables a finer focus on low-energy states, although it may compromise the numerical stability of tensor network contraction. Determining the optimal β could be instance-dependent, and experimental exploration might be necessary for different classes of instances.
-- `graduate_truncation::Bool`: The truncation method to use for gradually truncating MPS bond dimensions.
-- `params::MpsParameters`: Control parameters for the MPO-MPS contraction.
+# Type Parameters
+- `T<:AbstractStrategy`: Specifies the contraction strategy to be employed.
+- `R<:AbstractGauge`: Specifies the gauge-fixing method used for optimizing the contraction.
+- `S<:Real`: Represents the numeric precision type for real values (e.g., Float64).
 
-# Optional Arguments
-- `onGPU::Bool`: A flag indicating whether the contraction is performed on a GPU. Default is `true`.
-- `depth`: An integer specifying the iteration depth for variational sweeps in Zipper algorithm. Default is `0` which means variational sweep is done on all lattice sites. 
-
-The `MpsContractor` function defines the contractor structure responsible for contracting a PEPS network using the MPO-MPS scheme.
-It encapsulates various components and settings required for the contraction process.
+# Constructor
+This constructor initializes an instance of MpsContractor with the following arguments:
+- `net`: The PEPS network to be contracted.
+- `params`: Contains the control parameters for the MPO-MPS contraction, such as bond dimension and the number of sweeps.
+- `beta::S`: The inverse temperature, β, which is crucial for focusing on low-energy states. A larger β sharpens the focus on these states but may reduce the numerical stability of the tensor contraction. The optimal value of β often depends on the problem instance.
+- `graduate_truncation::Bool`: A flag indicating whether bond dimensions in the MPS are truncated progressively. When set to true, this truncation method adjusts the bond dimensions gradually during contraction.
+- `onGPU::Bool`: A flag indicating whether the computation should be performed on a GPU (default is true).
+- `depth::Int`: Specifies the depth of variational sweeps during the Zipper algorithm. A value of 0 implies a full variational sweep across all lattice sites.
+The constructor sets up the internal structure of the contractor, including the MPO layers, search order for nodes, and storage for contraction statistics.
 """
 mutable struct MpsContractor{T<:AbstractStrategy,R<:AbstractGauge,S<:Real} <:
                AbstractContractor
@@ -185,6 +187,7 @@ mutable struct MpsContractor{T<:AbstractStrategy,R<:AbstractGauge,S<:Real} <:
         )
     end
 end
+
 
 """
 $(TYPEDSIGNATURES)

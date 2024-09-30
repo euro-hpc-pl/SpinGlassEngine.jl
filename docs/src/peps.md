@@ -20,6 +20,7 @@ Strategy = Zipper
 transform = rotation(0)
 Layout = GaugesEnergy
 Sparsity = Sparse
+R = Float64
 
 ig = ising_graph(instance)
 potts_h = potts_hamiltonian(
@@ -28,5 +29,5 @@ potts_h = potts_hamiltonian(
     cluster_assignment_rule=super_square_lattice((m, n, t))
 )
 
-net = PEPSNetwork{KingSingleNode{Layout}, Sparsity}(m, n, potts_h, transform)
+net = PEPSNetwork{KingSingleNode{Layout}, Sparsity, R}(m, n, potts_h, transform)
 ```

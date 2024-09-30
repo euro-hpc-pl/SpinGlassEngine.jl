@@ -21,14 +21,14 @@ Base.copy(s::NoDroplets) = s
 Base.getindex(s::NoDroplets, ::Any) = NoDroplets()
 
 """
-A data structure representing the properties and criteria for single-layer droplets in the context of the SpinGlassPEPS package.
+A data structure representing the properties and criteria for identifying single-layer droplets in the context of the SpinGlassPEPS package.
 
-A `SingleLayerDroplets` object is used to specify the maximum energy, minimum size, and metric for single-layer droplets in the SpinGlassPEPS system.
+A `SingleLayerDroplets` object is used to specify the maximum energy, minimum size, and metric for single-layer droplets in the SpinGlassPEPS.
 
 ## Fields
-- `max_energy::Real`: The maximum allowed excitation energy for single-layer droplets. It is typically a real number.
-- `min_size::Int`: The minimum size (Hamming cutoff) required for a single-layer droplet to be considered significant. 
-- `metric::Symbol`: The metric used to evaluate the significance of a single-layer droplet. Default is `:no_metric`. `:hamming` treats Hamming distances as matric.
+- `max_energy::Real`: The maximum allowed excitation energy above the ground state. It is typically a real number.
+- `min_size::Int`: The minimum Hamming distance required between excitations for them to be considered distinct. 
+- `metric::Symbol`: The metric used to evaluate the significance of a single-layer droplet. Default is `:no_metric`. `:hamming` treats Hamming distances as a metric.
 - `mode::Symbol`: `:Ising` assumes Ising-type representation of the problem. `:RMF` assumes a Random Markov Field type model. Default is `:Ising`.
 
 ## Constructors

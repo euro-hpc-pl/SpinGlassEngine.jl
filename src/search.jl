@@ -19,7 +19,8 @@ export SearchParameters,
 $(TYPEDSIGNATURES)
 A struct representing search parameters for low-energy spectrum search.
 
-## Fields
+## Constructor
+Keyword arguments:
 - `max_states::Int`: The maximum number of states to be considered during the search. Default is 1, indicating a single state search.
 - `cutoff_prob::Real`: The cutoff probability for terminating the search. Default is 0.0, meaning no cutoff based on probability.
 

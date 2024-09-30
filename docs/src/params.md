@@ -16,7 +16,7 @@ In the boundary MPS-MPO approach we apply Matrix Product Operator (MPO) to appro
 Our package offers users the flexibility to choose between three distinct methods for optimizing the boundary MPS used in contracting the tensor network: 
 * `Zipper`
 * `SVDTruncate`.
-`Zipper` method combines randomized truncated Singular Value Decomposition (SVD) and a variational scheme.
+`Zipper` method combines a zipper scheme of [Ref.](https://arxiv.org/abs/2310.08533). with the standard variational optimization of the resulting MPS [(see Ref.)](https://arxiv.org/abs/0907.2796)
 ```@raw html
 <img src="../images/zipper_final.png" width="200%" class="center"/>
 ```
@@ -25,14 +25,15 @@ With the `SVDTruncate` method, the Matrix Product State (MPS) is systematically 
 <img src="../images/svd_truncate.png" width="50%" class="center"/>
 ```
 
-# Sparsity 
-Our software package acknowledges the importance of two fundamental methodologies in tensor processing
+# Sparsity  
+The `Sparsity` parameter controls whether 
 * `Dense` 
-* `Sparse`. 
-The latter, referred to as sparsity, plays a pivotal role in manipulation on large tensors. To accommodate this, our package offers the flexibility to choose the `Sparse` mode. In this mode, tensors are not explicitly constructed but are stored in structures and represented as blocks, in which not every dimension is contracted. This choice not only optimizes memory utilization but also significantly improves computational efficiency. In the `Dense` mode tensors are build explicitly.
+or 
+* `Sparse` 
+tensor representations are used during calculations. `Sparse` tensors are particularly useful for handling large clusters containing around 10 to 20 spins. When bond dimensions increase, constructing PEPS tensors explicitly (triggered by `Sparsity=Dense`) becomes computationally expensive and quickly infeasible. In contrast, setting `Sparsity=Sparse` avoids the direct construction of full tensors. Instead, it performs optimal contractions on smaller tensor structures, which are then combined to contract the entire network efficiently. This approach leverages the internal structure of the individual tensors to reduce computational overhead and memory usage.
 
 # Geometry
-
+One can specify the type of the node used within the tensor networks: 
 * `SquareSingleNode`
 ```@raw html
 <img src="../images/square_single.png" width="50%" class="center"/>
@@ -66,7 +67,7 @@ SquareCrossDoubleNode
 ```
 
 # Layout 
-`SpinGlassPEPS.jl` allows for different decompositions of the network into MPOs:
+`SpinGlassPEPS.jl` allows for different decompositions of the PEPS network into MPOs:
 * `GaugesEnergy`
 * `EnergyGauges`
 * `EngGaugesEng`
@@ -77,7 +78,12 @@ For complex problems, the solution may depend on the choice of decomposition.
 ```
 
 # Lattice transformations
-Our package offers users the ability to undergo diverse transformations of PEPS network. Notably, users can apply `rotations`, occurring in multiples of $\frac{\pi}{2}$ radians, and `reflections` along various axes. These transformations include rotations and reflections around the horizontal (x), vertical (y), diagonal, and antidiagonal axes. Transformations are used to contract PEPS and perform search starting from different sites of the lattice. 
+Our package provides users with the ability to apply various transformations to the PEPS network, allowing for flexibility in tensor network manipulation. The available transformations include `rotations` by multiples of $\frac{\pi}{2}$ radians and `reflections` along different axes. Specifically, users can apply rotations and reflections around the horizontal (x), vertical (y), diagonal, and antidiagonal axes.
+
+These transformations are useful when contracting PEPS or performing searches from different lattice sites. For instance, the `transform` parameter allows the user to rotate the quasi-2D graph, which influences the order of sweeping through local variables during branch-and-bound search. By rotating the tensor network, the search and contraction process can start from different positions on the 2D grid, improving the stability and robustness of the results.
+
+In practice, searches can be performed across all eight possible transformations (four rotations and four reflections, `all_lattice_transformations`) of the 2D grid, comparing the energies obtained for each configuration to identify the most optimal outcome.
+
 ```@raw html
 <img src="../images/trans.png" width="200%" class="center"/>
 ```

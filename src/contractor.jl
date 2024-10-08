@@ -71,8 +71,19 @@ A struct representing control parameters for the MPO-MPS (Matrix Product Operato
 - `iters_var::Int`: The number of iterations for variational optimization. Default is 1.
 - `Dtemp_multiplier::Int`: A multiplier for the bond dimension when temporary bond dimensions are computed. Default is 2.
 - `method::Symbol`: The type of SVD method to use (e.g., `:psvd_sparse`). Default is `:psvd_sparse`.
+    
+Keyword Arguments:
+- `bond_dim`: Specifies the maximum bond dimension (default is typemax(Int)).
+- `var_tol`: Tolerance for the variational solver (default is 1E-8).
+- `num_sweeps`: Maximum number of sweeps for variational compression (default is 4).
+- `tol_SVD`: Tolerance for SVD operations (default is 1E-16).
+- `iters_svd`: Number of SVD iterations (default is 1).
+- `iters_var`: Number of iterations for variational optimization (default is 1).
+- `Dtemp_multiplier`: Multiplier for temporary bond dimensions (default is 2).
+- `method`: SVD method to use, such as :psvd_sparse (default is :psvd_sparse).
 
-The `MpsParameters` struct encapsulates various control parameters that influence the behavior and accuracy of the MPO-MPS contraction scheme used for PEPS network calculations.
+Description:
+The MpsParameters struct encapsulates various control parameters that influence the behavior and accuracy of the MPO-MPS contraction scheme used in PEPS network calculations. This allows fine-tuning of tolerances, iteration limits, and methods for efficient and accurate tensor network contractions.
 """
 struct MpsParameters{S<:Real}
     bond_dimension::Int
@@ -126,23 +137,28 @@ sparsity(net::PEPSNetwork{T,S}) where {T,S} = S
 
 """
 $(TYPEDSIGNATURES)
-A mutable struct representing a contractor for contracting a PEPS (Projected Entangled Pair States) network using the MPO-MPS (Matrix Product Operator - Matrix Product State) scheme.
 
-# Fields
-- `peps::PEPSNetwork{T, S}`: The PEPS network to be contracted.
-- `betas::Vector{<:Real}`: A vector of inverse temperatures (β) used during the search. The last one is the target one. This parameter plays a crucial role: a larger β enables a finer focus on low-energy states, although it may compromise the numerical stability of tensor network contraction. Determining the optimal β could be instance-dependent, and experimental exploration might be necessary for different classes of instances.
-- `graduate_truncation::Bool`: The truncation method to use for gradually truncating MPS bond dimensions.
-- `params::MpsParameters`: Control parameters for the MPO-MPS contraction.
+MpsContractor is a mutable struct that represents the contractor responsible for contracting a PEPS (Projected Entangled Pair States) network using the MPO-MPS (Matrix Product Operator - Matrix Product State) scheme.
 
-# Optional Arguments
-- `onGPU::Bool`: A flag indicating whether the contraction is performed on a GPU. Default is `true`.
-- `depth`: An integer specifying the iteration depth for variational sweeps in Zipper algorithm. Default is `0` which means variational sweep is done on all lattice sites. 
+# Type Parameters
+- `T<:AbstractStrategy`: Specifies the contraction strategy to be employed.
+- `R<:AbstractGauge`: Specifies the gauge-fixing method used for optimizing the contraction.
+- `S<:Real`: Represents the numeric precision type for real values (e.g., Float64).
 
-The `MpsContractor` function defines the contractor structure responsible for contracting a PEPS network using the MPO-MPS scheme.
-It encapsulates various components and settings required for the contraction process.
+# Constructor
+This constructor initializes an instance of MpsContractor with the following arguments:
+Positional arguments:
+- `net`: The PEPS network to be contracted.
+- `params`: Contains the control parameters for the MPO-MPS contraction, such as bond dimension and the number of sweeps.
+Keyword arguments:
+- `beta::S`: The inverse temperature, β, which is crucial for focusing on low-energy states. A larger β sharpens the focus on these states but may reduce the numerical stability of the tensor contraction. The optimal value of β often depends on the problem instance.
+- `graduate_truncation::Bool`: A flag indicating whether bond dimensions in the MPS are truncated progressively. When set to true, this truncation method adjusts the bond dimensions gradually during contraction.
+- `onGPU::Bool`: A flag indicating whether the computation should be performed on a GPU (default is true).
+- `depth::Int`: Specifies the depth of variational sweeps during the Zipper algorithm. A value of 0 implies a full variational sweep across all lattice sites.
+The constructor sets up the internal structure of the contractor, including the MPO layers, search order for nodes, and storage for contraction statistics.
 """
 mutable struct MpsContractor{T<:AbstractStrategy,R<:AbstractGauge,S<:Real} <:
-               AbstractContractor
+                AbstractContractor
     peps::PEPSNetwork{T} where {T}
     beta::S
     graduate_truncation::Bool
@@ -184,6 +200,45 @@ mutable struct MpsContractor{T<:AbstractStrategy,R<:AbstractGauge,S<:Real} <:
             onGPU,
         )
     end
+end
+
+function MpsContractor(
+    ::Type{T},
+    ::Type{R},
+    ::Type{S},
+    net,
+    params;
+    beta::S,
+    graduate_truncation::Bool,
+    onGPU = true,
+    depth::Int = 0,
+) where {T, R, S}
+    return MpsContractor{T,R,S}(net, params; beta, graduate_truncation, onGPU, depth)
+end
+
+function MpsContractor(
+    ::Type{T},
+    ::Type{R},
+    net,
+    params;
+    beta::S,
+    graduate_truncation::Bool,
+    onGPU = true,
+    depth::Int = 0,
+) where {T, R, S}
+    return MpsContractor(T, R, S, net, params; beta, graduate_truncation, onGPU, depth)
+end
+
+function MpsContractor(
+    ::Type{T},
+    net,
+    params;
+    beta::S,
+    graduate_truncation::Bool,
+    onGPU = true,
+    depth::Int = 0,
+) where {T, S}
+    return MpsContractor(T, NoUpdate, net, params; beta, graduate_truncation, onGPU, depth)
 end
 
 """
@@ -285,10 +340,7 @@ Construct and memoize the (bottom) Matrix Product State (MPS) using Singular Val
 
 This function constructs the (bottom) MPS using SVD for a given row in the PEPS network contraction. It recursively builds the MPS row by row, performing canonicalization, truncation, and compression steps as needed based on the specified parameters in `ctr.params`. The resulting MPS is memoized for efficient reuse.
 """
-@memoize Dict function mps(
-    ctr::MpsContractor{SVDTruncate,R,S},
-    i::Int,
-) where {R,S}
+@memoize Dict function mps(ctr::MpsContractor{SVDTruncate,R,S}, i::Int) where {R,S}
     Dcut = ctr.params.bond_dimension
     tolV = ctr.params.variational_tol
     tolS = ctr.params.tol_SVD
@@ -328,10 +380,7 @@ Construct and memoize the (bottom) Matrix Product State (MPS) approximation usin
 
 This function constructs the (bottom) MPS approximation using SVD for a given row in the PEPS network contraction. It recursively builds the MPS row by row, performing canonicalization, and truncation steps based on the specified parameters in `ctr.params`. The resulting MPS approximation is memoized for efficient reuse.
 """
-@memoize Dict function mps_approx(
-    ctr::MpsContractor{SVDTruncate,R,S},
-    i::Int,
-) where {R,S}
+@memoize Dict function mps_approx(ctr::MpsContractor{SVDTruncate,R,S}, i::Int) where {R,S}
     if i > ctr.peps.nrows
         W = mpo(ctr, ctr.layers.main, ctr.peps.nrows)
         return IdentityQMps(S, local_dims(W, :down); onGPU = ctr.onGPU) # F64 for now
@@ -370,10 +419,7 @@ Construct and memoize the top Matrix Product State (MPS) using the Zipper (trunc
 
 This function constructs the top Matrix Product State (MPS) using the Zipper (truncated Singular Value Decomposition) method for a given row in the PEPS network contraction. It recursively builds the MPS row by row, performing canonicalization, and truncation steps based on the specified parameters in `ctr.params`. The resulting MPS is memoized for efficient reuse.
 """
-@memoize Dict function mps_top(
-    ctr::MpsContractor{Zipper,R,S},
-    i::Int,
-) where {R,S}
+@memoize Dict function mps_top(ctr::MpsContractor{Zipper,R,S}, i::Int) where {R,S}
     Dcut = ctr.params.bond_dimension
     tolV = ctr.params.variational_tol
     tolS = ctr.params.tol_SVD
@@ -711,22 +757,14 @@ function sweep_gauges!(
 end
 
 
-function update_gauges!(
-    ctr::MpsContractor{T,S},
-    row::Site,
-    ::Val{:down},
-) where {T,S}
+function update_gauges!(ctr::MpsContractor{T,S}, row::Site, ::Val{:down}) where {T,S}
     for i ∈ 1:row-1
         sweep_gauges!(ctr, i)
     end
 end
 
 
-function update_gauges!(
-    ctr::MpsContractor{T,S},
-    row::Site,
-    ::Val{:up},
-) where {T,S}
+function update_gauges!(ctr::MpsContractor{T,S}, row::Site, ::Val{:up}) where {T,S}
     for i ∈ row-1:-1:1
         sweep_gauges!(ctr, i)
     end

@@ -6,7 +6,7 @@ m, n, t = 3, 4, 1
 bond_dim = 8
 mstates = 10
 instance = "$(@__DIR__)/instances/pathological/pegasus_3_4_1.txt"
-RESULTS_FOLDER="$(@__DIR__)/instances/pathological"
+# RESULTS_FOLDER="$(@__DIR__)/instances/pathological"
 inst="001"
 iter = 2
 δp = 0.0
@@ -21,7 +21,7 @@ METHOD = :psvd_sparse
 Strategy = Zipper
 Sparsity = Sparse
 Layout = GaugesEnergy
-onGPU = true
+onGPU = false
 transform = all_lattice_transformations[1]
 ig = ising_graph(instance)
 potts_h = potts_hamiltonian(
@@ -29,7 +29,7 @@ potts_h = potts_hamiltonian(
     spectrum = full_spectrum,
     cluster_assignment_rule = pegasus_lattice((m, n, t)),
 )
-potts_h = truncate_potts_hamiltonian(potts_h, β, cs, RESULTS_FOLDER, inst; tol=1e-6, iter=iter)
+# potts_h = truncate_potts_hamiltonian(potts_h, β, cs, RESULTS_FOLDER, inst; tol=1e-6, iter=iter)
 
 Gauge = NoUpdate
 for T in [Float64, Float32]

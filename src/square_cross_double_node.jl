@@ -407,7 +407,7 @@ function conditional_probability(
     ψ = dressed_mps(ctr, i)
     MX, M = ψ[j-1//2], ψ[j]
     @tensor LMX[y, z] := L[x] * MX[x, y, z]
-
+    
     if k == 1  # here has to avarage over s2
         R = right_env(ctr, i, ∂v[(2*j+12):end])
         if ctr.onGPU

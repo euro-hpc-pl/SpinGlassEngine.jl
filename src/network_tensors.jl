@@ -320,8 +320,6 @@ end
     M̃ = W[k-l+1]
     K = @view M̃[:, ∂v[1], :, :]
     @tensor R[x, y] := K[y, β, γ] * M[x, γ, α] * R̃[α, β] order = (β, γ, α)
-    @show R
-    exit(42)
     R
 end
 

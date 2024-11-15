@@ -6,11 +6,8 @@ m, n, t = 3, 4, 1
 bond_dim = 8
 mstates = 10
 instance = "$(@__DIR__)/instances/pathological/pegasus_3_4_1.txt"
-RESULTS_FOLDER="$(@__DIR__)/instances/pathological"
-inst="001"
 iter = 2
 δp = 0.0
-cs=2^0
 MAX_SWEEPS = 0
 VAR_TOL = 1E-16
 TOL_SVD = 1E-16
@@ -29,11 +26,9 @@ potts_h = potts_hamiltonian(
     spectrum = full_spectrum,
     cluster_assignment_rule = pegasus_lattice((m, n, t)),
 )
-potts_h = truncate_potts_hamiltonian(potts_h, β, cs, RESULTS_FOLDER, inst; tol=1e-6, iter=iter)
 
 Gauge = NoUpdate
 for T in [Float64, Float32]
-    println("=========")
     println("type ", T)
     energies = Vector{T}[]
     params = MpsParameters{T}(;

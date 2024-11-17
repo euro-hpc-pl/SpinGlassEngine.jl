@@ -359,6 +359,6 @@ function tensor(
         @inbounds A[l, p_lt[l], p_rt[r], r, p_lb[l], p_rb[r]] = sp.con[p_l[l], p_r[r]]
     end
     # @cast B[l, (uu, u), r, (dd, d)] := A[l, uu, u, r, dd, d]
-    B = reshape(size(A, 1), size(A, 2) * size(A, 3), size(A, 4), size(A, 5) * size(A, 6))
+    B = reshape(A, size(A, 1), size(A, 2) * size(A, 3), size(A, 4), size(A, 5) * size(A, 6))
     B
 end

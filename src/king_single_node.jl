@@ -210,8 +210,9 @@ function conditional_probability(
     pr = projector(ctr.peps, (i, j), @ntuple 3 k -> (i + 2 - k, j + 1))
     pd = projector(ctr.peps, (i, j), (i + 1, j))
 
-    @cast lmx2[d, b, c] := LMX[d, (b, c)] (c ∈ 1:maximum(p_rb))
-
+    # @cast lmx2[d, b, c] := LMX[d, (b, c)] (c ∈ 1:maximum(p_rb))
+    c = maximum(p_rb)
+    lmx2 = reshape(LMX, size(LMX, 1), size(LMX, 2) ÷ c, c)
     lmx2, M, R = Array.((lmx2, M, R))  # REWRITE
 
     for σ ∈ 1:length(probs)   # REWRITE on CUDA + parallelize
@@ -295,7 +296,10 @@ function tensor(
     i, j = floor(Int, node.i), floor(Int, node.j)
     T_NW_SE = connecting_tensor(net, (i, j), (i + 1, j + 1), β)
     T_NE_SW = connecting_tensor(net, (i, j + 1), (i + 1, j), β)
-    @cast A[(u, uu), (dd, d)] := T_NW_SE[u, d] * T_NE_SW[uu, dd]
+    # @cast A[(u, uu), (dd, d)] := T_NW_SE[u, d] * T_NE_SW[uu, dd]
+    u, d = size(T_NW_SE)
+    uu, dd = size(T_NE_SW)
+    A = reshape(reshape(T_NW_SE, u, 1, 1, d) .* reshape(T_NE_SW, 1, dd, uu), u * uu, d * dd)
     A
 end
 
@@ -354,6 +358,7 @@ function tensor(
     for l ∈ 1:length(p_l), r ∈ 1:length(p_r)
         @inbounds A[l, p_lt[l], p_rt[r], r, p_lb[l], p_rb[r]] = sp.con[p_l[l], p_r[r]]
     end
-    @cast B[l, (uu, u), r, (dd, d)] := A[l, uu, u, r, dd, d]
+    # @cast B[l, (uu, u), r, (dd, d)] := A[l, uu, u, r, dd, d]
+    B = reshape(size(A, 1), size(A, 2) * size(A, 3), size(A, 4), size(A, 5) * size(A, 6))
     B
 end

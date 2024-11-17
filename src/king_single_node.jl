@@ -200,8 +200,8 @@ function conditional_probability(
     ψ = dressed_mps(ctr, i)
 
     MX, M = ψ[j-1//2], ψ[j]
-    @tensor LMX[y, z] :=     L[x] * MX[x, y, z]
-    
+    @tensor LMX[y, z] := L[x] * MX[x, y, z]
+
     v = ((i, j - 1), (i - 1, j - 1), (i - 1, j))
     @nexprs 3 k -> (en_k = projected_energy(ctr.peps, (i, j), v[k], ∂v[2*j-1+k]))
     probs = probability(local_energy(ctr.peps, (i, j)) .+ en_1 .+ en_2 .+ en_3, β)
@@ -249,11 +249,7 @@ function nodes_search_order_Mps(peps::PEPSNetwork{T,S}) where {T<:KingSingleNode
 end
 
 
-function boundary(
-    ::Type{T},
-    ctr::MpsContractor{S},
-    node::Node,
-) where {T<:KingSingleNode,S}
+function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T<:KingSingleNode,S}
     i, j = node
     vcat(
         [

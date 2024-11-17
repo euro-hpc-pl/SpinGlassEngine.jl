@@ -243,11 +243,13 @@ function reduced_site_tensor(network::PEPSNetwork, v::Tuple{Int,Int}, l::Int, u:
     eng_local = local_energy(network, v)
     pl = projector(network, v, (i, j - 1))
     eng_pl = interaction_energy(network, v, (i, j - 1))
-    @matmul eng_left[x] := sum(y) pl[x, y] * eng_pl[y, $l]
+    # @matmul eng_left[x] := sum(y) pl[x, y] * eng_pl[y, $l]
+    @tensor eng_left[x] := pl[x, y] * view(eng_pl, :, l)[y];
 
     pu = projector(network, v, (i - 1, j))
     eng_pu = interaction_energy(network, v, (i - 1, j))
-    @matmul eng_up[x] := sum(y) pu[x, y] * eng_pu[y, $u]
+    # @matmul eng_up[x] := sum(y) pu[x, y] * eng_pu[y, $u]
+    @tensor eng_up[x] := pu[x, y] * view(eng_pu, :, u)[y]
 
     en = eng_local .+ eng_left .+ eng_up
     loc_exp = exp.(-network.β .* (en .- minimum(en)))
@@ -355,6 +357,7 @@ end
     ϕ = dressed_mps(peps, i)
     m = ∂v[l]
     M = ϕ[l]
-    @matmul L[x] := sum(α) L̃[α] * M[α, $m, x]
+    # @matmul L[x] := sum(α) L̃[α] * M[α, $m, x]
+    @tensor L[x] := L̃[α] * view(M, :, m, :)[α, x]
     L
 end

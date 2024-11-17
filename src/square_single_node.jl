@@ -265,7 +265,8 @@ function conditional_probability(
     probs = probability(local_energy(ctr.peps, (i, j)) .+ en_1 .+ en_2, β)
 
     A = LM[:, p_1] .* R[:, p_2]
-    @reduce bnd_exp[x] := sum(y) A[y, x]
+    # @reduce bnd_exp[x] := sum(y) A[y, x]
+    bnd_exp = dropdims(sum(A; dims=1); dims=1)
     probs .*= Array(bnd_exp)
 
     push!(ctr.statistics, ((i, j), ∂v) => error_measure(probs))

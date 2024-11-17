@@ -6,7 +6,6 @@ using CUDA
 using SpinGlassTensors
 using SpinGlassNetworks
 using TensorOperations
-using TensorCast
 using MetaGraphs
 using Memoization
 using LinearAlgebra, MKL

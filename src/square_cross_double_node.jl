@@ -427,9 +427,11 @@ function conditional_probability(
         en = [exp.(-β .* (en[k] .- minimum(en[k]))) for k ∈ 1:2]
         tele = reshape(en[1], (:, 1)) .* ele .* reshape(en[2], (1, :))
 
-        @cast LMX4[x, y, v, p] := LMX[(x, y), (v, p)] (x ∈ 1:1, p ∈ 1:splb)
+        # @cast LMX4[x, y, v, p] := LMX[(x, y), (v, p)] (x ∈ 1:1, p ∈ 1:splb)
+        LMX4 = reshape(LMX, 1, size(LMX, 1), size(LMX, 2) ÷ splb, splb)
         LMX3 = LMX4[:, :, ∂v[2*j-1], :]
-        @cast R3[x, y, p] := R[(x, y), p] (y ∈ 1:1)
+        # @cast R3[x, y, p] := R[(x, y), p] (y ∈ 1:1)
+        R3 = reshape(R, size(R, 1), 1, size(R, 2))
 
         from = 1
         total_size = length(pd)
@@ -474,15 +476,18 @@ function conditional_probability(
             eng_u[2] .+ eng_12
         ele = exp.(-β .* (le .- minimum(le)))
 
-        @cast LMX5[x, y, v, p1, p2] := LMX[(x, y), (v, p1, p2)] (
-            p1 ∈ 1:splb1,
-            p2 ∈ 1:splb2,
-            x ∈ 1:1,
-        )
+        # @cast LMX5[x, y, v, p1, p2] := LMX[(x, y), (v, p1, p2)] (
+        #     p1 ∈ 1:splb1,
+        #     p2 ∈ 1:splb2,
+        #     x ∈ 1:1,
+        # )
+        LMX5 = reshape(LMX, 1, size(LMX, 1), size(LMX, 2) ÷ (splb1 * splb2), splb1, splb2)
         LMX3 = LMX5[:, :, ∂v[2*j-1], ∂v[2*j+7], :]
-        @cast M4[x, y, p1, p2] := M[x, y, (p1, p2)] (p2 ∈ 1:spd2)
+        # @cast M4[x, y, p1, p2] := M[x, y, (p1, p2)] (p2 ∈ 1:spd2)
+        M4 = reshape(M, size(M, 1), size(M, 2), size(M, 3) ÷ spd2, spd2)
         M2 = M4[:, :, ∂v[2*j+8], :]
-        @cast R4[x, y, p1, p2] := R[(x, y), (p1, p2)] (p2 ∈ 1:sprf2, y ∈ 1:1)
+        # @cast R4[x, y, p1, p2] := R[(x, y), (p1, p2)] (p2 ∈ 1:sprf2, y ∈ 1:1)
+        R4 = reshape(R, size(R, 1), 1, size(R, 2) ÷ sprf2, sprf2)
         R2 = R4[:, :, ∂v[2*j+9], :]
         LR = dropdims(LMX3[:, :, plb2] ⊠ M2[:, :, pd2] ⊠ R2[:, :, prf2], dims = (1, 2))
         probs = Array(ele .* LR)
@@ -871,7 +876,9 @@ function tensor(
     for l ∈ 1:length(p_l), r ∈ 1:length(p_r)
         A[l, p_lt[l], p_rt[r], r, p_lb[l], p_rb[r]] = dense_con[p_l[l], p_r[r]]
     end
-    @cast B[l, (uu, u), r, (dd, d)] := A[l, uu, u, r, dd, d]
+    # @cast B[l, (uu, u), r, (dd, d)] := A[l, uu, u, r, dd, d]
+    l, uu, u, r, dd, d = size(A)
+    B = reshape(A, l, uu * u, r, dd * d)
     B
 end
 

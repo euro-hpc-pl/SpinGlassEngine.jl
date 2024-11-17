@@ -632,7 +632,8 @@ Note: The memoization ensures that the left environment tensor is only construct
     site = ϕ.sites[l]
     M = ϕ[site]
 
-    @matmul L[x] := sum(α) L̃[α] * M[α, x, $m]
+    # @matmul L[x] := sum(α) L̃[α] * M[α, x, $m]
+    @tensor L[x] := L̃[α] * view(M, :, :, m)[α, x]
     nmr = maximum(abs.(L))
     iszero(nmr) ? L : L ./ nmr
 end

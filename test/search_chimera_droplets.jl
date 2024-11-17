@@ -23,7 +23,12 @@ function bench(instance::String)
         spectrum = my_brute_force,
         cluster_assignment_rule = super_square_lattice((m, n, t)),
     )
-    params = MpsParameters{Float64}(; bond_dim = bond_dim, var_tol = 1E-8, num_sweeps = 4, tol_SVD = 1E-16)
+    params = MpsParameters{Float64}(;
+        bond_dim = bond_dim,
+        var_tol = 1E-8,
+        num_sweeps = 4,
+        tol_SVD = 1E-16,
+    )
     search_params = SearchParameters(; max_states = num_states, cutoff_prob = δp)
 
     energies = Vector{Float64}[]
@@ -48,8 +53,12 @@ function bench(instance::String)
                     search_params,
                     merge_branches(
                         ctr;
-                        merge_prob = :none ,
-                        droplets_encoding = SingleLayerDroplets(; max_energy=1, min_size=1000, metric=:hamming),
+                        merge_prob = :none,
+                        droplets_encoding = SingleLayerDroplets(;
+                            max_energy = 1,
+                            min_size = 1000,
+                            metric = :hamming,
+                        ),
                     ),
                 )
 
@@ -65,7 +74,8 @@ function bench(instance::String)
                           SpinGlassNetworks.energy.(Ref(ising_graph(instance)), ig_states)
 
                     potts_h_states = decode_state.(Ref(net), sol.states)
-                    @test sol.energies ≈ SpinGlassNetworks.energy.(Ref(potts_h), potts_h_states)
+                    @test sol.energies ≈
+                          SpinGlassNetworks.energy.(Ref(potts_h), potts_h_states)
 
                     norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
                     @test norm_prob ≈ exp.(-β .* (sol.energies .- sol.energies[1]))

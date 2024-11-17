@@ -293,10 +293,7 @@ Check if a Potts Hamiltonian is compatible with a given network graph.
 - `compatibility::Bool`: `true` if the Potts Hamiltonian is compatible with the network graph, `false` otherwise.
 """
 function is_compatible(potts_hamiltonian::LabelledGraph, network_graph::LabelledGraph)
-    all(
-        has_edge(network_graph, src(edge), dst(edge)) for
-        edge ∈ edges(potts_hamiltonian)
-    )
+    all(has_edge(network_graph, src(edge), dst(edge)) for edge ∈ edges(potts_hamiltonian))
 end
 
 """

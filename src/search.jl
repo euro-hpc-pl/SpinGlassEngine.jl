@@ -309,7 +309,7 @@ The `_merge` function can be applied to a `Solution` object to merge its branche
 """
 function merge_branches(
     ctr::MpsContractor{T};
-    merge_prob::Symbol = :none ,
+    merge_prob::Symbol = :none,
     droplets_encoding = NoDroplets(),
 ) where {T}
     function _merge(psol::Solution)
@@ -347,12 +347,11 @@ function merge_branches(
 
             if merge_prob == :median
                 c = Statistics.median(
-                    ctr.beta .* nsol.energies[start:stop] .+
-                    nsol.probabilities[start:stop],
+                    ctr.beta .* nsol.energies[start:stop] .+ nsol.probabilities[start:stop],
                 )
                 new_prob = -ctr.beta .* nsol.energies[best_idx] .+ c
                 push!(probs, new_prob)
-            elseif merge_prob == :none 
+            elseif merge_prob == :none
                 push!(probs, nsol.probabilities[best_idx])
             elseif merge_prob == :tnac4o
                 push!(probs, Statistics.mean(nsol.probabilities[ind_deg]))
@@ -412,14 +411,17 @@ States with Hamming distances greater than or equal to the specified cutoff are 
 function merge_branches_blur(
     ctr::MpsContractor{T},
     hamming_cutoff::Int,
-    merge_prob::Symbol = :none ,
+    merge_prob::Symbol = :none,
     droplets_encoding = NoDroplets(),
 ) where {T}
     function _merge_blur(psol::Solution)
-        psol =
-            merge_branches(ctr; merge_prob = merge_prob, droplets_encoding = droplets_encoding)(
-                psol,
-            )
+        psol = merge_branches(
+            ctr;
+            merge_prob = merge_prob,
+            droplets_encoding = droplets_encoding,
+        )(
+            psol,
+        )
         node = get(ctr.nodes_search_order, length(psol.states[1]) + 1, ctr.node_outside)
         boundaries = boundary_states(ctr, psol.states, node)
         sorted_indices = sortperm(psol.probabilities, rev = true)

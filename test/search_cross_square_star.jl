@@ -23,7 +23,8 @@
     for Strategy ∈ (Zipper, SVDTruncate), Sparsity ∈ (Dense, Sparse)
         for Layout ∈ (GaugesEnergy, EngGaugesEng, EnergyGauges)  #
             for transform ∈ all_lattice_transformations, Lattice ∈ (KingSingleNode,)
-                net = PEPSNetwork{Lattice{Layout},Sparsity,Float64}(m, n, potts_h, transform)
+                net =
+                    PEPSNetwork{Lattice{Layout},Sparsity,Float64}(m, n, potts_h, transform)
                 ctr = MpsContractor{Strategy,Gauge,Float64}(
                     net,
                     params;

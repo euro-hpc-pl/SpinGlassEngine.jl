@@ -104,7 +104,16 @@ struct MpsParameters{S<:Real}
         iters_var = 1,
         Dtemp_multiplier = 2,
         method = :psvd_sparse,
-    ) where {S} = new(bond_dim, var_tol, num_sweeps, tol_SVD, iters_svd, iters_var, Dtemp_multiplier, method)
+    ) where {S} = new(
+        bond_dim,
+        var_tol,
+        num_sweeps,
+        tol_SVD,
+        iters_svd,
+        iters_var,
+        Dtemp_multiplier,
+        method,
+    )
 end
 
 """
@@ -158,7 +167,7 @@ Keyword arguments:
 The constructor sets up the internal structure of the contractor, including the MPO layers, search order for nodes, and storage for contraction statistics.
 """
 mutable struct MpsContractor{T<:AbstractStrategy,R<:AbstractGauge,S<:Real} <:
-                AbstractContractor
+               AbstractContractor
     peps::PEPSNetwork{T} where {T}
     beta::S
     graduate_truncation::Bool
@@ -212,7 +221,7 @@ function MpsContractor(
     graduate_truncation::Bool,
     onGPU = true,
     depth::Int = 0,
-) where {T, R, S}
+) where {T,R,S}
     return MpsContractor{T,R,S}(net, params; beta, graduate_truncation, onGPU, depth)
 end
 
@@ -225,7 +234,7 @@ function MpsContractor(
     graduate_truncation::Bool,
     onGPU = true,
     depth::Int = 0,
-) where {T, R, S}
+) where {T,R,S}
     return MpsContractor(T, R, S, net, params; beta, graduate_truncation, onGPU, depth)
 end
 
@@ -237,7 +246,7 @@ function MpsContractor(
     graduate_truncation::Bool,
     onGPU = true,
     depth::Int = 0,
-) where {T, S}
+) where {T,S}
     return MpsContractor(T, NoUpdate, net, params; beta, graduate_truncation, onGPU, depth)
 end
 
@@ -298,10 +307,7 @@ Construct and memoize the top Matrix Product State (MPS) using Singular Value De
 
 This function constructs the top MPS using SVD for a given row in the PEPS network contraction. It recursively builds the MPS row by row, performing canonicalization, truncation, and compression steps as needed based on the specified parameters in `ctr.params`. The resulting MPS is memoized for efficient reuse.
 """
-@memoize Dict function mps_top(
-    ctr::MpsContractor{SVDTruncate,R,S},
-    i::Int,
-) where {R,S}
+@memoize Dict function mps_top(ctr::MpsContractor{SVDTruncate,R,S}, i::Int) where {R,S}
     Dcut = ctr.params.bond_dimension
     tolV = ctr.params.variational_tol
     tolS = ctr.params.tol_SVD

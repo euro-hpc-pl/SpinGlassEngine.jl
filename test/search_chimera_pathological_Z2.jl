@@ -131,8 +131,12 @@
                     search_params,
                     merge_branches(
                         ctr;
-                        merge_prob = :none ,
-                        droplets_encoding = SingleLayerDroplets(; max_energy=10.0, min_size=0, metric=:hamming),
+                        merge_prob = :none,
+                        droplets_encoding = SingleLayerDroplets(;
+                            max_energy = 10.0,
+                            min_size = 0,
+                            metric = :hamming,
+                        ),
                     ),
                     :Z2,
                 )

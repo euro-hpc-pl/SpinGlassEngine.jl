@@ -6,7 +6,7 @@ _pages = [
     "Search parameters" => "params.md",
     "Low energy spectrum" => "search.md",
 ]
-    # "API Reference for auxiliary functions" => "api.md",
+# "API Reference for auxiliary functions" => "api.md",
 # ]
 # ============================
 

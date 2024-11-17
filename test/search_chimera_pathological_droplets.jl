@@ -135,8 +135,12 @@
                     merge_branches_blur(
                         ctr,
                         hamming_dist,
-                        :none ,
-                        SingleLayerDroplets(; max_energy=1.01, min_size=1, metric=:hamming),
+                        :none,
+                        SingleLayerDroplets(;
+                            max_energy = 1.01,
+                            min_size = 1,
+                            metric = :hamming,
+                        ),
                     ),
                 )
                 # sol1, s = low_energy_spectrum(ctr, search_params, merge_branches(ctr, :none , SingleLayerDroplets(1.01, 1, :hamming)))

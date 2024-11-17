@@ -43,8 +43,12 @@
                     search_params,
                     merge_branches(
                         ctr;
-                        merge_prob = :none ,
-                        droplets_encoding = SingleLayerDroplets(; max_energy=2.2, min_size=1, metric=:hamming),
+                        merge_prob = :none,
+                        droplets_encoding = SingleLayerDroplets(;
+                            max_energy = 2.2,
+                            min_size = 1,
+                            metric = :hamming,
+                        ),
                     ),
                 )
 

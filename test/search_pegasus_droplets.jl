@@ -23,7 +23,12 @@ function bench(instance::String)
         spectrum = my_brute_force,
         cluster_assignment_rule = pegasus_lattice((m, n, t)),
     )
-    params = MpsParameters{Float64}(; bond_dim = bond_dim, var_tol = 1E-8, num_sweeps = 4, tol_SVD = 1E-16)
+    params = MpsParameters{Float64}(;
+        bond_dim = bond_dim,
+        var_tol = 1E-8,
+        num_sweeps = 4,
+        tol_SVD = 1E-16,
+    )
     search_params = SearchParameters(; max_states = num_states, cutoff_prob = δp)
 
     energies = Vector{Float64}[]
@@ -48,8 +53,12 @@ function bench(instance::String)
                     search_params,
                     merge_branches(
                         ctr;
-                        merge_prob = :none ,
-                        droplets_encoding = SingleLayerDroplets(; max_energy=0.01, min_size=20, metric=:hamming),
+                        merge_prob = :none,
+                        droplets_encoding = SingleLayerDroplets(;
+                            max_energy = 0.01,
+                            min_size = 20,
+                            metric = :hamming,
+                        ),
                     ),
                 )
 

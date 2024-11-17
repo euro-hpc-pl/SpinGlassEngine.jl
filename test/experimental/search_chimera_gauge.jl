@@ -19,8 +19,13 @@
         cluster_assignment_rule = super_square_lattice((m, n, t)),
     )
 
-    params = MpsParameters{Float64}(; bond_dim=BOND_DIM, var_tol=VAR_TOL, num_sweeps=MAX_SWEEPS, tol_SVD=TOL_SVD)
-    search_params = SearchParameters(; max_states=MAX_STATES, cutoff_prob=δp)
+    params = MpsParameters{Float64}(;
+        bond_dim = BOND_DIM,
+        var_tol = VAR_TOL,
+        num_sweeps = MAX_SWEEPS,
+        tol_SVD = TOL_SVD,
+    )
+    search_params = SearchParameters(; max_states = MAX_STATES, cutoff_prob = δp)
     Gauge = GaugeStrategy
 
     energies = Vector{Float64}[]

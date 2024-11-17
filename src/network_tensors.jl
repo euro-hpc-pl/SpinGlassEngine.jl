@@ -244,7 +244,7 @@ function reduced_site_tensor(network::PEPSNetwork, v::Tuple{Int,Int}, l::Int, u:
     pl = projector(network, v, (i, j - 1))
     eng_pl = interaction_energy(network, v, (i, j - 1))
     # @matmul eng_left[x] := sum(y) pl[x, y] * eng_pl[y, $l]
-    @tensor eng_left[x] := pl[x, y] * view(eng_pl, :, l)[y];
+    @tensor eng_left[x] := pl[x, y] * view(eng_pl, :, l)[y]
 
     pu = projector(network, v, (i - 1, j))
     eng_pu = interaction_energy(network, v, (i - 1, j))

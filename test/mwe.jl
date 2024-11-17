@@ -32,12 +32,12 @@ for T in [Float64, Float32]
     println("type ", T)
     energies = Vector{T}[]
     params = MpsParameters{T}(;
-        bond_dim=bond_dim,
+        bond_dim = bond_dim,
         var_tol = T(VAR_TOL),
         num_sweeps = MAX_SWEEPS,
         tol_SVD = T(TOL_SVD),
     )
-    search_params = SearchParameters(;max_states=mstates, cutoff_prob=δp)
+    search_params = SearchParameters(; max_states = mstates, cutoff_prob = δp)
 
     net = PEPSNetwork{SquareCrossDoubleNode{Layout},Sparsity,T}(m, n, potts_h, transform)
     ctr = MpsContractor{Strategy,Gauge,T}(

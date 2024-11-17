@@ -266,7 +266,7 @@ function conditional_probability(
 
     A = LM[:, p_1] .* R[:, p_2]
     # @reduce bnd_exp[x] := sum(y) A[y, x]
-    bnd_exp = dropdims(sum(A; dims=1); dims=1)
+    bnd_exp = dropdims(sum(A; dims = 1); dims = 1)
     probs .*= Array(bnd_exp)
 
     push!(ctr.statistics, ((i, j), ∂v) => error_measure(probs))

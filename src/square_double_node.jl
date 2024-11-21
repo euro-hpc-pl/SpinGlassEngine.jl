@@ -197,10 +197,10 @@ function conditional_probability(
 
         # @cast LM3[x, s1, s2] := LM[x, (s1, s2)] (s2 ∈ 1:maximum(pd2))
         s2 = maximum(pd2)
-        LM3 = reshape(LM3, size(LM, 1), size(LM, 2) ÷ s2, s2)
+        LM3 = reshape(LM, size(LM, 1), size(LM, 2) ÷ s2, s2)
         # @cast R3[x, s1, s2] := R[x, (s1, s2)] (s2 ∈ 1:maximum(pr2))
         s2 = maximum(pr2)
-        R3 = reshape(LM3, size(R, 1), size(R, 2) ÷ s2, s2)
+        R3 = reshape(R, size(R, 1), size(R, 2) ÷ s2, s2)
         LR = dropdims(sum(LM3[:, pd1, pd2] .* R3[:, pr1, pr2], dims = 1), dims = 1)
 
         probs = dropdims(sum(Array(LR) .* ele, dims = 2), dims = 2)

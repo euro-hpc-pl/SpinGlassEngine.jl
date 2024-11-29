@@ -11,9 +11,9 @@ MpsParameters
 SearchParameters
 ```
 
-# Strategy 
+# Optimizing boundary MPS 
 In the boundary MPS-MPO approach we apply Matrix Product Operator (MPO) to appropriate sites of Matrix Product State (MPS). In this context, the absorption of a MPO into a MPS leads to an exponential growth of the bond dimension. Hence, a truncation scheme is necessary to mitigate this issue and to keep the bond dimension in a reasonable size. 
-Our package offers users the flexibility to choose between three distinct methods for optimizing the boundary MPS used in contracting the tensor network: 
+Our package offers users the flexibility to choose between two distinct methods for optimizing the boundary MPS used in contracting the tensor network: 
 * `Zipper`
 * `SVDTruncate`.
 `Zipper` method combines a zipper scheme of [Ref.](https://arxiv.org/abs/2310.08533). with the standard variational optimization of the resulting MPS [(see Ref.)](https://arxiv.org/abs/0907.2796)
@@ -25,7 +25,7 @@ With the `SVDTruncate` method, the Matrix Product State (MPS) is systematically 
 <img src="../images/svd_truncate.png" width="50%" class="center"/>
 ```
 
-# Sparsity  
+# Sparsity of tensors
 The `Sparsity` parameter controls whether 
 * `Dense` 
 or 
@@ -66,7 +66,7 @@ KingSingleNode
 SquareCrossDoubleNode
 ```
 
-# Layout 
+# Decomposition of PEPS into MPOs 
 `SpinGlassPEPS.jl` allows for different decompositions of the PEPS network into MPOs:
 * `GaugesEnergy`
 * `EnergyGauges`

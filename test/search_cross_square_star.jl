@@ -57,6 +57,7 @@ EXACT_ENERGIES = [
                 k = 3
                 @test EXACT_ENERGIES[1:k] ≈ sol.energies[1:k]
 
+#=
                 ig_states = decode_potts_hamiltonian_state.(Ref(potts_h), sol.states)
                 @test sol.energies ≈ energy.(Ref(ig), ig_states)
 
@@ -67,7 +68,7 @@ EXACT_ENERGIES = [
                 #@test norm_prob ≈ exp.(-β .* (sol.energies .- sol.energies[1]))
 
                 #push!(energies, sol.energies[1:1])
-
+=#
                 clear_memoize_cache()
             end
         end

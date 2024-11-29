@@ -12,7 +12,7 @@ using CUDA
 
 disable_logging(LogLevel(1))
 
-user_onGPU = false # or true, based on user's preference
+user_onGPU = true # or true, based on user's preference
 gpu_available = CUDA.functional()
 onGPU = user_onGPU && gpu_available
 
@@ -28,9 +28,9 @@ push!(
     "search_chimera_pathological.jl",
     "search_chimera_smallest.jl",
     =#
-    #"search_cross_square_star.jl", #broken in 1.11
+    "search_cross_square_star.jl", #broken in 1.11
 
-    "search_smallest_cross_square_cross.jl", # broken in 1.11
+    #"search_smallest_cross_square_cross.jl", # broken in 1.11
     #=
     "search_pegasus_square_cross.jl",
     "search_pegasus_nodiag_square_cross.jl",

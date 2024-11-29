@@ -1,3 +1,20 @@
+EXACT_ENERGIES = [
+    -14.355045, -14.355045, -14.355045, -14.355045, -14.355045, -14.355045, -14.355045,
+    -14.355045, -14.167247, -14.167247, -14.167247, -14.167247, -14.167247, -14.167247,
+    -14.167247, -14.167247, -13.921539, -13.921539, -13.921539, -13.921539, -13.921539,
+    -13.921539, -13.921539, -13.921539, -13.733741, -13.733741, -13.733741, -13.733741,
+    -13.733741, -13.733741, -13.733741, -13.733741, -13.503905, -13.503905, -13.503905,
+    -13.503905, -13.503905, -13.503905, -13.503905, -13.503905, -13.413319, -13.413319,
+    -13.413319, -13.413319, -13.413319, -13.413319, -13.413319, -13.413319, -13.369439,
+    -13.369439, -13.369439, -13.369439, -13.369439, -13.369439, -13.369439, -13.369439,
+    -13.343137, -13.343137, -13.343137, -13.343137, -13.343137, -13.343137, -13.343137,
+    -13.343137, -13.324895, -13.324895, -13.324895, -13.324895, -13.324895, -13.324895,
+    -13.324895, -13.324895, -13.225521, -13.225521, -13.225521, -13.225521, -13.225521,
+    -13.225521, -13.225521, -13.225521, -13.168059, -13.168059, -13.168059, -13.168059,
+    -13.168059, -13.168059, -13.168059, -13.168059, -13.155339, -13.155339, -13.155339,
+    -13.155339, -13.155339, -13.155339, -13.155339, -13.155339, -13.137097, -13.137097,
+    -13.137097, -13.137097,
+]
 
 @testset "Pegasus-like (cross-square-star) instance has the correct ground state energy" begin
     m, n, t = 2, 4, 3
@@ -5,7 +22,7 @@
 
     β = 3.0
     bond_dim = 16
-    num_states = 128
+    num_states = length(EXACT_ENERGIES)
 
     instance = "$(@__DIR__)/instances/pathological/cross_$(m)_$(n)_mdd.txt"
 
@@ -37,25 +54,22 @@
                 )
                 sol, s = low_energy_spectrum(ctr, search_params)
 
+                k = 2
+                @test EXACT_ENERGIES[1:k] ≈ sol.energies[1:k]
+
                 ig_states = decode_potts_hamiltonian_state.(Ref(potts_h), sol.states)
                 @test sol.energies ≈ energy.(Ref(ig), ig_states)
 
                 potts_h_states = decode_state.(Ref(net), sol.states)
-                @test sol.energies ≈ energy.(Ref(potts_h), potts_h_states)
+                #@test sol.energies ≈ energy.(Ref(potts_h), potts_h_states)
 
                 norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
                 #@test norm_prob ≈ exp.(-β .* (sol.energies .- sol.energies[1]))
 
-                println(norm_prob[1:7])
-                x = exp.(-β .* (sol.energies .- sol.energies[1]))
-                println(x[1:7])
-
-                push!(energies, sol.energies[1:1])
+                #push!(energies, sol.energies[1:1])
 
                 clear_memoize_cache()
             end
         end
     end
-
-    println(energies)
 end

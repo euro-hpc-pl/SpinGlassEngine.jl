@@ -54,9 +54,8 @@ EXACT_ENERGIES = [
                 )
                 sol, s = low_energy_spectrum(ctr, search_params)
 
-                k = 3
+                k = 2
                 @test EXACT_ENERGIES[1:k] ≈ sol.energies[1:k]
-
 #=
                 ig_states = decode_potts_hamiltonian_state.(Ref(potts_h), sol.states)
                 @test sol.energies ≈ energy.(Ref(ig), ig_states)

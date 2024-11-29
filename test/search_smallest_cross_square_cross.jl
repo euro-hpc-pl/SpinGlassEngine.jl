@@ -57,7 +57,7 @@ EXACT_ENERGIES = [
                 @test sol.energies ≈ energy.(Ref(potts_h), potts_h_states)
 
                 norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
-               #@test norm_prob ≈ exp.(-β .* (sol.energies .- sol.energies[1]))
+                @test norm_prob ≈ exp.(-β .* (sol.energies .- sol.energies[1]))
 
                 i = 5
                 println(norm_prob[1:i])

@@ -37,7 +37,7 @@ EXACT_ENERGIES = [
     Gauge = NoUpdate
 
     energies = Vector{Float64}[]
-    for Strategy ∈ (Zipper, ), Sparsity ∈ (Dense, )
+    for Strategy ∈ (Zipper, ), Sparsity ∈ (Sparse, )
     #for Strategy ∈ (Zipper, SVDTruncate), Sparsity ∈  (Dense, Sparse)
         #for Layout ∈ (GaugesEnergy, EngGaugesEng, EnergyGauges)  #
         for Layout ∈ (GaugesEnergy, )
@@ -54,7 +54,7 @@ EXACT_ENERGIES = [
                 )
                 sol, s = low_energy_spectrum(ctr, search_params)
 
-                k = 2
+                k = 3
                 @test EXACT_ENERGIES[1:k] ≈ sol.energies[1:k]
 
                 ig_states = decode_potts_hamiltonian_state.(Ref(potts_h), sol.states)

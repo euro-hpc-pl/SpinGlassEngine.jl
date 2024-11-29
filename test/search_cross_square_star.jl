@@ -22,7 +22,7 @@ EXACT_ENERGIES = [
 
     β = 3.0
     bond_dim = 16
-    num_states = length(EXACT_ENERGIES)
+    num_states = 128 #length(EXACT_ENERGIES)
 
     instance = "$(@__DIR__)/instances/pathological/cross_$(m)_$(n)_mdd.txt"
 
@@ -37,7 +37,7 @@ EXACT_ENERGIES = [
     Gauge = NoUpdate
 
     energies = Vector{Float64}[]
-    for Strategy ∈ (Zipper, ), Sparsity ∈ (Sparse, )
+    for Strategy ∈ (Zipper, ), Sparsity ∈ (Dense, )
     #for Strategy ∈ (Zipper, SVDTruncate), Sparsity ∈  (Dense, Sparse)
         #for Layout ∈ (GaugesEnergy, EngGaugesEng, EnergyGauges)  #
         for Layout ∈ (GaugesEnergy, )

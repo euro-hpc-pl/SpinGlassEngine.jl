@@ -12,7 +12,7 @@ using CUDA
 
 disable_logging(LogLevel(1))
 
-user_onGPU = true # or true, based on user's preference
+user_onGPU = false # or true, based on user's preference
 gpu_available = CUDA.functional()
 onGPU = user_onGPU && gpu_available
 

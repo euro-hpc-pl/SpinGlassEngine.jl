@@ -3,7 +3,7 @@ export KingSingleNode
 """
 $(TYPEDSIGNATURES)
 
-A geometric structure representing a 1-layer grid with nodes arranged in a grid of rows and columns, 
+A geometric structure representing a 1-layer grid with nodes arranged in a grid of rows and columns,
 and additional diagonal edges forming a cross pattern between neighboring nodes.
 
 # Type Parameters
@@ -17,7 +17,7 @@ struct KingSingleNode{T<:AbstractTensorsLayout} <: AbstractGeometry end
 """
 $(TYPEDSIGNATURES)
 
-Create a labeled grid graph with nodes arranged in an m x n grid and additional diagonal 
+Create a labeled grid graph with nodes arranged in an m x n grid and additional diagonal
 edges forming a cross pattern between neighboring nodes.
 
 # Arguments
@@ -25,7 +25,7 @@ edges forming a cross pattern between neighboring nodes.
 - `n::Int`: The number of columns in the grid.
 
 # Returns
-A `LabelledGraph` representing a grid graph with nodes arranged in an m x n grid, 
+A `LabelledGraph` representing a grid graph with nodes arranged in an m x n grid,
 and additional diagonal edges forming a cross pattern between neighboring nodes.
 """
 function KingSingleNode(m::Int, n::Int)

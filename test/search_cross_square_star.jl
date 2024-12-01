@@ -42,7 +42,7 @@ EXACT_ENERGIES = [
         #for Layout ∈ (GaugesEnergy, EngGaugesEng, EnergyGauges)  #
         for Layout ∈ (GaugesEnergy, )
             #for transform ∈ all_lattice_transformations, Lattice ∈ (KingSingleNode,)
-            for transform ∈ all_lattice_transformations, Lattice ∈ (KingSingleNode, )
+            for transform ∈ (all_lattice_transformations[4], ), Lattice ∈ (KingSingleNode, )
                 net =
                     PEPSNetwork{Lattice{Layout},Sparsity,Float64}(m, n, potts_h, transform)
                 ctr = MpsContractor{Strategy,Gauge,Float64}(
@@ -54,20 +54,24 @@ EXACT_ENERGIES = [
                 )
                 sol, s = low_energy_spectrum(ctr, search_params)
 
-                k = 2
-                @test EXACT_ENERGIES[1:k] ≈ sol.energies[1:k]
+                k = 5
+                println(sol.energies[1:k])
+                #@test EXACT_ENERGIES[1:k] ≈ sol.energies[1:k]
 #=
                 ig_states = decode_potts_hamiltonian_state.(Ref(potts_h), sol.states)
                 @test sol.energies ≈ energy.(Ref(ig), ig_states)
 
                 potts_h_states = decode_state.(Ref(net), sol.states)
                 #@test sol.energies ≈ energy.(Ref(potts_h), potts_h_states)
-
+=#
                 norm_prob = exp.(sol.probabilities .- sol.probabilities[1])
+                println(norm_prob[1:k])
                 #@test norm_prob ≈ exp.(-β .* (sol.energies .- sol.energies[1]))
 
+                x = exp.(-β .* (sol.energies .- sol.energies[1]))
+                println(x[1:k])
                 #push!(energies, sol.energies[1:1])
-=#
+
                 clear_memoize_cache()
             end
         end

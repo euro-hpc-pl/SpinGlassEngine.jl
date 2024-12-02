@@ -460,16 +460,23 @@ end
 """
 $(TYPEDSIGNATURES)
 
-Unpack droplets in a solution structure to create a new solution with individual excitations.
+Unpack droplets in a solution structure to reconstruct low energy spectrum from identified localized excitations.
+
+This function processes a solution structure containing ground state and excitations on the top of it 
+and unpacks them into individual excitations building low energy spectrum. 
+Each droplet is converted into a separate entry in the new solution. 
+Probabilities of the unpacked states are adjusted based on the inverse temperature parameter.
 
 ## Arguments
-- `sol`: The input solution containing droplets to be unpacked.
-- `β::Real`: The inverse temperature parameter used for probability adjustments.
+- `sol::Solution`: The input solution structure
+- `β::Real`: The inverse temperature parameter used to adjust probabilities when unpacking droplets.
 
 ## Returns
-- `new_sol`: A new solution where droplets are unpacked into individual excitations.
+- `new_sol::Solution`: A new solution where:
+  - Each droplet encoded as excitation on the top of a ground state is unpacked into an individual low energy state.
+  - Energies, states, and probabilities are adjusted to reflect the unpacked structure.
 """
-function unpack_droplets(sol, β)  # have β in sol ?
+function unpack_droplets(sol, β)
     energies = typeof(sol.energies[begin])[]
     states = typeof(sol.states[begin])[]
     probs = typeof(sol.probabilities[begin])[]

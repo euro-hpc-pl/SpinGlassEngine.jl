@@ -71,7 +71,7 @@ A struct representing control parameters for the MPO-MPS (Matrix Product Operato
 - `iters_var::Int`: The number of iterations for variational optimization. Default is 1.
 - `Dtemp_multiplier::Int`: A multiplier for the bond dimension when temporary bond dimensions are computed. Default is 2.
 - `method::Symbol`: The type of SVD method to use (e.g., `:psvd_sparse`). Default is `:psvd_sparse`.
-    
+
 Keyword Arguments:
 - `bond_dim`: Specifies the maximum bond dimension (default is typemax(Int)).
 - `var_tol`: Tolerance for the variational solver (default is 1E-8).
@@ -358,16 +358,22 @@ This function constructs the (bottom) MPS using SVD for a given row in the PEPS 
     end
 
     ψ = mps(ctr, i + 1)
+
+
     W = mpo(ctr, ctr.layers.main, i)
 
     ψ0 = dot(W, ψ)
+
+
     canonise!(ψ0, :right)
+
+
     if ctr.graduate_truncation
         canonise_truncate!(ψ0, :left, Dcut * 2, tolS / 2)
         variational_sweep!(ψ0, W, ψ, Val(:right))
     end
     canonise_truncate!(ψ0, :left, Dcut, tolS)
-    variational_compress!(ψ0, W, ψ, tolV, max_sweeps)
+    #variational_compress!(ψ0, W, ψ, tolV, max_sweeps)
     ψ0
 end
 
@@ -504,7 +510,7 @@ This function constructs the (bottom) Matrix Product State (MPS) using the Zippe
             depth = depth,
         )
         canonise!(ψ0, :left)
-        variational_compress!(ψ0, W, ψ, tolV, max_sweeps)
+        #variational_compress!(ψ0, W, ψ, tolV, max_sweeps)
     end
     ψ0
 end
@@ -531,6 +537,7 @@ Note: The memoization ensures that the dressed MPS is only constructed once for 
 ) where {T<:AbstractStrategy}
 
     ψ = mps(ctr, i + 1)
+
     caches = Memoization.find_caches(mps)
     delete!(caches[mps], ((ctr, i + 1), ()))
     if ctr.onGPU
@@ -538,6 +545,7 @@ Note: The memoization ensures that the dressed MPS is only constructed once for 
     end
     W = mpo(ctr, ctr.layers.dress, i)
     ϕ = dot(W, ψ)
+
     for j ∈ ϕ.sites
         nrm = maximum(abs.(ϕ[j]))
         if !iszero(nrm)

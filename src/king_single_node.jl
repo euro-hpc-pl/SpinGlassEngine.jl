@@ -188,14 +188,12 @@ function conditional_probability(
     ctr::MpsContractor{S},
     ∂v::Vector{Int},
 ) where {T<:KingSingleNode,S}
+
     β = ctr.beta
     i, j = ctr.current_node
 
     L = left_env(ctr, i, ∂v[1:2*j-2])
     R = right_env(ctr, i, ∂v[(2*j+3):2*ctr.peps.ncols+2])
-    if ctr.onGPU
-        R = CuArray(R)
-    end
 
     ψ = dressed_mps(ctr, i)
 
@@ -205,7 +203,7 @@ function conditional_probability(
     v = ((i, j - 1), (i - 1, j - 1), (i - 1, j))
     @nexprs 3 k -> (en_k = projected_energy(ctr.peps, (i, j), v[k], ∂v[2*j-1+k]))
     probs = probability(local_energy(ctr.peps, (i, j)) .+ en_1 .+ en_2 .+ en_3, β)
-    # println("probs1 ", probs)
+
     p_rb = projector(ctr.peps, (i, j), (i + 1, j - 1))
     pr = projector(ctr.peps, (i, j), @ntuple 3 k -> (i + 2 - k, j + 1))
     pd = projector(ctr.peps, (i, j), (i + 1, j))
@@ -220,9 +218,7 @@ function conditional_probability(
         m = @inbounds M[:, :, pd[σ]]
         r = @inbounds R[:, pr[σ]]
         @inbounds probs[σ] *= (lmx'*m*r)[]
-        # println("probs2 ", probs)
     end
-    # println("probs3 ", probs)
 
     push!(ctr.statistics, ((i, j), ∂v) => error_measure(probs))
     normalize_probability(probs)

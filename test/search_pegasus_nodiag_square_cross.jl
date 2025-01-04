@@ -1,7 +1,6 @@
 using SpinGlassExhaustive
 
 
-
 function bench(instance::String)
     m, n, t = 4, 4, 24
 

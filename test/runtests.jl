@@ -22,20 +22,16 @@ my_tests = []
 push!(
     my_tests,
     #quick tests:
-    #=
+    "search_squarecross_double_node_basic.jl", # broken in 1.11
     "operations.jl",
     "branch_and_bound.jl",
     "search_chimera_pathological.jl",
     "search_chimera_smallest.jl",
-    =#
-    "search_cross_square_star.jl", #broken in 1.11
-
-    "search_smallest_cross_square_cross.jl", # broken in 1.11
-    #=
+    "search_cross_square_star.jl", # WAS broken in 1.11
+    "search_smallest_cross_square_cross.jl", # WAS broken in 1.11
     "search_pegasus_square_cross.jl",
     "search_pegasus_nodiag_square_cross.jl",
     "search_square_double_node_basic.jl",
-    "search_squarecross_double_node_basic.jl", # broken in 1.11
     "chimera_overlap_python.jl",
     "hamming.jl",
     "search_chimera_smallest_droplets.jl",
@@ -44,10 +40,8 @@ push!(
     "search_chimera_droplets.jl",
     "search_pegasus_droplets.jl",
     "search_chimera_pathological_Z2.jl",
-
     # time consuming tests:
     #    "search_chimera_full.jl",
-    =#
 )
 
 # This is work in progress (may or may not be included in future versions)

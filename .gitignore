@@ -8,7 +8,7 @@
 results
 docs/build
 **/.DS_Store
-Manifest.toml
+Manifest*.toml
 sysimage.so
 benchmarks/run_bench.sh
 *.pb.gz

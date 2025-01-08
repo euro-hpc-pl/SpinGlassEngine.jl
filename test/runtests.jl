@@ -6,13 +6,13 @@ using Logging
 using Graphs
 using LinearAlgebra
 using TensorCast
-using Statistics
-using MetaGraphs
+#using Statistics
+#using MetaGraphs
 using CUDA
 
 disable_logging(LogLevel(1))
 
-user_onGPU = true  # or false, based on user's preference
+user_onGPU = true # or true, based on user's preference
 gpu_available = CUDA.functional()
 onGPU = user_onGPU && gpu_available
 
@@ -22,6 +22,7 @@ my_tests = []
 push!(
     my_tests,
     #quick tests:
+    "search_squarecross_double_node_basic.jl",
     "operations.jl",
     "branch_and_bound.jl",
     "search_chimera_pathological.jl",
@@ -31,7 +32,6 @@ push!(
     "search_pegasus_square_cross.jl",
     "search_pegasus_nodiag_square_cross.jl",
     "search_square_double_node_basic.jl",
-    "search_squarecross_double_node_basic.jl",
     "chimera_overlap_python.jl",
     "hamming.jl",
     "search_chimera_smallest_droplets.jl",
@@ -40,10 +40,8 @@ push!(
     "search_chimera_droplets.jl",
     "search_pegasus_droplets.jl",
     "search_chimera_pathological_Z2.jl",
-
     # time consuming tests:
     #    "search_chimera_full.jl",
-
 )
 
 # This is work in progress (may or may not be included in future versions)

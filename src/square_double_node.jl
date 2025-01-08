@@ -195,8 +195,12 @@ function conditional_probability(
         le = reshape(en[1], (:, 1)) .+ en12[p12, p21] .+ reshape(en[2], (1, :))
         ele = exp.(-β .* (le .- minimum(le)))
 
-        @cast LM3[x, s1, s2] := LM[x, (s1, s2)] (s2 ∈ 1:maximum(pd2))
-        @cast R3[x, s1, s2] := R[x, (s1, s2)] (s2 ∈ 1:maximum(pr2))
+        # @cast LM3[x, s1, s2] := LM[x, (s1, s2)] (s2 ∈ 1:maximum(pd2))
+        s2 = maximum(pd2)
+        LM3 = reshape(LM, size(LM, 1), size(LM, 2) ÷ s2, s2)
+        # @cast R3[x, s1, s2] := R[x, (s1, s2)] (s2 ∈ 1:maximum(pr2))
+        s2 = maximum(pr2)
+        R3 = reshape(R, size(R, 1), size(R, 2) ÷ s2, s2)
         LR = dropdims(sum(LM3[:, pd1, pd2] .* R3[:, pr1, pr2], dims = 1), dims = 1)
 
         probs = dropdims(sum(Array(LR) .* ele, dims = 2), dims = 2)
@@ -225,9 +229,13 @@ function conditional_probability(
         pr2 = projector(ctr.peps, (i, j, 2), ((i, j + 1, 1), (i, j + 1, 2)))
         pd2 = projector(ctr.peps, (i, j, 2), ((i + 1, j, 1), (i + 1, j, 2)))
 
-        @cast R3[x, p1, p2] := R[x, (p1, p2)] (p2 ∈ 1:maximum(pr2))
+        # @cast R3[x, p1, p2] := R[x, (p1, p2)] (p2 ∈ 1:maximum(pr2))
+        p2 = maximum(pr2)
+        R3 = reshape(R, size(R, 1), size(R, 2) ÷ p2, p2)
         R2 = R3[:, ∂v[j+5], :]
-        @cast LM3[x, p1, p2] := LM[x, (p1, p2)] (p2 ∈ 1:maximum(pd2))
+        # @cast LM3[x, p1, p2] := LM[x, (p1, p2)] (p2 ∈ 1:maximum(pd2))
+        p2 = maximum(pd2)
+        LM3 = reshape(LM, size(LM, 1), size(LM, 2) ÷ p2, p2)
         LM2 = LM3[:, ∂v[j+6], :]
         LR = dropdims(sum(R2[:, pr2] .* LM2[:, pd2], dims = 1), dims = 1)
         probs = ele .* Array(LR)
@@ -340,7 +348,8 @@ function tensor(
     @nexprs 2 k -> (v_k = (node.i, node.j, k);
     en_k = local_energy(net, v_k))
     en12 = projected_energy(net, v_1, v_2)
-    @cast eloc12[(x, y)] := en12[x, y] + en_1[x] + en_2[y]
+    # @cast eloc12[(x, y)] := en12[x, y] + en_1[x] + en_2[y]
+    eloc12 = vec((+).(en12, en_1, en_2'))
 
     SiteTensor(
         net.lp,

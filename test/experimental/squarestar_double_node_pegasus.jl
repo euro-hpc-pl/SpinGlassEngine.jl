@@ -322,8 +322,12 @@ for tran ∈ all_lattice_transformations #[LatticeTransformation((1, 2, 3, 4), f
         search_params,
         merge_branches(
             ctr;
-            merge_prob = :none ,
-            droplets_encoding = SingleLayerDroplets(; max_energy=eng, min_size=hamming_dist, metric=:hamming),
+            merge_prob = :none,
+            droplets_encoding = SingleLayerDroplets(;
+                max_energy = eng,
+                min_size = hamming_dist,
+                metric = :hamming,
+            ),
         ),
     )
     println(sol.energies)

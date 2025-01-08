@@ -124,8 +124,7 @@ end
     energies = Vector{Float64}[]
     for Strategy ∈ (SVDTruncate,), Sparsity ∈ (Sparse,)
         for Layout ∈ (EnergyGauges,)
-            for Lattice ∈ (KingSingleNode,),
-                transform ∈ all_lattice_transformations[[1]]
+            for Lattice ∈ (KingSingleNode,), transform ∈ all_lattice_transformations[[1]]
 
                 net = PEPSNetwork{SquareSingleNode{Layout},Sparsity,Float64}(
                     m,
@@ -146,8 +145,12 @@ end
                     merge_branches_blur(
                         ctr,
                         hamming_dist,
-                        :none ,
-                        SingleLayerDroplets(; max_energy=1.01, min_size=10, metric=:hamming),
+                        :none,
+                        SingleLayerDroplets(;
+                            max_energy = 1.01,
+                            min_size = 10,
+                            metric = :hamming,
+                        ),
                     ),
                 )
                 @test sol1.energies ≈ [exact_energies[1]]

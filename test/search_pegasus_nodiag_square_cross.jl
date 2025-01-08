@@ -1,7 +1,6 @@
 using SpinGlassExhaustive
 
 
-
 function bench(instance::String)
     m, n, t = 4, 4, 24
 
@@ -24,8 +23,7 @@ function bench(instance::String)
 
     # Solve using PEPS search
     energies = Vector{Float64}[]
-    for Strategy ∈ (SVDTruncate, Zipper),
-        transform ∈ all_lattice_transformations
+    for Strategy ∈ (SVDTruncate, Zipper), transform ∈ all_lattice_transformations
 
         for Layout ∈ (EnergyGauges, GaugesEnergy, EngGaugesEng), Sparsity ∈ (Dense,)
             net = PEPSNetwork{KingSingleNode{Layout},Sparsity,Float64}(

@@ -66,7 +66,7 @@ search_params = SearchParameters(num_states, δp)
 # end
 
 @testset "Updating gauges works correctly." begin
-    for Strategy ∈ (SVDTruncate, ), Sparsity ∈ (Dense, Sparse)
+    for Strategy ∈ (SVDTruncate,), Sparsity ∈ (Dense, Sparse)
         for Layout ∈ (GaugesEnergy,)
             for Gauge ∈ (GaugeStrategy,)
                 for Lattice ∈ (SquareSingleNode, KingSingleNode),

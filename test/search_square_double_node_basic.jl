@@ -28,8 +28,12 @@ function run_test_square_double_node(instance, m, n, t)
         for Layout ∈ (EnergyGauges, GaugesEnergy)
             for tran ∈ all_lattice_transformations
 
-                net =
-                    PEPSNetwork{SquareDoubleNode{Layout},Sparsity,Float64}(m, n, potts_h, tran)
+                net = PEPSNetwork{SquareDoubleNode{Layout},Sparsity,Float64}(
+                    m,
+                    n,
+                    potts_h,
+                    tran,
+                )
                 net2 = PEPSNetwork{SquareSingleNode{Layout},Sparsity,Float64}(
                     m,
                     n,

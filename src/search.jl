@@ -154,8 +154,8 @@ Compute and branch the energies from different branches in a solution.
 - `Vector{<:Real}`: A vector containing the energies of individual branches.
 
 ## Description
-This function computes the energies of branches in a solution by applying the `branch_energy` function 
-to each pair of energy and state in the given partial solution. 
+This function computes the energies of branches in a solution by applying the `branch_energy` function
+to each pair of energy and state in the given partial solution.
 The result is a vector of energies corresponding to the branches.
 """
 @inline function branch_energies(ctr::MpsContractor{T}, psol::Solution) where {T}
@@ -174,8 +174,8 @@ Constructs branch states based on a local basis and vectorized states.
 - `Vector{Vector{Int}}`: A vector containing the constructed branch states.
 
 ## Description
-This function constructs branch states by combining a local basis with vectorized states. 
-The local basis provides the unique states for each branch, and the vectorized states represent the state configuration for each branch. 
+This function constructs branch states by combining a local basis with vectorized states.
+The local basis provides the unique states for each branch, and the vectorized states represent the state configuration for each branch.
 The resulting vector contains the constructed branch states.
 """
 function branch_states(local_basis::Vector{Int}, vec_states::Vector{Vector{Int}})
@@ -195,15 +195,15 @@ Calculates the branch probability for a given state.
 ## Arguments
 - `ctr::MpsContractor{T}`: The MPS contractor object.
 - `pσ::Tuple{<:Real, Vector{Int}}`: Tuple containing the energy and state configuration.
-    
+
 ## Returns
 - `Real`: The calculated branch probability.
-    
+
 ## Description
-This function calculates the branch probability for a specific state configuration using the conditional probability 
+This function calculates the branch probability for a specific state configuration using the conditional probability
 provided by the MPS contractor.
-The branch probability is computed as the logarithm of the conditional probability of the given state. 
-The conditional probability is obtained from the MPS contractor. 
+The branch probability is computed as the logarithm of the conditional probability of the given state.
+The conditional probability is obtained from the MPS contractor.
 """
 function branch_probability(ctr::MpsContractor{T}, pσ::Tuple{<:Real,Vector{Int}}) where {T}
     pσ[begin] .+ log.(conditional_probability(ctr, pσ[end]))
@@ -221,10 +221,10 @@ Discards low-probability states from the given solution.
 - `Solution`: A new solution with low-probability states discarded.
 
 ## Description
-This function removes states from the solution `psol` whose probabilities are below the specified `cutoff_prob`. 
-It calculates a cutoff probability (`pcut`) based on the maximum probability in `psol` and the provided `cutoff_prob`. 
+This function removes states from the solution `psol` whose probabilities are below the specified `cutoff_prob`.
+It calculates a cutoff probability (`pcut`) based on the maximum probability in `psol` and the provided `cutoff_prob`.
 States with probabilities lower than `pcut` are considered discarded.
-The largest discarded probability (`ldp`) in the resulting solution is updated based on the 
+The largest discarded probability (`ldp`) in the resulting solution is updated based on the
 maximum discarded probability among the removed states and the existing `ldp` in `psol`.
 """
 function discard_probabilities!(psol::Solution, cutoff_prob::Real)
@@ -232,7 +232,7 @@ function discard_probabilities!(psol::Solution, cutoff_prob::Real)
     if minimum(psol.probabilities) >= pcut
         return psol
     end
-    local_ldp = maximum(psol.probabilities[psol.probabilities.<pcut])
+    local_ldp = maximum(psol.probabilities[psol.probabilities .< pcut])
     ldp = max(local_ldp, psol.largest_discarded_probability)
     Solution(psol, findall(p -> p >= pcut, psol.probabilities), ldp)
 end
@@ -249,7 +249,7 @@ Retrieve the local spin configurations associated with a vertex in the Gibbs net
 - `Vector{Int}`: An array representing the local spin configurations.
 
 ## Description
-This function retrieves the local spin configurations associated with a given vertex in the Gibbs network. 
+This function retrieves the local spin configurations associated with a given vertex in the Gibbs network.
 The local spins are extracted from the spectrum of the Potts Hamiltonian associated with the vertex.
 """
 function local_spins(network::AbstractGibbsNetwork{S,T}, vertex::S) where {S,T}
@@ -268,8 +268,8 @@ Generate a new solution by branching the given partial solution in a contracting
 - `Solution`: A new solution obtained by branching the partial solution in the contracting network.
 
 ## Description
-This function generates a new solution by branching the given partial solution in a contracting Gibbs network. 
-It computes the energies, states, probabilities, degeneracies, discarded probabilities, droplets, and spins for the resulting solution. 
+This function generates a new solution by branching the given partial solution in a contracting Gibbs network.
+It computes the energies, states, probabilities, degeneracies, discarded probabilities, droplets, and spins for the resulting solution.
 The branching process involves considering the current node in the contractor and updating the solution accordingly.
 """
 function branch_solution(psol::Solution, ctr::T) where {T<:AbstractContractor}
@@ -309,7 +309,7 @@ The `_merge` function can be applied to a `Solution` object to merge its branche
 """
 function merge_branches(
     ctr::MpsContractor{T};
-    merge_prob::Symbol = :none ,
+    merge_prob::Symbol = :none,
     droplets_encoding = NoDroplets(),
 ) where {T}
     function _merge(psol::Solution)
@@ -347,12 +347,11 @@ function merge_branches(
 
             if merge_prob == :median
                 c = Statistics.median(
-                    ctr.beta .* nsol.energies[start:stop] .+
-                    nsol.probabilities[start:stop],
+                    ctr.beta .* nsol.energies[start:stop] .+ nsol.probabilities[start:stop],
                 )
                 new_prob = -ctr.beta .* nsol.energies[best_idx] .+ c
                 push!(probs, new_prob)
-            elseif merge_prob == :none 
+            elseif merge_prob == :none
                 push!(probs, nsol.probabilities[best_idx])
             elseif merge_prob == :tnac4o
                 push!(probs, Statistics.mean(nsol.probabilities[ind_deg]))
@@ -398,28 +397,31 @@ Generate a function for merging branches in a Gibbs network with a Hamming dista
 - `hamming_cutoff::Int`: The Hamming distance cutoff for blur.
 - `merge_prob::Symbol=:none `: The merging strategy, defaults to `:none `.
 - `droplets_encoding=NoDroplets()`: Droplet update method, defaults to `NoDroplets()`.
-    
+
 ## Returns
 A function `_merge_blur` that can be used to merge branches with Hamming distance blur in a solution.
-    
+
 ## Description
-This function generates a function for merging branches in a Gibbs network with Hamming distance blur. 
-The resulting function takes a partial solution as an input and performs the merging process, considering Hamming distance constraints. 
+This function generates a function for merging branches in a Gibbs network with Hamming distance blur.
+The resulting function takes a partial solution as an input and performs the merging process, considering Hamming distance constraints.
 It returns a new solution with the merged branches.
-The Hamming distance blur helps in selecting diverse states during the merging process. 
+The Hamming distance blur helps in selecting diverse states during the merging process.
 States with Hamming distances greater than or equal to the specified cutoff are considered distinct.
 """
 function merge_branches_blur(
     ctr::MpsContractor{T},
     hamming_cutoff::Int,
-    merge_prob::Symbol = :none ,
+    merge_prob::Symbol = :none,
     droplets_encoding = NoDroplets(),
 ) where {T}
     function _merge_blur(psol::Solution)
-        psol =
-            merge_branches(ctr; merge_prob = merge_prob, droplets_encoding = droplets_encoding)(
-                psol,
-            )
+        psol = merge_branches(
+            ctr;
+            merge_prob = merge_prob,
+            droplets_encoding = droplets_encoding,
+        )(
+            psol,
+        )
         node = get(ctr.nodes_search_order, length(psol.states[1]) + 1, ctr.node_outside)
         boundaries = boundary_states(ctr, psol.states, node)
         sorted_indices = sortperm(psol.probabilities, rev = true)
@@ -503,11 +505,11 @@ Generate a new solution by sampling states based on their probabilities.
 - `Solution`: A new solution obtained by sampling states.
 
 ## Description
-This function generates a new solution by sampling states from the given partial solution. 
-The sampling is performed based on the probabilities associated with each state. 
-The number of sampled states is determined by the `max_states` argument. 
+This function generates a new solution by sampling states from the given partial solution.
+The sampling is performed based on the probabilities associated with each state.
+The number of sampled states is determined by the `max_states` argument.
 Additionally, states with probabilities below the threshold `δprob` are discarded.
-The optional argument `merge_strategy` specifies the merging strategy to be used during the sampling process. 
+The optional argument `merge_strategy` specifies the merging strategy to be used during the sampling process.
 It defaults to `no_merge`, indicating no merging.
 """
 function sampling(psol::Solution, max_states::Int, δprob::Real, merge_strategy = no_merge)
@@ -534,7 +536,7 @@ Compute the low-energy spectrum on a quasi-2D graph using branch-and-bound searc
 Merge matching configurations during branch-and-bound search going line by line.
 Information about excited states (droplets) is collected during merging,
 which allows reconstructing the low-energy spectrum.
-It takes as input a `ctr` object representing the PEPS network and the parameters for controlling its contraction, 
+It takes as input a `ctr` object representing the PEPS network and the parameters for controlling its contraction,
 `sparams` specifying search parameters, `merge_strategy` for merging branches,
 and `symmetry` indicating any symmetry constraints. Optionally, you can disable caching using the `no_cache` flag.
 Probabilities are kept as log. Results are stored in Solution structure.

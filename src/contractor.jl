@@ -71,7 +71,7 @@ A struct representing control parameters for the MPO-MPS (Matrix Product Operato
 - `iters_var::Int`: The number of iterations for variational optimization. Default is 1.
 - `Dtemp_multiplier::Int`: A multiplier for the bond dimension when temporary bond dimensions are computed. Default is 2.
 - `method::Symbol`: The type of SVD method to use (e.g., `:psvd_sparse`). Default is `:psvd_sparse`.
-    
+
 Keyword Arguments:
 - `bond_dim`: Specifies the maximum bond dimension (default is typemax(Int)).
 - `var_tol`: Tolerance for the variational solver (default is 1E-8).
@@ -104,7 +104,16 @@ struct MpsParameters{S<:Real}
         iters_var = 1,
         Dtemp_multiplier = 2,
         method = :psvd_sparse,
-    ) where {S} = new(bond_dim, var_tol, num_sweeps, tol_SVD, iters_svd, iters_var, Dtemp_multiplier, method)
+    ) where {S} = new(
+        bond_dim,
+        var_tol,
+        num_sweeps,
+        tol_SVD,
+        iters_svd,
+        iters_var,
+        Dtemp_multiplier,
+        method,
+    )
 end
 
 """
@@ -158,7 +167,7 @@ Keyword arguments:
 The constructor sets up the internal structure of the contractor, including the MPO layers, search order for nodes, and storage for contraction statistics.
 """
 mutable struct MpsContractor{T<:AbstractStrategy,R<:AbstractGauge,S<:Real} <:
-                AbstractContractor
+               AbstractContractor
     peps::PEPSNetwork{T} where {T}
     beta::S
     graduate_truncation::Bool
@@ -212,7 +221,7 @@ function MpsContractor(
     graduate_truncation::Bool,
     onGPU = true,
     depth::Int = 0,
-) where {T, R, S}
+) where {T,R,S}
     return MpsContractor{T,R,S}(net, params; beta, graduate_truncation, onGPU, depth)
 end
 
@@ -225,7 +234,7 @@ function MpsContractor(
     graduate_truncation::Bool,
     onGPU = true,
     depth::Int = 0,
-) where {T, R, S}
+) where {T,R,S}
     return MpsContractor(T, R, S, net, params; beta, graduate_truncation, onGPU, depth)
 end
 
@@ -237,7 +246,7 @@ function MpsContractor(
     graduate_truncation::Bool,
     onGPU = true,
     depth::Int = 0,
-) where {T, S}
+) where {T,S}
     return MpsContractor(T, NoUpdate, net, params; beta, graduate_truncation, onGPU, depth)
 end
 
@@ -298,10 +307,7 @@ Construct and memoize the top Matrix Product State (MPS) using Singular Value De
 
 This function constructs the top MPS using SVD for a given row in the PEPS network contraction. It recursively builds the MPS row by row, performing canonicalization, truncation, and compression steps as needed based on the specified parameters in `ctr.params`. The resulting MPS is memoized for efficient reuse.
 """
-@memoize Dict function mps_top(
-    ctr::MpsContractor{SVDTruncate,R,S},
-    i::Int,
-) where {R,S}
+@memoize Dict function mps_top(ctr::MpsContractor{SVDTruncate,R,S}, i::Int) where {R,S}
     Dcut = ctr.params.bond_dimension
     tolV = ctr.params.variational_tol
     tolS = ctr.params.tol_SVD
@@ -352,16 +358,22 @@ This function constructs the (bottom) MPS using SVD for a given row in the PEPS 
     end
 
     ψ = mps(ctr, i + 1)
+
+
     W = mpo(ctr, ctr.layers.main, i)
 
     ψ0 = dot(W, ψ)
+
+
     canonise!(ψ0, :right)
+
+
     if ctr.graduate_truncation
         canonise_truncate!(ψ0, :left, Dcut * 2, tolS / 2)
         variational_sweep!(ψ0, W, ψ, Val(:right))
     end
     canonise_truncate!(ψ0, :left, Dcut, tolS)
-    variational_compress!(ψ0, W, ψ, tolV, max_sweeps)
+    #variational_compress!(ψ0, W, ψ, tolV, max_sweeps)
     ψ0
 end
 
@@ -498,7 +510,7 @@ This function constructs the (bottom) Matrix Product State (MPS) using the Zippe
             depth = depth,
         )
         canonise!(ψ0, :left)
-        variational_compress!(ψ0, W, ψ, tolV, max_sweeps)
+        #variational_compress!(ψ0, W, ψ, tolV, max_sweeps)
     end
     ψ0
 end
@@ -525,6 +537,7 @@ Note: The memoization ensures that the dressed MPS is only constructed once for 
 ) where {T<:AbstractStrategy}
 
     ψ = mps(ctr, i + 1)
+
     caches = Memoization.find_caches(mps)
     delete!(caches[mps], ((ctr, i + 1), ()))
     if ctr.onGPU
@@ -532,6 +545,7 @@ Note: The memoization ensures that the dressed MPS is only constructed once for 
     end
     W = mpo(ctr, ctr.layers.dress, i)
     ϕ = dot(W, ψ)
+
     for j ∈ ϕ.sites
         nrm = maximum(abs.(ϕ[j]))
         if !iszero(nrm)
@@ -632,7 +646,8 @@ Note: The memoization ensures that the left environment tensor is only construct
     site = ϕ.sites[l]
     M = ϕ[site]
 
-    @matmul L[x] := sum(α) L̃[α] * M[α, x, $m]
+    # @matmul L[x] := sum(α) L̃[α] * M[α, x, $m]
+    @tensor L[x] := L̃[α] * view(M, :, :, m)[α, x]
     nmr = maximum(abs.(L))
     iszero(nmr) ? L : L ./ nmr
 end

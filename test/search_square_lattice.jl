@@ -20,8 +20,7 @@ function bench(instance::String)
     Gauge = NoUpdate
     graduate_truncation = true
     energies = Vector{Float64}[]
-    for Strategy ∈ (SVDTruncate, Zipper),
-        transform ∈ all_lattice_transformations
+    for Strategy ∈ (SVDTruncate, Zipper), transform ∈ all_lattice_transformations
 
         for Layout ∈ (GaugesEnergy, EnergyGauges, EngGaugesEng), Sparsity ∈ (Dense, Sparse)
             net = PEPSNetwork{KingSingleNode{Layout},Sparsity}(m, n, potts_h, transform)

@@ -3,7 +3,7 @@ export KingSingleNode
 """
 $(TYPEDSIGNATURES)
 
-A geometric structure representing a 1-layer grid with nodes arranged in a grid of rows and columns, 
+A geometric structure representing a 1-layer grid with nodes arranged in a grid of rows and columns,
 and additional diagonal edges forming a cross pattern between neighboring nodes.
 
 # Type Parameters
@@ -17,7 +17,7 @@ struct KingSingleNode{T<:AbstractTensorsLayout} <: AbstractGeometry end
 """
 $(TYPEDSIGNATURES)
 
-Create a labeled grid graph with nodes arranged in an m x n grid and additional diagonal 
+Create a labeled grid graph with nodes arranged in an m x n grid and additional diagonal
 edges forming a cross pattern between neighboring nodes.
 
 # Arguments
@@ -25,7 +25,7 @@ edges forming a cross pattern between neighboring nodes.
 - `n::Int`: The number of columns in the grid.
 
 # Returns
-A `LabelledGraph` representing a grid graph with nodes arranged in an m x n grid, 
+A `LabelledGraph` representing a grid graph with nodes arranged in an m x n grid,
 and additional diagonal edges forming a cross pattern between neighboring nodes.
 """
 function KingSingleNode(m::Int, n::Int)
@@ -188,14 +188,12 @@ function conditional_probability(
     ctr::MpsContractor{S},
     ∂v::Vector{Int},
 ) where {T<:KingSingleNode,S}
+
     β = ctr.beta
     i, j = ctr.current_node
 
     L = left_env(ctr, i, ∂v[1:2*j-2])
     R = right_env(ctr, i, ∂v[(2*j+3):2*ctr.peps.ncols+2])
-    if ctr.onGPU
-        R = CuArray(R)
-    end
 
     ψ = dressed_mps(ctr, i)
 
@@ -205,13 +203,14 @@ function conditional_probability(
     v = ((i, j - 1), (i - 1, j - 1), (i - 1, j))
     @nexprs 3 k -> (en_k = projected_energy(ctr.peps, (i, j), v[k], ∂v[2*j-1+k]))
     probs = probability(local_energy(ctr.peps, (i, j)) .+ en_1 .+ en_2 .+ en_3, β)
-    # println("probs1 ", probs)
+
     p_rb = projector(ctr.peps, (i, j), (i + 1, j - 1))
     pr = projector(ctr.peps, (i, j), @ntuple 3 k -> (i + 2 - k, j + 1))
     pd = projector(ctr.peps, (i, j), (i + 1, j))
 
-    @cast lmx2[d, b, c] := LMX[d, (b, c)] (c ∈ 1:maximum(p_rb))
-
+    # @cast lmx2[d, b, c] := LMX[d, (b, c)] (c ∈ 1:maximum(p_rb))
+    c = maximum(p_rb)
+    lmx2 = reshape(LMX, size(LMX, 1), size(LMX, 2) ÷ c, c)
     lmx2, M, R = Array.((lmx2, M, R))  # REWRITE
 
     for σ ∈ 1:length(probs)   # REWRITE on CUDA + parallelize
@@ -219,9 +218,7 @@ function conditional_probability(
         m = @inbounds M[:, :, pd[σ]]
         r = @inbounds R[:, pr[σ]]
         @inbounds probs[σ] *= (lmx'*m*r)[]
-        # println("probs2 ", probs)
     end
-    # println("probs3 ", probs)
 
     push!(ctr.statistics, ((i, j), ∂v) => error_measure(probs))
     normalize_probability(probs)
@@ -248,11 +245,7 @@ function nodes_search_order_Mps(peps::PEPSNetwork{T,S}) where {T<:KingSingleNode
 end
 
 
-function boundary(
-    ::Type{T},
-    ctr::MpsContractor{S},
-    node::Node,
-) where {T<:KingSingleNode,S}
+function boundary(::Type{T}, ctr::MpsContractor{S}, node::Node) where {T<:KingSingleNode,S}
     i, j = node
     vcat(
         [
@@ -295,7 +288,10 @@ function tensor(
     i, j = floor(Int, node.i), floor(Int, node.j)
     T_NW_SE = connecting_tensor(net, (i, j), (i + 1, j + 1), β)
     T_NE_SW = connecting_tensor(net, (i, j + 1), (i + 1, j), β)
-    @cast A[(u, uu), (dd, d)] := T_NW_SE[u, d] * T_NE_SW[uu, dd]
+    # @cast A[(u, uu), (dd, d)] := T_NW_SE[u, d] * T_NE_SW[uu, dd]
+    u, d = size(T_NW_SE)
+    uu, dd = size(T_NE_SW)
+    A = reshape(reshape(T_NW_SE, u, 1, 1, d) .* reshape(T_NE_SW, 1, dd, uu), u * uu, d * dd)
     A
 end
 
@@ -354,6 +350,7 @@ function tensor(
     for l ∈ 1:length(p_l), r ∈ 1:length(p_r)
         @inbounds A[l, p_lt[l], p_rt[r], r, p_lb[l], p_rb[r]] = sp.con[p_l[l], p_r[r]]
     end
-    @cast B[l, (uu, u), r, (dd, d)] := A[l, uu, u, r, dd, d]
+    # @cast B[l, (uu, u), r, (dd, d)] := A[l, uu, u, r, dd, d]
+    B = reshape(A, size(A, 1), size(A, 2) * size(A, 3), size(A, 4), size(A, 5) * size(A, 6))
     B
 end

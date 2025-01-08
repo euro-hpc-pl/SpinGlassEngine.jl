@@ -60,9 +60,11 @@ end
 function tensor(network::AbstractGibbsNetwork{S}, v::S, ::Val{:site}) where {S}
     loc_exp = exp.(-network.β .* local_energy(network, v))
     projs = projectors(network, v)
-    @cast A[σ, _] := loc_exp[σ]
+    # @cast A[σ, _] := loc_exp[σ]
+    A = reshape(loc_exp, :, 1)
     for pv ∈ projs
-        @cast A[σ, (c, γ)] |= A[σ, c] * pv[σ, γ]
+        # @cast A[σ, (c, γ)] |= A[σ, c] * pv[σ, γ]
+        A .= reshape(z .* reshape(pv, size(pv, 1), 1, size(pv, 2)), size(z, 1), :)
     end
     B = dropdims(sum(A, dims = 1), dims = 1)
     reshape(B, size.(projs, 2))
@@ -85,7 +87,8 @@ function tensor(
     r, j = v
     i = floor(Int, r)
     h = connecting_tensor(network, (i, j), (i + 1, j))
-    @cast A[_, u, _, d] := h[u, d]
+    # @cast A[_, u, _, d] := h[u, d]
+    A = reshape(h, 1, size(h, 1), 1, size(h, 2))
     A
 end
 
@@ -110,7 +113,8 @@ function tensor(
     i, r = w
     j = floor(Int, r)
     v = connecting_tensor(network, (i, j), (i, j + 1))
-    @cast A[l, _, r, _] := v[l, r]
+    # @cast A[l, _, r, _] := v[l, r]
+    A = reshape(v, size(v, 1), 1, size(v, 2), 1)
     A
 end
 
@@ -137,7 +141,10 @@ function tensor(
     j = floor(Int, s)
     NW = connecting_tensor(network, (i, j), (i + 1, j + 1))
     NE = connecting_tensor(network, (i, j + 1), (i + 1, j))
-    @cast A[_, (u, ũ), _, (d, d̃)] := NW[u, d] * NE[ũ, d̃]
+    # @cast A[_, (u, ũ), _, (d, d̃)] := NW[u, d] * NE[ũ, d̃]
+    u, d = size(NW)
+    ũ, d̃ = size(NE)
+    A = reshape(reshape(NW, u, 1, d) .* reshape(NE, 1, ũ, 1, d̃), 1, u * ũ, 1, d * d̃)
     A
 end
 
@@ -178,8 +185,19 @@ function tensor(network::AbstractGibbsNetwork, v::Tuple{Int,Rational{Int}}, ::Va
     h = connecting_tensor(network, floor.(Int, v), ceil.(Int, v))
 
     @tensor B[l, r] := p_l[l, x] * h[x, y] * p_r[r, y]
-    @cast A[l, (ũ, u), r, (d̃, d)] |=
-        B[l, r] * p_lt[l, u] * p_rb[r, d] * p_rt[r, ũ] * p_lb[l, d̃]
+    # @cast A[l, (ũ, u), r, (d̃, d)] |=
+    #     B[l, r] * p_lt[l, u] * p_rb[r, d] * p_rt[r, ũ] * p_lb[l, d̃]
+    ((l, r), u, d, ũ, d̃) =
+        size(B), size(p_lt, 2), size(p_rb, 2), size(p_rt, 2), size(p_lb, 2)
+    A = reshape(
+        reshape(B, l, 1, 1, r) .* reshape(p_lt, l, 1, u) .*
+        reshape(p_rb, 1, 1, 1, r, 1, d) .* reshape(p_rt', 1, ũ, 1, r) .*
+        reshape(p_lb, l, 1, 1, 1, d̃),
+        l,
+        ũ * u,
+        r,
+        d̃ * d,
+    )
     A
 end
 
@@ -201,7 +219,8 @@ end
 
 function tensor(network::AbstractGibbsNetwork, v, ::Val{:gauge_h})
     X = network.gauges[v]
-    @cast A[_, u, _, d] := Diagonal(X)[u, d]
+    # @cast A[_, u, _, d] := Diagonal(X)[u, d]
+    A = reshape(Diagonal(X), 1, length(X), 1, length(X))
     A
 end
 
@@ -224,18 +243,23 @@ function reduced_site_tensor(network::PEPSNetwork, v::Tuple{Int,Int}, l::Int, u:
     eng_local = local_energy(network, v)
     pl = projector(network, v, (i, j - 1))
     eng_pl = interaction_energy(network, v, (i, j - 1))
-    @matmul eng_left[x] := sum(y) pl[x, y] * eng_pl[y, $l]
+    # @matmul eng_left[x] := sum(y) pl[x, y] * eng_pl[y, $l]
+    @tensor eng_left[x] := pl[x, y] * view(eng_pl, :, l)[y]
 
     pu = projector(network, v, (i - 1, j))
     eng_pu = interaction_energy(network, v, (i - 1, j))
-    @matmul eng_up[x] := sum(y) pu[x, y] * eng_pu[y, $u]
+    # @matmul eng_up[x] := sum(y) pu[x, y] * eng_pu[y, $u]
+    @tensor eng_up[x] := pu[x, y] * view(eng_pu, :, u)[y]
 
     en = eng_local .+ eng_left .+ eng_up
     loc_exp = exp.(-network.β .* (en .- minimum(en)))
 
     pr = projector(network, v, (i, j + 1))
     pd = projector(network, v, (i + 1, j))
-    @cast A[r, d, σ] := pr[σ, r] * pd[σ, d] * loc_exp[σ]
+    # @cast A[r, d, σ] := pr[σ, r] * pd[σ, d] * loc_exp[σ]
+    A =
+        reshape(pr', size(pr, 2), 1, size(pr, 1)) .*
+        reshape(pd', 1, size(pd, 2), size(pd, 1)) .* reshape(loc_exp, 1, 1, :)
     A
 end
 
@@ -333,6 +357,7 @@ end
     ϕ = dressed_mps(peps, i)
     m = ∂v[l]
     M = ϕ[l]
-    @matmul L[x] := sum(α) L̃[α] * M[α, $m, x]
+    # @matmul L[x] := sum(α) L̃[α] * M[α, $m, x]
+    @tensor L[x] := L̃[α] * view(M, :, m, :)[α, x]
     L
 end

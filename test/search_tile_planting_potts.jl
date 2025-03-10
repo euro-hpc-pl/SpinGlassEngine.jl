@@ -2,18 +2,23 @@ using SpinGlassNetworks
 using SpinGlassTensors
 using SpinGlassEngine
 using MetaGraphs
+using Graphs
 
 function bench(instance::String)
     m, n, t = 3, 3, 3
-
+    ig = prune(ising_graph(instance))
     potts_h = potts_hamiltonian(
-        ising_graph(instance),
+        ig,
         spectrum = full_spectrum,
         cluster_assignment_rule = pegasus_lattice((m, n, t)),
     )
 
-    total_spins = 0  
+    println("ISING")
+    num_vertices = nv(ig)
+    println("Number of spins in the Ising graph: $num_vertices")
 
+    total_spins = 0  
+    println("POTTS")
     for v in vertices(potts_h)
         num_states_v = length(get_prop(potts_h, v, :spectrum).states)
         num_spins_v = num_states_v == 0 ? 0 : round(Int, log2(num_states_v))
@@ -21,7 +26,7 @@ function bench(instance::String)
         total_spins += num_spins_v
     end
 
-    println("Total number of spins in the problem: ", total_spins)
+    println("Total number of spins in the problem (Potts): ", total_spins)
 
 end
 

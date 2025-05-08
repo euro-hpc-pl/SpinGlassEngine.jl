@@ -38,11 +38,11 @@ push!(
     # "search_chimera_pathological_droplets.jl",
     # "search_chimera_pathological_hamming.jl",
     # "search_chimera_droplets.jl",
-    # "search_pegasus_droplets.jl",
+    "search_pegasus_gauges.jl",
     # "search_chimera_pathological_Z2.jl",
     # time consuming tests:
     #    "search_chimera_full.jl",
-    "search_tile_planting_potts.jl",
+    # "search_tile_planting_potts.jl",
 )
 
 # This is work in progress (may or may not be included in future versions)

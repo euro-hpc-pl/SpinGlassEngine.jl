@@ -280,12 +280,14 @@ This function constructs an MPO by iterating through the specified layers and as
     ctr::MpsContractor{T,R,S},
     layers::Dict{Site,Sites},
     r::Int,
+    betahalf::Bool = false
 ) where {T<:AbstractStrategy,R,S}
+    β = betahalf ? ctr.beta / 2 : ctr.beta
     mpo = Dict{Site,MpoTensor{S}}()
     for (site, coordinates) ∈ layers
         lmpo = TensorMap{S}()
         for dr ∈ coordinates
-            ten = tensor(ctr.peps, PEPSNode(r + dr, site), ctr.beta)
+            ten = tensor(ctr.peps, PEPSNode(r + dr, site), β)
             push!(lmpo, dr => ten)
         end
         push!(mpo, site => MpoTensor(lmpo))
@@ -431,7 +433,7 @@ Construct and memoize the top Matrix Product State (MPS) using the Zipper (trunc
 
 This function constructs the top Matrix Product State (MPS) using the Zipper (truncated Singular Value Decomposition) method for a given row in the PEPS network contraction. It recursively builds the MPS row by row, performing canonicalization, and truncation steps based on the specified parameters in `ctr.params`. The resulting MPS is memoized for efficient reuse.
 """
-@memoize Dict function mps_top(ctr::MpsContractor{Zipper,R,S}, i::Int) where {R,S}
+@memoize Dict function mps_top(ctr::MpsContractor{Zipper,R,S}, i::Int, betahalf::Bool = false) where {R,S}
     Dcut = ctr.params.bond_dimension
     tolV = ctr.params.variational_tol
     tolS = ctr.params.tol_SVD
@@ -442,11 +444,11 @@ This function constructs the top Matrix Product State (MPS) using the Zipper (tr
     method = ctr.params.method
     depth = ctr.depth
     if i < 1
-        W = mpo(ctr, ctr.layers.main, 1)
+        W = mpo(ctr, ctr.layers.main, 1, betahalf)
         return IdentityQMps(S, local_dims(W, :up); onGPU = ctr.onGPU) # F64 for now
     end
 
-    ψ = mps_top(ctr, i - 1)
+    ψ = mps_top(ctr, i - 1, betahalf)
     W = transpose(mpo(ctr, ctr.layers.main, i))
 
     canonise!(ψ, :left)
@@ -480,7 +482,7 @@ Construct and memoize the (bottom) Matrix Product State (MPS) using the Zipper (
 
 This function constructs the (bottom) Matrix Product State (MPS) using the Zipper (truncated Singular Value Decomposition) method for a given row in the PEPS network contraction. It recursively builds the MPS row by row, performing canonicalization, and truncation steps based on the specified parameters in `ctr.params`. The resulting MPS is memoized for efficient reuse.
 """
-@memoize Dict function mps(ctr::MpsContractor{Zipper,R,S}, i::Int) where {R,S}
+@memoize Dict function mps(ctr::MpsContractor{Zipper,R,S}, i::Int, betahalf::Bool = false) where {R,S}
     Dcut = ctr.params.bond_dimension
     tolV = ctr.params.variational_tol
     tolS = ctr.params.tol_SVD
@@ -492,11 +494,11 @@ This function constructs the (bottom) Matrix Product State (MPS) using the Zippe
     depth = ctr.depth
 
     if i > ctr.peps.nrows
-        W = mpo(ctr, ctr.layers.main, ctr.peps.nrows)
+        W = mpo(ctr, ctr.layers.main, ctr.peps.nrows, betahalf)
         ψ0 = IdentityQMps(S, local_dims(W, :down); onGPU = ctr.onGPU)
     else
-        ψ = mps(ctr, i + 1)
-        W = mpo(ctr, ctr.layers.main, i)
+        ψ = mps(ctr, i + 1, betahalf)
+        W = mpo(ctr, ctr.layers.main, i, betahalf)
         canonise!(ψ, :left)
         ψ0 = zipper(
             W,
@@ -712,10 +714,11 @@ function sweep_gauges!(
     row::Site,
     tol::Real = 1E-4,
     max_sweeps::Int = 10,
+    betahalf::Bool = true
 ) where {T}
     clm = ctr.layers.main
-    ψ_top = mps_top(ctr, row)
-    ψ_bot = mps(ctr, row + 1)
+    ψ_top = mps_top(ctr, row, betahalf)
+    ψ_bot = mps(ctr, row + 1, betahalf)
 
     ψ_top = deepcopy(ψ_top)
     ψ_bot = deepcopy(ψ_bot)
@@ -737,7 +740,8 @@ function sweep_gauges!(
         g_bot = bot .* g_inv
         push!(ctr.peps.gauges.data, n_top => g_top, n_bot => g_bot)
     end
-    clear_memoize_cache(ctr, row)
+    # clear_memoize_cache(ctr, row)
+    clear_memoize_cache()
 end
 
 
@@ -779,9 +783,45 @@ function update_gauges!(ctr::MpsContractor{T,S}, row::Site, ::Val{:down}) where 
 end
 
 
-function update_gauges!(ctr::MpsContractor{T,S}, row::Site, ::Val{:up}) where {T,S}
+# function update_gauges!(ctr::MpsContractor{T,S}, row::Site, ::Val{:up}) where {T,S}
+#     for i ∈ row-1:-1:1
+#         sweep_gauges!(ctr, i)
+#     end
+# end
+
+# Testowo: funkcja sprawdzająca unormowanie stanów
+function normalize!(ψ::QMps{T}) where {T<:Real}
+    norm = sqrt(dot(ψ, ψ))
+    println(norm)
+    for i in ψ.sites
+        ψ[i] ./= norm
+    end
+    return ψ
+end
+
+function update_gauges!(
+    ctr::MpsContractor{T,S},
+    row::Site,
+    ::Val{:up},
+    log_file::Union{Nothing, String} = nothing,
+    betahalf::Bool = true
+) where {T,S}
     for i ∈ row-1:-1:1
-        sweep_gauges!(ctr, i)
+        # normalize!(mps_top(ctr, i))
+        # normalize!(mps(ctr, i + 1))
+        overlap_before = dot(mps_top(ctr, i), mps(ctr, i + 1))
+        
+        sweep_gauges!(ctr, i, betahalf)
+        # normalize!(mps_top(ctr, i))
+        # normalize!(mps(ctr, i + 1))
+        overlap_after = dot(mps_top(ctr, i), mps(ctr, i + 1))
+
+        # Zapis overlapów do pliku
+        if log_file !== nothing
+            open(log_file, "a") do io
+                println(io, "$i,before,$overlap_before,after,$overlap_after")
+            end
+        end
     end
 end
 

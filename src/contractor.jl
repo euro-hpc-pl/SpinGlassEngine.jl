@@ -748,10 +748,11 @@ end
 function sweep_gauges!(
     ctr::MpsContractor{T,GaugeStrategyWithBalancing},
     row::Site,
+    betahalf::Bool = true
 ) where {T}
     clm = ctr.layers.main
-    ψ_top = mps_top(ctr, row)
-    ψ_bot = mps(ctr, row + 1)
+    ψ_top = mps_top(ctr, row, betahalf)
+    ψ_bot = mps(ctr, row + 1, betahalf)
     ψ_top = deepcopy(ψ_top)
     ψ_bot = deepcopy(ψ_bot)
     for i ∈ ψ_top.sites
@@ -761,7 +762,7 @@ function sweep_gauges!(
         _, _, scale = LinearAlgebra.LAPACK.gebal!('S', ρ)
         push!(ctr.peps.gauges.data, n_top => 1.0 ./ scale, n_bot => scale)
     end
-    clear_memoize_cache(ctr, row)
+    clear_memoize_cache()
     ψ_top * ψ_bot
 end
 

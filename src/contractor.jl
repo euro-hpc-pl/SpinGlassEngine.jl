@@ -808,14 +808,10 @@ function update_gauges!(
     betahalf::Bool = true
 ) where {T,S}
     for i ∈ row-1:-1:1
-        # normalize!(mps_top(ctr, i))
-        # normalize!(mps(ctr, i + 1))
-        overlap_before = dot(mps_top(ctr, i), mps(ctr, i + 1))
-        
+        overlap_before = mps_top(ctr, i) * mps(ctr, i + 1)
+
         sweep_gauges!(ctr, i, betahalf)
-        # normalize!(mps_top(ctr, i))
-        # normalize!(mps(ctr, i + 1))
-        overlap_after = dot(mps_top(ctr, i), mps(ctr, i + 1))
+        overlap_after = mps_top(ctr, i) * mps(ctr, i + 1)
 
         # Zapis overlapów do pliku
         if log_file !== nothing

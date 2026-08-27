@@ -1,4 +1,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/iitis/SpinGlassEngine.jl/badge.svg?branch=master)](https://coveralls.io/github/iitis/SpinGlassEngine.jl?branch=master)
+
+## This repo is deprecated in favor of [SpinGlassPEPS.jl](https://github.com/euro-hpc-pl/SpinGlassPEPS.jl)
+
 # SpinGlassEngine.jl
 
 Part of SpinGlassPEPS package. It consists of routines for executing the branch-and-bound method

@@ -44,13 +44,12 @@ A struct representing a solution obtained from a low-energy spectrum search.
 - `states::Vector{Vector{Int}}`: A vector of state configurations corresponding to the energies.
 - `probabilities::Vector{<:Real}`: The probabilities associated with each discovered state.
 - `degeneracy::Vector{Int}`: The degeneracy of each energy level.
-- `largest_discarded_probability::Real`: The largest probability of the largest discarded state.
+- `largest_discarded_probability::Real`: The probability of the largest discarded state.
 - `droplets::Vector{Droplets}`: A vector of droplets associated with each state.
 - `spins::Vector{Vector{Int}}`: The spin configurations corresponding to each state.
 
-The `Solution` struct holds information about the results of a low-energy spectrum search, including the energy levels,
-state configurations, probabilities, degeneracy, and additional details such as droplets and spin configurations.
-Users can access this information to analyze and interpret the search results.
+The `Solution` struct holds information about the results of a low-energy spectrum search, including the energies,
+state configurations, probabilities, degeneracy, and additional details such as droplets enabling to reconstruct the low energy spectrum from the ground state.
 """
 struct Solution
     energies::Vector{<:Real}

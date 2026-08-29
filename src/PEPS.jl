@@ -35,14 +35,14 @@ Construct a Projected Entangled Pair States (PEPS) network.
 # Arguments
 - `m::Int`: Number of rows in the PEPS lattice.
 - `n::Int`: Number of columns in the PEPS lattice.
-- `potts_hamiltonian::LabelledGraph`: Potts Hamiltonian representing the Hamiltonian.
+- `potts_hamiltonian::LabelledGraph`: Potts Hamiltonian.
 - `transformation::LatticeTransformation`: Transformation of the PEPS lattice, as it can be rotated or reflected. 
-- `gauge_type::Symbol=:id`: Type of gauge to initialize (default is identity).
+- `gauge_type::Symbol=:id`: Type of gauge initialization: :id or :rand (default is :id).
 
 # Type Parameters
 - `T <: AbstractGeometry`: Type of node used within the PEPS tensor network. It can be `SquareSingleNode`, `SquareDoubleNode`, `KingSingleNode`, `SquareCrossDoubleNode`.
 - `S <: AbstractSparsity`: Type of sparsity for the PEPS tensors: `Dense` or `Sparse`.
-- `R <: Real``: The numeric precision type for real values (e.g., Float64).
+- `R <: Real`: The numeric precision type for real values (e.g., Float64 or Float32).
 
 # Returns
 An instance of PEPSNetwork{T, S, R}.

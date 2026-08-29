@@ -1,6 +1,5 @@
 # Contracting PEPS tensor network
-Once we construct the tensor network, we can proceed with its contraction. The first step involves preparing structures to store information about the approximate contraction using the MPS-MPO method and the exploration of states through the branch-and-bound algorithm.
-
+With the tensor network constructed, we now prepare to initiate the core branch-and-bound algorithm. The process begins with preparing data structures that store information about approximate contraction using the boundary MPS-MPO method and the exploration of states through the branch-and-bound algorithm. 
 ```@docs
 MpsContractor
 ```
@@ -11,12 +10,12 @@ MpsParameters
 SearchParameters
 ```
 
-# Strategy 
+# Optimizing boundary MPS 
 In the boundary MPS-MPO approach we apply Matrix Product Operator (MPO) to appropriate sites of Matrix Product State (MPS). In this context, the absorption of a MPO into a MPS leads to an exponential growth of the bond dimension. Hence, a truncation scheme is necessary to mitigate this issue and to keep the bond dimension in a reasonable size. 
-Our package offers users the flexibility to choose between three distinct methods for optimizing the boundary MPS used in contracting the tensor network: 
+Our package offers users the flexibility to choose between two distinct methods for optimizing the boundary MPS used in contracting the tensor network: 
 * `Zipper`
 * `SVDTruncate`.
-`Zipper` method combines a zipper scheme of [Ref.](https://arxiv.org/abs/2310.08533). with the standard variational optimization of the resulting MPS [(see Ref.)](https://arxiv.org/abs/0907.2796)
+`Zipper` method combines a zipper scheme of [Ref.](https://arxiv.org/abs/2310.08533). with the standard variational optimization of the resulting MPS [(see Ref.)](https://arxiv.org/abs/0907.2796). Details are described in [Ref.](https://arxiv.org/abs/2411.16431)
 ```@raw html
 <img src="../images/zipper_final.png" width="200%" class="center"/>
 ```
@@ -25,12 +24,12 @@ With the `SVDTruncate` method, the Matrix Product State (MPS) is systematically 
 <img src="../images/svd_truncate.png" width="50%" class="center"/>
 ```
 
-# Sparsity  
+# Sparsity of tensors
 The `Sparsity` parameter controls whether 
 * `Dense` 
 or 
 * `Sparse` 
-tensor representations are used during calculations. `Sparse` tensors are particularly useful for handling large clusters containing around 10 to 20 spins. When bond dimensions increase, constructing PEPS tensors explicitly (triggered by `Sparsity=Dense`) becomes computationally expensive and quickly infeasible. In contrast, setting `Sparsity=Sparse` avoids the direct construction of full tensors. Instead, it performs optimal contractions on smaller tensor structures, which are then combined to contract the entire network efficiently. This approach leverages the internal structure of the individual tensors to reduce computational overhead and memory usage.
+tensor representations are used during calculations. `Sparse` tensors are particularly useful for handling large clusters of spins. When bond dimensions increase, constructing PEPS tensors explicitly (triggered by `Sparsity=Dense`) becomes computationally expensive and quickly infeasible. In contrast, setting `Sparsity=Sparse` avoids the direct construction of full tensors. Instead, it performs optimal contractions on smaller tensor structures, which are then combined to contract the entire network efficiently. This approach leverages the internal structure of the individual tensors to reduce computational overhead and memory usage. Detailed infomation about employing sparsity of tensors can be found in [Ref.](https://arxiv.org/abs/2411.16431)
 
 # Geometry
 One can specify the type of the node used within the tensor networks: 
@@ -66,7 +65,7 @@ KingSingleNode
 SquareCrossDoubleNode
 ```
 
-# Layout 
+# Decomposition of PEPS into MPOs 
 `SpinGlassPEPS.jl` allows for different decompositions of the PEPS network into MPOs:
 * `GaugesEnergy`
 * `EnergyGauges`
